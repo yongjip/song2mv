@@ -18,8 +18,12 @@ With `--json`, progress goes to stderr and stdout carries exactly one JSON objec
 | `sync` | `command`, `work`, `config`, `outputs` (file name → absolute path), `duration`, `bpm`, `lines`, `line_sources` (source → count), `check_by_ear` (line ids to verify by ear), `dropped` (lyric lines missing from the output — should be empty), `seconds` |
 | `beats` | `command`, `outputs`, `bpm`, `phi`, `downbeat_mod4`, `bar0` |
 | `click` | `command`, `outputs` (file name → absolute path of the wav), `from`, `to`, `bpm`, `downbeat_mod4`, `ask_the_listener` (the question to put to the person listening) |
-| `check` | `command`, `video`, `song`, `goals`, `passed`, `total`, `ok`, `results` (check → `{ok, msg}`), `per_line` (`{id, motion, coverage}`), `cuts` |
-| `render` | `command`, `template`, `outputs` (absolute paths), `seconds` |
+| `check` | `command`, `video`, `song`, `goals`, `from`, `to` (the stretch measured, in song time), `passed`, `total`, `ok`, `results` (check → `{ok, value, goal, msg}`, see below), `skipped` (check → why it could not run on this stretch), `per_line` (`{id, motion, coverage}`), `cuts`, `warnings` |
+| `render` | `command`, `template`, `outputs` (file name → absolute path), `seconds`, `warnings` |
+
+`check` results: `value` is the measured number and `goal` is `{"min": x}` or `{"max": x}`. Per-line checks
+(`motion.min`, `motion.max`, `coverage.min`) count the failing lines in `value` (goal `{"max": 0}`) and list them in
+`lines` as `{id, value, goal}`. A check in `skipped` neither passed nor failed and is not counted in `total`.
 
 Exit codes: `0` success; `1` `check` found a failing check; any other non-zero code is an error (message on stderr).
 

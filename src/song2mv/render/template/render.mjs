@@ -10,6 +10,7 @@
  *
  * Options: --audio FILE (else: public/<audio>, the mv.json's audio_path, or next to mv.json; none → silent)
  *          --from S  --to S  --hold S  --aspect 16x9|9x16|both  --out DIR (default out/)  --name BASE
+ *          --manifest FILE (append the path of every file written, one per line)
  *
  * The audio is never copied into this folder: a temporary public folder outside it holds a link to it.
  */
@@ -77,14 +78,23 @@ const remotion = (args) => {
 };
 
 fs.mkdirSync(outDir, { recursive: true });
+const wrote = (file) => opt("manifest") && fs.appendFileSync(opt("manifest"), file + "\n");
 const range = from > 0 || to !== null ? `-${from}-${to ?? "end"}` : "";
 if (flag("studio")) {
   remotion(["studio"]);
 } else if (opt("still") !== undefined) {
   const t = Number(opt("still"));
   const frame = Math.max(0, Math.round((t - from) * 30));
-  for (const id of aspects) remotion(["still", id, path.join(outDir, `${base}-${id.slice(6)}-${t}s.png`), `--frame=${frame}`]);
+  for (const id of aspects) {
+    const file = path.join(outDir, `${base}-${id.slice(6)}-${t}s.png`);
+    remotion(["still", id, file, `--frame=${frame}`]);
+    wrote(file);
+  }
 } else {
-  for (const id of aspects) remotion(["render", id, path.join(outDir, `${base}-${id.slice(6)}${range}.mp4`)]);
+  for (const id of aspects) {
+    const file = path.join(outDir, `${base}-${id.slice(6)}${range}.mp4`);
+    remotion(["render", id, file]);
+    wrote(file);
+  }
 }
 fs.rmSync(tmp, { recursive: true, force: true });

@@ -160,9 +160,12 @@ song2mv check video.mp4 --song mv.json [--from 92 --to 102] [--goals my-goals.js
 | `cuts.rhythm.<section>` / `cuts.max_gap` | uneven cut intervals inside verses; no long stretch without a cut |
 | `text.min_font` | no font size under 36 px in scene sources (with `--src`) |
 
-It works on any mp4 that follows the song's timing, not only on song2mv renders. The default
-[goals](https://github.com/yongjip/song2mv/blob/main/src/song2mv/check/goals.json) are a starting point measured on one video — copy and adjust them. Passing is
-necessary, not proof of fun.
+`--from` is the song time of the video's first frame; the measured stretch ends with the video unless `--to` ends it
+earlier. Checks that cannot run on a stretch (no repeated section in it, too few cuts) are listed as skipped, not
+passed. It works on any mp4 that follows the song's timing, not only on song2mv renders.
+
+The default [goals](https://github.com/yongjip/song2mv/blob/main/src/song2mv/check/goals.json) are a starting point
+measured on one video; your own goals file only needs the values you change. Passing is necessary, not proof of fun.
 
 ## `song2mv render` (experimental)
 
