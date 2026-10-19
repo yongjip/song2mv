@@ -55,4 +55,5 @@ def test_click_needs_a_sync_work_folder_and_a_real_stretch(tmp_path, capsys):
     assert "song.json" in err["message"] and "sync" in err["hint"]
     work = work_folder(tmp_path)
     assert main(["click", str(work), "--from", "3", "--to", "2"]) == 2
+    assert main(["click", str(work), "--from", "-1"]) == 2
     assert main(["click", str(work), "--from", "10"]) == 2  # past the end of a 4 s song

@@ -76,6 +76,14 @@ def test_a_stretch_without_sung_lines_is_an_error(tmp_path, capsys):
     assert "no sung line" in err["message"] and "--from" in err["hint"]
 
 
+def test_to_before_from_is_an_error(tmp_path, capsys):
+    from song2mv.cli import main
+
+    song = write(tmp_path, "mv.json", SONG)
+    assert main(["check", str(make_video(tmp_path)), "--song", str(song), "--from", "5", "--to", "2", "--json"]) == 2
+    assert "--to after it" in json.loads(capsys.readouterr().out)["error"]["message"]
+
+
 def test_check_says_when_it_was_given_another_song2mv_file(tmp_path, capsys):
     from song2mv.cli import main
 

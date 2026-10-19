@@ -101,6 +101,8 @@ def load_goals(path: str | None) -> dict:
 
 def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0.0, t1: float | None = None,
           src_glob: str | None = None, quiet: bool = False) -> dict:
+    if t0 < 0 or (t1 is not None and t1 <= t0):
+        raise Song2mvError(f"--from must be zero or more and --to after it (got --from {t0:g}, --to {t1})")
     goals = load_goals(goals_path)
     song = load_mv(song_path, keys=("duration", "sections", "lines"))
     secs = song["sections"]

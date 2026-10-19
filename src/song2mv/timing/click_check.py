@@ -30,15 +30,15 @@ def tone(freq: float, dur: float, gain: float):
 
 
 def make_click(work: str, t0: float = 0.0, t1: float | None = None, words: bool = False, out: str | None = None) -> dict:
+    for name in ("song.json", "grid.json") + (("lyrics.json",) if words else ()):
+        if not os.path.isfile(os.path.join(work, name)):
+            raise Song2mvError(f"{work} has no {name}", hint="run `song2mv sync` first; click takes its work folder")
+    if t0 < 0 or (t1 is not None and t1 <= t0):
+        raise Song2mvError(f"--from must be zero or more and --to after it (got --from {t0:g}, --to {t1})")
     import librosa
     import numpy as np
     from scipy.io import wavfile
 
-    for name in ("song.json", "grid.json") + (("lyrics.json",) if words else ()):
-        if not os.path.isfile(os.path.join(work, name)):
-            raise Song2mvError(f"{work} has no {name}", hint="run `song2mv sync` first; click takes its work folder")
-    if t1 is not None and t1 <= t0:
-        raise Song2mvError(f"--to ({t1}) must be after --from ({t0})")
     cfg = load_config(os.path.join(work, "song.json"))
     grid = json.load(open(os.path.join(work, "grid.json"), encoding="utf-8"))
     y, _ = librosa.load(cfg["audio"], sr=SR, mono=True, offset=t0, duration=None if t1 is None else t1 - t0)
