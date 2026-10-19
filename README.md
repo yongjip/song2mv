@@ -199,7 +199,7 @@ Other open-source projects turn songs into videos in four broad ways:
 | kind of project | examples | what song2mv does differently |
 | --- | --- | --- |
 | AI-generated music videos | [AutoMV](https://github.com/multimodal-art-projection/AutoMV), [Deforum](https://github.com/deforum-art/deforum-stable-diffusion)-style audio-reactive animation | They generate the picture with image and video models, which needs paid APIs or a GPU. song2mv draws every frame in code: no model cost, the same input always gives the same frames, and the lyrics are timed against your lyric sheet rather than taken from a transcription. |
-| Karaoke and synced-lyrics tools | [karaoke-gen](https://github.com/nomadkaraoke/karaoke-gen), [python-lyrics-transcriber](https://github.com/nomadkaraoke/python-lyrics-transcriber) | They are further along in lyric sync (vocal separation, reference lyrics, a review UI) and in karaoke formats. Their focus is the lyric display; song2mv also puts every word on the song's beat grid and every section on a bar line, so cuts and effects can follow the music. |
+| Karaoke and synced-lyrics tools | [karaoke-gen](https://github.com/nomadkaraoke/karaoke-gen), [python-lyrics-transcriber](https://github.com/nomadkaraoke/python-lyrics-transcriber) | They have more lyric-sync tooling (online lyric lookup, a review UI, a choice of transcription engines) and karaoke formats. Their focus is the lyric display; song2mv also puts every word on the song's beat grid and every section on a bar line, so cuts and effects can follow the music. |
 | Remotion lyric-video templates | [Lyrics-Video-Generator](https://github.com/c0ze/Lyrics-Video-Generator), [lyric-motion-studio](https://github.com/junksidetm/lyric-motion-studio) | They render timing you already have (an LRC or SRT file) or a forced alignment, in a fixed set of styles. song2mv makes the timing itself, and its template gives your own scenes beat-grid helpers and a scene kit. |
 | Remotion skills for coding agents | [remotion-video-skill](https://github.com/wshuyi/remotion-video-skill), [remotion-dev/skills](https://github.com/remotion-dev/skills) | General video-making skills, without beat detection or lyric alignment. song2mv's skill works from measured timing, with `click` and `check` for what an agent cannot hear or watch. |
 
@@ -209,8 +209,8 @@ included.
 
 Where it is weaker today:
 
-- Whisper hears the mixed track, while karaoke tools separate the vocals first. Timing has been measured on one real
-  song so far.
+- Timing has been measured on one real song so far, and lines whisper hears badly (shouts, chants) still need a few
+  `manual` values. Separating the vocals first, as karaoke tools do, made the timing worse on that song.
 - No generated imagery: out of the box you get a plain lyric video, and anything richer is scene code that you or
   your agent write.
 - No karaoke formats (CDG, karaoke ASS).
