@@ -17,21 +17,33 @@ from __future__ import annotations
 
 import os
 
+from ..errors import Song2mvError
+from .lib import warn
+
 
 def _known(r):
     return [t for t in r["wt"] if t is not None]
 
 
 def apply_manual(lines: list[dict], manual: dict) -> None:
+    """"manual": {"ch1-01": [98.5, 99.2]} sets word start times (seconds). A single number sets the first word;
+    words without a value are spread out after the last given one. Times are still snapped to the beat grid."""
     ids = {r["id"] for r in lines}
     for k in manual:
         if k not in ids:
-            print(f"  !! manual value for unknown line id {k!r}")
+            warn(f"manual value for unknown line id {k!r} (line ids are in lyrics.json)")
     for r in lines:
-        if r["id"] in manual:
-            v = manual[r["id"]]
-            r["wt"] = [float(v[i]) if i < len(v) and v[i] is not None else None for i in range(len(r["words"]))]
-            r["source"] = "manual"
+        if r["id"] not in manual:
+            continue
+        v = manual[r["id"]]
+        if isinstance(v, (int, float)):
+            v = [v]
+        if not isinstance(v, list) or not all(x is None or isinstance(x, (int, float)) for x in v):
+            raise Song2mvError(f"manual value for {r['id']} must be a list of word start times in seconds, got {v!r}")
+        if len(v) > len(r["words"]):
+            warn(f"manual value for {r['id']} has {len(v)} times for {len(r['words'])} words; extra times ignored")
+        r["wt"] = [float(v[i]) if i < len(v) and v[i] is not None else None for i in range(len(r["words"]))]
+        r["source"] = "manual"
 
 
 def estimate(lines: list[dict], end_song: float) -> None:

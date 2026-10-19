@@ -21,6 +21,7 @@ import time
 
 from .. import __version__
 from ..contract import stamp
+from ..errors import Song2mvError
 
 BUNDLED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "template")
 
@@ -34,7 +35,7 @@ def cache_root() -> str:
 def _require(tool: str) -> str:
     path = shutil.which(tool)
     if not path:
-        raise SystemExit(f"song2mv render needs {tool} (Node 18+). Install Node.js and try again.")
+        raise Song2mvError(f"render needs {tool} (Node 18+)", hint="install Node.js 18 or newer and try again")
     return path
 
 
@@ -44,7 +45,8 @@ def prepare_template(template: str | None) -> str:
         target = os.path.abspath(template)
         if not os.path.exists(os.path.join(target, "render.mjs")):
             if os.path.exists(target) and os.listdir(target):
-                raise SystemExit(f"{target} exists and is not a song2mv template (no render.mjs). Pick an empty or new folder.")
+                raise Song2mvError(f"{target} exists and is not a song2mv template (no render.mjs)",
+                                   hint="pick an empty or new folder for --template")
             shutil.copytree(BUNDLED, target, dirs_exist_ok=True,
                             ignore=shutil.ignore_patterns("node_modules", "out", "__pycache__"))
             print(f"[render] template copied to {target} — write your scenes in src/scenes/")
@@ -59,7 +61,7 @@ def prepare_template(template: str | None) -> str:
         cmd = [npm, "ci"] if os.path.exists(os.path.join(target, "package-lock.json")) else [npm, "install"]
         r = subprocess.run(cmd + ["--no-audit", "--no-fund"], cwd=target, stdout=sys.stderr)
         if r.returncode != 0:
-            raise SystemExit("npm install failed — see the output above.")
+            raise Song2mvError("npm install failed — see the output above", hint="check your network and Node version, then run again")
     return target
 
 
@@ -81,7 +83,7 @@ def render(mv_json: str, out: str | None = None, template: str | None = None, st
     # child output goes to stderr: with --json, stdout must carry only the one JSON result
     r = subprocess.run(args, cwd=tpl, stdout=sys.stderr)
     if r.returncode != 0:
-        raise SystemExit(r.returncode)
+        raise Song2mvError(f"the Remotion render failed (exit {r.returncode}) — see the output above")
     made = sorted(f for f in os.listdir(out) if f not in before or os.path.getmtime(os.path.join(out, f)) >= t - 1)
     for f in made:
         print(f"  {os.path.join(out, f)}")

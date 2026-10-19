@@ -29,6 +29,7 @@ import sys
 import numpy as np
 
 from ..contract import stamp
+from ..errors import Song2mvError
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_GOALS = os.path.join(HERE, "goals.json")
@@ -46,10 +47,14 @@ def load_lines(song: dict) -> list[dict]:
 
 
 def probe_size(mp4: str) -> tuple[int, int]:
-    out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", mp4],
-                         capture_output=True, text=True, check=True).stdout
-    w, h = out.strip().split(",")[:2]
-    return int(w), int(h)
+    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", mp4],
+                       capture_output=True, text=True)
+    try:
+        w, h = r.stdout.strip().split(",")[:2]
+        return int(w), int(h)
+    except ValueError:
+        detail = (r.stderr.strip().splitlines() or ["no video stream"])[-1]
+        raise Song2mvError(f"ffprobe could not read a video stream from {mp4}: {detail}") from None
 
 
 def decode_gray(mp4: str, W: int, H: int) -> np.ndarray:

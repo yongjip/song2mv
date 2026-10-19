@@ -10,17 +10,21 @@ import os
 import subprocess
 import sys
 
+from ..errors import Song2mvError
+
 
 def extract(audio: str, out: str) -> int:
-    meta = json.loads(subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "format_tags", "-of", "json", audio],
-        capture_output=True, text=True, check=True).stdout)
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format_tags", "-of", "json", audio],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        raise Song2mvError(f"ffprobe could not read {audio}: {(r.stderr.strip().splitlines() or ['?'])[-1]}")
+    meta = json.loads(r.stdout or "{}")
     tags = meta.get("format", {}).get("tags", {})
     key = next((k for k in tags if k.lower().startswith(("lyrics", "unsyncedlyrics"))), None)
     if key is None:
-        raise SystemExit(f"no lyrics tag in {audio} (tags: {sorted(tags)}). Write the lyrics to a text file "
-                         "and set \"lyrics\" in the song config.")
-    text = tags[key].replace("\r\n", "\n").strip() + "\n"
+        raise Song2mvError(f"no lyrics tag in {audio} (tags: {sorted(tags)})",
+                           hint="write the lyrics to a text file and pass --lyrics FILE")
+    text = tags[key].replace("\r\n", "\n").lstrip("\ufeff").strip() + "\n"
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     open(out, "w", encoding="utf-8").write(text)
     n = sum(1 for line in text.splitlines() if line.strip())
