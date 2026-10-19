@@ -1,0 +1,182 @@
+{
+ "title": "Sample Song",
+ "subtitle": "replace me with your mv.json",
+ "audio": null,
+ "duration": 16.5,
+ "grid": {
+  "bpm": 120,
+  "beat": 0.5,
+  "phi": 0.5,
+  "downbeat_mod4": 0,
+  "bar0": 0.5
+ },
+ "sections": [
+  {
+   "id": "v1",
+   "name": "Verse 1",
+   "kind": "mid",
+   "start": 0,
+   "end": 8.5
+  },
+  {
+   "id": "ch",
+   "name": "Chorus",
+   "kind": "hot",
+   "start": 8.5,
+   "end": 16.5
+  }
+ ],
+ "lines": [
+  {
+   "id": "v1-01",
+   "section": "v1",
+   "text": "Run the timing tool on your song",
+   "start": 1.0,
+   "end": 4.3,
+   "words": [
+    {
+     "w": "Run",
+     "t": 1.0
+    },
+    {
+     "w": "the",
+     "t": 1.25
+    },
+    {
+     "w": "timing",
+     "t": 1.5
+    },
+    {
+     "w": "tool",
+     "t": 2.0
+    },
+    {
+     "w": "on",
+     "t": 2.5
+    },
+    {
+     "w": "your",
+     "t": 2.75
+    },
+    {
+     "w": "song",
+     "t": 3.0
+    }
+   ]
+  },
+  {
+   "id": "v1-02",
+   "section": "v1",
+   "text": "and every line lands on the beat",
+   "start": 4.5,
+   "end": 8.0,
+   "words": [
+    {
+     "w": "and",
+     "t": 4.5
+    },
+    {
+     "w": "every",
+     "t": 4.75
+    },
+    {
+     "w": "line",
+     "t": 5.0
+    },
+    {
+     "w": "lands",
+     "t": 5.5
+    },
+    {
+     "w": "on",
+     "t": 5.75
+    },
+    {
+     "w": "the",
+     "t": 6.25
+    },
+    {
+     "w": "beat",
+     "t": 6.5
+    }
+   ]
+  },
+  {
+   "id": "ch-01",
+   "section": "ch",
+   "text": "Sing it loud",
+   "start": 8.5,
+   "end": 10.8,
+   "words": [
+    {
+     "w": "Sing",
+     "t": 8.5
+    },
+    {
+     "w": "it",
+     "t": 9.0
+    },
+    {
+     "w": "loud",
+     "t": 9.5
+    }
+   ]
+  },
+  {
+   "id": "ch-02",
+   "section": "ch",
+   "text": "every word on time",
+   "start": 11.0,
+   "end": 13.8,
+   "words": [
+    {
+     "w": "every",
+     "t": 11.0
+    },
+    {
+     "w": "word",
+     "t": 11.5
+    },
+    {
+     "w": "on",
+     "t": 12.0
+    },
+    {
+     "w": "time",
+     "t": 12.5
+    }
+   ]
+  },
+  {
+   "id": "ch-03",
+   "section": "ch",
+   "text": "your song, your video",
+   "start": 14.0,
+   "end": 15.9,
+   "words": [
+    {
+     "w": "your",
+     "t": 14.0
+    },
+    {
+     "w": "song,",
+     "t": 14.5
+    },
+    {
+     "w": "your",
+     "t": 15.0
+    },
+    {
+     "w": "video",
+     "t": 15.25
+    }
+   ]
+  }
+ ],
+ "captions": {
+  "hide": [],
+  "from_word": {},
+  "whisper": []
+ },
+ "theme": {}
+}

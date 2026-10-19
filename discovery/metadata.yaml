@@ -1,0 +1,19 @@
+# Single source for how song2mv describes itself (README, pyproject, GitHub "About", llms.txt).
+# Keep these in sync by hand until a check script exists.
+schema_version: 1
+
+headline: Song in, beat-synced lyric timing and a code-drawn music video out — built for coding agents.
+
+short_description: >-
+  Song in, beat-synced lyric timing (LRC, SRT, JSON) and a code-drawn music video out.
+  Built for coding agents like Claude Code and Codex.
+
+github_topics: [synced-lyrics, lrc, srt, karaoke, lyrics, lyrics-alignment, whisper, beat-tracking,
+  lyric-video, music-video, remotion, claude-code, codex, ai-agents]
+
+search_terms:
+  - {intent: "synced lyrics for a song", queries: ["synced lyrics", "lyrics sync", "lrc generator", "srt from song"]}
+  - {intent: "time lyrics to audio", queries: ["lyrics alignment", "forced alignment lyrics", "whisper lyrics timestamps"]}
+  - {intent: "cut video to the beat", queries: ["beat sync", "beat grid", "bpm detection"]}
+  - {intent: "make a lyric video", queries: ["lyric video generator", "karaoke video", "remotion lyrics"]}
+  - {intent: "agent tool", queries: ["claude code music video", "codex lyric video", "ai agent video tool"]}

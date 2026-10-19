@@ -1,0 +1,52 @@
+name: Release
+
+# Push a tag vX.Y.Z (matching pyproject.toml) to publish to PyPI with Trusted Publishing.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: tag matches package version
+        run: |
+          v=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != version $v"; exit 1; }
+          grep -q "__version__ = \"$v\"" src/song2mv/__init__.py
+      - run: uv build
+      - uses: actions/upload-artifact@v4
+        with: {name: dist, path: dist/}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {name: dist, path: dist/}
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {name: dist, path: dist/}
+      - name: create release with the changelog section
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          awk -v v="$v" '$0 ~ "^## "v" " {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md
+          gh release create "$GITHUB_REF_NAME" dist/* --title "song2mv $v" --notes-file notes.md

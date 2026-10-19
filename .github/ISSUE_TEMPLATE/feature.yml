@@ -1,0 +1,13 @@
+name: Feature
+description: A workflow song2mv should support
+labels: [enhancement]
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: The workflow
+      description: Who does it, how often, and what you do today instead (see docs/product-scope.md).
+    validations: {required: true}
+  - type: textarea
+    id: proposal
+    attributes: {label: What would help}

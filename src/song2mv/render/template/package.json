@@ -1,0 +1,23 @@
+{
+  "name": "song2mv-template",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Remotion lyric-video template driven by one song config JSON (lyrics + beat grid + colors).",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "node render.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.507",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.507"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "typescript": "5.9.3"
+  }
+}

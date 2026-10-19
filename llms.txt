@@ -1,0 +1,25 @@
+# song2mv
+
+> Song in, beat-synced lyric timing (LRC, SRT, word-timed JSON) and a code-drawn music video out. A command-line
+> tool built for coding agents such as Claude Code and Codex. Alpha (0.x): formats may change; every JSON output
+> carries schema_version.
+
+Install: `uv tool install 'song2mv[sync]'` (needs ffmpeg; `render` also needs Node 18+).
+
+## Commands
+
+- `song2mv sync AUDIO [--lyrics FILE] --language CODE [--json]` — beat grid, word-timed lyrics, song.lrc,
+  song.words.lrc, song.srt and mv.json in a work folder. Takes minutes (several whisper runs); run it in the
+  background. The --json result lists `outputs` and `check_by_ear` (lines to verify by ear).
+- `song2mv beats AUDIO [--bpm auto|N] [--json]` — tempo and beat grid only.
+- `song2mv check VIDEO --song mv.json [--from A --to B] [--json]` — experimental; per-line motion, coverage,
+  chorus variation, cut rhythm. Passing is necessary, not proof of fun.
+- `song2mv render mv.json [--from A --to B] [--aspect 16x9|9x16|both] [--still T] [--template DIR] [--json]` —
+  experimental; Remotion template (not MIT for companies over 3 employees).
+
+## Docs
+
+- [README](https://github.com/yongjip/song2mv/blob/main/README.md)
+- [AGENTS.md — operating rules](https://github.com/yongjip/song2mv/blob/main/AGENTS.md)
+- [Machine contract](https://github.com/yongjip/song2mv/blob/main/docs/contract.md)
+- [Music-video skill](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md)

@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+# song material and renders never go into the repository
+song2mv-work/
+work/
+renders/
+*.mp3
+*.wav
+*.m4a
+*.flac
+*.mp4
+*.mov
+# template installs
+node_modules/
+src/song2mv/render/template/out/

@@ -1,0 +1,83 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "song2mv"
+version = "0.1.0"
+description = "Song in, beat-synced lyric timing (LRC, SRT, JSON) and a code-drawn music video out. Built for coding agents like Claude Code and Codex."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "song2mv contributors" }]
+keywords = [
+  "synced-lyrics",
+  "lyrics-sync",
+  "lyrics-alignment",
+  "lrc",
+  "srt",
+  "karaoke",
+  "beat-tracking",
+  "beat-sync",
+  "lyric-video",
+  "music-video",
+  "whisper",
+  "remotion",
+  "ai-agent",
+  "coding-agent",
+  "claude-code",
+  "codex",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Multimedia :: Sound/Audio :: Analysis",
+  "Topic :: Multimedia :: Video",
+]
+# `song2mv check` needs only numpy and ffmpeg. The heavy parts are extras.
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+# `song2mv beats`: tempo and beat grid (librosa pulls numba/llvmlite, ~300 MB with scipy).
+beats = ["librosa>=0.10", "scipy>=1.10", "soundfile>=0.12"]
+# `song2mv sync`: beats + faster-whisper (~130 MB) + a whisper model downloaded on first run (small: ~460 MB).
+# av<19: PyAV 19 dropped the `metadata_errors` argument faster-whisper 1.2 passes to av.open (TypeError).
+sync = ["song2mv[beats]", "faster-whisper>=1.0", "av>=11,<19"]
+dev = ["pytest>=7", "ruff>=0.6", "build>=1.0"]
+
+[project.scripts]
+song2mv = "song2mv.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yongjip/song2mv"
+Source = "https://github.com/yongjip/song2mv"
+Documentation = "https://github.com/yongjip/song2mv/tree/main/docs"
+Issues = "https://github.com/yongjip/song2mv/issues"
+Changelog = "https://github.com/yongjip/song2mv/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/song2mv"]
+exclude = ["**/node_modules", "**/out", "**/__pycache__"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["**/node_modules", "**/out", "song2mv-work", ".github"]
+
+[tool.ruff]
+line-length = 160
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E731", "B905", "UP015", "SIM115"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

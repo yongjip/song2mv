@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, python: "3.10"}
+          - {os: ubuntu-latest, python: "3.11"}
+          - {os: ubuntu-latest, python: "3.12"}
+          - {os: ubuntu-latest, python: "3.13"}
+          - {os: macos-latest, python: "3.12"}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: ffmpeg
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then sudo apt-get update -q && sudo apt-get install -y -q ffmpeg; else brew install ffmpeg; fi
+      # whisper (the `sync` extra) is not installed in CI: tests use synthetic audio and video only
+      - run: uv venv && uv pip install -e '.[beats,dev]'
+      - run: uv run --no-sync ruff check src tests
+      - run: uv run --no-sync pytest -q
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv build
+      - name: wheel carries the template, not node_modules
+        run: |
+          unzip -l dist/*.whl | grep -q 'song2mv/render/template/render.mjs'
+          ! unzip -l dist/*.whl | grep -q node_modules
+          unzip -l dist/*.whl | grep -q 'song2mv/check/goals.json'
+
+  template:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/song2mv/render/template
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: src/song2mv/render/template/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc --noEmit

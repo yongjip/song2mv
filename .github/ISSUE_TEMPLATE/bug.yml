@@ -1,0 +1,21 @@
+name: Bug
+description: Something does not work or gives wrong timing
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes: {label: song2mv version, description: "song2mv --version"}
+    validations: {required: true}
+  - type: input
+    id: command
+    attributes: {label: Command you ran}
+    validations: {required: true}
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+      description: For timing problems, the song's style, tempo, language and which line ids are off. Please do not attach audio you do not own.
+    validations: {required: true}
+  - type: textarea
+    id: env
+    attributes: {label: Environment, description: "OS, Python version, ffmpeg version, install method (uv / pipx / pip)"}
