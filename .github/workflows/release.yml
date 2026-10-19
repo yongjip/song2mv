@@ -1,6 +1,6 @@
 name: Release
 
-# Push a tag vX.Y.Z (matching pyproject.toml) to publish to PyPI with Trusted Publishing.
+# Push a tag vX.Y.Z to publish to PyPI with Trusted Publishing. See docs/release.md.
 on:
   push:
     tags: ["v*"]
@@ -14,11 +14,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
-      - name: tag matches package version
+        with:
+          python-version: "3.13"
+      - name: tag, versions and changelog agree
         run: |
-          v=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
-          test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != version $v"; exit 1; }
-          grep -q "__version__ = \"$v\"" src/song2mv/__init__.py
+          v=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/song2mv/__init__.py)
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != package version $v"; exit 1; }
+          grep -q "\"version\": \"$v\"" src/song2mv/render/template/package.json \
+            || { echo "src/song2mv/render/template/package.json is not at $v"; exit 1; }
+          grep -qE "^## $v — [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md \
+            || { echo "CHANGELOG.md has no '## $v — YYYY-MM-DD' section (still '## Unreleased'?)"; exit 1; }
+          awk -v v="$v" '$0 ~ "^## "v" " {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md
+          grep -q '[^[:space:]]' notes.md || { echo "the CHANGELOG.md section for $v is empty"; exit 1; }
+      - name: ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - name: tests
+        run: |
+          uv venv && uv pip install -e '.[beats,dev]'
+          uv run --no-sync ruff check src tests
+          uv run --no-sync pytest -q
       - run: uv build
       - uses: actions/upload-artifact@v4
         with: {name: dist, path: dist/}
@@ -33,6 +47,8 @@ jobs:
       - uses: actions/download-artifact@v4
         with: {name: dist, path: dist/}
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true  # a rerun after a failed GitHub release step must not fail here
 
   github-release:
     needs: publish
@@ -49,4 +65,6 @@ jobs:
         run: |
           v="${GITHUB_REF_NAME#v}"
           awk -v v="$v" '$0 ~ "^## "v" " {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md
-          gh release create "$GITHUB_REF_NAME" dist/* --title "song2mv $v" --notes-file notes.md
+          test -s notes.md
+          pre=""; case "$v" in 0.*) pre="--prerelease" ;; esac  # alpha while 0.x
+          gh release create "$GITHUB_REF_NAME" dist/* --title "song2mv $v" --notes-file notes.md --verify-tag $pre

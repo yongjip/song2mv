@@ -10,7 +10,7 @@ fitting); the surface people and agents learn must stay small.
 | --- | ---: |
 | Top-level commands | **5** — `sync`, `beats`, `click`, `check`, `render` |
 | Output files of `sync` | 7 — `grid.json`, `lyrics.json`, `mv.json`, `song.lrc`, `song.words.lrc`, `song.srt`, `music.json` |
-| Extras | 2 — `beats`, `sync` |
+| Extras | 2 — `beats`, `sync` (plus `dev` for contributors) |
 | MCP tools | 0 (planned: one per command) |
 
 ### Why `click` became a command and `music.json` an output (0.1)

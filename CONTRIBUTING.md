@@ -14,9 +14,13 @@ answers may take a few days.
 
 ```sh
 uv venv --python 3.12 && uv pip install -e '.[sync,dev]'
+source .venv/bin/activate
 ruff check src tests
 pytest -q
 ```
+
+(Plain `uv run` would sync the environment to the base dependencies and drop the extras; use `uv run --no-sync` if
+you prefer not to activate.)
 
 Tests build synthetic audio and video. Do not add songs, lyrics, renders or other media to the repository.
 

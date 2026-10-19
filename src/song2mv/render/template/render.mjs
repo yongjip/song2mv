@@ -8,6 +8,8 @@
  *   node render.mjs ../work/my-song/mv.json --still 98.5            # one PNG frame at song time 98.5 s
  *   node render.mjs ../work/my-song/mv.json --studio                # Remotion Studio with this song
  *
+ * `song2mv render` runs this for you with --out WORK/renders; the paths above are for running node directly.
+ *
  * Options: --audio FILE (else: public/<audio>, the mv.json's audio_path, or next to mv.json; none → silent)
  *          --from S  --to S  --hold S  --aspect 16x9|9x16|both  --out DIR (default out/)  --name BASE
  *          --manifest FILE (append the path of every file written, one per line)

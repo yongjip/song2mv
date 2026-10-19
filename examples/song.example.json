@@ -1,5 +1,5 @@
 {
-  "_doc": "Every key song2mv sync understands. `song2mv sync AUDIO` writes a song.json like this into its work folder; edit it there and rerun `song2mv sync DIR/song.json`. Only 'audio' is required. Paths are relative to the file.",
+  "_doc": "Every key song2mv sync understands, with its default. `song2mv sync AUDIO` writes a minimal song.json (the audio, a title and the options you passed) into its work folder; add any of these keys there and rerun `song2mv sync DIR/song.json`. Only 'audio' is required. Paths are relative to the file.",
   "title": "My Song",
   "subtitle": "",
   "audio": "my-song.mp3",
@@ -11,7 +11,7 @@
   "bpm": "auto",
   "downbeat_mod4": null,
   "snap_per_beat": 4,
-  "whisper": { "model": "small", "runs": 3, "device": "cpu", "compute_type": "int8", "threads": 8 },
+  "whisper": { "model": "small", "runs": 3, "device": "cpu", "compute_type": "int8", "threads": 8, "beam_size": 5 },
   "auto_reprompt": true,
   "reprompt": [],
   "manual": {},

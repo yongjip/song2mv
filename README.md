@@ -47,7 +47,7 @@ Install only what you use — the parts differ a lot in size:
 | you run | install | adds roughly |
 | --- | --- | --- |
 | `check` | `song2mv` | numpy (35 MB) |
-| `beats` | `song2mv[beats]` | librosa, scipy, numba (300 MB) |
+| `beats`, `click` | `song2mv[beats]` | librosa, scipy, numba (300 MB) |
 | `sync` | `song2mv[sync]` | beats + faster-whisper (130 MB) + a whisper model on first run (small: 460 MB) |
 | `render` | Node 18+ | Remotion and a headless Chrome on first render (570 MB) |
 
@@ -59,7 +59,8 @@ song2mv render song2mv-work/song/mv.json --from 60 --to 75 --aspect both
 song2mv check song2mv-work/song/renders/song-16x9-60-75.mp4 --song song2mv-work/song/mv.json --from 60 --to 75
 ```
 
-If the audio file has a lyrics tag (Suno writes one), `--lyrics` is optional. Want subtitles for CapCut, Premiere or
+The work folder is relative to where you run it: run it outside your code repositories, or pass `--out`. If the
+audio file has a lyrics tag (Suno writes one), `--lyrics` is optional. Want subtitles for CapCut, Premiere or
 DaVinci Resolve? Stop after `sync` and import `song.srt` or `song.lrc`.
 
 ## With a coding agent
@@ -68,7 +69,8 @@ Open this repository (or your own project with song2mv installed) in Claude Code
 for example: *"make a lyric video for ~/Music/my-song.mp3"* or *"give me word-timed LRC for this song"*.
 
 - [`AGENTS.md`](https://github.com/yongjip/song2mv/blob/main/AGENTS.md) — the operating rules: which command to run when, what to check by ear, what never to
-  commit. Most agents read it automatically.
+  commit. Codex reads it, and Claude Code reads it through `CLAUDE.md`, when this repository is open; elsewhere,
+  point your agent to it.
 - [`.claude/skills/song2mv/`](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md) — the full music-video loop (timing → scene design →
   render → check → fix) as a Claude Code skill. Copy it to `~/.claude/skills/` to use it in any project.
 - Every command takes `--json`: progress goes to stderr and stdout carries one JSON result. See
@@ -93,10 +95,10 @@ song2mv sync DIR/song.json [--from grid] [--runs 5]   # rerun after editing song
 
 Why it works the way it does:
 
-- **Whisper gives a different answer every run.** Three runs with identical settings can find 342, 381 and 399 words,
-  and one run can skip a whole verse. So run *k* uses seed *k* and a different lead-in silence, and the runs are
-  merged in lyric space: per line, only runs that matched at least half of it count, outliers more than 1 s from the
-  rest are dropped, and each word takes the median.
+- **Whisper gives a different answer every run.** On a test song, two runs with the same file and settings found 342
+  and 380 words, and one of them skipped 15 seconds (five sung lines). So run *k* uses seed *k* and a different
+  lead-in silence, and the runs are merged in lyric space: per line, only runs that matched at least half of it
+  count, outliers more than 1 s from the rest are dropped, and each word takes the median.
 - **`librosa.beat.beat_track` can be off by a ratio** (it reported 123 BPM for a 90 BPM song with a dotted-8th
   rhythm). The grid is fitted to percussive onsets instead, and `auto` tempo prefers the candidate where most gaps
   between lyric lines are whole bars. The bar's first beat is the beat position with the strongest kick.
@@ -113,16 +115,17 @@ song2mv click song2mv-work/song --from 90 --to 110 --words    # → song2mv-work
 
 ### Song config (`song.json`)
 
-`sync` writes `song.json` into the work folder. Edit it and rerun `song2mv sync DIR/song.json`. Only `audio` is
-required; paths are relative to the file. See [`examples/song.example.json`](https://github.com/yongjip/song2mv/blob/main/examples/song.example.json).
+`sync` writes a minimal `song.json` (the audio, a title and the options you passed) into the work folder. Add or
+change keys there and rerun `song2mv sync DIR/song.json`. Only `audio` is required; paths are relative to the file.
+See [`examples/song.example.json`](https://github.com/yongjip/song2mv/blob/main/examples/song.example.json).
 
 | key | default | meaning |
 | --- | --- | --- |
 | `audio` | — | the song file |
 | `lyrics` | `null` | lyric sheet; `null` = the audio's lyrics tag |
-| `title`, `subtitle` | file name, `""` | shown in the video and written to the LRC |
+| `title`, `subtitle` | file name, `""` | the title goes into the LRC and the video; the subtitle is drawn under it in 9:16 |
 | `language` | `null` | whisper language code (`"en"`, `"ko"`, `"ja"` …). Set it — auto-detection hears only the first 30 s |
-| `keep_parenthesized_in` | `[]` | sections where a line written entirely in `( )` is sung, not a stage direction. `"*"` = everywhere |
+| `keep_parenthesized_in` | `[]` | sections, by their name in the lyric sheet (`"Chorus"`, `"Verse 1"`), where a line written entirely in `( )` is sung, not a stage direction. `"*"` = everywhere |
 | `section_ids`, `section_kinds` | `{}` | override the short id (`"Verse 1"` → `v1`) or kind (`calm` / `mid` / `hot`) of a section |
 | `bpm` | `"auto"` | a number forces the tempo |
 | `downbeat_mod4` | `null` | force which beat index (mod 4) starts a bar |
@@ -135,7 +138,8 @@ required; paths are relative to the file. See [`examples/song.example.json`](htt
 | `theme` | `{}` | copied into `mv.json` for the template (colours, font) |
 
 Line ids are `<section>-<nn>`: `in-01`, `v1-03`, `pc2-01`, `ch1-05`, `br-02`, `ou-01`. A section name that appears
-more than once without a number (`[Chorus]` twice) is numbered by occurrence (`ch1`, `ch2`).
+more than once without a number (`[Chorus]` twice) is numbered by occurrence (`ch1`, `ch2`); one that appears once
+keeps the bare id (`ch-01` in a song with one chorus).
 
 ## `song2mv beats`
 

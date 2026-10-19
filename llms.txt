@@ -18,7 +18,11 @@ Install (not on PyPI yet): `uv tool install --python 3.13 'song2mv[sync] @ git+h
 - `song2mv check VIDEO --song mv.json [--from A --to B] [--json]` — experimental; per-line motion, coverage,
   chorus variation, cut rhythm. Passing is necessary, not proof of fun.
 - `song2mv render mv.json [--from A --to B] [--aspect 16x9|9x16|both] [--still T] [--template DIR] [--json]` —
-  experimental; Remotion template (not MIT for companies over 3 employees).
+  experimental; uses Remotion, which is not MIT: free for individuals and companies with up to 3 employees, a
+  company license otherwise.
+
+Exit codes: 0 success, 1 `check` found a failing check, 2 error. With --json an error is
+`{"ok": false, "error": {"message", "kind", "hint"}}` on stdout; do what the hint says.
 
 ## Docs
 

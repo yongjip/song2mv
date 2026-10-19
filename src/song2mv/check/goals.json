@@ -6,7 +6,7 @@
     "body_frac_9x16": 0.7
   },
   "motion": {
-    "_doc": "Mean absolute frame difference while a lyric line is sung. No line should sit on a still picture for a whole bar; verses should not be frantic either.",
+    "_doc": "Mean absolute frame difference over each sung line. No line should be sung over a still picture; verses should not be frantic either.",
     "min_per_line": 0.6,
     "quiet_kinds": [
       "calm"
