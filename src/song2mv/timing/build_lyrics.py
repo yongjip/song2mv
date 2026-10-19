@@ -43,6 +43,9 @@ def apply_manual(lines: list[dict], manual: dict) -> None:
         if len(v) > len(r["words"]):
             warn(f"manual value for {r['id']} has {len(v)} times for {len(r['words'])} words; extra times ignored")
         r["wt"] = [float(v[i]) if i < len(v) and v[i] is not None else None for i in range(len(r["words"]))]
+        given = [t for t in r["wt"] if t is not None]
+        if any(b < a for a, b in zip(given, given[1:])):
+            warn(f"manual times for {r['id']} go backwards ({given}); each word is kept at or after the one before")
         r["source"] = "manual"
 
 
@@ -63,12 +66,14 @@ def estimate(lines: list[dict], end_song: float) -> None:
         # fraction of a second) squeeze it in at 0.3 s per line. It stays "estimated", so it is listed under
         # check_by_ear and the user can pin it in "manual".
         sl = room / n if room >= 0.6 * n else 0.3
+        a0 = prev
         if room < 0.6 * n:
+            a0 = max(0.0, min(prev, end_song - n * sl))  # never past the end of the song
             print(f"  ~ squeezed {n} unplaced line(s) into {max(room, 0):.2f} s after {prev:.2f}: "
                   + ", ".join(lines[k]["id"] for k in range(i, j)))
         for m, k in enumerate(range(i, j)):
             nw = len(lines[k]["words"])
-            a = prev + m * sl
+            a = a0 + m * sl
             lines[k]["wt"] = [a + 0.8 * sl * q / nw for q in range(nw)]
             lines[k]["source"] = "estimated"
         i = j
@@ -96,13 +101,20 @@ def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -
             for k in range(ka + 1, kb):
                 wt[k] = ta + (tb - ta) * (k - ka) / (kb - ka)
         kl, tl = known[-1]
-        tail = min(nxt_start - 0.25, tl + 0.45 * (len(wt) - kl))
+        n_tail = len(wt) - kl
+        # words after the last placed one: up to 0.45 s apart and done before the next line starts — but at least
+        # 0.1 s apart, never backwards, when the next line starts right away (or earlier, as a backing line can)
+        tail = max(tl + 0.1 * n_tail, min(nxt_start - 0.25, tl + 0.45 * n_tail))
         for k in range(kl + 1, len(wt)):
-            wt[k] = tl + (tail - tl) * (k - kl) / (len(wt) - kl)
+            wt[k] = tl + (tail - tl) * (k - kl) / n_tail
+        for k in range(1, len(wt)):  # sung words stay in order (runs that disagree, manual times out of order)
+            wt[k] = max(wt[k], wt[k - 1])
         wt = [snap(max(0.0, t)) for t in wt]
-        end = snap(min(nxt_start - 0.15, wt[-1] + 0.9))
-        if end <= wt[0]:
-            end = round(wt[0] + max(S, 0.3), 3)
+        last = wt[-1]
+        # shown until 0.9 s after the last word or just before the next line, but always past its own last word
+        end = max(snap(min(nxt_start - 0.15, last + 0.9)), round(last + max(S, 0.15), 3))
+        if last < end_song:
+            end = min(end, round(end_song, 3))
         out.append({
             "id": r["id"], "section": r["section"], "section_name": r["section_name"], "kind": r["kind"],
             "text": r["text"], "start": wt[0], "end": end, "source": r.get("source"),

@@ -82,7 +82,7 @@ DEFAULT_CONFIG = {
 
 def load_config(path: str) -> dict:
     try:
-        cfg = json.load(open(path, encoding="utf-8"))
+        cfg = json.load(open(path, encoding="utf-8-sig"))
     except FileNotFoundError:
         raise Song2mvError(f"{path} not found") from None
     except json.JSONDecodeError as e:
@@ -145,7 +145,7 @@ def parse_lyrics(path: str, cfg: dict) -> list[dict]:
 
     Line ids are "<section id>-<nn>", e.g. v1-03, ch2-01. A section name that repeats without a number
     ("Chorus" twice) is numbered by occurrence; a name that appears once keeps the bare short id ("br")."""
-    raw = [r.strip() for r in open(path, encoding="utf-8")]
+    raw = [r.strip() for r in open(path, encoding="utf-8-sig")]  # -sig: a BOM would hide the first [Section]
     names = [m.group(1) for r in raw if (m := re.fullmatch(r"\[(.+)\]", r))]
     totals = Counter(b for b, n in map(_section_base, names) if n is None)
     keep = set(cfg.get("keep_parenthesized_in") or [])

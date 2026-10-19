@@ -31,7 +31,8 @@ plus `candidates`, `phase_stats` and drift diagnostics. Beat *k* is at `phi + k 
 
 **`lyrics.json`** — `lines`: each with `id` (`<section>-<nn>`, e.g. `ch1-03`), `section`, `kind`
 (`calm` / `mid` / `hot`), `text`, `start`, `end`, `source` (`asr` / `reprompt` / `manual` / `estimated`) and
-`words: [{w, t}]`.
+`words: [{w, t}]`. Word times never go backwards and `end` is after the line's last word. Lines may overlap: a
+backing vocal can start while another line is still sung.
 
 **`mv.json`** — the render template's input: `title`, `audio`, `duration`, `grid`, `sections` (`id`, `name`, `kind`,
 bar-aligned `start` / `end`), `lines`, `captions`, `theme`. Also what `check` reads.
@@ -40,8 +41,8 @@ bar-aligned `start` / `end`), `lines`, `captions`, `theme`. Also what `check` re
 `boundaries` (`[{t, novelty}]`, likely section changes; empty for very short songs), `audio_sha256`.
 
 **`song.lrc`** — `[mm:ss.xx]line`; an empty timestamp clears the screen before gaps over 4 s.
-**`song.words.lrc`** — enhanced LRC with `<mm:ss.xx>` word stamps. **`song.srt`** — one cue per line, cues never
-overlap.
+**`song.words.lrc`** — enhanced LRC with `<mm:ss.xx>` word stamps. **`song.srt`** — one cue per line (lines that
+start within 0.3 s of each other share a cue, one text line each); cues never overlap.
 
 `song.json` (the config) and the intermediate files (`lyrics.txt`, `asr/runN.json`, `merged.json`,
 `reprompt.json`) are inputs and working state, not part of the contract.

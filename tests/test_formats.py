@@ -1,5 +1,8 @@
+import re
+
 from song2mv.contract import SCHEMA_VERSION, stamp
 from song2mv.timing.to_lrc import to_lrc
+from song2mv.timing.to_lrc import ts as lrc_ts
 from song2mv.timing.to_srt import to_srt
 
 LINES = [
@@ -36,3 +39,37 @@ def test_srt_cues_do_not_overlap(tmp_path):
 def test_stamp_puts_schema_version_first():
     d = stamp({"a": 1, "schema_version": 999})
     assert list(d)[0] == "schema_version" and d["schema_version"] == SCHEMA_VERSION and d["a"] == 1
+
+
+def test_lrc_time_rounds_up_into_the_next_minute():
+    assert lrc_ts(59.996) == "[01:00.00]" and lrc_ts(59.994) == "[00:59.99]"
+    assert lrc_ts(125.5, angle=True) == "<02:05.50>" and lrc_ts(-1) == "[00:00.00]"
+
+
+def test_lrc_does_not_clear_the_screen_while_an_earlier_line_is_still_sung(tmp_path):
+    out = tmp_path / "song.lrc"
+    lines = [{"start": 10.0, "end": 20.0, "text": "long line", "words": []},
+             {"start": 12.0, "end": 13.0, "text": "backing", "words": []},
+             {"start": 30.0, "end": 31.0, "text": "next", "words": []}]
+    to_lrc(lines, str(out))
+    rows = out.read_text(encoding="utf-8").splitlines()
+    assert rows == ["[00:10.00]long line", "[00:12.00]backing", "[00:20.60]", "[00:30.00]next", "[00:31.60]"]
+
+
+def srt_times(text):
+    def sec(h, m, s, ms):
+        return int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000
+    stamps = re.findall(r"(\d+):(\d+):(\d+),(\d+) --> (\d+):(\d+):(\d+),(\d+)", text)
+    return [(sec(*m[:4]), sec(*m[4:])) for m in stamps]
+
+
+def test_srt_lines_that_start_together_share_a_cue_and_no_cue_overlaps(tmp_path):
+    out = tmp_path / "song.srt"
+    lines = [{"start": 130.803, "end": 131.5, "text": "HEY!", "words": []},
+             {"start": 130.97, "end": 133.2, "text": "a line under it", "words": []},
+             {"start": 133.0, "end": 135.0, "text": "next", "words": []}]
+    assert to_srt(lines, str(out)) == 2
+    text = out.read_text(encoding="utf-8")
+    assert "00:02:10,803 --> 00:02:13,000\nHEY!\na line under it\n" in text
+    times = srt_times(text)
+    assert all(a[1] <= b[0] for a, b in zip(times, times[1:])) and all(e > s for s, e in times)
