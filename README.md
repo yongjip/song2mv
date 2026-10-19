@@ -1,9 +1,7 @@
 # song2mv
 
 [![CI](https://github.com/yongjip/song2mv/actions/workflows/ci.yml/badge.svg)](https://github.com/yongjip/song2mv/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/song2mv)](https://pypi.org/project/song2mv/)
-[![Python](https://img.shields.io/pypi/pyversions/song2mv)](https://pypi.org/project/song2mv/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/yongjip/song2mv/blob/main/LICENSE)
 
 **Song in, beat-synced lyric timing and a code-drawn music video out — built for coding agents.**
 
@@ -12,7 +10,7 @@ then into a lyric or music video drawn entirely in code. Each step is its own co
 Claude Code or Codex — or a person — can use just the part they need.
 
 > **Alpha (0.x).** Commands, flags and file formats may change between releases; every JSON file carries a
-> `schema_version` and every change is listed in [CHANGELOG.md](CHANGELOG.md). `sync` and `beats` are the most
+> `schema_version` and every change is listed in [CHANGELOG.md](https://github.com/yongjip/song2mv/blob/main/CHANGELOG.md). `sync` and `beats` are the most
 > tested parts. `check` and `render` are **experimental**.
 
 | command | what it does | status |
@@ -24,13 +22,24 @@ Claude Code or Codex — or a person — can use just the part they need.
 
 ## Install
 
+song2mv is not on PyPI yet, so install it from GitHub with [uv](https://docs.astral.sh/uv/):
+
 ```bash
-uv tool install 'song2mv[sync]'     # recommended
-pipx install 'song2mv[sync]'        # equivalent
-uvx --from 'song2mv[sync]' song2mv sync song.mp3 --lyrics lyrics.txt --language en   # run once, no install
+uv tool install --python 3.13 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'
 ```
 
+Or run it once without installing anything:
+
+```bash
+uvx --python 3.13 --from 'song2mv[sync] @ git+https://github.com/yongjip/song2mv' song2mv --help
+```
+
+Inside a virtual environment, `pip install 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'` works too.
+
 You also need **ffmpeg** (`brew install ffmpeg`, `apt install ffmpeg`). `render` also needs **Node 18+**.
+
+**Python 3.10–3.14.** The `sync` extra needs faster-whisper, which has no Python 3.15 wheels yet, hence
+`--python 3.13` above (Homebrew's `python3` may already be 3.15). `check`, `beats` and `render` also run on 3.15.
 
 Install only what you use — the parts differ a lot in size:
 
@@ -57,12 +66,12 @@ DaVinci Resolve? Stop after `sync` and import `song.srt` or `song.lrc`.
 Open this repository (or your own project with song2mv installed) in Claude Code, Codex or another agent and ask,
 for example: *"make a lyric video for ~/Music/my-song.mp3"* or *"give me word-timed LRC for this song"*.
 
-- [`AGENTS.md`](AGENTS.md) — the operating rules: which command to run when, what to check by ear, what never to
+- [`AGENTS.md`](https://github.com/yongjip/song2mv/blob/main/AGENTS.md) — the operating rules: which command to run when, what to check by ear, what never to
   commit. Most agents read it automatically.
-- [`.claude/skills/song2mv/`](.claude/skills/song2mv/SKILL.md) — the full music-video loop (timing → scene design →
+- [`.claude/skills/song2mv/`](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md) — the full music-video loop (timing → scene design →
   render → check → fix) as a Claude Code skill. Copy it to `~/.claude/skills/` to use it in any project.
 - Every command takes `--json`: progress goes to stderr and stdout carries one JSON result. See
-  [docs/contract.md](docs/contract.md).
+  [docs/contract.md](https://github.com/yongjip/song2mv/blob/main/docs/contract.md).
 
 ## `song2mv sync`
 
@@ -98,7 +107,7 @@ To hear whether the grid and timing are right, mix a click track over a stretch:
 ### Song config (`song.json`)
 
 `sync` writes `song.json` into the work folder. Edit it and rerun `song2mv sync DIR/song.json`. Only `audio` is
-required; paths are relative to the file. See [`examples/song.example.json`](examples/song.example.json).
+required; paths are relative to the file. See [`examples/song.example.json`](https://github.com/yongjip/song2mv/blob/main/examples/song.example.json).
 
 | key | default | meaning |
 | --- | --- | --- |
@@ -145,7 +154,7 @@ song2mv check video.mp4 --song mv.json [--from 92 --to 102] [--goals my-goals.js
 | `text.min_font` | no font size under 36 px in scene sources (with `--src`) |
 
 It works on any mp4 that follows the song's timing, not only on song2mv renders. The default
-[goals](src/song2mv/check/goals.json) are a starting point measured on one video — copy and adjust them. Passing is
+[goals](https://github.com/yongjip/song2mv/blob/main/src/song2mv/check/goals.json) are a starting point measured on one video — copy and adjust them. Passing is
 necessary, not proof of fun.
 
 ## `song2mv render` (experimental)
@@ -183,7 +192,7 @@ This repository contains no songs and no lyrics. Before you publish a video, mak
 
 ## License
 
-MIT — see [LICENSE](LICENSE). song2mv is developed with the help of coding agents (Claude Code, Codex).
+MIT — see [LICENSE](https://github.com/yongjip/song2mv/blob/main/LICENSE). song2mv is developed with the help of coding agents (Claude Code, Codex).
 
 ---
 

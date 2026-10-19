@@ -17,8 +17,9 @@ click track that makes it a ten-second check.
 - **Rights.** Ask whose song it is and whether the user may publish a video of it (AI music services' plan terms
   count). Never copy the song, its lyrics or renders into a repository; everything song-specific lives in the work
   folder (`song2mv-work/<song>/`).
-- **Setup**, once: `uv tool install 'song2mv[sync]'` (or `pipx install 'song2mv[sync]'`). Needs ffmpeg; `render`
-  needs Node 18+ and installs Remotion (~570 MB) on its first run.
+- **Setup**, once: `uv tool install --python 3.13 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'` (not on
+  PyPI yet; faster-whisper has no Python 3.15 wheels). Needs ffmpeg; `render` needs Node 18+ and installs Remotion
+  (~570 MB) on its first run.
 - **What they want**: full 16:9 video, 9:16 short(s), LRC/SRT only, or all. Title text. Mood or references.
 
 ## 1. Timing

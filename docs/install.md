@@ -2,28 +2,34 @@
 
 song2mv is a command-line tool; a global tool install is the natural fit. Install only the parts you use.
 
+song2mv is **not on PyPI yet**. Until it is, install from GitHub with [uv](https://docs.astral.sh/uv/):
+
 ```sh
-uv tool install 'song2mv[sync]'     # recommended: sync + beats + check
-pipx install 'song2mv[sync]'        # equivalent
-uv tool install song2mv             # check only (numpy)
-uv tool install 'song2mv[beats]'    # beats + check
+uv tool install --python 3.13 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'    # sync + beats + check
+uv tool install --python 3.13 'song2mv[beats] @ git+https://github.com/yongjip/song2mv'   # beats + check
+uv tool install 'song2mv @ git+https://github.com/yongjip/song2mv'                        # check (and render)
 ```
 
 Try it without installing:
 
 ```sh
-uvx --from 'song2mv[sync]' song2mv sync song.mp3 --language en
+uvx --python 3.13 --from 'song2mv[sync] @ git+https://github.com/yongjip/song2mv' song2mv sync song.mp3 --language en
 ```
 
-Inside an existing virtual environment, `python -m pip install 'song2mv[sync]'` works too. On Homebrew or
-Debian-managed Pythons a bare `pip install` outside a virtualenv is rejected (PEP 668); use `uv tool` or `pipx`.
+Inside an existing virtual environment, `python -m pip install 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'`
+works too. On Homebrew or Debian-managed Pythons a bare `pip install` outside a virtualenv is rejected (PEP 668); use
+`uv tool` there. To add an extra later, run `uv tool install --force` with the extra.
+
+After the first PyPI release these become `uv tool install 'song2mv[sync]'`, `pipx install 'song2mv[sync]'` and
+`uvx --from 'song2mv[sync]' song2mv …`.
 
 ## System requirements
 
 | needed by | requirement |
 | --- | --- |
-| every command | Python 3.10–3.13, **ffmpeg** and **ffprobe** on PATH (`brew install ffmpeg`, `apt install ffmpeg`) |
-| `render` | **Node 18+** with npm. The first render installs Remotion and a headless Chrome (~570 MB) |
+| `sync`, `beats`, `check` | **ffmpeg** and **ffprobe** on PATH (`brew install ffmpeg`, `apt install ffmpeg`) |
+| `render` | **Node 18+** with npm. The first render installs Remotion (~300 npm packages) and downloads a headless Chrome (~570 MB in all) |
+| Python | 3.10–3.14 (tested in CI). `sync` needs faster-whisper, whose ctranslate2 has no Python 3.15 wheels yet — use `--python 3.13`. `check`, `beats` and `render` also run on 3.15 |
 
 ## Disk use
 
@@ -36,3 +42,8 @@ Debian-managed Pythons a bare `pip install` outside a virtualenv is rejected (PE
 | Remotion + Chrome (`render`) | ~570 MB | first `render` (`~/.cache/song2mv/` or your `--template` folder) |
 
 Set `SONG2MV_CACHE` to move the render cache.
+
+## Network access
+
+`sync` downloads the whisper model from Hugging Face on first use. The first `render` runs `npm ci` (npm registry) and
+Remotion downloads a headless Chrome from Google's Chrome for Testing storage. Nothing else contacts the network.
