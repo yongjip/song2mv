@@ -36,7 +36,9 @@ song2mv sync <audio> --lyrics <lyrics.txt> --language <code> --json     # run in
   (`--runs 5`, finished runs are reused). A bigger model (`--model medium`) helps more but is slower.
 - **Tempo line** (`→ 90.00 BPM ... 53% of lyric line gaps are whole bars`): if the fit is low or a close runner-up
   exists, say so. **Bar start** (`beat % 4 == 3`): a guess from the kick drum.
-- **`check_by_ear`** in the JSON: lines filled by re-listening (`reprompt`) or estimated. Most likely wrong.
+- **`check_by_ear`** in the JSON: lines filled by re-listening (`reprompt`), estimated, or placed by only one whisper
+  run. Most likely wrong. A warning "heard N times" names the other times a re-heard line was heard: make the click
+  track cover them all.
 
 Then make the ear check cheap for the user:
 

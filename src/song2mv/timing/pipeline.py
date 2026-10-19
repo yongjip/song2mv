@@ -114,6 +114,14 @@ def update_config(path: str, lyrics: str | None = None, language: str | None = N
     return changed
 
 
+def check_by_ear(lines: list[dict], n_runs: int) -> list[str]:
+    """Line ids most likely to be wrong: re-heard or estimated lines, and lines only one of several whisper runs
+    placed — one run alone can put a line seconds off (12.7 s once on the test song)."""
+    def one_run(r):
+        return n_runs > 1 and r.get("source") == "asr" and len(r.get("runs_used") or []) < 2
+    return [r["id"] for r in lines if r.get("source") in ("reprompt", "estimated") or one_run(r)]
+
+
 def run(config_path: str, work: str | None = None, start: str | None = None) -> dict:
     """Run the timing steps for one song config. Returns a summary for --json."""
     lib.WARNINGS.clear()
@@ -221,7 +229,7 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
         "bpm": grid["bpm"],
         "lines": len(lyrics["lines"]),
         "line_sources": sources,
-        "check_by_ear": [r["id"] for r in lyrics["lines"] if r.get("source") in ("reprompt", "estimated")],
+        "check_by_ear": check_by_ear(lyrics["lines"], len(runs)),
         "dropped": [r["id"] for r in lines if r["id"] not in {x["id"] for x in lyrics["lines"]}],
         "language": cfg.get("language") or (runs[0].get("language") if runs else None),
         "warnings": list(lib.WARNINGS),

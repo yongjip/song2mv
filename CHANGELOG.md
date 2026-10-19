@@ -23,6 +23,8 @@ First release (0.1.0).
   changed file is transcribed again, and whisper runs are reused only for the same model, language and settings.
 - A sung line is never dropped: a line with no room between its neighbours is squeezed in (inside the song),
   marked `estimated` and listed under `check_by_ear`; the `sync` result also reports `dropped` (should be empty).
+- `check_by_ear` also lists lines only one whisper run placed. A re-heard line heard more often than the lyric sheet
+  has it takes the earliest hearing with believable word timing, and `warnings` names the others.
   Word times stay in order, and a line ends after its last word.
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.

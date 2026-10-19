@@ -104,7 +104,11 @@ Why it works the way it does:
   between lyric lines are whole bars. The bar's first beat is the beat position with the strongest kick.
 - **Shouts, chants and whispers are what whisper misses.** Lines no run placed are re-heard with just that stretch of
   audio and the expected words as the prompt. Those lines are marked `reprompt` and listed in the `--json` result
-  under `check_by_ear`; pin anything wrong in `manual`.
+  under `check_by_ear`; pin anything wrong in `manual`. A line heard there more often than the lyric sheet has it
+  takes the earliest hearing whose word timing is believable (whisper can stretch a word over seconds of music or
+  time it at zero length), and `warnings` lists the other hearings.
+- **One run is not enough.** A line only one of the runs placed can be seconds off, so it goes on `check_by_ear`
+  too.
 
 To hear whether the grid and timing are right, mix a click track over a stretch — a high click on the first beat
 of each bar, a low click on the other beats and, with `--words`, a soft tick on every lyric word:
