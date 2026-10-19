@@ -6,11 +6,48 @@ Every other module in this package imports this one.
 from __future__ import annotations
 
 import difflib
+import hashlib
 import json
 import os
 import re
 import subprocess
 from collections import Counter
+
+from ..errors import Song2mvError
+
+# Warnings worth acting on (printed as they happen and returned in the --json result of the command).
+WARNINGS: list[str] = []
+
+
+def warn(msg: str) -> None:
+    WARNINGS.append(msg)
+    print(f"  ! {msg}")
+
+
+def file_sha256(path: str) -> str:
+    """Content hash of a file: work folders and caches are tied to the audio's content, not its name."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def asr_key(cfg: dict, audio_sha256: str) -> dict:
+    """What a whisper result depends on. A cached run (or re-listened gap) is reused only when this matches."""
+    w = cfg["whisper"]
+    return {"audio_sha256": audio_sha256, "model": w["model"], "language": cfg.get("language"),
+            "compute_type": w.get("compute_type"), "beam_size": w.get("beam_size", 5)}
+
+
+def key_change(old: dict | None, new: dict) -> str:
+    """Why a cached result no longer fits, in words."""
+    if not old:
+        return "made by an older song2mv"
+    if old.get("audio_sha256") != new.get("audio_sha256"):
+        return "the audio changed"
+    diffs = [f"{k} {old.get(k)!r} → {new.get(k)!r}" for k in new if k != "audio_sha256" and old.get(k) != new.get(k)]
+    return ", ".join(diffs) or "settings changed"
 
 # Section names Suno and most lyric sheets use → short ids used in line ids ("ch1-03").
 SECTION_IDS = {
@@ -44,7 +81,15 @@ DEFAULT_CONFIG = {
 
 
 def load_config(path: str) -> dict:
-    cfg = json.load(open(path, encoding="utf-8"))
+    try:
+        cfg = json.load(open(path, encoding="utf-8"))
+    except FileNotFoundError:
+        raise Song2mvError(f"{path} not found") from None
+    except json.JSONDecodeError as e:
+        raise Song2mvError(f"{path} is not valid JSON: {e}") from None
+    if not isinstance(cfg, dict) or ("lines" in cfg and "grid" in cfg):
+        raise Song2mvError(f"{path} is not a song config (song.json)",
+                           hint="sync takes an audio file or the song.json that an earlier sync wrote into its work folder")
     out = json.loads(json.dumps(DEFAULT_CONFIG))
     for k, v in cfg.items():
         if k == "whisper":
@@ -56,14 +101,20 @@ def load_config(path: str) -> dict:
         if out.get(k) and not os.path.isabs(out[k]):
             out[k] = os.path.normpath(os.path.join(base, out[k]))
     if not out.get("audio"):
-        raise SystemExit(f"{path}: 'audio' is required")
+        raise Song2mvError(f"{path}: 'audio' is required")
     return out
 
 
 def audio_duration(path: str) -> float:
+    if not os.path.isfile(path):
+        raise Song2mvError(f"audio file not found: {path}")
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
-                       capture_output=True, text=True, check=True)
-    return float(r.stdout.strip())
+                       capture_output=True, text=True)
+    try:
+        return float(r.stdout.strip())
+    except ValueError:
+        detail = (r.stderr.strip().splitlines() or ["no duration"])[-1]
+        raise Song2mvError(f"ffprobe could not read {path}: {detail}") from None
 
 
 def norm(s: str) -> str:

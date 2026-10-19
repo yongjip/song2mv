@@ -46,7 +46,7 @@ def gap_windows(lines: list[dict], duration: float, skip: set[str]) -> list[tupl
     return out
 
 
-def fill_gaps(lines: list[dict], cfg: dict, duration: float, out_path: str) -> list[dict]:
+def fill_gaps(lines: list[dict], cfg: dict, duration: float, out_path: str, key: dict | None = None) -> list[dict]:
     from .transcribe import decode, transcribe_array
     manual = set(cfg.get("manual") or {})
     jobs = []
@@ -59,17 +59,18 @@ def fill_gaps(lines: list[dict], cfg: dict, duration: float, out_path: str) -> l
         jobs.append({"from": float(w["from"]), "to": float(w["to"]), "lines": idx, "prompt": w["prompt"], "auto": False})
     if not jobs:
         return lines
-    # what earlier calls heard in the same window with the same prompt is reused
+    # what earlier calls heard in the same window with the same prompt is reused — for the same audio and settings
     cache = {}
     if os.path.exists(out_path):
         for h in json.load(open(out_path, encoding="utf-8")):
-            cache[(h["range"][0], h["range"][1], h["prompt"])] = h["words"]
+            if key is None or h.get("key") == key:
+                cache[(h["range"][0], h["range"][1], h["prompt"])] = h["words"]
     audio, sr = None, 16000
     heard = []
     for job in jobs:
         a, b = job["from"], job["to"]
-        key = (round(a, 2), round(b, 2), job["prompt"])
-        runs = cache.get(key)
+        window = (round(a, 2), round(b, 2), job["prompt"])
+        runs = cache.get(window)
         if runs is None:
             if audio is None:
                 audio = decode(cfg["audio"])
@@ -77,7 +78,7 @@ def fill_gaps(lines: list[dict], cfg: dict, duration: float, out_path: str) -> l
             runs = [transcribe_array(clip, cfg["whisper"], cfg.get("language"), offset=a, seed=seed, prompt=job["prompt"])["words"]
                     for seed in (1, 2)]
         heard.append({"range": [round(a, 2), round(b, 2)], "prompt": job["prompt"], "auto": job["auto"],
-                      "words": runs})
+                      "words": runs, "key": key})
         print(f"  {a:6.2f}–{b:6.2f}  prompt: {job['prompt'][:50]}")
         print("      heard: " + "  ".join(f"{w['t']}@{w['s']:.2f}" for w in runs[0])[:160])
         targets = {k for k in job["lines"] if not _known(lines[k]) and lines[k]["id"] not in manual}
