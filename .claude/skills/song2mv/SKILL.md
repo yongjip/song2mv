@@ -41,7 +41,7 @@ song2mv sync <audio> --lyrics <lyrics.txt> --language <code> --json     # run in
 Then make the ear check cheap for the user:
 
 ```bash
-python -m song2mv.timing.click_check <work> --from <chorus start - 4> --to <+12> --words
+song2mv click <work> --from <chorus start - 4> --to <+12> --words      # → <work>/click-<from>-<to>.wav
 ```
 
 Ask them to listen: do the clicks sit on the drums, is the high click on the "one", do the word ticks land on the
@@ -50,7 +50,7 @@ syllables? Fix with `"bpm"`, `"downbeat_mod4"` and `"manual": {"<line id>": [wor
 need a few `manual` values; that is normal.
 
 Outputs in `<work>/`: `grid.json`, `lyrics.json`, `mv.json` (the template's input), `song.lrc`, `song.words.lrc`,
-`song.srt`. If the user only wanted subtitles, you are done here.
+`song.srt`, `music.json` (loudness and section boundaries). If the user only wanted subtitles, you are done here.
 
 ## 2. Baseline render
 
@@ -67,9 +67,8 @@ choruses big. Show it to the user early — sometimes it is all they need.
 A music video is not the lyrics on a background. Write a **song map** first, `<work>/map.md`, and agree on it with
 the user before coding:
 
-- Per section (from `mv.json` sections; `python -m song2mv.timing.analyze_music <audio> <work>/music.json` gives the
-  loudness curve and boundaries): bars, energy (rising / peak / falling), what the lyrics say, **one visual idea**,
-  colour.
+- Per section (from `mv.json` sections; `<work>/music.json` has the loudness curve and likely boundaries): bars,
+  energy (rising / peak / falling), what the lyrics say, **one visual idea**, colour.
 - **One main character or motif** that carries through the whole song and changes with it. A video with a
   protagonist is more watchable than a slideshow of effects.
 - **Hit points**: the first beat of each chorus, drops, the last word. These get the biggest moment (cut, flash,

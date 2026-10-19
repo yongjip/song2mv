@@ -1,7 +1,7 @@
 # AGENTS.md
 
 This repository ships `song2mv`: song in, beat-synced lyric timing (LRC, SRT, word-timed JSON) and a code-drawn
-music video out. It is a command-line tool built for coding agents. Four commands: `sync`, `beats`, `check`, `render`.
+music video out. It is a command-line tool built for coding agents. Five commands: `sync`, `beats`, `click`, `check`, `render`.
 
 ## Using song2mv for a user
 
@@ -13,9 +13,10 @@ music video out. It is a command-line tool built for coding agents. Four command
    `line_sources` says how each line was placed, `check_by_ear` lists the lines most likely to be wrong.
    If the audio has a lyrics tag (Suno writes one), `--lyrics` is optional. Always set `--language`.
 3. **You cannot hear the song.** Turn every judgement that needs ears into a ten-second check for the user:
-   `python -m song2mv.timing.click_check WORK --from A --to B --words` mixes clicks and word ticks over a stretch.
-   Fix with `bpm`, `downbeat_mod4` and `manual` in `WORK/song.json`, then rerun `song2mv sync WORK/song.json`
-   (finished whisper runs are reused).
+   `song2mv click WORK --from A --to B --words --json` mixes clicks and word ticks over a stretch into a wav; send
+   it with the question in `ask_the_listener`. Fix with `bpm`, `downbeat_mod4` and `manual` in `WORK/song.json`,
+   then rerun `song2mv sync WORK/song.json` (finished whisper runs are reused; options such as `--runs 5` given
+   there are saved to song.json).
 4. **Subtitles only?** Stop after `sync` and hand over `song.srt` (video editors) or `song.lrc` / `song.words.lrc`.
 5. **Video.** `song2mv render WORK/mv.json --still T --aspect both` writes PNGs you can look at; render short
    stretches (`--from A --to B`) while working. For the user's own scenes use `--template DIR` and write them in
@@ -30,7 +31,7 @@ music video out. It is a command-line tool built for coding agents. Four command
 
 ## Changing this repository
 
-1. Keep the public grammar small: four commands. Before adding a command, flag, config key or output file, apply
+1. Keep the public grammar small: five commands. Before adding a command, flag, config key or output file, apply
    the admission test in `docs/product-scope.md` and prefer extending an existing one.
 2. Every JSON file and `--json` result is stamped by `song2mv.contract.stamp`. An incompatible change bumps
    `SCHEMA_VERSION`, updates `docs/contract.md` and gets a `CHANGELOG.md` entry.

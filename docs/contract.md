@@ -17,6 +17,7 @@ With `--json`, progress goes to stderr and stdout carries exactly one JSON objec
 | --- | --- |
 | `sync` | `command`, `work`, `config`, `outputs` (file name → absolute path), `duration`, `bpm`, `lines`, `line_sources` (source → count), `check_by_ear` (line ids to verify by ear), `dropped` (lyric lines missing from the output — should be empty), `seconds` |
 | `beats` | `command`, `outputs`, `bpm`, `phi`, `downbeat_mod4`, `bar0` |
+| `click` | `command`, `outputs` (file name → absolute path of the wav), `from`, `to`, `bpm`, `downbeat_mod4`, `ask_the_listener` (the question to put to the person listening) |
 | `check` | `command`, `video`, `song`, `goals`, `passed`, `total`, `ok`, `results` (check → `{ok, msg}`), `per_line` (`{id, motion, coverage}`), `cuts` |
 | `render` | `command`, `template`, `outputs` (absolute paths), `seconds` |
 
@@ -34,6 +35,9 @@ plus `candidates`, `phase_stats` and drift diagnostics. Beat *k* is at `phi + k 
 
 **`mv.json`** — the render template's input: `title`, `audio`, `duration`, `grid`, `sections` (`id`, `name`, `kind`,
 bar-aligned `start` / `end`), `lines`, `captions`, `theme`. Also what `check` reads.
+
+**`music.json`** — `duration`, `loudness_db_per_half_second` (mean loudness per 0.5 s, 0 dB = the loudest moment),
+`boundaries` (`[{t, novelty}]`, likely section changes; empty for very short songs), `audio_sha256`.
 
 **`song.lrc`** — `[mm:ss.xx]line`; an empty timestamp clears the screen before gaps over 4 s.
 **`song.words.lrc`** — enhanced LRC with `<mm:ss.xx>` word stamps. **`song.srt`** — one cue per line, cues never

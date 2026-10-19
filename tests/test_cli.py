@@ -17,14 +17,14 @@ def test_version(capsys):
 def test_no_command_prints_help(capsys):
     assert main([]) == 0
     out = capsys.readouterr().out
-    for cmd in ("sync", "beats", "check", "render"):
+    for cmd in ("sync", "beats", "click", "check", "render"):
         assert cmd in out
 
 
 def test_public_grammar_stays_small():
     # docs/product-scope.md: adding a top-level command needs a written reason.
     sub = next(a for a in build_parser()._actions if a.dest == "command")
-    assert sorted(sub.choices) == ["beats", "check", "render", "sync"]
+    assert sorted(sub.choices) == ["beats", "check", "click", "render", "sync"]
 
 
 def test_python_m_entry_point():

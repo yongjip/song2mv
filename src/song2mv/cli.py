@@ -1,4 +1,4 @@
-"""song2mv command line: sync, beats, check, render.
+"""song2mv command line: sync, beats, click, check, render.
 
 Every command prints progress for people. With --json, progress goes to stderr and stdout carries exactly one
 JSON object (with schema_version) for scripts and coding agents — also when the command fails.
@@ -53,6 +53,17 @@ def _bpm(v: str):
     return bpm
 
 
+def _runs(v: str) -> int:
+    """argparse type for --runs: 1 to 20 whisper runs."""
+    try:
+        n = int(v)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{v}' is not a whole number") from None
+    if not 1 <= n <= 20:
+        raise argparse.ArgumentTypeError(f"{n} runs is outside 1–20")
+    return n
+
+
 def _check_language(code: str | None) -> None:
     if not code:
         return
@@ -80,19 +91,20 @@ def cmd_sync(a) -> dict:
         if not os.path.isfile(os.path.join(song, "song.json")):
             raise Song2mvError(f"{song} is a folder without song.json", hint="pass an audio file, or the song.json of an earlier run")
         song = os.path.join(song, "song.json")
+    over: dict = {}
+    if a.bpm is not None:
+        over["bpm"] = a.bpm
+    if a.runs or a.model:
+        over["whisper"] = {k: v for k, v in (("runs", a.runs), ("model", a.model)) if v}
     if song.lower().endswith(".json"):
         _existing_file(song, "song config")
+        pipeline.update_config(song, a.lyrics, a.language, a.title, over)  # flags given on a rerun are saved
         cfg = song
         work = a.out
     else:
         _existing_file(song, "audio file")
         stem = os.path.splitext(os.path.basename(song))[0]
         work = a.out or os.path.join("song2mv-work", stem)
-        over: dict = {}
-        if a.bpm is not None:
-            over["bpm"] = a.bpm
-        if a.runs or a.model:
-            over["whisper"] = {k: v for k, v in (("runs", a.runs), ("model", a.model)) if v}
         cfg = pipeline.config_from_audio(song, work, a.lyrics, a.language, a.title, over)
     return pipeline.run(cfg, work, a.start)
 
@@ -104,6 +116,14 @@ def cmd_beats(a) -> dict:
     from .timing import pipeline
     out = a.out or os.path.splitext(os.path.basename(a.audio))[0] + ".grid.json"
     return pipeline.beats(a.audio, out, a.bpm, a.downbeat)
+
+
+def cmd_click(a) -> dict:
+    _need_ffmpeg()
+    _need(["librosa"], "beats")
+    work = os.path.dirname(a.work) if a.work.lower().endswith(".json") else a.work
+    from .timing.click_check import make_click
+    return make_click(work, a.start, a.end, a.words, a.out)
 
 
 def cmd_check(a) -> dict:
@@ -129,13 +149,14 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="command", metavar="COMMAND")
 
     s = sub.add_parser("sync", help="lyrics + audio → beat grid, word-timed lyrics, LRC, SRT, mv.json")
-    s.add_argument("song", help="an audio file, or the song.json (or work folder) of an earlier run")
+    s.add_argument("song", help="an audio file, or the song.json (or work folder) of an earlier run; "
+                   "options given with a song.json are saved to it")
     s.add_argument("--lyrics", help="lyric sheet (text, [Section] lines allowed). Default: the audio's lyrics tag")
     s.add_argument("--language", help="whisper language code, e.g. en, ko, ja (set it — auto-detect often guesses wrong)")
     s.add_argument("--title", help="song title for LRC and video (default: file name)")
     s.add_argument("--out", help="work folder (default: ./song2mv-work/<file name>)")
     s.add_argument("--bpm", type=_bpm, help="force the tempo, or 'auto' (default)")
-    s.add_argument("--runs", type=int, help="whisper runs to merge (default 3)")
+    s.add_argument("--runs", type=_runs, help="whisper runs to merge (default 3)")
     s.add_argument("--model", help="whisper model (default small; base is lighter, medium more accurate)")
     s.add_argument("--from", dest="start", choices=["lyrics", "asr", "align", "grid", "build"],
                    help="redo this step and every step after it")
@@ -149,6 +170,15 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("--downbeat", type=int, choices=[0, 1, 2, 3], help="force which beat index (mod 4) starts a bar")
     b.add_argument("--json", action="store_true")
     b.set_defaults(func=cmd_beats)
+
+    k = sub.add_parser("click", help="mix clicks (and word ticks) over a stretch of the song, to check the timing by ear")
+    k.add_argument("work", help="the work folder of `song2mv sync` (or its song.json)")
+    k.add_argument("--from", dest="start", type=float, default=0.0, help="song time to start at (seconds)")
+    k.add_argument("--to", dest="end", type=float, default=None, help="song time to stop at (default: the end)")
+    k.add_argument("--words", action="store_true", help="also tick on every lyric word")
+    k.add_argument("--out", help="wav file (default: WORK/click-<from>-<to>.wav)")
+    k.add_argument("--json", action="store_true")
+    k.set_defaults(func=cmd_click)
 
     c = sub.add_parser("check", help="[experimental] measure a rendered video per sung line")
     c.add_argument("video")

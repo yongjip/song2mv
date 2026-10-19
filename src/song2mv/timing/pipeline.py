@@ -9,6 +9,7 @@ Steps (outputs go to the work folder):
           mv.json        the song config the render template reads
           song.lrc       line-timed LRC; song.words.lrc adds word timestamps
           song.srt       line-timed subtitles for video editors
+          music.json     loudness curve and likely section boundaries (cached by the audio's content)
 
 `start` redoes that step and everything after it, even where results exist ("asr" re-transcribes).
 Edit "manual", "bpm" or "downbeat_mod4" in song.json and run again: only the cheap steps rerun.
@@ -26,7 +27,7 @@ from . import lib
 from .lib import asr_key, audio_duration, file_sha256, load_config, parse_lyrics, warn, write_json
 
 STEPS = ["lyrics", "asr", "align", "grid", "build"]
-OUTPUTS = ["grid.json", "lyrics.json", "mv.json", "song.lrc", "song.words.lrc", "song.srt"]
+OUTPUTS = ["grid.json", "lyrics.json", "mv.json", "song.lrc", "song.words.lrc", "song.srt", "music.json"]
 STATE = "state.json"  # which audio (by content) this work folder belongs to, and where its lyric sheet came from
 
 
@@ -58,6 +59,31 @@ def claim_folder(work: str, audio: str) -> None:
                        hint="pass another --out for this song, or delete that folder to start over")
 
 
+def _apply(cfg: dict, lyrics: str | None, language: str | None, title: str | None, overrides: dict | None) -> list[str]:
+    """Set command-line values in a song config. Returns the keys that changed."""
+    changed = []
+    if lyrics and cfg.get("lyrics") != os.path.abspath(lyrics):
+        cfg["lyrics"] = os.path.abspath(lyrics)
+        changed.append("lyrics")
+    if language and cfg.get("language") != language:
+        cfg["language"] = language
+        changed.append("language")
+    if title and cfg.get("title") != title:
+        cfg["title"] = title
+        changed.append("title")
+    for k, v in (overrides or {}).items():
+        if k == "whisper":
+            w = cfg.setdefault("whisper", {})
+            for wk, wv in v.items():
+                if w.get(wk) != wv:
+                    w[wk] = wv
+                    changed.append(f"whisper.{wk}")
+        elif cfg.get(k) != v:
+            cfg[k] = v
+            changed.append(k)
+    return changed
+
+
 def config_from_audio(audio: str, work: str, lyrics: str | None = None, language: str | None = None,
                       title: str | None = None, overrides: dict | None = None) -> str:
     """Write work/song.json for an audio file and return its path. An existing song.json is kept and only
@@ -67,19 +93,25 @@ def config_from_audio(audio: str, work: str, lyrics: str | None = None, language
     path = os.path.join(work, "song.json")
     cfg = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
     cfg["audio"] = os.path.abspath(audio)
-    if lyrics:
-        cfg["lyrics"] = os.path.abspath(lyrics)
-    if language:
-        cfg["language"] = language
-    if title or not cfg.get("title"):
-        cfg["title"] = title or os.path.splitext(os.path.basename(audio))[0]
-    for k, v in (overrides or {}).items():
-        if k == "whisper":
-            cfg.setdefault("whisper", {}).update(v)
-        else:
-            cfg[k] = v
+    if not cfg.get("title") and not title:
+        cfg["title"] = os.path.splitext(os.path.basename(audio))[0]
+    _apply(cfg, lyrics, language, title, overrides)
     write_json(cfg, path)
     return path
+
+
+def update_config(path: str, lyrics: str | None = None, language: str | None = None, title: str | None = None,
+                  overrides: dict | None = None) -> list[str]:
+    """Apply command-line values to an existing song.json (`sync WORK/song.json --runs 5`) and save it."""
+    try:
+        cfg = json.load(open(path, encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        raise Song2mvError(f"cannot read {path}: {e}") from None
+    changed = _apply(cfg, lyrics, language, title, overrides)
+    if changed:
+        write_json(cfg, path)
+        print(f"  song.json updated: {', '.join(changed)}")
+    return changed
 
 
 def run(config_path: str, work: str | None = None, start: str | None = None) -> dict:
@@ -163,6 +195,14 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
     to_lrc(lyrics["lines"], P("song.lrc"), meta=meta)
     to_lrc(lyrics["lines"], P("song.words.lrc"), words=True, meta=meta)
     to_srt(lyrics["lines"], P("song.srt"))
+    try:
+        old_music = json.load(open(P("music.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        old_music = None
+    if not old_music or old_music.get("audio_sha256") != sha or old_music.get("schema_version") != SCHEMA_VERSION:
+        print("[music] loudness curve and section boundaries (for scene design)")
+        from .analyze_music import analyze
+        write_json(stamp({**analyze(cfg["audio"]), "audio_sha256": sha}), P("music.json"))
     write_json(stamp({"audio": os.path.abspath(cfg["audio"]), "audio_sha256": sha, "lyrics_from": lyrics_from}), P(STATE))
     secs = time.time() - t_all
     print(f"\ndone in {secs:.0f} s → {work}")

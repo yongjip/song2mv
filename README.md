@@ -17,6 +17,7 @@ Claude Code or Codex — or a person — can use just the part they need.
 | --- | --- | --- |
 | `song2mv sync` | audio + lyrics → beat grid, word-timed lyrics, **LRC**, **SRT**, and `mv.json` for the video template | alpha |
 | `song2mv beats` | audio → tempo and beat grid only (no lyrics, no speech recognition) | alpha |
+| `song2mv click` | a stretch of the song with clicks on the beat grid and ticks on the lyric words, to check the timing by ear | alpha |
 | `song2mv check` | measures a rendered video per sung line: frozen picture, empty screen, repeated chorus, cut rhythm | experimental |
 | `song2mv render` | renders `mv.json` as a 16:9 and/or 9:16 lyric video with a [Remotion](https://www.remotion.dev) template | experimental |
 
@@ -77,7 +78,8 @@ for example: *"make a lyric video for ~/Music/my-song.mp3"* or *"give me word-ti
 
 ```bash
 song2mv sync song.mp3 [--lyrics lyrics.txt] [--language ko] [--out DIR] [--runs 5] [--model medium] [--bpm 90]
-song2mv sync DIR/song.json [--from grid]      # rerun after editing song.json; finished whisper runs are reused
+song2mv sync DIR/song.json [--from grid] [--runs 5]   # rerun after editing song.json; options given here are saved
+                                                     # to it, finished whisper runs are reused
 ```
 
 | step | output | what happens |
@@ -87,6 +89,7 @@ song2mv sync DIR/song.json [--from grid]      # rerun after editing song.json; f
 | align | `merged.json` | each run aligned to the lyric sheet character by character, then merged per word |
 | grid | `grid.json` | tempo, first beat, which beat starts a bar |
 | build | `lyrics.json`, `mv.json`, `song.lrc`, `song.words.lrc`, `song.srt` | gaps re-heard, manual values applied, times snapped to the beat grid |
+| music | `music.json` | loudness curve and likely section boundaries, for scene design |
 
 Why it works the way it does:
 
@@ -101,8 +104,12 @@ Why it works the way it does:
   audio and the expected words as the prompt. Those lines are marked `reprompt` and listed in the `--json` result
   under `check_by_ear`; pin anything wrong in `manual`.
 
-To hear whether the grid and timing are right, mix a click track over a stretch:
-`python -m song2mv.timing.click_check song2mv-work/song --from 90 --to 110 --words`.
+To hear whether the grid and timing are right, mix a click track over a stretch — a high click on the first beat
+of each bar, a low click on the other beats and, with `--words`, a soft tick on every lyric word:
+
+```bash
+song2mv click song2mv-work/song --from 90 --to 110 --words    # → song2mv-work/song/click-90-110.wav
+```
 
 ### Song config (`song.json`)
 

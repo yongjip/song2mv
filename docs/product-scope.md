@@ -8,13 +8,24 @@ fitting); the surface people and agents learn must stay small.
 
 | Surface | Count |
 | --- | ---: |
-| Top-level commands | **4** — `sync`, `beats`, `check`, `render` |
-| Output files of `sync` | 6 — `grid.json`, `lyrics.json`, `mv.json`, `song.lrc`, `song.words.lrc`, `song.srt` |
+| Top-level commands | **5** — `sync`, `beats`, `click`, `check`, `render` |
+| Output files of `sync` | 7 — `grid.json`, `lyrics.json`, `mv.json`, `song.lrc`, `song.words.lrc`, `song.srt`, `music.json` |
 | Extras | 2 — `beats`, `sync` |
 | MCP tools | 0 (planned: one per command) |
 
-Helpers that only a person debugging timing needs (`click_check`, `analyze_music`) stay as
-`python -m song2mv.timing.<module>` and are not top-level commands.
+### Why `click` became a command and `music.json` an output (0.1)
+
+Both started as `python -m song2mv.timing.<module>` helpers.
+
+1. **Workflow.** Every song's beat grid and word timing has to be checked by ear, and an agent cannot hear: after
+   each `sync` it hands the person a clip with clicks on it, often several times per song. Scene design reads the
+   loudness curve and section boundaries for every video.
+2. **Why not the helpers.** With the documented install (`uv tool install`) only the `song2mv` executable is on
+   PATH, so `python -m song2mv...` fails with "No module named song2mv". The helpers had no `--json`, no error
+   format and were missing from `--help`. The click track is not a `sync` flag because it is made many times per
+   `sync`, for different stretches; the music analysis is cheap (seconds, cached by the audio's content), so
+   `sync` writes it instead of a sixth command.
+3. **Cost.** One subcommand with four flags and one output file; no new dependency (the `beats` extra).
 
 ## Admission test
 

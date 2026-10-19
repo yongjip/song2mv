@@ -10,9 +10,11 @@ Install (not on PyPI yet): `uv tool install --python 3.13 'song2mv[sync] @ git+h
 ## Commands
 
 - `song2mv sync AUDIO [--lyrics FILE] --language CODE [--json]` — beat grid, word-timed lyrics, song.lrc,
-  song.words.lrc, song.srt and mv.json in a work folder. Takes minutes (several whisper runs); run it in the
+  song.words.lrc, song.srt, mv.json and music.json (loudness, section boundaries) in a work folder. Takes minutes (several whisper runs); run it in the
   background. The --json result lists `outputs` and `check_by_ear` (lines to verify by ear).
 - `song2mv beats AUDIO [--bpm auto|N] [--json]` — tempo and beat grid only.
+- `song2mv click WORK --from A --to B [--words] [--json]` — a wav of that stretch with clicks on the beat grid and
+  ticks on lyric words, for a person to listen to (an agent cannot hear the song); the result says what to ask.
 - `song2mv check VIDEO --song mv.json [--from A --to B] [--json]` — experimental; per-line motion, coverage,
   chorus variation, cut rhythm. Passing is necessary, not proof of fun.
 - `song2mv render mv.json [--from A --to B] [--aspect 16x9|9x16|both] [--still T] [--template DIR] [--json]` —
