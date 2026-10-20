@@ -89,7 +89,7 @@ song2mv sync DIR/song.json [--from grid] [--runs 5]   # rerun after editing song
 | lyrics | `lyrics.txt` | the lyric sheet (`[Verse]`, `[Chorus]` … lines name sections) |
 | asr | `asr/runN.json` | faster-whisper, **several runs** with word timestamps; finished runs are reused |
 | align | `merged.json` | each run aligned to the lyric sheet character by character, then merged per word |
-| grid | `grid.json` | tempo, first beat, which beat starts a bar |
+| grid | `grid.json` | tempo, first beat, which beat starts a bar, and where the song leaves that grid |
 | build | `lyrics.json`, `mv.json`, `song.lrc`, `song.words.lrc`, `song.srt` | gaps re-heard, manual values applied, times snapped to the beat grid |
 | music | `music.json` | loudness curve and likely section boundaries, for scene design |
 
@@ -102,6 +102,12 @@ Why it works the way it does:
 - **`librosa.beat.beat_track` can be off by a ratio** (it reported 123 BPM for a 90 BPM song with a dotted-8th
   rhythm). The grid is fitted to percussive onsets instead, and `auto` tempo prefers the candidate where most gaps
   between lyric lines are whole bars. The bar's first beat is the beat position with the strongest kick.
+- **The grid has one tempo, and songs do not always keep one.** A live band drifts, jazz speeds up for a solo, a song
+  slows down at the end, an AI-generated song can jump by a 16th note between sections. So tempo and phase are fitted
+  again in windows of 4 bars, and where the music's beats are more than half a 16th note off the grid (a tempo
+  change, a drift, or a beat that moved), `grid.json` lists the stretch under `off_grid`, the `--json` result says so
+  under `warnings`, and lyric words there keep whisper's times instead of being snapped. The grid itself does not
+  follow the change yet: beat effects in the video stay on the one tempo.
 - **Shouts, chants and whispers are what whisper misses.** Lines no run placed are re-heard with just that stretch of
   audio and the expected words as the prompt. Those lines are marked `reprompt` and listed in the `--json` result
   under `check_by_ear`; pin anything wrong in `manual`. A line heard there more often than the lyric sheet has it
@@ -133,7 +139,7 @@ See [`examples/song.example.json`](https://github.com/yongjip/song2mv/blob/main/
 | `section_ids`, `section_kinds` | `{}` | override the short id (`"Verse 1"` → `v1`) or kind (`calm` / `mid` / `hot`) of a section |
 | `bpm` | `"auto"` | a number forces the tempo |
 | `downbeat_mod4` | `null` | force which beat index (mod 4) starts a bar |
-| `snap_per_beat` | `4` | snap times to 1/4 beat (16th notes); `0` = off |
+| `snap_per_beat` | `4` | snap word times to 1/4 beat (16th notes); `3` = a triplet grid (8th-note triplets, for swing and shuffle), `2` = 8th notes, `0` = off. Never inside an `off_grid` stretch |
 | `whisper` | small × 3, CPU int8 | `model`, `runs`, `device`, `compute_type`, `threads`, `beam_size` |
 | `auto_reprompt` | `true` | re-hear gaps where no run found a line |
 | `reprompt` | `[]` | extra windows found by ear: `[{"from": 17.5, "to": 30.5, "prompt": "the words sung there"}]` |
@@ -152,7 +158,8 @@ song2mv beats song.mp3 [--out song.grid.json] [--bpm 128] [--downbeat 0]
 ```
 
 Tempo, first beat and bar start for cutting video to the beat — no lyrics needed. Without lyrics, `auto` tempo
-picks the candidate with the strongest onset score, so check the result by ear or pass `--bpm`.
+picks the candidate with the strongest onset score, so check the result by ear or pass `--bpm`. Stretches where the
+song leaves that one tempo are in `off_grid` (and `warnings`): don't cut to the grid there.
 
 ## `song2mv check` (experimental)
 

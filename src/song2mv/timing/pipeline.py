@@ -4,7 +4,8 @@ Steps (outputs go to the work folder):
   lyrics  lyrics.txt     the lyric sheet (the config's "lyrics" file, or the audio's lyrics tag)
   asr     asr/runN.json  whisper runs; finished runs are kept and reused
   align   merged.json    runs aligned to the lyric sheet and merged per word
-  grid    grid.json      tempo, first beat, bar start (reused while bpm / downbeat settings are unchanged)
+  grid    grid.json      tempo, first beat, bar start, stretches where it does not fit (reused while bpm / downbeat
+                         settings are unchanged)
   build   lyrics.json    final word and line times (+ reprompt.json from re-listening to gaps)
           mv.json        the song config the render template reads
           song.lrc       line-timed LRC; song.words.lrc adds word timestamps
@@ -178,9 +179,11 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
     report(merged, len(runs))
 
     print("[grid] beat grid")
+    from .beat_grid import describe_off_grid
     request = {"bpm": cfg.get("bpm"), "downbeat_mod4": cfg.get("downbeat_mod4"), "audio_sha256": sha}
     old = json.load(open(P("grid.json"))) if os.path.exists(P("grid.json")) else None
-    if old and old.get("request") == request and old.get("schema_version") == SCHEMA_VERSION and "grid" not in redo:
+    # a grid without off_grid was made before the fit check: refit it
+    if old and old.get("request") == request and old.get("schema_version") == SCHEMA_VERSION and "off_grid" in old and "grid" not in redo:
         grid = old
         print(f"  cached: {grid['bpm']} BPM, first beat {grid['phi']} s, bar starts at beat % 4 == {grid['downbeat_mod4']}")
     else:
@@ -189,6 +192,8 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
         grid = stamp(find_grid(cfg["audio"], cfg.get("bpm"), starts, cfg.get("downbeat_mod4")))
         grid["request"] = request
         write_json(grid, P("grid.json"))
+    for msg in describe_off_grid(grid):
+        warn(msg)
 
     print("[build] gaps, manual values, snapping")
     from .build_lyrics import build
@@ -239,13 +244,15 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
 
 def beats(audio: str, out: str, bpm: str | float | None = "auto", downbeat: int | None = None) -> dict:
     """Beat grid only — no lyrics, no whisper."""
-    from .beat_grid import find_grid
+    from .beat_grid import describe_off_grid, find_grid
     lib.WARNINGS.clear()
     audio_duration(audio)  # a readable audio file, or a clear error
     print(f"[beats] {os.path.basename(audio)}")
     grid = stamp(find_grid(audio, bpm, None, downbeat))
     write_json(grid, out)
+    for msg in describe_off_grid(grid):
+        warn(msg)
     print(f"\n{grid['bpm']} BPM, first beat {grid['phi']} s, bar starts at beat % 4 == {grid['downbeat_mod4']} → {out}")
     return stamp({"command": "beats", "outputs": {os.path.basename(out): os.path.abspath(out)}, "bpm": grid["bpm"],
                   "beat": grid["beat"], "phi": grid["phi"], "downbeat_mod4": grid["downbeat_mod4"], "bar0": grid["bar0"],
-                  "bar": grid["bar"], "duration": grid["duration"], "warnings": list(lib.WARNINGS)})
+                  "bar": grid["bar"], "duration": grid["duration"], "off_grid": grid["off_grid"], "warnings": list(lib.WARNINGS)})

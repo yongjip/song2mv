@@ -34,3 +34,4 @@ def test_grid_finds_tempo_phase_and_bar(tmp_path):
     assert abs(g["bpm"] - BPM) < 1.0
     assert abs(g["phi"] - FIRST) < 0.03
     assert g["downbeat_mod4"] == 0
+    assert g["off_grid"] == []  # one tempo throughout: nothing flagged

@@ -36,6 +36,11 @@ song2mv sync <audio> --lyrics <lyrics.txt> --language <code> --json     # run in
   (`--runs 5`, finished runs are reused). A bigger model (`--model medium`) helps more but is slower.
 - **Tempo line** (`→ 90.00 BPM ... 53% of lyric line gaps are whole bars`): if the fit is low or a close runner-up
   exists, say so. **Bar start** (`beat % 4 == 3`): a guess from the kick drum.
+- **Grid fit** (`grid fit, 4-bar windows …: off 3:02–4:10 (shift, 90 BPM)`, and a warning per stretch): the song
+  leaves the grid's one tempo there, and `grid.json` lists it under `off_grid`. Words there are not snapped, and
+  motion driven by `grid.pulse` or `grid.bar` will miss the music there: drive those stretches by line and word
+  times instead. Put a click track over the start of the stretch. A warning that the grid does not fit the whole
+  song names a `--bpm` to try.
 - **`check_by_ear`** in the JSON: lines filled by re-listening (`reprompt`), estimated, or placed by only one whisper
   run. Most likely wrong. A warning "heard N times" names the other times a re-heard line was heard: make the click
   track cover them all.

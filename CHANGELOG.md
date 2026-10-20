@@ -12,6 +12,12 @@ First release (0.1.0).
   lyric word; tempo fitted to percussive onsets; gaps re-heard with the expected words as prompt; per-song manual
   values in `song.json`. Options given on a rerun with a `song.json` are saved to it.
 - `song2mv beats`: tempo and beat grid only.
+- The beat grid says where it does not fit. The grid keeps one tempo, but tempo and phase are fitted again in
+  windows of 4 bars: where a tempo change, a drift or a beat that moved puts the music's beats more than half a 16th
+  note off the grid for at least 2 bars, `grid.json` lists the stretch under `off_grid` (also in the `beats` result
+  and in the `grid` of `lyrics.json` and `mv.json`), `warnings` says what was found and where, and `sync` leaves lyric
+  words there at whisper's times instead of snapping them to 16th notes. A grid made before this is fitted again.
+  `local_offsets` now has one 4-bar window per 2 bars instead of 20-second windows.
 - `song2mv click`: a stretch of the song with clicks on the beat grid and ticks on the lyric words, so a person can
   check the timing by ear.
 - `song2mv check` (experimental): per-line motion, coverage, chorus variation and cut rhythm of a rendered video,
