@@ -56,7 +56,9 @@ song2mv click <work> --from <chorus start - 4> --to <+12> --words      # → <wo
 Ask them to listen: do the clicks sit on the drums, is the high click on the "one", do the word ticks land on the
 syllables? Fix with `"bpm"`, `"downbeat_mod4"` and `"manual": {"<line id>": [word start times]}` in
 `<work>/song.json`, then `song2mv sync <work>/song.json` (only cheap steps rerun). Shouts and chants nearly always
-need a few `manual` values; that is normal.
+need a few `manual` values; that is normal. A pin only constrains: re-heard lines around it keep their times while
+they still fit between the pins, so pin only the lines that are wrong. A re-heard line a pin contradicts is heard
+again between the pins and stays on `check_by_ear`: check it once more.
 
 Outputs in `<work>/`: `grid.json`, `lyrics.json`, `mv.json` (the template's input), `song.lrc`, `song.words.lrc`,
 `song.srt`, `music.json` (loudness and section boundaries). If the user only wanted subtitles, you are done here.

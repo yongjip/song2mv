@@ -1,4 +1,7 @@
-"""Which lines go on check_by_ear, and which hearing a re-listened gap takes when a line is heard more than once."""
+"""Which lines go on check_by_ear, which hearing a re-listened gap takes when a line is heard more than once, and what
+a pin in "manual" changes about re-heard lines."""
+import json
+
 import pytest
 
 from song2mv.timing import lib, transcribe
@@ -82,3 +85,82 @@ def test_pick_hearings_prefers_believable_timing_then_the_earliest(durations, ke
     words = [{"t": "HEY!", "s": 125.6 + n, "e": 125.6 + n + d} for n, d in enumerate(durations)]
     out, notes = pick_hearings(words, {7: "HEY! HEY!"})
     assert [words.index(w) for w in out] == kept and "heard 2 times" in notes[7]
+
+
+# A gap of four lines no whisper run placed, before a line they did place. Heard as one window, the gap gives every
+# line its time. Pinning lines in the middle splits that window.
+SHEET = [("s-01", "boiling water noodles thrown", None),
+         ("s-02", "red sauce spreads over the plate", None),
+         ("s-03", "wrist snap turning radius", None),
+         ("s-04", "salt sprinkled thickness set", None),
+         ("s-05", "tomato explosion", [23.5, 24.1])]
+
+
+def sheet():
+    return [{"id": i, "text": t, "words": t.split(), "wt": list(wt) if wt else [None] * len(t.split())} for i, t, wt in SHEET]
+
+
+def sung(n, start):
+    """What whisper hears of line n: a word every 0.4 s from `start`."""
+    return [word(w, start + 0.4 * k, start + 0.4 * k + 0.35, 0.9) for k, w in enumerate(SHEET[n][1].split())]
+
+
+def listen(monkeypatch, heard=None):
+    """Whisper hears `heard` in any window; without it, hearing anything fails the test. Returns the calls."""
+    calls = []
+
+    def transcribe_array(clip, w, language, offset=0.0, seed=None, prompt=None):
+        if heard is None:
+            raise AssertionError(f"listened again at {offset:.2f} s for {prompt!r}")
+        calls.append((round(offset, 2), prompt))
+        return {"words": heard}
+    monkeypatch.setattr(transcribe, "decode", lambda path: [])
+    monkeypatch.setattr(transcribe, "transcribe_array", transcribe_array)
+    return calls
+
+
+@pytest.mark.parametrize("older_file", [False, True])
+def test_a_pin_keeps_the_re_heard_lines_that_still_fit_between_the_pins(older_file, tmp_path, monkeypatch):
+    # Pinning s-02 and s-03 split the gap's window into one for s-01 and one for s-04. Both were heard again with
+    # one-line prompts, and on a test song that moved s-01 0.3 s and s-04 1.2 s early, into the pinned s-03.
+    out = str(tmp_path / "reprompt.json")
+    listen(monkeypatch, sung(0, 12.1) + sung(1, 14.8) + sung(2, 17.6) + sung(3, 20.5))
+    before = sheet()
+    fill_gaps(before, CFG, 30.0, out)
+    assert [r.get("source") for r in before] == ["reprompt"] * 4 + [None]
+    if older_file:  # saved by a song2mv that did not keep which lines a hearing was for and which it timed
+        saved = json.load(open(out, encoding="utf-8"))
+        for h in saved:
+            del h["lines"], h["placed"]
+        json.dump(saved, open(out, "w", encoding="utf-8"))
+    listen(monkeypatch)  # nothing may be heard again
+    pins = {"s-02": [14.9, 15.3], "s-03": [17.7, 18.1, 18.5, 19.4], "s-05": [23.4]}
+    pinned = sheet()
+    fill_gaps(pinned, {**CFG, "manual": pins}, 30.0, out)
+    assert pinned[0]["wt"] == before[0]["wt"] and pinned[3]["wt"] == before[3]["wt"]
+    assert [r.get("source") for r in pinned] == ["reprompt", None, None, "reprompt", None]  # pins are applied later
+    saved = json.load(open(out, encoding="utf-8"))
+    assert [(h["lines"], h["placed"]) for h in saved] == [(["s-01", "s-02", "s-03", "s-04"], ["s-01", "s-04"])]
+    # taking the pins out again gives every line its pin-free time back, still without listening again
+    unpinned = sheet()
+    fill_gaps(unpinned, CFG, 30.0, out)
+    assert [r["wt"] for r in unpinned] == [r["wt"] for r in before]
+
+
+def test_a_pin_re_hears_only_the_line_it_contradicts_and_only_between_the_pins(tmp_path, monkeypatch):
+    out = str(tmp_path / "reprompt.json")
+    # the pin-free hearing put s-04 on the second half of s-03
+    listen(monkeypatch, sung(0, 12.1) + sung(1, 14.8) + sung(2, 17.6)[:2] + sung(3, 18.5))
+    before = sheet()
+    fill_gaps(before, CFG, 30.0, out)
+    assert 18.5 <= before[3]["wt"][0] < 18.6
+    calls = listen(monkeypatch, sung(3, 20.5))
+    pinned = sheet()
+    fill_gaps(pinned, {**CFG, "manual": {"s-03": [17.7, 18.1, 18.5, 19.4]}}, 30.0, out)
+    # s-01 and s-02 still fit before the pin; s-04 does not fit after it and is heard again from the pin's last word
+    # (19.4 s, less 0.1 s) to the start of s-05 (23.5 s, plus 0.3 s), with its own text as the prompt
+    assert [r["wt"] for r in pinned[:2]] == [r["wt"] for r in before[:2]]
+    assert calls == [(19.3, SHEET[3][1])] * 2
+    assert pinned[3]["source"] == "reprompt" and 20.5 <= pinned[3]["wt"][0] < 20.6
+    saved = json.load(open(out, encoding="utf-8"))
+    assert [(h["range"], h["placed"]) for h in saved] == [([0.0, 23.8], ["s-01", "s-02"]), ([19.3, 23.8], ["s-04"])]

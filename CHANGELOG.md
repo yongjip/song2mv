@@ -46,6 +46,13 @@ First release (0.1.0).
   them (more than 2 s: a backing vocal may come early) or after the lines below them. On the JamendoLyrics benchmark,
   lines starting more than 10 s off fell from 214 to 12 and more than 1 s off from 402 to 177, and words within
   0.3 s rose from 83 % to 89 %.
+- A pin in `manual` only constrains. Pinning a line inside a re-heard gap used to split the gap's window, and each
+  piece was heard again with a shorter prompt over the whole old window, so re-heard lines that had been right moved:
+  on a test song two pins sent the line after them 1.2 s early, into a pinned line, and two more pins moved eight
+  re-heard lines, two of them by more than 5 s. Now a re-heard line keeps the time its earlier hearing gave it while
+  that still fits between the placed and pinned lines around it; only the lines a pin contradicts, and lines no
+  hearing timed, are heard again, and pins bound those windows. Nothing changes without pins. `reprompt.json` records
+  the lines each hearing was for and the lines it timed; a file written before this is read as before.
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.

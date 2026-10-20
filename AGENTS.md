@@ -18,7 +18,8 @@ music video out. It is a command-line tool built for coding agents. Five command
    `song2mv click WORK --from A --to B --words --json` mixes clicks and word ticks over a stretch into a wav; send
    it with the question in `ask_the_listener`. Fix with `bpm`, `downbeat_mod4` and `manual` in `WORK/song.json`,
    then rerun `song2mv sync WORK/song.json` (finished whisper runs are reused; options such as `--runs 5` given
-   there are saved to song.json).
+   there are saved to song.json). A `manual` pin only constrains: re-heard lines around it keep their times while
+   they still fit between the pins, so pin only what is wrong.
 4. **Subtitles only?** Stop after `sync` and hand over `song.srt` (video editors) or `song.lrc` / `song.words.lrc`.
 5. **Video.** `song2mv render WORK/mv.json --still T --aspect both` writes PNGs you can look at; render short
    stretches (`--from A --to B`) while working. For the user's own scenes use `--template DIR` and write them in

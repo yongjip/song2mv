@@ -119,6 +119,11 @@ Why it works the way it does:
   under `check_by_ear`; pin anything wrong in `manual`. A line heard there more often than the lyric sheet has it
   takes the earliest hearing whose word timing is believable (whisper can stretch a word over seconds of music or
   time it at zero length), and `warnings` lists the other hearings.
+- **A pin only constrains.** Pinning a line in `manual` splits the gap around it, and hearing the pieces again with
+  shorter prompts moved lines that were right: on a test song, two pins sent the re-heard line after them 1.2 s
+  early, into a pinned line. So a re-heard line keeps its time while it still fits between the pinned and placed
+  lines around it, and only the lines a pin contradicts are heard again, in the window between the pins. Pin what
+  is wrong; the lines you did not pin stay where they were.
 - **One run is not enough.** A line only one of the runs placed can be seconds off, so it goes on `check_by_ear`
   too.
 
@@ -149,7 +154,7 @@ See [`examples/song.example.json`](https://github.com/yongjip/song2mv/blob/main/
 | `whisper` | small × 3, CPU int8 | `model`, `runs`, `device`, `compute_type`, `threads`, `beam_size` |
 | `auto_reprompt` | `true` | re-hear gaps where no run found a line |
 | `reprompt` | `[]` | extra windows found by ear: `[{"from": 17.5, "to": 30.5, "prompt": "the words sung there"}]` |
-| `manual` | `{}` | `{"ch1-01": [98.5, 99.2]}` — word start times that override everything |
+| `manual` | `{}` | `{"ch1-01": [98.5, 99.2]}` — word start times that override everything. A single number pins the first word. Re-heard lines around a pin keep their times while they fit between the pins |
 | `end` | `null` | song end used after the last line; `null` = file length |
 | `theme` | `{}` | copied into `mv.json` for the template (colours, font) |
 

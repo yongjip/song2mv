@@ -13,7 +13,9 @@ Steps (outputs go to the work folder):
           music.json     loudness curve and likely section boundaries (cached by the audio's content)
 
 `start` redoes that step and everything after it, even where results exist ("asr" re-transcribes).
-Edit "manual", "bpm" or "downbeat_mod4" in song.json and run again: only the cheap steps rerun.
+Edit "manual", "bpm" or "downbeat_mod4" in song.json and run again: only the cheap steps rerun. A pin in "manual" only
+constrains: re-heard lines keep their times while they fit between the pins, and only lines a pin contradicts are heard
+again (reprompt.py).
 """
 from __future__ import annotations
 

@@ -26,9 +26,19 @@ def _known(r):
     return [t for t in r["wt"] if t is not None]
 
 
+def manual_times(r: dict, v) -> list[float | None]:
+    """A "manual" value for line r → one start time per word (None for a word without one)."""
+    if isinstance(v, (int, float)):
+        v = [v]
+    if not isinstance(v, list) or not all(x is None or isinstance(x, (int, float)) for x in v):
+        raise Song2mvError(f"manual value for {r['id']} must be a list of word start times in seconds, got {v!r}")
+    return [float(v[i]) if i < len(v) and v[i] is not None else None for i in range(len(r["words"]))]
+
+
 def apply_manual(lines: list[dict], manual: dict) -> None:
     """"manual": {"ch1-01": [98.5, 99.2]} sets word start times (seconds). A single number sets the first word;
-    words without a value are spread out after the last given one. Times are still snapped to the beat grid."""
+    words without a value are spread out after the last given one. Times are still snapped to the beat grid.
+    reprompt.fill_gaps has already fitted the re-heard lines between these pins."""
     ids = {r["id"] for r in lines}
     for k in manual:
         if k not in ids:
@@ -37,13 +47,9 @@ def apply_manual(lines: list[dict], manual: dict) -> None:
         if r["id"] not in manual:
             continue
         v = manual[r["id"]]
-        if isinstance(v, (int, float)):
-            v = [v]
-        if not isinstance(v, list) or not all(x is None or isinstance(x, (int, float)) for x in v):
-            raise Song2mvError(f"manual value for {r['id']} must be a list of word start times in seconds, got {v!r}")
-        if len(v) > len(r["words"]):
+        r["wt"] = manual_times(r, v)
+        if isinstance(v, list) and len(v) > len(r["words"]):
             warn(f"manual value for {r['id']} has {len(v)} times for {len(r['words'])} words; extra times ignored")
-        r["wt"] = [float(v[i]) if i < len(v) and v[i] is not None else None for i in range(len(r["words"]))]
         given = [t for t in r["wt"] if t is not None]
         if any(b < a for a, b in zip(given, given[1:])):
             warn(f"manual times for {r['id']} go backwards ({given}); each word is kept at or after the one before")
