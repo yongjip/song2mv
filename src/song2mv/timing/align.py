@@ -1,6 +1,7 @@
 """Align every whisper run to the lyric sheet and merge the runs into one time per lyric word.
 
-For each line:
+In each run, the whisper word that a lyric line's first word matched is first cut to the run's median word duration:
+whisper hears the pause before a line as part of that word (trim_first_words). Then, for each line:
   1. a run takes part only if it matched at least half of the line's characters (a run that skipped
      the line, or caught two syllables of it by chance, stays out);
   2. runs whose line start is far (> 1 s) from the others are dropped — a run that missed chorus 1 can
@@ -21,10 +22,38 @@ from .lib import align, parse_lyrics, write_json
 
 MIN_COVERAGE = 0.5
 MAX_SPREAD = 1.0
+FIRST_WORD = 1.0  # a line's first whisper word is cut to this many median word durations of its run (0: not cut)
+MAX_MEDIAN = 0.7  # faster-whisper caps the median word duration at 0.7 s when it shortens words itself
+
+
+def trim_first_words(lines: list[dict], words: list[dict]) -> list[dict]:
+    """Whisper leaves no gap between words, so the pause before a sung line becomes part of the line's first word: the
+    word ends where it is sung but starts where the word before it ended. On the JamendoLyrics benchmark that word
+    started a median 0.34 s early while its end was 0.07 s off, and half of all lines started more than 0.3 s off
+    (docs/benchmark.md). faster-whisper shortens such a word only after a sentence-end mark or a pause between
+    segments, and lyric lines rarely end in one.
+
+    So the whisper word each lyric line's first word matched is cut to FIRST_WORD × the run's median word duration (at
+    most 0.7 s), keeping its end. A first word that really is sung long now starts late. The duration was chosen on
+    the benchmark's English songs and checked on the German, Spanish and French ones. Returns new words; `words` is
+    not changed."""
+    d = [w["e"] - w["s"] for w in words if w["e"] > w["s"]]
+    longest = FIRST_WORD * min(MAX_MEDIAN, statistics.median(d)) if d else 0.0
+    if not longest:
+        return words
+    # aligned on word positions instead of times, a line's first matched letter gives the index of its whisper word
+    first, _ = align(lines, [dict(w, s=k, e=k + 1) for k, w in enumerate(words)])
+    out = [dict(w) for w in words]
+    for li in range(len(lines)):
+        if (li, 0) in first:
+            w = out[int(first[(li, 0)])]
+            if w["e"] - w["s"] > longest:
+                w["s"] = round(w["e"] - longest, 3)
+    return out
 
 
 def merge_runs(lines: list[dict], runs: list[dict]) -> list[dict]:
-    per_run = [align(lines, r["words"]) for r in runs]
+    per_run = [align(lines, trim_first_words(lines, r["words"])) for r in runs]
     out = []
     for li, ln in enumerate(lines):
         n = len(ln["words"])

@@ -26,6 +26,9 @@ First release (0.1.0).
 - `check_by_ear` also lists lines only one whisper run placed. A re-heard line heard more often than the lyric sheet
   has it takes the earliest hearing with believable word timing, and `warnings` names the others.
   Word times stay in order, and a line ends after its last word.
+- A line starts where it is sung, not in the pause before it. Whisper leaves no gap between words, so it hears that
+  pause as part of the line's first word; `sync` cuts that whisper word to the run's median word duration, keeping
+  its end (measured in docs/benchmark.md).
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.
