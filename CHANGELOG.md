@@ -28,7 +28,8 @@ First release (0.1.0).
   Word times stay in order, and a line ends after its last word.
 - A line starts where it is sung, not in the pause before it. Whisper leaves no gap between words, so it hears that
   pause as part of the line's first word; `sync` cuts that whisper word to the run's median word duration, keeping
-  its end (measured in docs/benchmark.md).
+  its end. On the JamendoLyrics benchmark (79 songs, docs/benchmark.md), lines starting more than 0.3 s off fell
+  from 51 % to 22 %; a first word that really is sung long now starts late.
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.

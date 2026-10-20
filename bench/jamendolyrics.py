@@ -4,7 +4,7 @@
   python -I bench/jamendolyrics.py --lang en       # download, sync every English song without a result yet, score
   python -I bench/jamendolyrics.py --jobs 3        # three songs at once, 2 whisper threads each: about 1.8× faster
   python -I bench/jamendolyrics.py --no-run        # score the runs already on disk
-  python -I bench/jamendolyrics.py --rerun         # after a change to song2mv: sync again, reusing the whisper runs
+  python -I bench/jamendolyrics.py --rerun         # after a change to song2mv: sync again from the align step
   python -I bench/jamendolyrics.py --markdown      # print the tables as Markdown (no lyric text in them)
 
 Run it with the repository's .venv (the `sync` extra; huggingface_hub comes with faster-whisper). Nothing goes into
@@ -24,6 +24,8 @@ so the script writes it into the work folder's song.json first: sync keeps an ex
 thread count is not part of the whisper cache key. It changes speed only: on 6 songs, lyrics.json, the whisper runs
 and every other output were byte-identical with 8, 4 and 2 threads. A song's sync seconds include sharing the CPU
 with the songs next to it, so they compare only between runs with the same --jobs.
+--rerun syncs from the align step (sync --from align): the whisper runs are reused, and the beat grid is fitted
+again, as in a first sync, because its tempo pick depends on where lines start.
 sync gets the dataset's own lyric file, so our words are the reference words: song2mv splits lines on spaces and
 the annotations are one row per space-separated word. The script still matches our words to the reference word by
 word (difflib on normalised tokens) and reports every token that does not match, so a tokenisation difference
@@ -160,8 +162,9 @@ def say(line: str) -> None:
         print(line, file=sys.stderr, flush=True)
 
 
-def sync(song: dict, runs: str, jobs: int, threads: int) -> dict:
-    """Run sync for one song with `threads` whisper threads, `jobs` songs at once. Returns the run record."""
+def sync(song: dict, runs: str, jobs: int, threads: int, rerun: bool = False) -> dict:
+    """Run sync for one song with `threads` whisper threads, `jobs` songs at once (from the align step if `rerun`).
+    Returns the run record."""
     work = os.path.join(runs, song["name"])
     rec = os.path.join(work, "bench")
     path = os.path.join(rec, "run.json")
@@ -172,6 +175,8 @@ def sync(song: dict, runs: str, jobs: int, threads: int) -> dict:
     with open(conf, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=1)
     cmd = SYNC + [song["audio"], "--lyrics", song["lyrics"], "--language", song["lang"], "--out", work, "--json"]
+    if rerun:
+        cmd += ["--from", "align"]
     name = f"[{song['lang']}] {song['name']}"
     say(f"{name} …")
     started = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -548,7 +553,8 @@ def main() -> int:
     ap.add_argument("--songs", nargs="+", help="only these songs (dataset names, e.g. HILA_-_Give_Me_the_Same)")
     ap.add_argument("--no-run", action="store_true", help="score the runs on disk; sync nothing")
     ap.add_argument("--rerun", action="store_true", help="sync songs that have a result again, after a change to song2mv: "
-                    "the work folders keep their whisper runs, so only the steps after them run (and are timed)")
+                    "from the align step, so the whisper runs are reused (only the steps after them run and are timed) "
+                    "and the beat grid is fitted again")
     ap.add_argument("--jobs", type=int, default=1, metavar="N",
                     help="sync N songs at once, each with 8 // N whisper threads (default 1: one song, 8 threads)")
     ap.add_argument("--markdown", action="store_true", help="print Markdown tables instead of the JSON summary")
@@ -568,7 +574,7 @@ def main() -> int:
         t0 = time.time()
         pool = ThreadPoolExecutor(a.jobs)
         try:
-            recs = list(pool.map(lambda s: sync(s, runs, a.jobs, threads), pending))
+            recs = list(pool.map(lambda s: sync(s, runs, a.jobs, threads, a.rerun), pending))
         finally:
             pool.shutdown(cancel_futures=True)  # on Ctrl-C, start no more songs
         if pending:

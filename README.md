@@ -213,8 +213,11 @@ included.
 
 Where it is weaker today:
 
-- Timing has been measured on one real song so far, and lines whisper hears badly (shouts, chants) still need a few
-  `manual` values. Separating the vocals first, as karaoke tools do, made the timing worse on that song.
+- Timing: on the JamendoLyrics benchmark (79 songs in English, German, Spanish and French), 82 % of a song's words
+  land within 0.3 s of where people put them, on average; the best dedicated aligner reaches 94 %
+  ([docs/benchmark.md](docs/benchmark.md)). A chorus that repeats word for word can be placed on its other copy, tens
+  of seconds off, and lines whisper hears badly (shouts, chants) still need a few `manual` values. Separating the
+  vocals first, as karaoke tools do, made the timing worse on our Korean test song.
 - No generated imagery: out of the box you get a plain lyric video, and anything richer is scene code that you or
   your agent write.
 - No karaoke formats (CDG, karaoke ASS).
