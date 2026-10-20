@@ -373,19 +373,12 @@ def score(song: dict, runs: str) -> dict:
     }
 
 
-def off_order(lines: list[dict], tol: float = 1.0) -> set[str]:
-    """Ids of lines off the longest chain of lines that keeps the lyric order: each line starts no more than `tol`
-    seconds before the one before it in the chain. Not part of sync — a check it could add: a chorus placed on its
-    other occurrence breaks the order of the sheet."""
-    best, prev = [1] * len(lines), [-1] * len(lines)
-    for j in range(len(lines)):
-        for i in range(j):
-            if lines[j]["start"] >= lines[i]["start"] - tol and best[i] + 1 > best[j]:
-                best[j], prev[j] = best[i] + 1, i
-    keep, k = set(), max(range(len(lines)), key=lambda j: best[j]) if lines else -1
-    while k >= 0:
-        keep.add(k)
-        k = prev[k]
+def off_order(lines: list[dict]) -> set[str]:
+    """Ids of lines off the longest chain of lines that keeps the lyric order, where each line starts no more than 2 s
+    before the one before it: song2mv.timing.lib.in_order, which check_by_ear uses since 69c4d29. Computed here too,
+    so runs from before then are scored the same way."""
+    from song2mv.timing.lib import in_order
+    keep = in_order([r["start"] for r in lines])
     return {r["id"] for j, r in enumerate(lines) if j not in keep}
 
 
@@ -507,7 +500,7 @@ def markdown(results: list[dict], summary: dict) -> str:
             ("check_by_ear lines", lambda s: s["check_by_ear"]["0.3"]["flagged"]),
             ("check_by_ear recall (> 0.3 s / > 1 s)", lambda s: " / ".join(pct(s["check_by_ear"][t]["recall"]) for t in ("0.3", "1"))),
             ("check_by_ear precision (> 0.3 s / > 1 s)", lambda s: " / ".join(pct(s["check_by_ear"][t]["precision"]) for t in ("0.3", "1"))),
-            ("lines off the lyric order (a check sync could add)", lambda s: s["order_check"]["0.3"]["flagged"]),
+            ("lines off the lyric order (on check_by_ear since 69c4d29)", lambda s: s["order_check"]["0.3"]["flagged"]),
             ("… recall / precision for lines > 1 s off", lambda s: f"{pct(s['order_check']['1']['recall'])} / {pct(s['order_check']['1']['precision'])}"),
             ("check_by_ear + order: recall (> 0.3 s / > 1 s)", lambda s: " / ".join(pct(s["check_by_ear_or_order"][t]["recall"]) for t in ("0.3", "1"))),
             ("check_by_ear + order: precision (> 0.3 s / > 1 s)", lambda s: " / ".join(pct(s["check_by_ear_or_order"][t]["precision"]) for t in ("0.3", "1"))),

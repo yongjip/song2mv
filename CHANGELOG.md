@@ -37,7 +37,9 @@ First release (0.1.0).
   two disagree, the one that matched more of that stretch wins (difflib's on a tie). A line whose matched letters lie
   more than 10 s apart keeps only the larger part. Lines the runs still leave out of the sheet's order are merged
   again from the runs that placed them in order, and `check_by_ear` lists lines that start before the lines above
-  them (more than 2 s: a backing vocal may come early) or after the lines below them.
+  them (more than 2 s: a backing vocal may come early) or after the lines below them. On the JamendoLyrics benchmark,
+  lines starting more than 10 s off fell from 214 to 12 and more than 1 s off from 402 to 177, and words within
+  0.3 s rose from 83 % to 89 %.
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.
