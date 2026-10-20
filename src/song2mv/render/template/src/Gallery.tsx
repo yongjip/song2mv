@@ -47,7 +47,7 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
       <Svg>
         <SkyGradient time="night" id="g3-sky" />
         <Moon T={T} color="#ffd36b" x={1500} y={220} r={70} />
-        <Clouds T={T} color="#2a3170" belly="#1a1f4a" opacity={0.55} seed={11} />
+        <Clouds T={T} time="night" light={{ x: 1500, y: 220 }} y0={140} y1={330} seed={11} id="g3-clouds" />
         <City T={T} id="g3-city" />
       </Svg>
     ),
@@ -57,7 +57,7 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
     draw: (T) => (
       <Svg>
         <SkyGradient time="dusk" horizon={640} id="g4-sky" />
-        <Clouds T={T} color="#ffb08a" belly="#c0607a" y0={90} y1={360} seed={3} />
+        <Clouds T={T} time="dusk" light={{ x: 960, y: 600 }} y0={90} y1={360} seed={3} id="g4-clouds" />
         <Sun T={T} x={960} y={600} r={130} horizon={640} id="g4-sun" />
         <Sea T={T} horizon={640} color="#7a3f7a" deep="#1a1238" light={{ x: 960, color: "#ffc48a" }} beach id="g4-sea" />
         <Person x={760} y={1040} s={0.9} pose="walk" phase={0.6} T={T} look={{ outfit: "dress", top: "#f2f2f2", hairColor: "#2a1a14" }} />
@@ -101,7 +101,7 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
       <Svg>
         <SkyGradient time="day" id="g7-sky" />
         <Sun T={T} x={1600} y={180} r={70} color="#ffe08a" core="#fffbe8" id="g7-sun" />
-        <Clouds T={T} seed={21} />
+        <Clouds T={T} seed={21} id="g7-clouds" />
         <City T={T} day shift={T * 60} id="g7-city" />
         <Street T={T} day id="g7-street" />
         <Person x={700} y={985} s={1.2} pose="walk" phase={0.4} T={T} look={{ outfit: "suit" }} tie={false} />
