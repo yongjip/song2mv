@@ -1,5 +1,6 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
+import { mix } from "./color";
 import { clamp01, rng } from "./math";
 import { useSong } from "./song";
 
@@ -195,22 +196,65 @@ export const GridFloor: React.FC<{ T: number; color: string; horizon?: number; o
   );
 };
 
-/** A large low moon with a halo — a quiet focal point for calm sections. Use inside <Svg> */
-export const Moon: React.FC<{ T: number; color: string; x?: number; y?: number; r?: number }> = ({ T, color, x = 1380, y = 360, r = 150 }) => {
-  const id = `moon-${color.replace(/[^a-z0-9]/gi, "")}`;
+/** Seas (soft darker patches) and craters on the moon, as fractions of its radius */
+const MOON_SEAS = [
+  { x: -0.3, y: -0.2, rx: 0.34, ry: 0.24, a: -18 }, { x: 0.16, y: -0.02, rx: 0.27, ry: 0.2, a: 24 },
+  { x: -0.06, y: 0.34, rx: 0.24, ry: 0.15, a: -8 }, { x: 0.36, y: 0.36, rx: 0.15, ry: 0.11, a: 30 },
+];
+const MOON_CRATERS = [
+  { x: 0.4, y: -0.44, r: 0.1 }, { x: -0.5, y: 0.2, r: 0.075 }, { x: 0.1, y: 0.58, r: 0.115 },
+  { x: -0.16, y: -0.58, r: 0.06 }, { x: 0.6, y: 0.06, r: 0.065 }, { x: -0.34, y: 0.56, r: 0.05 }, { x: -0.62, y: -0.22, r: 0.045 },
+];
+
+/**
+ * A large low moon with a halo — a quiet focal point for calm sections. Use inside <Svg>. `color` tints the disk,
+ * the halo and the stepped glow rings around it; faint seas and craters give the disk a surface (`craters`).
+ * `id` keeps the gradients of two moons apart (by default it comes from the colour and position).
+ */
+export const Moon: React.FC<{ T: number; color: string; x?: number; y?: number; r?: number; id?: string; craters?: boolean }> = ({
+  T, color, x = 1380, y = 360, r = 150, id, craters = true,
+}) => {
+  const uid = id ?? `moon-${color.replace(/[^a-z0-9]/gi, "")}-${Math.round(x)}-${Math.round(y)}-${Math.round(r)}`;
   const breathe = 1 + 0.03 * Math.sin(T * 0.8);
+  // colours from a song's theme may not be #rrggbb (rgb(), names): then skip the tints and use the colour as is
+  const tint = (a: string, b: string, k: number) => (/^#[0-9a-f]{6}$/i.test(color) ? mix(a, b, k) : color);
+  const disk = tint(color, "#fffaf0", 0.62);
+  const sea = tint(disk, color, 0.55);
   return (
     <g>
       <defs>
-        <radialGradient id={id}>
-          <stop offset="0" stopColor={color} stopOpacity={0.55} />
-          <stop offset="0.35" stopColor={color} stopOpacity={0.22} />
+        <radialGradient id={`${uid}-halo`}>
+          <stop offset="0.27" stopColor={tint(color, "#ffffff", 0.35)} stopOpacity={0.5} />
+          <stop offset="0.36" stopColor={color} stopOpacity={0.2} />
+          <stop offset="0.6" stopColor={color} stopOpacity={0.06} />
           <stop offset="1" stopColor={color} stopOpacity={0} />
         </radialGradient>
+        <radialGradient id={`${uid}-disk`} cx="0.4" cy="0.36" r="0.72">
+          <stop offset="0" stopColor={tint(disk, "#ffffff", 0.55)} />
+          <stop offset="0.6" stopColor={disk} />
+          <stop offset="1" stopColor={tint(disk, color, 0.38)} />
+        </radialGradient>
+        <clipPath id={`${uid}-clip`}><circle cx={x} cy={y} r={r} /></clipPath>
       </defs>
-      <circle cx={x} cy={y} r={r * 3.2 * breathe} fill={`url(#${id})`} />
-      <circle cx={x} cy={y} r={r} fill={color} opacity={0.95} />
-      <circle cx={x - r * 0.2} cy={y - r * 0.18} r={r * 0.62} fill="#fff" opacity={0.18} />
+      <circle cx={x} cy={y} r={r * 3.4 * breathe} fill={`url(#${uid}-halo)`} />
+      <circle cx={x} cy={y} r={r * 1.6} fill={tint(color, "#ffffff", 0.55)} opacity={0.045} />
+      <circle cx={x} cy={y} r={r * 1.26} fill={tint(color, "#ffffff", 0.55)} opacity={0.07} />
+      <circle cx={x} cy={y} r={r} fill={`url(#${uid}-disk)`} />
+      {craters && (
+        <g clipPath={`url(#${uid}-clip)`}>
+          {MOON_SEAS.map((m, i) => (
+            <ellipse key={`m${i}`} cx={x + m.x * r} cy={y + m.y * r} rx={m.rx * r} ry={m.ry * r} fill={sea} opacity={0.17}
+              transform={`rotate(${m.a} ${x + m.x * r} ${y + m.y * r})`} />
+          ))}
+          {MOON_CRATERS.map((c, i) => (
+            <g key={`c${i}`} opacity={0.38}>
+              <circle cx={x + c.x * r} cy={y + c.y * r} r={c.r * r} fill={sea} />
+              <circle cx={x + (c.x + c.r * 0.28) * r} cy={y + (c.y + c.r * 0.28) * r} r={c.r * r * 0.86} fill={disk} />
+            </g>
+          ))}
+          <circle cx={x + r * 0.16} cy={y + r * 0.16} r={r * 1.06} fill="none" stroke={tint(disk, color, 0.5)} strokeWidth={r * 0.14} opacity={0.22} />
+        </g>
+      )}
     </g>
   );
 };
