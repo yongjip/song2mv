@@ -99,6 +99,12 @@ Why it works the way it does:
   and 380 words, and one of them skipped 15 seconds (five sung lines). So run *k* uses seed *k* and a different
   lead-in silence, and the runs are merged in lyric space: per line, only runs that matched at least half of it
   count, outliers more than 1 s from the rest are dropped, and each word takes the median.
+- **A chorus repeats word for word.** Matched to the sheet by difflib alone, a run that heard the second chorus
+  better gave its audio to the sheet's first chorus, and the lines in between were left with none: on the
+  JamendoLyrics benchmark that was nearly all of the large error. Each run is also aligned over the whole song, which
+  keeps each copy on its own audio; where the two alignments disagree, the one that matched more of that stretch
+  wins. A line the runs still place out of the sheet's order is merged again from the runs that kept the order, and
+  goes on `check_by_ear`.
 - **`librosa.beat.beat_track` can be off by a ratio** (it reported 123 BPM for a 90 BPM song with a dotted-8th
   rhythm). The grid is fitted to percussive onsets instead, and `auto` tempo prefers the candidate where most gaps
   between lyric lines are whole bars. The bar's first beat is the beat position with the strongest kick.
@@ -220,11 +226,12 @@ included.
 
 Where it is weaker today:
 
-- Timing: on the JamendoLyrics benchmark (79 songs in English, German, Spanish and French), 82 % of a song's words
+- Timing: on the JamendoLyrics benchmark (79 songs in English, German, Spanish and French), 87 % of a song's words
   land within 0.3 s of where people put them, on average; the best dedicated aligner reaches 94 %
-  ([docs/benchmark.md](docs/benchmark.md)). A chorus that repeats word for word can be placed on its other copy, tens
-  of seconds off, and lines whisper hears badly (shouts, chants) still need a few `manual` values. Separating the
-  vocals first, as karaoke tools do, made the timing worse on our Korean test song.
+  ([docs/benchmark.md](docs/benchmark.md)). Most wrong line starts are a line's first word alone, early or late by a
+  fraction of a second, and lines whisper hears badly (vocalisations, shouts, chants) can still be far off and need
+  a few `manual` values. Separating the vocals first, as karaoke tools do, made the timing worse on our Korean test
+  song.
 - No generated imagery: out of the box you get a plain lyric video, and anything richer is scene code that you or
   your agent write.
 - No karaoke formats (CDG, karaoke ASS).

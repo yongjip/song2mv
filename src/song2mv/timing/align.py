@@ -1,13 +1,17 @@
 """Align every whisper run to the lyric sheet and merge the runs into one time per lyric word.
 
-In each run, the whisper word that a lyric line's first word matched is first cut to the run's median word duration:
-whisper hears the pause before a line as part of that word (trim_first_words). Then, for each line:
+Each run is matched to the whole sheet in order (lib.align: difflib, and a global alignment where difflib put a
+repeated chorus on its other copy). In each run, the whisper word that a lyric line's first word matched is first cut
+to the run's median word duration: whisper hears the pause before a line as part of that word (trim_first_words).
+Then, for each line:
   1. a run takes part only if it matched at least half of the line's characters (a run that skipped
      the line, or caught two syllables of it by chance, stays out);
   2. runs whose line start is far (> 1 s) from the others are dropped — a run that missed chorus 1 can
      match chorus-1 lyrics to chorus-2 audio. With three or more runs the reference is the median start,
      with two it is the run that matched more of the line;
   3. each word takes the median time over the remaining runs.
+Last, lines are kept in the sheet's order (keep_order): a line that starts before the lines above it, or after the
+lines below it, is merged again from the runs that placed it between them, if any did.
 Lines no run could place keep `wt` all None; reprompt.py listens to those gaps again.
 
 Usage: python -m song2mv.timing.align work/lyrics.txt work/asr/run1.json work/asr/run2.json ... --out work/merged.json
@@ -18,7 +22,7 @@ import argparse
 import json
 import statistics
 
-from .lib import align, parse_lyrics, write_json
+from .lib import ORDER_SLACK, align, in_order, parse_lyrics, write_json
 
 MIN_COVERAGE = 0.5
 MAX_SPREAD = 1.0
@@ -41,8 +45,7 @@ def trim_first_words(lines: list[dict], words: list[dict]) -> list[dict]:
     longest = FIRST_WORD * min(MAX_MEDIAN, statistics.median(d)) if d else 0.0
     if not longest:
         return words
-    # aligned on word positions instead of times, a line's first matched letter gives the index of its whisper word
-    first, _ = align(lines, [dict(w, s=k, e=k + 1) for k, w in enumerate(words)])
+    first, _ = align(lines, words, word_index=True)  # the index of the whisper word each line's first word matched
     out = [dict(w) for w in words]
     for li in range(len(lines)):
         if (li, 0) in first:
@@ -52,34 +55,68 @@ def trim_first_words(lines: list[dict], words: list[dict]) -> list[dict]:
     return out
 
 
+def _merge_line(ln: dict, cands: list[dict], cov: list[float]) -> dict:
+    """One lyric line from the runs that placed it (steps 1–3 above)."""
+    n = len(ln["words"])
+    good = [c for c in cands if c["cov"] >= MIN_COVERAGE]
+    if not good and cands:  # nothing convincing: keep the best partial match, flagged by its low coverage
+        good = [max(cands, key=lambda c: c["cov"])]
+    rec: dict = dict(ln, coverage=cov, runs_used=[], spread=None, wt=[None] * n, source=None)
+    if good:
+        if len(good) >= 3:
+            ref = statistics.median_low([c["start"] for c in good])
+        else:
+            ref = max(good, key=lambda c: (c["cov"], -c["run"]))["start"]
+        kept = [c for c in good if abs(c["start"] - ref) <= MAX_SPREAD]
+        rec["wt"] = [round(statistics.median(v), 3) if (v := [c["ts"][wi] for c in kept if c["ts"][wi] is not None]) else None
+                     for wi in range(n)]
+        rec["runs_used"] = [c["run"] for c in kept]
+        rec["spread"] = round(max(c["start"] for c in kept) - min(c["start"] for c in kept), 2)
+        rec["source"] = "asr"
+    return rec
+
+
+def _start(rec: dict) -> float | None:
+    known = [t for t in rec["wt"] if t is not None]
+    return min(known) if known else None
+
+
+def keep_order(lines: list[dict], merged: list[dict], cands: list[list[dict]]) -> list[dict]:
+    """Lines are sung in the order of the sheet, give or take ORDER_SLACK. Runs that disagree on which copy of a
+    repeated line they heard can still leave a merged line on another copy: then it starts before the lines above it,
+    or after the lines below it. Such a line, off the longest chain of lines in order (lib.in_order), is merged again
+    from only the runs that placed it between its neighbours on the chain. If none did, it stays where it is, and
+    check_by_ear lists it. merged.json notes the move in `reordered` (the start it had)."""
+    starts = [_start(r) for r in merged]
+    chain = in_order(starts, ORDER_SLACK)
+    out = list(merged)
+    for li, s in enumerate(starts):
+        if s is None or li in chain:
+            continue
+        above = [_start(out[k]) for k in range(li) if k in chain or "reordered" in out[k]]
+        below = [starts[k] for k in range(li + 1, len(lines)) if k in chain]
+        lo = above[-1] - ORDER_SLACK if above and above[-1] is not None else float("-inf")
+        hi = below[0] + ORDER_SLACK if below and below[0] is not None else float("inf")
+        fits = [c for c in cands[li] if lo <= c["start"] <= hi]
+        if fits:
+            out[li] = dict(_merge_line(lines[li], fits, merged[li]["coverage"]), reordered=s)
+    return out
+
+
 def merge_runs(lines: list[dict], runs: list[dict]) -> list[dict]:
     per_run = [align(lines, trim_first_words(lines, r["words"])) for r in runs]
-    out = []
+    out, cands = [], []
     for li, ln in enumerate(lines):
         n = len(ln["words"])
         cov = [round(c.get(li, 0.0), 2) for _, c in per_run]
-        cands = []
+        cs = []
         for k, (first, c) in enumerate(per_run):
             ts = [first.get((li, wi)) for wi in range(n)]
             if any(t is not None for t in ts):
-                cands.append({"run": k + 1, "cov": c.get(li, 0.0), "ts": ts, "start": min(t for t in ts if t is not None)})
-        good = [c for c in cands if c["cov"] >= MIN_COVERAGE]
-        if not good and cands:  # nothing convincing: keep the best partial match, flagged by its low coverage
-            good = [max(cands, key=lambda c: c["cov"])]
-        rec: dict = dict(ln, coverage=cov, runs_used=[], spread=None, wt=[None] * n, source=None)
-        if good:
-            if len(good) >= 3:
-                ref = statistics.median_low([c["start"] for c in good])
-            else:
-                ref = max(good, key=lambda c: (c["cov"], -c["run"]))["start"]
-            kept = [c for c in good if abs(c["start"] - ref) <= MAX_SPREAD]
-            rec["wt"] = [round(statistics.median(v), 3) if (v := [c["ts"][wi] for c in kept if c["ts"][wi] is not None]) else None
-                         for wi in range(n)]
-            rec["runs_used"] = [c["run"] for c in kept]
-            rec["spread"] = round(max(c["start"] for c in kept) - min(c["start"] for c in kept), 2)
-            rec["source"] = "asr"
-        out.append(rec)
-    return out
+                cs.append({"run": k + 1, "cov": c.get(li, 0.0), "ts": ts, "start": min(t for t in ts if t is not None)})
+        cands.append(cs)
+        out.append(_merge_line(ln, cs, cov))
+    return keep_order(lines, out, cands)
 
 
 def report(merged: list[dict], n_runs: int) -> None:
@@ -93,6 +130,8 @@ def report(merged: list[dict], n_runs: int) -> None:
         flag = ""
         if not known:
             flag = "  ◀ no run found this line"
+        elif "reordered" in r:
+            flag = f"  ◀ back in lyric order (was at {r['reordered']:.2f})"
         elif len(r["runs_used"]) < max(2, n_runs // 2 + 1) and n_runs > 1:
             flag = f"  ◀ only run {r['runs_used']}"
         elif r["spread"] and r["spread"] > 0.4:
