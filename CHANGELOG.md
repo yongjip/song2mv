@@ -30,6 +30,14 @@ First release (0.1.0).
   pause as part of the line's first word; `sync` cuts that whisper word to the run's median word duration, keeping
   its end. On the JamendoLyrics benchmark (79 songs, docs/benchmark.md), lines starting more than 0.3 s off fell
   from 51 % to 22 %; a first word that really is sung long now starts late.
+- A chorus that repeats word for word stays on its own audio. Each whisper run used to be matched to the lyric sheet
+  by difflib alone, which anchors on the longest shared block: when the run heard the second copy better, the
+  sheet's first copy took its audio, and the lines in between were left with none (placed tens of seconds off, or
+  squeezed in as estimates). Each run is now also aligned over the whole song by dynamic programming, and where the
+  two disagree, the one that matched more of that stretch wins (difflib's on a tie). A line whose matched letters lie
+  more than 10 s apart keeps only the larger part. Lines the runs still leave out of the sheet's order are merged
+  again from the runs that placed them in order, and `check_by_ear` lists lines that start before the lines above
+  them (more than 2 s: a backing vocal may come early) or after the lines below them.
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.

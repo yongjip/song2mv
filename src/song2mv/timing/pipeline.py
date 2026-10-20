@@ -24,7 +24,7 @@ import time
 from ..contract import SCHEMA_VERSION, stamp
 from ..errors import Song2mvError
 from . import lib
-from .lib import asr_key, audio_duration, file_sha256, load_config, parse_lyrics, warn, write_json
+from .lib import asr_key, audio_duration, file_sha256, in_order, load_config, parse_lyrics, warn, write_json
 
 STEPS = ["lyrics", "asr", "align", "grid", "build"]
 OUTPUTS = ["grid.json", "lyrics.json", "mv.json", "song.lrc", "song.words.lrc", "song.srt", "music.json"]
@@ -115,11 +115,16 @@ def update_config(path: str, lyrics: str | None = None, language: str | None = N
 
 
 def check_by_ear(lines: list[dict], n_runs: int) -> list[str]:
-    """Line ids most likely to be wrong: re-heard or estimated lines, and lines only one of several whisper runs
-    placed — one run alone can put a line seconds off (12.7 s once on the test song)."""
+    """Line ids most likely to be wrong: re-heard or estimated lines, lines only one of several whisper runs placed —
+    one run alone can put a line seconds off (12.7 s once on the test song) — and lines out of the lyric sheet's order
+    (lib.in_order), where a repeated line was placed on another copy of its words. Lines pinned in "manual" are not
+    listed."""
     def one_run(r):
         return n_runs > 1 and r.get("source") == "asr" and len(r.get("runs_used") or []) < 2
-    return [r["id"] for r in lines if r.get("source") in ("reprompt", "estimated") or one_run(r)]
+    starts = [r.get("start") for r in lines]
+    order = in_order(starts)
+    return [r["id"] for i, r in enumerate(lines) if r.get("source") in ("reprompt", "estimated") or one_run(r)
+            or (starts[i] is not None and i not in order and r.get("source") != "manual")]
 
 
 def run(config_path: str, work: str | None = None, start: str | None = None) -> dict:

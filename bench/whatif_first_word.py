@@ -82,8 +82,7 @@ def spans(song: dict, work: str) -> dict:
     out = {"first": [], "later": []}
     for k in range(1, int(cfg["whisper"]["runs"]) + 1):
         words = json.load(open(os.path.join(work, "asr", f"run{k}.json"), encoding="utf-8"))["words"]
-        # aligned on word positions, as trim_first_words does: a matched letter's "time" is its whisper word's index
-        first, cov = lib.align(lines, [dict(w, s=n, e=n + 1) for n, w in enumerate(words)])
+        first, cov = lib.align(lines, words, word_index=True)  # the index of the whisper word, as trim_first_words does
         for li, x in enumerate(ref):
             if cov.get(li, 0) < 0.5:
                 continue
