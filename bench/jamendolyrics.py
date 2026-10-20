@@ -2,6 +2,7 @@
 (20 English, 20 German, 20 Spanish, 19 French) whose word start and end times were annotated by people.
 
   python -I bench/jamendolyrics.py --lang en       # download, sync every English song without a result yet, score
+  python -I bench/jamendolyrics.py --jobs 3        # three songs at once, 2 whisper threads each: about 1.8× faster
   python -I bench/jamendolyrics.py --no-run        # score the runs already on disk
   python -I bench/jamendolyrics.py --rerun         # after a change to song2mv: sync again, reusing the whisper runs
   python -I bench/jamendolyrics.py --markdown      # print the tables as Markdown (no lyric text in them)
@@ -10,13 +11,19 @@ Run it with the repository's .venv (the `sync` extra; huggingface_hub comes with
 the repository: everything lives in a cache, by default ~/.cache/song2mv-bench —
   jamendolyrics/                 the dataset at a pinned revision (audio, lyric files, annotations)
   runs/<song>/                   song2mv's work folder for that song (the `--out` of sync)
-  runs/<song>/bench/             sync's --json result, its progress log, and run.json (wall time, machine load)
+  runs/<song>/bench/             sync's --json result, its progress log, and run.json (wall time, machine load,
+                                 songs at once and whisper threads)
   results/jamendolyrics.json     the scores, per song and per language
 The annotations are MIT. Each song's audio and lyric file has its own Creative Commons licence, most of them
 non-commercial (column LicenseType in JamendoLyrics.csv, copied into the results).
 
 What is measured. Every song runs with default settings (whisper small × 3):
   song2mv sync AUDIO --lyrics lyrics/<song>.txt --language <en|de|es|fr> --out runs/<song> --json
+With --jobs N, N songs sync at once and each gets 8 // N whisper threads (at least 1). sync has no flag for that,
+so the script writes it into the work folder's song.json first: sync keeps an existing song.json's values, and the
+thread count is not part of the whisper cache key. It changes speed only: on 6 songs, lyrics.json, the whisper runs
+and every other output were byte-identical with 8, 4 and 2 threads. A song's sync seconds include sharing the CPU
+with the songs next to it, so they compare only between runs with the same --jobs.
 sync gets the dataset's own lyric file, so our words are the reference words: song2mv splits lines on spaces and
 the annotations are one row per space-separated word. The script still matches our words to the reference word by
 word (difflib on normalised tokens) and reports every token that does not match, so a tokenisation difference
@@ -45,6 +52,7 @@ import sys
 import tempfile
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 REPO = "jamendolyrics/jamendolyrics"
 REVISION = "de188c963fd4539bc769b3feb83582e5a9595e36"  # 2025-03-06
@@ -81,7 +89,7 @@ def download(data: str) -> None:
 
 class Load:
     """What else runs on the machine while a song syncs (`ps` every few seconds): timing on a busy laptop is not
-    timing on an idle one. CPU is in % of one core; `ours` is this script and the sync it started."""
+    timing on an idle one. CPU is in % of one core; `ours` is this script and every sync it started."""
 
     def __init__(self, every: float = 10.0):
         self.every, self.samples, self._stop = every, [], threading.Event()
@@ -137,18 +145,35 @@ class Load:
                 "heavy": {k: round(v) for k, v in sorted(names.items(), key=lambda kv: -kv[1]) if v >= 20}}
 
 
-def sync(song: dict, runs: str, again: bool = False) -> dict:
-    """Run sync for one song unless it already has a result (or `again`). Returns the run record."""
+def done(song: dict, runs: str) -> bool:
+    """Whether the song has a finished sync on disk."""
+    path = os.path.join(runs, song["name"], "bench", "run.json")
+    return os.path.exists(path) and bool(json.load(open(path, encoding="utf-8")).get("ok"))
+
+
+LOG = threading.Lock()
+
+
+def say(line: str) -> None:
+    """One progress line on stderr. Songs that sync at once finish in any order, so every line names its song."""
+    with LOG:
+        print(line, file=sys.stderr, flush=True)
+
+
+def sync(song: dict, runs: str, jobs: int, threads: int) -> dict:
+    """Run sync for one song with `threads` whisper threads, `jobs` songs at once. Returns the run record."""
     work = os.path.join(runs, song["name"])
     rec = os.path.join(work, "bench")
     path = os.path.join(rec, "run.json")
-    if os.path.exists(path) and not again:
-        old = json.load(open(path, encoding="utf-8"))
-        if old.get("ok"):
-            return old
     os.makedirs(rec, exist_ok=True)
+    conf = os.path.join(work, "song.json")
+    cfg = json.load(open(conf, encoding="utf-8")) if os.path.exists(conf) else {"audio": os.path.abspath(song["audio"])}
+    cfg.setdefault("whisper", {})["threads"] = threads
+    with open(conf, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, ensure_ascii=False, indent=1)
     cmd = SYNC + [song["audio"], "--lyrics", song["lyrics"], "--language", song["lang"], "--out", work, "--json"]
-    print(f"[{song['lang']}] {song['name']} …", file=sys.stderr, flush=True)
+    name = f"[{song['lang']}] {song['name']}"
+    say(f"{name} …")
     started = time.strftime("%Y-%m-%dT%H:%M:%S")
     t0 = time.time()
     with Load() as load, open(os.path.join(rec, "sync.log"), "w", encoding="utf-8") as log:
@@ -161,11 +186,11 @@ def sync(song: dict, runs: str, again: bool = False) -> dict:
     with open(os.path.join(rec, "sync.json"), "w", encoding="utf-8") as f:
         json.dump(res, f, ensure_ascii=False, indent=1)
     out = {"ok": bool(res.get("ok")), "exit": p.returncode, "started": started, "wall_seconds": round(wall, 1),
-           "song2mv": song2mv_version(), "cmd": cmd[2:], "load": load.summary()}
+           "jobs": jobs, "threads": threads, "song2mv": song2mv_version(), "cmd": cmd[2:], "load": load.summary()}
     with open(path, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=1)
     msg = f"{res.get('seconds')} s, sources {res.get('line_sources')}" if out["ok"] else res.get("error", {}).get("message")
-    print(f"    {msg}  (others on the machine: {out['load'].get('others_cpu_mean')} % CPU)", file=sys.stderr, flush=True)
+    say(f"{name}: {msg}  (others on the machine: {out['load'].get('others_cpu_mean')} % CPU)")
     return out
 
 
@@ -266,7 +291,8 @@ def score(song: dict, runs: str) -> dict:
     same = [(r["id"], r["start"], r["end"], [w["t"] for w in r["words"]]) for r in ours] == \
            [(r["id"], r["start"], r["end"], [w["t"] for w in r["words"]]) for r in snapped]
     merged = {r["id"]: r for r in json.load(open(os.path.join(work, "merged.json"), encoding="utf-8"))["lines"]}
-    parsed = parse_lyrics(os.path.join(work, "lyrics.txt"), load_config(os.path.join(work, "song.json")))
+    cfg = load_config(os.path.join(work, "song.json"))
+    parsed = parse_lyrics(os.path.join(work, "lyrics.txt"), cfg)
     by_id = {r["id"]: r for r in ours}
     raw = {r["id"]: r for r in raw}
 
@@ -329,6 +355,8 @@ def score(song: dict, runs: str) -> dict:
         **{k: song[k] for k in ("name", "lang", "artist", "title", "genre", "license", "url", "lyric_overlap", "polyphonic", "non_lexical")},
         "ok": True, "duration": res.get("duration"), "bpm": res.get("bpm"), "seconds": res.get("seconds"),
         "wall_seconds": run.get("wall_seconds"), "load": run.get("load"), "song2mv": run.get("song2mv"),
+        # runs from before --jobs went one at a time; song.json holds the threads sync used, pinned or default
+        "jobs": run.get("jobs", 1), "threads": cfg["whisper"]["threads"],
         "line_sources": res.get("line_sources"), "check_by_ear": res.get("check_by_ear"), "dropped": res.get("dropped"),
         "warnings": res.get("warnings"),
         "tokens": {"ours": len(mine), "reference": len(theirs), "matched": len(pairs), "only_ours": only_ours,
@@ -426,7 +454,8 @@ def summarise(results: list[dict]) -> dict:
         out["lines_by_source"], out["asr_lines_by_runs_used"] = by_src, by_runs
         secs = [r["seconds"] for r in recs if r["seconds"]]
         dur = [r["duration"] for r in recs if r["duration"]]
-        out["runtime"] = {"songs": len(recs), "sync_seconds_mean": round(statistics.mean(secs), 1),
+        out["runtime"] = {"songs": len(recs), "jobs": sorted({r["jobs"] for r in recs}),
+                          "threads": sorted({r["threads"] for r in recs}), "sync_seconds_mean": round(statistics.mean(secs), 1),
                           "sync_seconds_median": round(statistics.median(secs), 1), "audio_seconds_mean": round(statistics.mean(dur), 1),
                           "seconds_per_audio_second": round(sum(secs) / sum(dur), 3),
                           "others_cpu_mean": round(statistics.mean(r["load"].get("others_cpu_mean", 0) for r in recs), 1)}
@@ -520,19 +549,33 @@ def main() -> int:
     ap.add_argument("--no-run", action="store_true", help="score the runs on disk; sync nothing")
     ap.add_argument("--rerun", action="store_true", help="sync songs that have a result again, after a change to song2mv: "
                     "the work folders keep their whisper runs, so only the steps after them run (and are timed)")
+    ap.add_argument("--jobs", type=int, default=1, metavar="N",
+                    help="sync N songs at once, each with 8 // N whisper threads (default 1: one song, 8 threads)")
     ap.add_argument("--markdown", action="store_true", help="print Markdown tables instead of the JSON summary")
     a = ap.parse_args()
+    if a.jobs < 1:
+        ap.error("--jobs must be 1 or more")
     data, runs = os.path.join(a.cache, "jamendolyrics"), os.path.join(a.cache, "runs")
     download(data)
     os.makedirs(runs, exist_ok=True)
     todo = songs(data, a.lang, a.songs)
     if not a.no_run:
-        for s in todo:
-            sync(s, runs, a.rerun)
+        from song2mv.timing.lib import DEFAULT_CONFIG
+        threads = max(1, DEFAULT_CONFIG["whisper"]["threads"] // a.jobs)
+        pending = [s for s in todo if a.rerun or not done(s, runs)]
+        if pending:
+            say(f"syncing {len(pending)} songs, {a.jobs} at once, {threads} whisper threads each")
+        t0 = time.time()
+        pool = ThreadPoolExecutor(a.jobs)
+        try:
+            recs = list(pool.map(lambda s: sync(s, runs, a.jobs, threads), pending))
+        finally:
+            pool.shutdown(cancel_futures=True)  # on Ctrl-C, start no more songs
+        if pending:
+            say(f"{sum(r['ok'] for r in recs)} of {len(pending)} songs synced in {time.time() - t0:.0f} s")
     results, failed = [], []
     for s in todo:
-        rec = os.path.join(runs, s["name"], "bench", "run.json")
-        if not os.path.exists(rec) or not json.load(open(rec, encoding="utf-8")).get("ok"):
+        if not done(s, runs):
             failed.append(s["name"])
             continue
         results.append(score(s, runs))

@@ -225,6 +225,30 @@ second of audio. Three whisper runs are most of it, and the slowest songs had ma
 `sync` used about 5.7 cores on average. Other processes used 1.4 cores on average (0.5–3.3 per song), mostly the
 macOS window server and a Codex app, so times on an idle machine would be somewhat lower.
 
+### Several songs at once
+
+`--jobs N` syncs N songs at once and splits `sync`'s 8 whisper threads between them (8 // N each). `sync` has no
+flag for threads, so the script writes them into each work folder's `song.json`. This was measured on 6 songs of
+about median length (2 English, 2 German, 1 Spanish, 1 French), each synced fresh, in two rounds: 1, 2, 3 songs at
+once, then 3, 2, 1.
+
+| `--jobs` | whisper threads each | wall-clock for the 6 songs | faster than `--jobs 1` | memory of the syncs, peak |
+|---:|---:|---:|---:|---:|
+| 1 | 8 | 539 s, 508 s | – | 1.8–2.3 GB |
+| 2 | 4 | 343 s, 310 s | 1.57×, 1.64× | 2.6–3.6 GB |
+| 3 | 2 | 284 s, 291 s | 1.90×, 1.75× | 3.6–4.3 GB |
+
+The results do not change: `lyrics.json`, the whisper runs and every other output were byte-identical with 8, 4 and
+2 threads. Whisper is about three quarters of a song's `sync` time, and two songs with 4 threads each took only
+1.25–1.35× as long in whisper as one song with 8. Other apps used 0.8–1.7 cores during these runs. On this machine,
+`--jobs 3` was the fastest setting measured (4 was not tried). With less memory, `--jobs 2` gets most of the gain:
+one `sync` peaked at 1.6–2.3 GB.
+
+A song's `sync` seconds include sharing the CPU with the songs next to it. They were 1.2–1.3× a song's time alone
+with `--jobs 2` and 1.5–1.6× with `--jobs 3`. So per-song seconds, like every runtime on this page (all from
+`--jobs 1`), compare only between runs with the same `--jobs`. `results/jamendolyrics.json` records `jobs` and
+`threads` for every song.
+
 ## Per song
 
 Times are snapped (as written to `lyrics.json`), except the "unsnapped" column. "Listed" is `check_by_ear`, with
@@ -358,7 +382,8 @@ for every song. No line was dropped, and no line hit one of song2mv's special ca
   same words, and closer to it than to its own. "First word early, the rest on time" means the median error of the
   line's other words is within 0.3 s.
 - *Runtime* is `sync`'s own `seconds`. While a song runs, the script samples `ps` every 10 s and records the CPU
-  that other processes used.
+  that other processes used. With `--jobs` above 1, a song's seconds include sharing the CPU with the songs that
+  sync next to it, so they compare only between runs with the same `--jobs`.
 
 ## Limits
 
@@ -390,6 +415,7 @@ From the repository, with the `sync` extra installed in `.venv`:
 ```bash
 .venv/bin/python -I bench/jamendolyrics.py --lang en        # downloads ~400 MB once, then syncs the 20 English songs
 .venv/bin/python -I bench/jamendolyrics.py                  # all 79 songs (about 2¼ hours here); finished songs are skipped
+.venv/bin/python -I bench/jamendolyrics.py --jobs 3         # the same, three songs at once: about 1.8× faster here
 .venv/bin/python -I bench/jamendolyrics.py --no-run --markdown   # the tables on this page
 .venv/bin/python -I bench/whatif_first_word.py              # the first-word what-if (seconds; --factor to try other lengths)
 .venv/bin/python -I bench/jamendolyrics.py --rerun          # after a change to song2mv: whisper runs are reused
