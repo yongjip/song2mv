@@ -5,13 +5,16 @@ import { Scene, linesDrawnByScene } from "./scenes";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const BAND_SCALE = 0.76;
-const BAND_CY = 860;
+const BAND_CY = 670; // the band ends at y 1080, where the captions start
 
 /**
  * 9:16 short (Reels, YouTube Shorts, TikTok). The full-screen sky and beat glow sit behind the 16:9
  * stage, shrunk to a band (top and bottom edges melted away); the song title is at the top and the
- * lyrics, larger, under the band. Safe areas: the bottom 420 px (app buttons and caption overlay) and
- * the top 220 px stay empty. Scenes that read VerticalCtx can stack side-by-side layouts.
+ * lyrics, larger, under the band. Text stays inside x 120–960, y 269–1248, the box clear of the app's
+ * buttons and caption overlay on all three: Meta keeps the top 14 %, the bottom 35 % and 6 % at the
+ * sides for its UI, YouTube Shorts the top 10 %, the bottom 25 % and the right 10 %, and TikTok, by
+ * third-party measurements, the top 240, the bottom 660 and the right 120 px. The bottom 680 px hold
+ * only sky. Scenes that read VerticalCtx can stack side-by-side layouts.
  * from / to / hold work as in LyricVideo; with hold > 0 the title is on from the first frame.
  */
 export const LyricShort: React.FC<MvProps> = ({ song, from, hold }) => {
@@ -51,13 +54,13 @@ export const LyricShort: React.FC<MvProps> = ({ song, from, hold }) => {
           </div>
           {/* title (still) */}
           {song.title && (
-            <div style={{ position: "absolute", left: 60, right: 60, top: 250, textAlign: "center", opacity: titleIn, transform: `translateY(${(1 - titleIn) * 14}px)` }}>
+            <div style={{ position: "absolute", left: 140, right: 140, top: 280, textAlign: "center", opacity: titleIn, transform: `translateY(${(1 - titleIn) * 14}px)` }}>
               <div style={{ fontSize: 78, fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.1, color: theme.title, textShadow: `0 0 28px ${theme.titleGlow}, 0 0 80px ${theme.titleGlow}` }}>{song.title}</div>
               {song.subtitle && <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: "0.22em", color: theme.subtitle, marginTop: 10 }}>{song.subtitle}</div>}
             </div>
           )}
-          {/* lyrics under the band, above the app's safe area */}
-          <Captions T={T} hide={hide} size={66} bottom={460} padX={70} band={false} />
+          {/* lyrics under the band, inside the safe box: up to two rows end at y 1240 */}
+          <Captions T={T} hide={hide} size={66} bottom={680} padX={150} band={false} />
           <Flash T={T} flashes={flashes} />
           <AbsoluteFill style={{ background: "#000", opacity: 1 - fade(frame) }} />
         </AbsoluteFill>

@@ -59,7 +59,8 @@ export const DEFAULT_THEME: Theme = {
     mid: { tint: "#0b1030", glow: "#ff3355", strength: 0.7 },
     hot: { tint: "#2a0612", glow: "#ff3355", strength: 1 },
   },
-  sung: "#ffffff", unsung: "rgba(255,255,255,0.32)", sungGlow: "rgba(255,51,85,0.6)",
+  // unsung at 50 % white is 5.3:1 against bg, above WCAG's 4.5:1 (32 % was 2.7:1, below even the 3:1 for large text)
+  sung: "#ffffff", unsung: "rgba(255,255,255,0.5)", sungGlow: "rgba(255,51,85,0.6)",
   bigText: "#ffffff", bigGlow: "#ff3355",
   title: "#ffffff", titleGlow: "rgba(255,51,85,0.75)", subtitle: "#ffd36b",
   font: '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Noto Sans CJK KR", "Noto Sans", system-ui, sans-serif',

@@ -25,6 +25,16 @@ First release (0.1.0).
   stretch are listed under `skipped`. A goals file only needs the values it changes.
 - `song2mv render` (experimental): Remotion lyric-video template, 16:9 and 9:16, `--hold` for hook cuts,
   `--template DIR` for your own scenes. `outputs` names exactly the files written.
+- The template's lyrics are easier to read.
+  - **Unsung words:** they are drawn at 50 % white with a tight dark shadow. At 32 % they had 2.7:1 contrast against
+    the background, below WCAG's 3:1 for large text; now they have 5.3:1.
+  - **Short gaps:** when the next line comes within 0.5 s, a line stays up until that line appears. Before, the
+    screen went empty for up to 0.45 s (13 frames) between lines, 10–13 times per song.
+  - **Long lines:** they wrap. Each word was its own span with no space between them, so a line too wide for its
+    box ran off the screen, the big chorus line by up to twice its width. Words are now separated by real spaces.
+  - **9:16 layout:** the title, the stage and the lyrics sit inside x 120–960, y 269–1248, clear of the app buttons
+    and caption overlay on Reels, Shorts and TikTok. Before, the lyrics sat at y 1300–1460, under them.
+  - **`check` in 9:16:** it measures the top 56 % of the frame, above the lyrics.
 - Work folders and caches belong to one audio file, by content: another song in the same folder is refused, a
   changed file is transcribed again, and whisper runs are reused only for the same model, language and settings.
 - A sung line is never dropped: a line with no room between its neighbours is squeezed in (inside the song),

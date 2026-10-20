@@ -1,9 +1,9 @@
 {
   "_doc": "Default targets for `song2mv check`. They are a starting point, measured on one music video — not a law. Copy this file, adjust it to your song (--goals FILE) and write down why. Passing is necessary, not proof of fun: a person still judges that.",
   "frame": {
-    "_doc": "Measured area: the top part of the frame, above the karaoke captions, at 320x180 (or 180x320) grey, 10 fps.",
+    "_doc": "Measured area: the top part of the frame, above the karaoke captions, at 320x180 (or 180x320) grey, 10 fps. In 9:16 the captions start at y 1080 of 1920.",
     "body_frac_16x9": 0.82,
-    "body_frac_9x16": 0.7
+    "body_frac_9x16": 0.56
   },
   "motion": {
     "_doc": "Mean absolute frame difference over each sung line. No line should be sung over a still picture; verses should not be frantic either.",

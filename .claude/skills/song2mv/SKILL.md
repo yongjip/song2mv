@@ -136,7 +136,8 @@ on the hit and use `--hold` so the first frame already shows the payoff.
 song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --aspect 9x16 --hold 0.17
 ```
 
-Keep the bottom 420 px and the top 220 px free of anything important (platform UI). Check stills.
+Keep text inside x 120–960, y 269–1248: that box is clear of the app buttons and caption overlay on Reels, Shorts
+and TikTok, and the template's title, stage and lyrics already sit in it. Check stills.
 
 ## 7. Deliver
 
