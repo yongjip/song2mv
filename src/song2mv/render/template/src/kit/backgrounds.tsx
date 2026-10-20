@@ -88,6 +88,7 @@ export const Rays: React.FC<{ T: number; color: string; opacity: number; cx?: nu
 /** SVG blur filters — use as filter="url(#blur-14)" inside a scene's <Svg> */
 export const Blurs: React.FC = () => (
   <defs>
+    <filter id="blur-2" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2" /></filter>
     <filter id="blur-6" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" /></filter>
     <filter id="blur-10" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" /></filter>
     <filter id="blur-14" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14" /></filter>
