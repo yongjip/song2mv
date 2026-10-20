@@ -1,8 +1,8 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
-  City, Clouds, Crowd, Ground, Street, Lanterns, Moon, Person, Rays, Room, Sea, SkyGradient, Song, SongContext, Sun, Svg,
-  makeSongCtx, personHand, Lantern, SKINS, STRIDE,
+  Car, City, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
+  Rays, Room, Sea, SkyGradient, Song, SongContext, Street, Sun, Svg, makeSongCtx, personHand, SKINS, STRIDE,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -109,6 +109,79 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
       </Svg>
     ),
   },
+  {
+    name: "Phone: a chat late at night",
+    draw: (T) => (
+      <Svg>
+        <SkyGradient time="night" stars={1} T={T} id="g8-sky" />
+        <City T={T} id="g8-city" />
+        <rect x={0} y={0} width={1920} height={1080} fill="#04050b" opacity={0.45} />
+        <Phone T={T} x={960} y={540} s={1.2} tilt={-3} title="Mina" clock="11:47" id="g8-phone"
+          messages={[
+            { t: 6.4, text: "you up?" },
+            { t: 7.5, text: "can't sleep. thinking about you", me: true },
+            { t: 8.6, text: "same here" },
+            { t: 9.2, text: "see you tomorrow?", me: true },
+          ]}
+          typing={[[9.4, 11]]} />
+      </Svg>
+    ),
+  },
+  {
+    name: "Clock and heart",
+    draw: (T) => (
+      <Svg>
+        <SkyGradient time="dusk" id="g9-sky" />
+        <Clouds T={T} time="dusk" y0={60} y1={260} seed={9} id="g9-clouds" />
+        <Clock T={T} x={430} y={470} r={190} time={10 * 60 + 10} spin={30} ticks="beat" look="wall" id="g9-clock" />
+        <Clock T={T} x={860} y={760} r={110} time={7 * 60} look="alarm" ticks="second" id="g9-alarm" />
+        <Heart T={T} x={1260} y={480} s={1.3} beat={1} glow={0.6} id="g9-heart" />
+        <Heart T={T} x={1650} y={600} s={0.95} crack={0.7} color="#c8364f" id="g9-broken" />
+      </Svg>
+    ),
+  },
+  {
+    name: "Car and plane at dusk",
+    draw: (T) => (
+      <Svg>
+        <SkyGradient time="dusk" id="g10-sky" />
+        <Sun T={T} x={1500} y={760} r={110} id="g10-sun" />
+        <Clouds T={T} time="dusk" light={{ x: 1500, y: 760 }} y0={80} y1={330} seed={13} id="g10-clouds" />
+        <Plane T={T} x={640} y={250} s={0.9} trail={700} lights tilt={4} id="g10-plane" />
+        <City T={T} y={950} dusk shift={T * 40} id="g10-city" />
+        <Street T={T} y={950} id="g10-street" />
+        <Car T={T} x={900} y={1068} s={0.55} lights distance={T * 300} id="g10-car" />
+      </Svg>
+    ),
+  },
+  {
+    name: "Rain on a city street at night",
+    draw: (T) => (
+      <Svg>
+        <SkyGradient time="night" id="g11-sky" />
+        <City T={T} y={950} signs id="g11-city" />
+        <Street T={T} y={950} id="g11-street" />
+        <Person x={900} y={985} s={1.1} pose="walk" phase={0.35} T={T} look={{ top: "#2f8f6b", hair: "short" }} />
+        <Rain T={T} strength={1} ground={990} id="g11-rain" />
+      </Svg>
+    ),
+  },
+  {
+    name: "Fireworks and confetti",
+    draw: (T) => (
+      <Svg>
+        <SkyGradient time="night" stars={1} T={T} id="g12-sky" />
+        <Fireworks T={T} id="g12-fw" bursts={[
+          { t: T - 0.3, x: 980, y: 230, color: "#ff5fd2", size: 1.2 },
+          { t: T - 0.9, x: 520, y: 320, color: "#3fe6ff", kind: "willow" },
+          { t: T - 1.5, x: 1440, y: 300, color: "#ffd36b", kind: "ring" },
+          { t: T - 2.1, x: 760, y: 420, color: "#ff3355" },
+        ]} />
+        <Crowd T={T} mode="jump" cones={false} id="g12-crowd" />
+        <Confetti T={T} from={T - 3} id="g12-confetti" />
+      </Svg>
+    ),
+  },
 ];
 
 const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNode }> = ({ x, y, k, children }) => (
@@ -128,11 +201,11 @@ export const KitGallery: React.FC<{ T: number }> = ({ T }) => {
           <Tile x={0} y={0} k={1}>{one.draw(T)}</Tile>
         ) : (
           TILES.map((t, i) => {
-            const x = (i % 3) * 640, y = Math.floor(i / 3) * 360;
+            const x = (i % 4) * 480, y = Math.floor(i / 4) * 270;
             return (
               <React.Fragment key={i}>
-                <Tile x={x} y={y} k={1 / 3}>{t.draw(T)}</Tile>
-                <div style={{ position: "absolute", left: x + 10, top: y + 8, color: "#fff", fontSize: 18, fontWeight: 700, textShadow: "0 1px 4px #000" }}>{i + 1}. {t.name}</div>
+                <Tile x={x} y={y} k={1 / 4}>{t.draw(T)}</Tile>
+                <div style={{ position: "absolute", left: x + 8, top: y + 6, color: "#fff", fontSize: 16, fontWeight: 700, textShadow: "0 1px 4px #000" }}>{i + 1}. {t.name}</div>
               </React.Fragment>
             );
           })

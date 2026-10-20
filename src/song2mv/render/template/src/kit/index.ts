@@ -10,3 +10,7 @@ export * from "./room";
 export * from "./people";
 export * from "./crowd";
 export * from "./objects";
+export * from "./phone";
+export * from "./symbols";
+export * from "./vehicles";
+export * from "./effects";
