@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
-  City, Clouds, Crowd, Ground, Lanterns, Moon, Person, Rays, Room, Sea, SkyGradient, Song, SongContext, Sun, Svg,
+  City, Clouds, Crowd, Ground, Street, Lanterns, Moon, Person, Rays, Room, Sea, SkyGradient, Song, SongContext, Sun, Svg,
   makeSongCtx, personHand, Lantern, SKINS, STRIDE,
 } from "./kit";
 import sample from "./sample-song.json";
@@ -102,11 +102,8 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
         <SkyGradient time="day" id="g7-sky" />
         <Sun T={T} x={1600} y={180} r={70} color="#ffe08a" core="#fffbe8" id="g7-sun" />
         <Clouds T={T} seed={21} />
-        <City T={T} day id="g7-city" />
-        <rect x={0} y={960} width={1920} height={50} fill="#b9c2d0" />
-        <rect x={0} y={1006} width={1920} height={10} fill="#8a94a8" />
-        <rect x={0} y={1016} width={1920} height={64} fill="#4a5266" />
-        {Array.from({ length: 8 }, (_, i) => <rect key={i} x={((i * 280 - T * 120) % 2240 + 2240) % 2240 - 160} y={1046} width={140} height={8} fill="#e8e2c8" />)}
+        <City T={T} day shift={T * 60} id="g7-city" />
+        <Street T={T} day id="g7-street" />
         <Person x={700} y={985} s={1.2} pose="walk" phase={0.4} T={T} look={{ outfit: "suit" }} tie={false} />
         <Person x={1150} y={985} s={1.2} pose="phone" T={T} flip look={{ outfit: "dress", top: "#2f8f6b", hair: "ponytail" }} />
       </Svg>
