@@ -150,7 +150,7 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
         <Plane T={T} x={640} y={250} s={0.9} trail={700} lights tilt={4} id="g10-plane" />
         <City T={T} y={950} dusk shift={T * 40} id="g10-city" />
         <Street T={T} y={950} id="g10-street" />
-        <Car T={T} x={900} y={1068} s={0.55} lights distance={T * 300} id="g10-car" />
+        <Car T={T} x={900} y={1068} s={0.55} lights distance={(T * 120 * 1.18) / 0.55} id="g10-car" />
       </Svg>
     ),
   },
