@@ -3,9 +3,10 @@ import { mix } from "./color";
 import { clamp01, rng } from "./math";
 
 /**
- * Tears. Use inside <Svg>, on a face the scene draws (the kit's Person has no eyes, on purpose: draw a face for a
- * close-up, or use a big single tear as a sign). Style-neutral: colours, glossy or flat drops and the wet trail are
- * props, so a style pack or a song can redraw them (flat: `flat`, its own colours).
+ * Tears. Use inside <Svg>, on a Person (at personEye(), with the person's s) or on a face the scene draws (s = the
+ * face's height / 48, a Person's face being 48 px tall at s = 1), or alone as a big sign. Style-neutral: colours,
+ * glossy or flat drops and the wet trail are props, so a style pack or a song can redraw them (flat: `flat`, its own
+ * colours).
  */
 
 type Pt = [number, number];
@@ -17,8 +18,8 @@ const tint = (a: string, b: string, k: number) => (isHex(a) && isHex(b) ? mix(a,
 
 /** A tear's life, s: it wells up at the eye, runs down the cheek, hangs at the end and falls */
 const WELL = 0.55, RUN = 1.1, HANG = 0.3;
-/** How fast a falling tear speeds up, px/s² at s = 1 */
-const G = 2400;
+/** How fast a falling tear speeds up, px/s² at s = 1 (a Person 300 px tall: 1 m is about 175 px) */
+const G = 1700;
 
 /** A drop with its round head at (x, y), radius r, its tail pointing at angle `a` (radians; −π/2 is straight up) */
 function drop(x: number, y: number, r: number, tail: number, a: number): string {
@@ -46,12 +47,12 @@ function along(pts: Pt[], k: number): { p: Pt; a: number; i: number } {
 }
 
 /**
- * Tears from an eye at (x, y) (its lower lid, where they well up), `s` times the default size (a drop about 7 px
- * across at s = 1, right for a face some 200 px tall).
+ * Tears from an eye at (x, y) (its lower lid, where they well up), at the kit's scale `s`: s = 1 fits a Person at
+ * s = 1 (a drop about 2 px across); on a Person put them at personEye(pose, s) with the same s.
  * - When: at each of `times` (song times), or one every `every` seconds from `from` (a little irregular) until
  *   `until`. Each wells up, runs down the cheek leaving a wet trail, hangs at the end and falls to `fall` (a y).
  * - `path`: the cheek it runs down, as points relative to (x, y) ending where it drips (default: a gentle curve
- *   `side` −1 or 1 outward, 70 × s px long).
+ *   `side` −1 or 1 outward, 18 × s px long, down the cheek of a Person facing that way).
  * - `color` the water, `shine` its highlight; `trail` 0–1 how much the wet trail shows; `flat`: one solid colour
  *   with a highlight dot, no translucency, for flat or paper looks.
  * - `seed` varies the timing of `every`.
@@ -60,9 +61,9 @@ export const Tears: React.FC<{
   T: number; x: number; y: number; s?: number; times?: number[]; every?: number; from?: number; until?: number;
   path?: Pt[]; side?: number; fall?: number; color?: string; shine?: string; trail?: number; flat?: boolean; seed?: number;
 }> = ({ T, x, y, s = 1, times, every = 1.8, from = 0, until = Infinity, path, side = 1, fall = 1200, color = "#8fd3ff", shine = "#ffffff", trail = 1, flat = false, seed = 1 }) => {
-  const pts: Pt[] = (path ?? [[0, 0], [side * 5 * s, 22 * s], [side * 11 * s, 46 * s], [side * 13 * s, 70 * s]]).map(([u, v]) => [x + u, y + v]);
+  const pts: Pt[] = (path ?? [[0, 0], [side * 1.3 * s, 5.7 * s], [side * 2.8 * s, 11.8 * s], [side * 3.3 * s, 18 * s]]).map(([u, v]) => [x + u, y + v]);
   const end = pts[pts.length - 1];
-  const R = 3.6 * s;
+  const R = 0.94 * s;
   const fallTime = Math.sqrt((2 * Math.max(0, fall - end[1])) / (G * s)) + 0.05;
   const LIFE = WELL + RUN + HANG + fallTime;
   // the tears to draw now: their own times, or the beats of `every` that are still alive

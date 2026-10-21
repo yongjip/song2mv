@@ -35,7 +35,7 @@ Tests build synthetic audio and video. Do not add songs, lyrics, renders or othe
 
 ## Adding an asset or a style pack
 
-The render template's scene kit (`src/song2mv/render/template/src/kit/`) grows by pull request. Two kinds of drawing
+The render template's scene kit (`src/song2mv/render/template/src/kit/`) grows by pull request. Three kinds of drawing
 fit:
 
 - **An asset:** a person, place, object or effect that many songs could use, in the kit's flat style. Put it in the
@@ -43,6 +43,8 @@ fit:
 - **A style pack:** a few drawing pieces that put any object in one art style, like `kit/styles/paper.tsx` (paper
   cut-out). One file in `kit/styles/`, exported from `kit/index.ts` as a namespace
   (`export * as ink from "./styles/ink";`).
+- **A recipe:** a new asset made by combining existing parts in a few lines, like `SleeplessStorm` in
+  `kit/recipes.tsx` (a room, a bed, a lying person, tears, a storm in the window, a camera). Recipes are welcome too.
 
 A song's own characters and scenes stay in that song's copy of the template; contribute what other songs can use.
 

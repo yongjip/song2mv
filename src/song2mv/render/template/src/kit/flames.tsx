@@ -164,3 +164,42 @@ export const Flames: React.FC<{
     </g>
   );
 };
+
+/**
+ * Flames along an object's edge (a roof, a car, a page, a heart): fires standing on the polyline `edge` every `gap`
+ * px, each `w` wide and smaller towards the edge's ends, each flickering on its own. The other props are as for
+ * Flames; their glow is shared out so that the row is not brighter than one fire. Fire rises whatever the edge's
+ * slope. `id` prefixes the fires' own ids.
+ */
+export const FlamesAlong: React.FC<{
+  T: number; edge: [number, number][]; gap?: number; w?: number; sharp?: number; colors?: [string, string, string]; flat?: boolean;
+  glow?: number; embers?: number; wind?: number; strength?: number; seed?: number; id?: string;
+}> = ({ T, edge, gap = 90, w = 120, glow = 1, embers, seed = 1, id = "flames-along", ...rest }) => {
+  if (edge.length < 2) return null;
+  const segs = edge.slice(1).map((q, i) => Math.hypot(q[0] - edge[i][0], q[1] - edge[i][1]));
+  const total = segs.reduce((a, b) => a + b, 0);
+  const n = Math.max(1, Math.round(total / gap));
+  const at = (d: number): [number, number] => {
+    for (let i = 0; i < segs.length; i++) {
+      if (d <= segs[i] || i === segs.length - 1) {
+        const k = segs[i] ? Math.min(1, d / segs[i]) : 0;
+        return [edge[i][0] + (edge[i + 1][0] - edge[i][0]) * k, edge[i][1] + (edge[i + 1][1] - edge[i][1]) * k];
+      }
+      d -= segs[i];
+    }
+    return edge[edge.length - 1];
+  };
+  return (
+    <g>
+      {Array.from({ length: n }, (_, i) => {
+        const u = n === 1 ? 0.5 : (i + 0.5) / n;
+        const [fx, fy] = at(u * total);
+        const size = w * (0.55 + 0.45 * Math.sin(Math.PI * u));
+        return (
+          <Flames key={i} T={T} x={fx} y={fy} w={size} glow={glow / Math.sqrt(n)} ground={false} embers={embers ?? Math.round(size / 40)}
+            seed={seed * 31 + i} id={`${id}-${i}`} {...rest} />
+        );
+      })}
+    </g>
+  );
+};

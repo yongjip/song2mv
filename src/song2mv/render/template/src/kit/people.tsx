@@ -360,6 +360,19 @@ export function personHand(pose: Pose, s = 1, phase = 0, T = 0, outfit: Outfit =
   return [p[0] * s, p[1] * s];
 }
 
+/** Where the eye would be on the face (it has no features), in head coordinates */
+const EYE: V = [13, -2];
+/**
+ * Where a Person's eye is, in the person's own coordinates × s, like personHand: to put Tears (kit/tears.tsx), a glint
+ * or a look on the face. Mirror x when the person is flipped.
+ */
+export function personEye(pose: Pose, s = 1, phase = 0, T = 0, outfit: Outfit = "hoodie"): [number, number] {
+  const r = solve(pose, phase, T, outfit);
+  const q = add(r.hc, rot(EYE, r.headAng));
+  const p = pose === "lie" ? lieAt(q) : q;
+  return [p[0] * s, p[1] * s];
+}
+
 // ---------------------------------------------------------------- parts (shapes face right)
 
 // head coordinates: skull centre at 0 0, chin at about +21, crown at −27.5. No face on purpose: the profile line

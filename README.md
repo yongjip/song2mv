@@ -219,6 +219,7 @@ kit in `DIR/src/kit/`, and draw the rest. Besides `useSong()`, beat-grid helpers
 - **camera:** one world filmed as shots that cut on bars and words, with a punch on hits;
 - **effects:** rain, fireworks, confetti, hits (burst, sparkle, ring), flames, lightning and storms, tears, falling cash.
   Their colours and shapes are props, so they fit any art style;
+- **recipes:** new assets combined from these parts in a few lines, such as a sleepless night in a storm;
 - **style packs** (`kit/styles/`): drawing pieces that put any object in one art style. `paper` cuts outlines by hand
   and stacks them with shadows and grain. New assets and packs are welcome
   ([CONTRIBUTING.md](https://github.com/yongjip/song2mv/blob/main/CONTRIBUTING.md)).

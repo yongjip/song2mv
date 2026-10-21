@@ -103,7 +103,8 @@ function zigzagBolt(seed: number, a: Pt, b: Pt, width: number, swing = width): s
 const polyline = (p: Pt[]) => `M${p.map((q) => `${n1(q[0])} ${n1(q[1])}`).join("L")}`;
 
 /**
- * Lightning bolts at the strikes' times, each from (x, y) to its `to` (default: down to `ground`, a little off).
+ * Lightning bolts at the strikes' times, each from (x, y) to its `to` (default: down to `ground`, a little off): aim
+ * `to` at a point to strike something there.
  * A strike flickers like real lightning (a stroke and two return strokes) and is gone in half a second; every strike
  * draws a new bolt. `look` "fork": a jagged channel with `branches` branches, a white core in a coloured glow;
  * "zigzag": a flat cartoon bolt (with `flat`-looking colours, `glow={0}`). `width` is the core's width at s = 1.
@@ -158,7 +159,8 @@ export const Lightning: React.FC<{
  * A thunderstorm: a dark overcast and a deck of storm clouds whose underside hangs at `y`, with lightning at the
  * strikes' times that comes out of the deck and lights it from inside, around the bolt, flickering with it. The deck's
  * billows are the kit's Clouds hung upside down under a shelf of cloud, so they face the ground; a strike's light is
- * the same Clouds again in `lit`. `strikes` take only t and x here (the bolts start in the deck).
+ * the same Clouds again in `lit`. A strike needs t and x (its bolt starts in the deck); `to` aims it at a point (a
+ * tree, a roof, someone's umbrella: put a Hit there at the same t), else it goes down to `ground`.
  * - `color`, `belly`, `rim`: the dark clouds (billows, the shelf, their lit edges); `lit`: the clouds in a strike's
  *   light; `sky`: the overcast above and between them.
  * - `bolt`: props for the Lightning (look, width, branches, color, core, glow); `ground`: where bolts end.

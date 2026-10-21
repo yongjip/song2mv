@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
-  Camera, Car, Cash, City, Flames, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
+  Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, shade, SKINS, STRIDE,
 } from "./kit";
 import sample from "./sample-song.json";
@@ -289,11 +289,16 @@ const Hits: React.FC<{ T: number }> = ({ T }) => {
 };
 
 /**
- * A campfire on a hill at night, someone sitting by it; and, on paper, the same Flames redrawn flat (a candle and a
- * small fire in paper colours, no glow).
+ * A campfire on a hill at night, someone sitting by it; and, on paper, the same Flames redrawn flat (a candle, and a
+ * heart burning along its edge with FlamesAlong, in paper colours, no glow).
  */
 const Fire: React.FC<{ T: number }> = ({ T }) => {
   const fx = 700, fy = 905;
+  /** points on a heart standing on the board, from angle a0 to a1 (0 is the dip at the top, ±π the tip) */
+  const heartAt = (a0: number, a1: number, n: number) => Array.from({ length: n }, (_, i): Pt => {
+    const a = a0 + ((a1 - a0) * i) / (n - 1);
+    return [1745 + 4.4 * 16 * Math.pow(Math.sin(a), 3), 866 - 4.4 * (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a))];
+  });
   const log = (x0: number, y0: number, x1: number, y1: number, r: number, c: string) => (
     <g>
       <line x1={x0} y1={y0} x2={x1} y2={y1} stroke={c} strokeWidth={r * 2} strokeLinecap="round" />
@@ -338,9 +343,11 @@ const Fire: React.FC<{ T: number }> = ({ T }) => {
             colors={[PC.orange, PC.mustard, PC.white]} />
         </Cut>
         <Cut d={rect(1420, 940, 420, 30, 303)} fill={PC.kraft} lift={4} />
-        <Cut d="" fill="none" lift={8}>
-          <Flames T={paper.step(T)} x={1760} y={930} w={120} tongues={3} flat glow={0} embers={0} id="g16-small" seed={4}
-            colors={[PC.red, PC.orange, PC.mustard]} />
+        {/* a paper heart on fire along its top edge: FlamesAlong on the outline's upper points */}
+        <Cut d={poly(heartAt(-Math.PI, Math.PI, 28), 305)} fill={PC.red} lift={7} />
+        <Cut d="" fill="none" lift={9}>
+          <FlamesAlong T={paper.step(T)} edge={heartAt(-1.7, 1.7, 13)} gap={36} w={44} flat glow={0} embers={0} id="g16-heart" seed={4}
+            colors={[PC.orange, PC.mustard, PC.white]} />
         </Cut>
       </paper.Stack>
     </Svg>
@@ -462,8 +469,8 @@ const Crying: React.FC<{ T: number }> = ({ T }) => {
           <path d={outline([[618, 236], [566, 252], [526, 300], [552, 282], [604, 262]])} fill={hairHi} opacity={0.7} />
           <path d={outline([[640, 236], [700, 244], [748, 286], [700, 262]])} fill={hairHi} opacity={0.5} />
           {/* tears: from the outer end of each eye, down the cheek, dripping off the jaw */}
-          <Tears T={T} x={544} y={480} s={3.2} times={[7.6, 8.85]} path={[[0, 0], [-4, 50], [-6, 100], [-2, 152]]} fall={1100} />
-          <Tears T={T} x={738} y={482} s={3.2} times={[8.3, 9.3]} path={[[0, 0], [5, 50], [6, 102], [0, 150]]} fall={1100} />
+          <Tears T={T} x={544} y={480} s={12.2} times={[7.6, 8.85]} path={[[0, 0], [-4, 50], [-6, 100], [-2, 152]]} fall={1100} />
+          <Tears T={T} x={738} y={482} s={12.2} times={[8.3, 9.3]} path={[[0, 0], [5, 50], [6, 102], [0, 150]]} fall={1100} />
         </Svg>
       </div>
       <Svg>
@@ -479,8 +486,8 @@ const Crying: React.FC<{ T: number }> = ({ T }) => {
             <Cut d={ellipse(1600, 630, 34, 22, 508)} fill={PC.charcoal} lift={0.8} />
           </Cut>
           <Cut d="" fill="none" lift={4}>
-            <Tears T={paper.step(T)} x={1504} y={512} s={3.6} times={[8.4, 9.2]} side={-1} flat color={PC.sky} shine={PC.white} fall={1080} />
-            <Tears T={paper.step(T)} x={1696} y={512} s={3.6} times={[8.9]} flat color={PC.sky} shine={PC.white} fall={1080} />
+            <Tears T={paper.step(T)} x={1504} y={512} s={13.8} times={[8.4, 9.2]} side={-1} flat color={PC.sky} shine={PC.white} fall={1080} />
+            <Tears T={paper.step(T)} x={1696} y={512} s={13.8} times={[8.9]} flat color={PC.sky} shine={PC.white} fall={1080} />
           </Cut>
         </paper.Stack>
       </Svg>
@@ -721,6 +728,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
         </Svg>
       </>
     ),
+  },
+  {
+    name: "Recipe: sleepless in a storm (8 parts)",
+    draw: (T) => <SleeplessStorm T={T} strikes={[6.2, 9.5]} tears={[8.6]} from={4} />,
   },
 ];
 

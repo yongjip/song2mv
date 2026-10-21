@@ -152,24 +152,25 @@ the defaults, they put the kit's neon night around every concept, and the title 
 Look at it before you design anything:
 
 ```bash
-cd <work>/video && npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 20 scenes
-npx remotion still src/index.ts Kit-Gallery scene.png --frame=4                        # one at full size (1–20)
+cd <work>/video && npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 21 scenes
+npx remotion still src/index.ts Kit-Gallery scene.png --frame=4                        # one at full size (1–21)
 ```
 
 `src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc
 comment in `src/kit/` lists what each prop does. Scenes 1–12 are the kit's pieces, in one flat illustrated style.
 Scene 13 is the paper style pack. Scenes 14–20 are helpers that fit any style, their colours and shapes being props
 (most of those tiles draw the helper again, flat on paper), and a person in bed: one world filmed as shots (14), hits
-(15), flames (16), a storm (17), tears (18), lying awake in bed (19), falling cash (20).
+(15), flames (16), a storm (17), tears (18), lying awake in bed (19), falling cash (20). Scene 21 is a recipe that
+combines them.
 
 | family | pieces | for |
 |---|---|---|
 | sky and light | `SkyGradient` (dawn, day, dusk, night; `to` + `k` blend; `stars`), `Sun`, `Moon`, `Clouds` (`time`, `light`, `size`), `Rays`, `BeatGlow`, `Flash`, `Bokeh`, `Dust`, `Snow` | time of day, mood, the beat in light |
 | camera | `Camera` (one world filmed as `shots`: each cuts in at a bar or word time and looks at `x`, `y` with `zoom` and `rotate`, may drift `to` the next cut or `glide` in; `hits` punch the zoom in), `cameraAt()` (the same camera as numbers and as SVG or CSS transforms), `Drift` (a slow zoom) | cutting on the music |
 | places | `City` (night, `dusk`, `day`; `shift` pans by depth), `Street` (pavement, road, lamps), `Room` (`view` through the window; `bed` + `sleeper`), `Bed` (a sleeper between mattress and blanket, `cover`, `head`), `Ground` (ridges, town, trees), `Sea` (`light` path, `beach`), `GridFloor` | where it happens |
-| people | `Person` (15 poses, `lie` on the back among them; `walk`/`run` by `phase`; `look`: outfit, hair, skin, colours; `prop` + `personHand()`), `Crowd` (`handsUp`, `jump`, `idle`, `lights`), `MiniPerson` | the protagonist, the audience |
+| people | `Person` (15 poses, `lie` on the back among them; `walk`/`run` by `phase`; `look`: outfit, hair, skin, colours; `prop` + `personHand()`; `personEye()` for tears or a glint), `Crowd` (`handsUp`, `jump`, `idle`, `lights`), `MiniPerson` | the protagonist, the audience |
 | objects | `Phone` (`messages`, `typing`, `call`), `Clock` (`spin`, `ticks` on the beat, alarm `ring`), `Heart` (`beat`, `crack`), `Car` (`distance` turns the wheels), `Plane` (`trail`), `Lantern`/`Lanterns` | what the lyrics are about |
-| effects | `Rain` (`strength`, splashes on `ground`), `Fireworks` (`bursts` at times), `Confetti`, `Hit` (`burst`, `sparkle` or `ring` at a point and time), `Flames` (a fire to a candle; `flat`, `wind`, `strength`), `Storm` (a storm deck of `Clouds` lit from inside by its `strikes`) and `Lightning` (`fork` or `zigzag` bolts), `strikeFlashes()` (for `Flash`), `Tears` (well up, run down a cheek, drip; on a face the scene draws), `Cash` (banknotes tumbling down) | weather, hits and the big moments |
+| effects | `Rain` (`strength`, splashes on `ground`), `Fireworks` (`bursts` at times), `Confetti`, `Hit` (`burst`, `sparkle` or `ring` at a point and time), `Flames` (a fire to a candle; `flat`, `wind`, `strength`) and `FlamesAlong` (an object's edge on fire), `Storm` (a storm deck of `Clouds` lit from inside by its `strikes`) and `Lightning` (`fork` or `zigzag` bolts; a strike's `to` aims it at a point), `strikeFlashes()` (for `Flash`), `Tears` (well up, run down a cheek, drip; on a face the scene draws), `Cash` (banknotes tumbling down) | weather, hits and the big moments |
 | text | `Slam`, `Quiet`, `BigLine`, `Captions` | lines in the scene |
 
 **Style packs** (`src/kit/styles/`, one namespace each: `import { paper } from "../kit"`). `paper`, for paper
@@ -191,6 +192,10 @@ Putting a scene together:
 - **Any style:** `Hit`, `Flames`, `Lightning`/`Storm`, `Tears` and `Cash` take their colours and shapes as props. For
   a flat or paper look pass the style's colours with `glow={0}` or `flat`; inside a `paper.Stack`, wrapping one in
   `<paper.Cut d="" fill="none" lift={6}>` gives it the paper's shadow (gallery tiles 15–18 and 20).
+- **Recipes:** parts fit together by the same scale `s` (1 = a Person 300 px tall), the line things stand on and
+  anchors (`personHand()`, `personEye()`, a strike's `to`, `FlamesAlong`), so a new asset can be a recipe of a few
+  lines that combines them, like `SleeplessStorm` in `src/kit/recipes.tsx` (scene 21); recipes are welcome as pull
+  requests too.
 - **One light:** choose the scene's key light and pass it everywhere it is asked for: the same `time` for sky,
   clouds, city and vehicles; `light` on `Clouds` and `Sea`.
 - **Motion from data:**

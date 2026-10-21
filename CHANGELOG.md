@@ -77,7 +77,11 @@ First release (0.1.0).
   - `Cash`: banknotes tumbling down, with no currency, letters or numbers on them.
 
   `Hit`, `Flames`, `Lightning`, `Storm`, `Tears` and `Cash` take their colours and shapes as props, so they fit any
-  art style; their tiles draw each again flat on paper. The gallery overview now holds 20 tiles.
+  art style; their tiles draw each again flat on paper. The parts combine: one scale (`s` = 1 is a Person 300 px
+  tall; `Tears` and `Bed` follow it), the line things stand on, and anchors (`personEye()` next to `personHand()`,
+  `FlamesAlong` for an object's edge, a strike's `to` for a point). A recipe combines parts into a new asset in a few
+  lines: `SleeplessStorm` (`src/kit/recipes.tsx`, tile 21) has someone lying awake in bed while a storm crosses the
+  window, with a tear and the camera closing in. The gallery overview now holds 21 tiles.
 - Adding to the kit by pull request. `CONTRIBUTING.md` says how to add an asset or a style pack: original drawings,
   MIT, no media files, the kit's rules, a gallery tile and a still. The pull request template asks for them, and CI
   renders every gallery tile and keeps the PNGs for 14 days as the run's `kit-gallery` artifact. Once a video is
