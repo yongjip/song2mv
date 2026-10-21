@@ -123,6 +123,39 @@ def test_the_hit_that_opens_a_section_is_not_blamed_on_the_line_sung_into_it(tmp
     assert next(r for r in res["per_line"] if r["id"] == "pc1-04")["motion"] > 0.6  # its own shot still moves
 
 
+REPEATS = {
+    "duration": 18.0,
+    "sections": [{"id": "v1", "kind": "mid", "start": 0.0, "end": 6.0}, {"id": "ch1", "kind": "hot", "start": 6.0, "end": 9.0},
+                 {"id": "v2", "kind": "mid", "start": 9.0, "end": 15.0}, {"id": "ch2", "kind": "hot", "start": 15.0, "end": 18.0}],
+    "lines": [{"id": f"{sec}-0{n}", "section": sec, "text": "la la la", "start": t, "end": t + 2.5}
+              for sec, n, t in (("v1", 1, 0.0), ("v1", 2, 3.0), ("ch1", 1, 6.0), ("v2", 1, 9.0), ("v2", 2, 12.0), ("ch2", 1, 15.0))],
+}
+
+
+@pytest.mark.parametrize("kind, passes", [("hot", False), ("mid", True)])
+def test_a_chorus_line_that_repeats_its_picture_fails_even_when_the_mean_passes(tmp_path, kind, passes):
+    # Verse 2 is a flat colour (correlation 0 with verse 1's lines); chorus 2 is chorus 1's picture again (about 1).
+    # The mean over the three pairs passes; in a hot section the copied pair fails on its own.
+    from song2mv.check.score import score
+
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y",
+                    "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10:duration=6",
+                    "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10:duration=3",
+                    "-f", "lavfi", "-i", "color=c=gray:size=320x180:rate=10:duration=6",
+                    "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10:duration=3",
+                    "-filter_complex", "[0:v][1:v][2:v][3:v]concat=n=4:v=1[v]", "-map", "[v]", str(mp4)], check=True)
+    sections = [{**s, "kind": kind} if s["id"].startswith("ch") else s for s in REPEATS["sections"]]
+    res = score(str(mp4), str(write(tmp_path, "mv.json", {**REPEATS, "sections": sections})), quiet=True)
+    rep = res["results"]["variation.repeats"]
+    (worst, corr), *rest = rep["pairs"]
+    assert worst == "ch1-01~ch2-01" and corr > 0.9 and len(rest) == 2  # worst first, also in the message
+    assert f"worst first {rep['pairs']}" in rep["msg"]
+    mean = (corr + sum(c for _, c in rest)) / 3
+    assert mean < 0.55 and rep["goal"] == {"max": 0.55}
+    assert rep["ok"] is passes and rep["value"] == (pytest.approx(mean, abs=0.01) if passes else corr)
+
+
 def test_the_font_lint_reads_font_sizes_not_size_props(tmp_path):
     from song2mv.check.score import score
 

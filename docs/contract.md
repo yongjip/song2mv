@@ -27,7 +27,9 @@ an error.
 
 `check` results: `value` is the measured number and `goal` is `{"min": x}` or `{"max": x}`. Per-line checks
 (`motion.min`, `motion.max`, `coverage.min`) count the failing lines in `value` (goal `{"max": 0}`) and list them in
-`lines` as `{id, value, goal}`. A check in `skipped` neither passed nor failed and is not counted in `total`.
+`lines` as `{id, value, goal}`. `variation.repeats` lists every repeated line pair in `pairs` as `[pair, correlation]`,
+worst first; its `value` is their mean, or the worst pair with a line in a hot section when that is higher. A check in
+`skipped` neither passed nor failed and is not counted in `total`.
 
 `off_sheet` lists the stretches of at least 1.5 s where two or more whisper runs agree on two or more words that no
 line of the lyric sheet matched: a chant or an ad-lib the sheet leaves out, a line sung differently, a repeat the

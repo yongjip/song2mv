@@ -5,8 +5,9 @@ music video out. It is a command-line tool built for coding agents. Five command
 
 ## Using song2mv for a user
 
-If the user asked you to decide, do not stop at the checkpoints below: choose, give the reason in one line,
-make the ear-check files and list those spots as unheard, and carry on to the finished video.
+The checkpoints below don't block: show what you have with your pick and the reason in one line, and carry on; the
+user can redirect. Decide timing by measurement, make the ear-check files anyway and list the unheard spots when you
+deliver. Wait only for the song's rights or a lyric only the user knows.
 
 1. **Rights first.** Ask whose song it is and whether the user may publish a video of it (an AI music service's
    plan terms count). Never copy the song, its lyrics or renders into a repository; keep them in the work folder.
@@ -29,8 +30,8 @@ make the ear-check files and list those spots as unheard, and carry on to the fi
 5. **Video.** `song2mv render WORK/mv.json --still T --aspect both` writes PNGs you can look at; render short
    stretches (`--from A --to B`) while working. For the user's own scenes use `--template DIR` and write them in
    `DIR/src/scenes/`: a scene is a pure function of song time `T`; text pops once and then holds still; lay out
-   on the 1920×1080 stage. Start from a concept: propose two or three, in different art styles, and let the user
-   pick one (or pick yourself if they asked you to decide). The scene kit in `DIR/src/kit/` (people, places, sky, objects, effects; style packs such as `paper` that
+   on the 1920×1080 stage. Start from a concept: propose two or three, in different art styles, as stills side by
+   side, and pick one. The scene kit in `DIR/src/kit/` (people, places, sky, objects, effects; style packs such as `paper` that
    put any object in another art style) is optional: reuse what fits the concept, change it in DIR, draw the rest.
    See it with `npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR. When the video is done,
    offer the user anything generic you drew as a pull request (`CONTRIBUTING.md`). Remotion is not MIT — tell

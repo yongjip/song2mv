@@ -8,14 +8,13 @@ description: Make a beat-synced music video or lyric video for a song, drawn in 
 You turn one audio file into a music video whose every frame is code (React/SVG in Remotion), synced to the song's
 beat and lyrics. `song2mv` has the tools; this file is the order to use them in and what to watch for.
 
-The loop is: **timing → scene design → render → check → fix**, with the user looking and listening at the
-checkpoints. You cannot hear the song, so every judgement that needs ears goes to the user, with a short clip or
-click track that makes it a ten-second check.
+The loop is: **timing → scene design → render → check → fix**. You cannot hear the song, so every judgement that
+needs ears goes to the user as a short clip or click track that makes it a ten-second check.
 
-**If the user asked you to decide** ("don't ask me, just do it"), still do every step, but don't stop at the
-checkpoints: decide each one yourself and give the reason in one line. Make the ear-check click files anyway and,
-instead of waiting, list those spots as unheard when you deliver, with anything else still open (such as the song's
-rights). Carry on to the finished video.
+**Checkpoints don't block.** At each one, show the user what you have, with your pick and the reason in one line,
+and keep going; they can redirect you at any time. Decide timing by measurement, send the ear-check clips anyway and
+list the spots nobody has heard when you deliver. Wait only for what you can neither measure nor recommend: the
+song's rights, or a lyric only the user knows.
 
 ## 0. Before anything
 
@@ -25,7 +24,8 @@ rights). Carry on to the finished video.
 - **Setup**, once: `uv tool install --python 3.13 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'` (not on
   PyPI yet; faster-whisper has no Python 3.15 wheels). Needs ffmpeg; `render` needs Node 18+ and installs Remotion
   (~570 MB) on its first run.
-- **What they want**: full 16:9 video, 9:16 short(s), LRC/SRT only, or all. Title text. Mood or references.
+- **What they want**: full 16:9 video, 9:16 short(s), LRC/SRT only, or all. Title text. Mood or references. If you
+  make the song too (Suno and the like), name a BPM in the style prompt: it tends to give a steady tempo.
 
 ## 1. Timing
 
@@ -71,12 +71,12 @@ Then make the ear check cheap for the user:
 song2mv click <work> --from <chorus start - 4> --to <+12> --words      # → <work>/click-<from>-<to>.wav
 ```
 
-Ask them to listen: do the clicks sit on the drums, is the high click on the "one", do the word ticks land on the
-syllables? Fix with `"bpm"`, `"downbeat_mod4"` and `"manual": {"<line id>": [word start times]}` in
-`<work>/song.json`, then `song2mv sync <work>/song.json` (only cheap steps rerun). Shouts and chants nearly always
-need a few `manual` values; that is normal. A pin only constrains: re-heard lines around it keep their times while
-they still fit between the pins, so pin only the lines that are wrong. A re-heard line a pin contradicts is heard
-again between the pins and stays on `check_by_ear`: check it once more.
+Send it with the question: do the clicks sit on the drums, is the high click on the "one", do the word ticks land on
+the syllables? Meanwhile decide by measurement: where the whisper runs agree, the grid fit, a repeated section's
+timing. Fix with `"bpm"`, `"downbeat_mod4"` and `"manual": {"<line id>": [word start times]}` in `<work>/song.json`,
+then `song2mv sync <work>/song.json` (only cheap steps rerun). Shouts and chants nearly always need a few `manual`
+values. A pin only constrains: re-heard lines around it keep their times while they still fit between the pins, so
+pin only the lines that are wrong; a re-heard line a pin contradicts is heard again and stays on `check_by_ear`.
 
 Outputs in `<work>/`: `grid.json`, `lyrics.json`, `mv.json` (the template's input), `song.lrc`, `song.words.lrc`,
 `song.srt`, `music.json` (loudness and section boundaries). If the user only wanted subtitles, you are done here.
@@ -96,8 +96,8 @@ choruses big. Show it to the user early — sometimes it is all they need.
 Every song gets its own look. One kit or template applied to every song makes every video look alike, so the look is
 decided before you touch the kit.
 
-**Propose two or three concepts and let the user pick one** (or pick one yourself if they asked you to decide).
-They must differ in more than colour: a different art style and a different central image. For each, write:
+**Propose two or three concepts and pick one.** They must differ in more than colour: a different art style and a
+different central image. For each, write:
 
 - **Idea:** one line, the image that carries the song, taken from its lyrics and mood.
 - **Art style:** what fits this song, not what is quickest to build. Some options:
@@ -108,22 +108,21 @@ They must differ in more than colour: a different art style and a different cent
   - collage, or watercolour washes;
   - an isometric miniature;
   - kinetic typography only, or neon signs on brick.
-- **Palette, texture and typeface.**
+- **Palette, texture and typeface.** The typeface is part of the look: rather than a system font, use an OFL font
+  file imported from `src/` (`song2mv render` ignores `public/`), and check stills on the machine that renders.
 - **Main character or motif,** and how it changes over the song.
 - **First chorus:** how it hits, the song's biggest moment.
 
-Make each concept concrete enough to picture: render one rough still per concept and show them side by side. Copy
-the template now (step 4's first command), draw each concept as a component of `T` in
-`<work>/video/src/scenes/concepts/`, export it from `src/scenes/concepts/index.ts` under the concept's name, and render
-them all at one moment, such as the first chorus' downbeat. Each is drawn alone, without the template's sky, captions
-or vignette:
+Make each concept concrete enough to picture: one rough still each, shown side by side with your pick and the reason
+in one line. Copy the template now (step 4's first command), draw each concept as a component of `T` in
+`<work>/video/src/scenes/concepts/`, export it by name from `src/scenes/concepts/index.ts`, and render them all at one
+moment, such as the first chorus' downbeat. Each is drawn alone, without the template's sky, captions or vignette:
 
 ```bash
 cd <work>/video && npx remotion still src/index.ts Concepts concepts.png --props="{\"T\": <first chorus start>, \"song\": $(cat ../mv.json)}"
 ```
 
-**Then the song map** for the chosen concept, `<work>/map.md`. Agree on it with the user before coding, unless they
-asked you to decide:
+**Then the song map** for the chosen concept, `<work>/map.md`. Show it to the user and carry on:
 
 - Per section (from `mv.json` sections; `<work>/music.json` has the loudness curve and likely boundaries): bars,
   energy (rising / peak / falling), what the lyrics say, **one visual idea**, colour.
@@ -259,7 +258,8 @@ Rules that held up:
    lights, particles, shapes, the camera (`Camera`, `Drift`) — not text.
 3. **Every line a scene draws itself** goes into `linesDrawnByScene`, so the bottom captions don't double it.
 4. **Lay out on the 1920×1080 stage.** In 9:16 the stage is a band; read `VerticalCtx` to stack side-by-side
-   layouts, or export a `VerticalScene` that draws the whole 9:16 frame (step 6). Keep text ≥ 36 px.
+   layouts, or export a `VerticalScene` that draws the whole 9:16 frame (step 6). Keep text ≥ 36 px on screen:
+   `check` reads only the size literals in the source, not what a camera or a `scale()` makes of them.
 5. Pull timing from data: `useSong().lineById["ch1-01"].words[0].t`, `grid.bar(k)`, `grid.pulse(T)`.
 
 Typecheck (`cd <work>/video && npx tsc --noEmit`), then look at stills of the new section before rendering video.
@@ -285,10 +285,10 @@ Their answer outranks the check.
 ## 6. Shorts (9:16)
 
 Pick 10–35 s around the hook (usually the first chorus). The first two seconds decide whether people stay: start
-on the hit and use `--hold` so the first frame already shows the payoff.
+on the hit and use `--hold` so the first frame shows the payoff fully drawn; check it with `--still` at from + hold.
 
 ```bash
-song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --aspect 9x16 --hold 0.17
+song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --aspect 9x16 --hold <s>
 ```
 
 By default the short shows `Scene` shrunk into a band, with the template's sky above and below it and the title on
@@ -306,8 +306,8 @@ look different.
 
 ## 7. Deliver
 
-Full render(s), short(s), `song.srt` / `song.lrc`, and a short list of what was hand-fixed (manual timing values,
-goals changed and why). Nothing from the work folder gets committed.
+Full render(s), short(s), `song.srt` / `song.lrc`, a short list of what was hand-fixed (manual timing values, goals
+changed and why) and the spots nobody has heard yet, each with its clip. Nothing from the work folder gets committed.
 
 **Give back what other songs can use.** Look over what you drew for the video. Some pieces are generic, not tied to
 this song: an object, a pose, a place, a style pack. Offer those to the user as a pull request to song2mv, following

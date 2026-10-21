@@ -24,7 +24,7 @@
     "median_min": 0.08
   },
   "variation": {
-    "_doc": "Repeated sections (ch1 vs ch2, v1 vs v2 ...): frame correlation of the same line at +0.5/1.0/1.5/2.0 s, averaged. Lower = the repeat looks different.",
+    "_doc": "Repeated sections (ch1 vs ch2, v1 vs v2 ...): frame correlation of the same line at +0.5/1.0/1.5/2.0 s, averaged per line pair. Lower = the repeat looks different. The mean over all pairs must stay at or under the goal, and so must every pair with a line in a hot section: no chorus line may look like its first copy.",
     "repeat_corr_max_mean": 0.55
   },
   "cuts": {
