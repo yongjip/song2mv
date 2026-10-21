@@ -1,4 +1,5 @@
 import React from "react";
+import { cameraAt as kitCameraAt, CameraView, Shot } from "../camera";
 
 type Pt = [number, number];
 const OFFSET = 4096, ROW_LENGTH = 16384;
@@ -51,24 +52,46 @@ export class Canvas {
   }
 
   line(pts: Pt[], width: number, c: string) {
-    for (let i = 0; i + 1 < pts.length; i++) {
-      const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
-      const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) * 2));
-      for (let k = 0; k <= n; k++) {
-        const x = ax + ((bx - ax) * k) / n, y = ay + ((by - ay) * k) / n;
-        if (width <= 1) this.set(x, y, c); else this.disc(x, y, width / 2 - 0.3, width / 2 - 0.3, c);
+    if (width > 1) {
+      for (let i = 0; i + 1 < pts.length; i++) {
+        const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+        const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) * 2));
+        for (let k = 0; k <= n; k++) this.disc(ax + ((bx - ax) * k) / n, ay + ((by - ay) * k) / n, width / 2 - 0.3, width / 2 - 0.3, c);
+      }
+      return;
+    }
+    const ends = pts.length === 1 ? [pts[0], pts[0]] : pts, path: Pt[] = [];
+    for (let i = 0; i + 1 < ends.length; i++) {
+      let [x, y] = ends[i].map(Math.round);
+      const [bx, by] = ends[i + 1].map(Math.round);
+      const dx = Math.abs(bx - x), dy = -Math.abs(by - y), sx = x < bx ? 1 : -1, sy = y < by ? 1 : -1;
+      for (let err = dx + dy; ; ) {
+        const last = path[path.length - 1];
+        if (!last || last[0] !== x || last[1] !== y) path.push([x, y]);
+        if (x === bx && y === by) break;
+        const e2 = 2 * err;
+        if (e2 >= dy) { err += dy; x += sx; }
+        if (e2 <= dx) { err += dx; y += sy; }
       }
     }
+    // pixel perfect: where the path turns a corner through a pixel between two diagonal neighbours, skip that pixel
+    const kept: Pt[] = [];
+    for (const p of path) {
+      const a = kept[kept.length - 2], b = kept[kept.length - 1];
+      if (a && b && Math.abs(p[0] - a[0]) === 1 && Math.abs(p[1] - a[1]) === 1) kept.pop();
+      kept.push(p);
+    }
+    for (const [x, y] of kept) this.set(x, y, c);
   }
 
   stamp(sprite: Canvas, outline?: string, dx = 0, dy = 0) {
+    const shape = outline ? filledElbows(sprite) : sprite;
     if (outline)
-      for (const key of sprite.cells.keys()) {
+      for (const key of shape.cells.keys()) {
         const [x, y] = xy(key);
-        for (const [ex, ey] of [[1, 0], [-1, 0], [0, 1], [0, -1]])
-          if (sprite.get(x + ex, y + ey) === undefined) this.set(x + ex + dx, y + ey + dy, outline);
+        for (const [ex, ey] of SIDES) if (shape.get(x + ex, y + ey) === undefined) this.set(x + ex + dx, y + ey + dy, outline);
       }
-    for (const [key, c] of sprite.cells) {
+    for (const [key, c] of shape.cells) {
       const [x, y] = xy(key);
       this.set(x + dx, y + dy, c);
     }
@@ -85,11 +108,50 @@ export class Canvas {
   }
 }
 
+const SIDES: Pt[] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+
+/**
+ * The sprite with every inside corner of its silhouette filled, so the ring `stamp` draws round it turns that corner
+ * on a diagonal instead of an L of three outline pixels
+ */
+function filledElbows(sprite: Canvas): Canvas {
+  const out = new Canvas();
+  for (const [key, c] of sprite.cells) out.cells.set(key, c);
+  const on = (x: number, y: number) => sprite.get(x, y) !== undefined;
+  const ring = (x: number, y: number) => !on(x, y) && SIDES.some(([ex, ey]) => on(x + ex, y + ey));
+  for (const key of sprite.cells.keys()) {
+    const [sx, sy] = xy(key);
+    for (const [ex, ey] of SIDES) {
+      const x = sx + ex, y = sy + ey;
+      if (on(x, y) || out.get(x, y) !== undefined) continue;
+      for (let i = 0; i < 4; i++) {
+        const [ax, ay] = SIDES[i], [bx, by] = SIDES[(i + 1) % 4], [cx, cy] = SIDES[(i + 2) % 4], [dx, dy] = SIDES[(i + 3) % 4];
+        if (on(x + ax, y + ay) && on(x + bx, y + by) && ring(x + cx, y + cy) && ring(x + dx, y + dy)
+          && !on(x + cx + dx, y + cy + dy) && !ring(x + cx + dx, y + cy + dy)) {
+          const [hx, hy] = ay === 0 ? [ax, ay] : [bx, by];
+          out.set(x, y, sprite.get(x + hx, y + hy)!);
+          break;
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** A sprite from a character map: a string per row, a character per pixel, coloured by `palette`; any character the palette does not name (".", " ") stays clear */
+export function sprite(rows: string[], palette: Record<string, string>): Canvas {
+  const canvas = new Canvas();
+  rows.forEach((row, y) => [...row].forEach((ch, x) => palette[ch] !== undefined && canvas.set(x, y, palette[ch])));
+  return canvas;
+}
+
 export const textWidth = (s: string, scale = 1) => Math.max(0, [...s].length * 6 - 1) * scale;
 
+/** A canvas on the stage, `px` stage px to a pixel; size and place round to whole stage px, so every pixel is the same square */
 export const Pixels: React.FC<{ canvas: Canvas; px?: number; x?: number; y?: number; opacity?: number }> = ({
   canvas, px = 8, x = 0, y = 0, opacity,
 }) => {
+  const size = Math.max(1, Math.round(px)), left = Math.round(x), top = Math.round(y);
   const rows = new Map<number, Pt[]>();
   for (const key of canvas.cells.keys()) {
     const [cx, cy] = xy(key);
@@ -97,14 +159,13 @@ export const Pixels: React.FC<{ canvas: Canvas; px?: number; x?: number; y?: num
     rows.get(cy)!.push([cx, key]);
   }
   const rects: React.ReactNode[] = [];
-  // the +0.5 hides seams on a scaled stage; drawn top down, each row covers the overlap of the row above
   for (const cy of [...rows.keys()].sort((a, b) => a - b)) {
     const cells = rows.get(cy)!.sort((a, b) => a[0] - b[0]);
     for (let i = 0; i < cells.length; ) {
       const c = canvas.cells.get(cells[i][1])!;
       let j = i;
       while (j + 1 < cells.length && cells[j + 1][0] === cells[j][0] + 1 && canvas.cells.get(cells[j + 1][1]) === c) j++;
-      rects.push(<rect key={`${cy} ${cells[i][0]}`} x={x + cells[i][0] * px} y={y + cy * px} width={(j - i + 1) * px + 0.5} height={px + 0.5} fill={c} />);
+      rects.push(<rect key={`${cy} ${cells[i][0]}`} x={left + cells[i][0] * size} y={top + cy * size} width={(j - i + 1) * size} height={size} fill={c} />);
       i = j + 1;
     }
   }
@@ -114,33 +175,61 @@ export const Pixels: React.FC<{ canvas: Canvas; px?: number; x?: number; y?: num
 export const Pixelate: React.FC<{ id: string; block?: number; stageScale?: number; outline?: string; children: React.ReactNode }> = ({
   id, block = 8, stageScale = 1, outline, children,
 }) => {
-  const h = block / 2, dot = 1 / Math.max(0.1, stageScale);
+  const b = 2 * Math.max(1, Math.round(block / 2)), px = 1 / Math.max(0.1, stageScale), r = b / 2 - px;
   return (
     <g>
       <defs>
-        {/* sample dots start at the origin and are a screen px wide: anywhere else, or smaller, they fall between pixels */}
+        {/* a screen px sampled at each block's middle by dots from the origin (anywhere else, or smaller, they fall
+            between pixels), doubled to 2 × 2 so that it grows to exactly one block */}
         <filter id={id} x={-240} y={-240} width={2400} height={2400} filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse"
           colorInterpolationFilters="sRGB">
-          <feFlood x={0} y={0} width={dot} height={dot} floodColor="#000" result="dot" />
-          <feComposite in="dot" x={0} y={0} width={block} height={block} result="cell" />
+          <feFlood x={0} y={0} width={px} height={px} floodColor="#000" result="dot" />
+          <feComposite in="dot" x={0} y={0} width={b} height={b} result="cell" />
           <feTile in="cell" result="dots" />
-          <feOffset in="SourceGraphic" dx={-h} dy={-h} result="centred" />
+          <feOffset in="SourceGraphic" dx={-r} dy={-r} result="centred" />
           <feComposite in="centred" in2="dots" operator="in" result="samples" />
-          <feComponentTransfer in="samples" result="hard">
+          <feComponentTransfer in="samples" result="sample">
             <feFuncA type="discrete" tableValues="0 1" />
           </feComponentTransfer>
-          <feMorphology in="hard" operator="dilate" radius={h} result="blocks" />
-          {outline && <feMorphology in="blocks" operator="dilate" radius={block} result="grown" />}
+          <feOffset in="sample" dx={px} result="right" />
+          <feMerge result="pair"><feMergeNode in="sample" /><feMergeNode in="right" /></feMerge>
+          <feOffset in="pair" dy={px} result="below" />
+          <feMerge result="hard"><feMergeNode in="pair" /><feMergeNode in="below" /></feMerge>
+          <feMorphology in="hard" operator="dilate" radius={r} result="blocks" />
+          {/* across and down apart, not as a square: a square ring doubles every diagonal step */}
+          {outline && <feMorphology in="blocks" operator="dilate" radius={`${b} 0`} result="wide" />}
+          {outline && <feMorphology in="blocks" operator="dilate" radius={`0 ${b}`} result="tall" />}
           {outline && <feFlood floodColor={outline} result="ink" />}
-          {outline && <feComposite in="ink" in2="grown" operator="in" result="ring" />}
-          {outline && <feMerge result="ringed"><feMergeNode in="ring" /><feMergeNode in="blocks" /></feMerge>}
-          <feOffset in={outline ? "ringed" : "blocks"} dx={h} dy={h} />
+          {outline && <feComposite in="ink" in2="wide" operator="in" result="ring1" />}
+          {outline && <feComposite in="ink" in2="tall" operator="in" result="ring2" />}
+          {outline && <feMerge result="ringed"><feMergeNode in="ring1" /><feMergeNode in="ring2" /><feMergeNode in="blocks" /></feMerge>}
+          <feOffset in={outline ? "ringed" : "blocks"} dx={r} dy={r} />
         </filter>
       </defs>
       <g filter={`url(#${id})`}>{children}</g>
     </g>
   );
 };
+
+/**
+ * The kit's camera (`cameraAt`) for a pixel world drawn from the stage origin: the zoom rounds to a whole number (1 at
+ * least) and the frame to whole pixels of the world, kept on the stage, so every block on screen is `px` × zoom stage
+ * px, as if one small picture were scaled up. A glide from 1 to 3 steps through 2; a punch or a roll does not show.
+ */
+export function cameraAt(
+  T: number, shots: Shot[], o: { hits?: number[]; punch?: number; px?: number; w?: number; h?: number } = {},
+): CameraView {
+  const { px = 8, w = 1920, h = 1080 } = o;
+  const view = kitCameraAt(T, shots, o);
+  const zoom = Math.max(1, Math.round(view.zoom)), cell = Math.max(1, Math.round(px)) * zoom;
+  const snap = (v: number, size: number) => Math.min(0, Math.max(size - size * zoom, Math.round((size / 2 - v * zoom) / cell) * cell));
+  const left = snap(view.x, w), top = snap(view.y, h);
+  return {
+    ...view, x: (w / 2 - left) / zoom, y: (h / 2 - top) / zoom, zoom, rotate: 0,
+    svg: `translate(${left} ${top}) scale(${zoom})`,
+    css: `translate(${left}px, ${top}px) scale(${zoom})`,
+  };
+}
 
 export const step = (T: number, fps = 8) => Math.floor(T * fps + 1e-6) / fps;
 

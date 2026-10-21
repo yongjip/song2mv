@@ -211,16 +211,26 @@ paper cut-out:
 - `paper.Stack id`: the grain and the light for every piece inside it, one per scene;
 - `paper.colors` and `paper.matte(c)` for paper colours, `paper.step(T)` for the held steps of cut-out motion.
 
-`pixel`, for pixel art:
-- `new pixel.Canvas()`: a picture in big pixels, drawn with `box`, `disc`, `poly`, `line`, `dither` (a tone of a
-  colour) and `text` (a 5×7 font: Latin letters, digits, punctuation); positions round to whole pixels. Draw a sprite
-  on a canvas of its own and `stamp` it on with an outline colour;
-- `pixel.Pixels`: a canvas on the stage, `px` stage px to a pixel (at 8, 240 × 135 pixels fill it);
-- `pixel.Pixelate id`: anything inside turns into blocks on the same grid, `outline` rings them: big type in any font,
-  or any kit drawing. Pop or slide what is inside, not a group around it, so the blocks stay put. One colour per
-  Pixelate gives clean blocks (the shadow in one, the face in another). Korean type smears under about 18 blocks to
-  the em, so lyrics stay crisp type. Where the stage is drawn smaller, pass its size as `stageScale` (0.76 in the
-  9:16 band);
+`pixel`, for pixel art. One pixel size per shot: draw the whole scene on one grid and let only the camera scale it,
+by whole numbers; never `scale()` a sprite or a layer, or blocks of two sizes meet and edges go soft.
+- `new pixel.Canvas()`: a picture in big pixels, drawn with `box`, `disc`, `poly`, `line` (1 px wide it is pixel
+  perfect: no doubled pixel where it turns), `dither` (a tone of a colour) and `text` (a 5×7 font: Latin letters,
+  digits, punctuation); positions round to whole pixels;
+- `pixel.sprite(rows, palette)`: a character from a character map, a string per row and a character per pixel
+  (`"..HHhh.."` with `{ H: hair, h: shine }`; others stay clear). `canvas.stamp(sprite, outline, x, y)` puts it on
+  with a clean 1-pixel outline (inside corners filled, so the ring turns them on a diagonal). Draw people and animals
+  this way, a frame per pose, not from discs: eyes, ears and a tail need their pixels placed (scene 22: a walk in
+  four frames, a cat asleep). Check them at 1:1 and 2×;
+- `pixel.Pixels`: a canvas on the stage, `px` stage px to a pixel (at 8, 240 × 135 pixels fill it), rounded to
+  whole stage px;
+- `pixel.cameraAt(T, shots)`: the kit's camera for a pixel scene, `<g transform={pixel.cameraAt(…).svg}>` round it:
+  the zoom rounds to a whole number and the frame to whole pixels, kept on the stage, so a close-up is 2× or 3× with
+  one pixel size and a glide steps;
+- `pixel.Pixelate id`: anything inside turns into blocks on the same grid, `outline` rings them one block wide: big
+  type in any font, or any kit drawing. Pop or slide what is inside, not a group around it, so the blocks stay put.
+  One colour per Pixelate gives clean blocks (the shadow in one, the face in another). Korean type smears under about
+  18 blocks to the em, so lyrics stay crisp type. Where the stage is drawn smaller, pass its size as `stageScale`
+  (0.76 in the 9:16 band);
 - `pixel.colors`, and `pixel.step(T)` for the held 8 steps a second of sprite animation.
 
 `comic`, for a comic page: `comic.Page` holds `comic.Panel`s, each filming the world with its own `shots`; `comic.Ink`
@@ -237,7 +247,7 @@ Putting a scene together:
 - **Any style:** `Hit`, `Flames`, `Lightning`/`Storm`, `Tears` and `Cash` take their colours and shapes as props. For
   a flat or paper look pass the style's colours with `glow={0}` or `flat`; inside a `paper.Stack`, wrapping one in
   `<paper.Cut d="" fill="none" lift={6}>` gives it the paper's shadow (gallery tiles 15–18 and 20). Inside
-  `<pixel.Pixelate outline={…}>`, any kit drawing turns into outlined pixels (`Person` and `Car` in scene 22).
+  `<pixel.Pixelate outline={…}>`, any kit drawing turns into outlined pixels (`Car` in scene 22).
 - **Recipes:** parts fit together by the same scale `s` (1 = a Person 300 px tall), the line things stand on and
   anchors (`personHand()`, `personEye()`, a strike's `to`, `FlamesAlong`), so a new asset can be a recipe of a few
   lines that combines them, like `SleeplessStorm` in `src/kit/recipes.tsx` (scene 21); recipes are welcome as pull
