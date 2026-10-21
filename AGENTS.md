@@ -2,6 +2,8 @@
 
 This repository ships `song2mv`: song in, beat-synced lyric timing (LRC, SRT, word-timed JSON) and a code-drawn
 music video out. It is a command-line tool built for coding agents. Five commands: `sync`, `beats`, `click`, `check`, `render`.
+The full music-video loop, scene design included, is the skill `.claude/skills/song2mv/SKILL.md`. An installed song2mv
+carries the skill and this file in its package folder `song2mv/guide/`; `song2mv --help` prints the skill's path.
 
 ## Using song2mv for a user
 

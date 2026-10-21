@@ -29,4 +29,5 @@ Exit codes: 0 success, 1 `check` found a failing check, 2 error. With --json an 
 - [README](https://github.com/yongjip/song2mv/blob/main/README.md)
 - [AGENTS.md — operating rules](https://github.com/yongjip/song2mv/blob/main/AGENTS.md)
 - [Machine contract](https://github.com/yongjip/song2mv/blob/main/docs/contract.md)
-- [Music-video skill](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md)
+- [Music-video skill](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md) — installed with
+  the package (with AGENTS.md) in `song2mv/guide/`; `song2mv --help` prints its path

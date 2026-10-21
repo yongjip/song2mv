@@ -15,12 +15,23 @@ import os
 import shutil
 import sys
 import traceback
+from pathlib import Path
 
 from . import __version__
 from .contract import stamp
 from .errors import Song2mvError
 
 INSTALL_DOCS = "https://github.com/yongjip/song2mv#install"
+GUIDE_URL = "https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md"
+
+
+def guide_path() -> str:
+    """The agent guide: in the package when installed from a wheel, else in the source checkout."""
+    pkg = Path(__file__).resolve().parent
+    for guide in (pkg / "guide" / "SKILL.md", pkg.parents[1] / ".claude" / "skills" / "song2mv" / "SKILL.md"):
+        if guide.is_file():
+            return str(guide)
+    return GUIDE_URL
 
 
 def _need(modules: list[str], extra: str) -> None:
@@ -143,10 +154,12 @@ def cmd_render(a) -> dict:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    guide = f"Coding agent? Read this guide first, before running any command:\n  {guide_path()}"
     p = argparse.ArgumentParser(
         prog="song2mv",
-        description="Song in, beat-synced lyric timing and a code-drawn music video out. Built for coding agents.",
-        epilog="Docs: https://github.com/yongjip/song2mv  ·  Agent guide: https://github.com/yongjip/song2mv/blob/main/AGENTS.md")
+        description="Song in, beat-synced lyric timing and a code-drawn music video out.\nBuilt for coding agents.",
+        epilog=f"{guide}\nDocs: https://github.com/yongjip/song2mv",
+        formatter_class=argparse.RawDescriptionHelpFormatter)  # keeps the guide's path on one line, unbroken
     p.add_argument("--version", action="version", version=f"song2mv {__version__}")
     sub = p.add_subparsers(dest="command", metavar="COMMAND")
 
@@ -208,6 +221,10 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--name", help="output file name prefix")
     r.add_argument("--json", action="store_true")
     r.set_defaults(func=cmd_render)
+
+    for command in sub.choices.values():
+        command.epilog = guide
+        command.formatter_class = argparse.RawDescriptionHelpFormatter
     return p
 
 
