@@ -89,6 +89,14 @@ First release (0.1.0).
   77 % on the demo songs, and one stretch failed `cuts.max_gap` as a draft only. On a full render, cuts can now be
   reported 0.1 s later, and a check right at its goal can flip (that stretch's longest gap without a cut went from
   6.0 to 6.1 s, goal ≤ 6).
+- On Windows, `song2mv render` failed at its first Remotion call: the template's `render.mjs` ran `npx`, which is
+  `npx.cmd` there and cannot be started without a shell. It now runs Remotion's CLI with the node that runs it, and
+  a new CI job renders a still of the sample song on Windows. Run in a folder without an install, `render.mjs` says
+  to run `npm ci` instead of letting npx fetch a package.
+- `node render.mjs mv.json --composition ID --props FILE` renders a PNG of any composition with the song and the props
+  in FILE. The skill's `Concepts` and `Contact` commands take a props file (`{"T": 33.1}`) instead of the shell's
+  `$(cat ../mv.json)`, which neither PowerShell nor cmd has, and its commands no longer chain with `&&` or continue
+  lines with `\`, which Windows PowerShell 5.1 does not take. Run directly, `render.mjs` prints each file it writes.
 - The template's lyrics are easier to read.
   - **Unsung words:** they are drawn at 50 % white with a tight dark shadow. At 32 % they had 2.7:1 contrast against
     the background, below WCAG's 3:1 for large text; now they have 5.3:1.

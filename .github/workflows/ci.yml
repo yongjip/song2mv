@@ -101,3 +101,22 @@ jobs:
           name: kit-gallery
           path: src/song2mv/render/template/out/gallery/
           retention-days: 14
+
+  windows-render:
+    # song2mv render on Windows, where npx is npx.cmd: render.mjs must start Remotion without a shell
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/song2mv/render/template/package-lock.json
+      - run: uv venv
+      - run: uv pip install -e .
+      # the first render installs the template (npm ci) and Remotion's Chrome, then renders through render.mjs
+      - run: uv run --no-sync song2mv render src/song2mv/render/template/src/sample-song.json --still 5 --out out --name sample --json
+      - run: uv run --no-sync python -c "import os; n = os.path.getsize('out/sample-16x9-5s.png'); print(n, 'bytes'); assert n > 100000"

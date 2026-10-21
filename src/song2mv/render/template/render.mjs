@@ -7,6 +7,7 @@
  *   node render.mjs ../work/my-song/mv.json --from 95 --to 111 --aspect 9x16 --hold 2.5
  *   node render.mjs ../work/my-song/mv.json --from 95 --to 111 --draft   # 10 fps, for the render → check loop
  *   node render.mjs ../work/my-song/mv.json --still 98.5            # one PNG frame at song time 98.5 s
+ *   node render.mjs ../work/my-song/mv.json --composition Concepts --props concepts.json   # a PNG of Concepts
  *   node render.mjs ../work/my-song/mv.json --studio                # Remotion Studio with this song
  *
  * `song2mv render` runs this for you with --out WORK/renders; the paths above are for running node directly.
@@ -14,12 +15,15 @@
  * Options: --audio FILE (else: public/<audio>, the mv.json's audio_path, or next to mv.json; none → silent)
  *          --from S  --to S  --hold S  --aspect 16x9|9x16|both  --out DIR (default out/)  --name BASE
  *          --draft (10 fps, the rate `song2mv check` measures at, written as BASE-…-draft.mp4; --still ignores it)
- *          --manifest FILE (append the path of every file written, one per line)
+ *          --composition ID --props FILE (a PNG of the composition's first frame, its props {song, from, to, hold}
+ *          and the JSON object in FILE, such as {"T": 33.1} for Concepts or {"times": [12, 33.1]} for Contact)
+ *          --manifest FILE (append the path of every file written, one per line; else they are printed)
  *
  * The audio is never copied into this folder: a temporary public folder outside it holds a link to it.
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,6 +42,16 @@ const opt = (name, dflt) => {
   return i < 0 ? dflt : argv[i + 1];
 };
 const flag = (name) => argv.includes(`--${name}`);
+
+// Remotion's CLI runs in this node, not through npx: on Windows npx is npx.cmd, which node cannot start without a shell.
+let cli;
+try {
+  const pkg = createRequire(import.meta.url).resolve("@remotion/cli/package.json");
+  cli = path.join(path.dirname(pkg), JSON.parse(fs.readFileSync(pkg, "utf8")).bin.remotion);
+} catch {
+  console.error(`Remotion is not installed in ${HERE}: run npm ci there (song2mv render does it for you)`);
+  process.exit(1);
+}
 
 const song = JSON.parse(fs.readFileSync(songPath, "utf8"));
 const from = Number(opt("from", 0));
@@ -73,22 +87,27 @@ if (audio) {
   song.audio = null;
 }
 delete song.audio_path;
-const draft = flag("draft") && opt("still") === undefined;
+const extra = opt("props") ? JSON.parse(fs.readFileSync(path.resolve(opt("props")), "utf8")) : {};
+const draft = flag("draft") && opt("still") === undefined && !opt("composition");
 const propsFile = path.join(tmp, "props.json");
-fs.writeFileSync(propsFile, JSON.stringify({ song, from, to, hold, ...(draft ? { fps: DRAFT_FPS } : {}) }));
+fs.writeFileSync(propsFile, JSON.stringify({ song, from, to, hold, ...(draft ? { fps: DRAFT_FPS } : {}), ...extra }));
 
 // Without a terminal (coding agents, CI) Remotion's per-frame progress lines are noise: keep warnings only.
 const logLevel = process.env.SONG2MV_REMOTION_LOG || (process.stderr.isTTY ? "info" : "warn");
 const remotion = (args) => {
-  const r = spawnSync("npx", ["remotion", ...args, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`], { cwd: HERE, stdio: "inherit" });
+  const r = spawnSync(process.execPath, [cli, ...args, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`], { cwd: HERE, stdio: "inherit" });
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
 
 fs.mkdirSync(outDir, { recursive: true });
-const wrote = (file) => opt("manifest") && fs.appendFileSync(opt("manifest"), file + "\n");
+const wrote = (file) => (opt("manifest") ? fs.appendFileSync(opt("manifest"), file + "\n") : console.log(file));
 const range = from > 0 || to !== null ? `-${from}-${to ?? "end"}` : "";
 if (flag("studio")) {
   remotion(["studio"]);
+} else if (opt("composition")) {
+  const file = path.join(outDir, `${base}-${opt("composition")}.png`);
+  remotion(["still", opt("composition"), file, "--frame=0"]);
+  wrote(file);
 } else if (opt("still") !== undefined) {
   const t = Number(opt("still"));
   const frame = Math.max(0, Math.round((t - from) * FPS));

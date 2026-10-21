@@ -188,7 +188,7 @@ don't cut to the grid there when it has none.
 ## `song2mv check` (experimental)
 
 ```bash
-song2mv check video.mp4 --song mv.json [--from 92 --to 102] [--goals my-goals.json] [--src 'video/src/scenes/**/*.tsx']
+song2mv check video.mp4 --song mv.json [--from 92 --to 102] [--goals my-goals.json] [--src "video/src/scenes/**/*.tsx"]
 ```
 
 | check | measures (per sung line, 10 fps, the area above the captions) |

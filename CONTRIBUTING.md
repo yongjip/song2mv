@@ -14,7 +14,8 @@ answers may take a few days.
 ## Development
 
 ```sh
-uv venv --python 3.12 && uv pip install -e '.[sync,dev]'
+uv venv --python 3.12
+uv pip install -e ".[sync,dev]"
 source .venv/bin/activate
 ruff check src tests
 pytest -q

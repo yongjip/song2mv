@@ -116,10 +116,12 @@ different central image. For each, write:
 Make each concept concrete enough to picture: one rough still each, shown side by side with your pick and the reason
 in one line. Copy the template now (step 4's first command), draw each concept as a component of `T` in
 `<work>/video/src/scenes/concepts/`, export it by name from `src/scenes/concepts/index.ts`, and render them all at one
-moment, such as the first chorus' downbeat. Each is drawn alone, without the template's sky, captions or vignette:
+moment, such as the first chorus' downbeat: write that time into `<work>/video/concepts.json` (`{"T": 33.1}`) and run
+this in `<work>/video`. It prints the PNG's path. Each concept is drawn alone, without the template's sky, captions
+or vignette:
 
 ```bash
-cd <work>/video && npx remotion still src/index.ts Concepts concepts.png --props="{\"T\": <first chorus start>, \"song\": $(cat ../mv.json)}"
+node render.mjs ../mv.json --composition Concepts --props concepts.json
 ```
 
 **Then the song map** for the chosen concept, `<work>/map.md`. Show it to the user and carry on:
@@ -178,11 +180,11 @@ scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` pu
 
 ### The scene kit
 
-Look at it before you design anything:
+Look at it before you design anything (in `<work>/video`):
 
 ```bash
-cd <work>/video && npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 23 scenes
-npx remotion still src/index.ts Kit-Gallery scene.png --frame=4                        # one at full size (1–23)
+npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 23 scenes
+npx remotion still src/index.ts Kit-Gallery scene.png --frame=4     # one at full size (1–23)
 ```
 
 `src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc
@@ -266,12 +268,13 @@ Rules that held up:
    `check` reads only the size literals in the source, not what a camera or a `scale()` makes of them.
 5. Pull timing from data: `useSong().lineById["ch1-01"].words[0].t`, `grid.bar(k)`, `grid.pulse(T)`.
 
-Typecheck (`cd <work>/video && npx tsc --noEmit`), then look at stills of the new section before rendering video. A
-contact sheet draws the scene at many song times in one render, each frame labelled with its time (`"cols"`: frames per
-row; `"vertical": true`: the 9:16 frame):
+Typecheck (`npx tsc --noEmit` in `<work>/video`), then look at stills of the new section before rendering video. A
+contact sheet draws the scene at many song times in one render, each frame labelled with its time: write its props
+into `<work>/video/sheet.json`, such as `{"times": [33.1, 34.6, 36.2, 37.7]}` (`"cols"`: frames per row;
+`"vertical": true`: the 9:16 frame), and run this in `<work>/video`:
 
 ```bash
-cd <work>/video && npx remotion still src/index.ts Contact sheet.png --props="{\"times\": [33.1, 34.6, 36.2, 37.7], \"song\": $(cat ../mv.json)}"
+node render.mjs ../mv.json --composition Contact --props sheet.json
 ```
 
 ## 5. Render and check

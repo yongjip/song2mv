@@ -6,8 +6,8 @@ import * as concepts from "./scenes/concepts";
 /**
  * Every component exported from scenes/concepts/index.ts, side by side at song time T, each labelled with its export
  * name: rough stills of the concepts to pick from. Each is drawn alone on the theme's background, without the
- * frame's sky, captions or vignette. In a template copy inside the work folder:
- *   npx remotion still src/index.ts Concepts concepts.png --props="{\"T\": 33.1, \"song\": $(cat ../mv.json)}"
+ * frame's sky, captions or vignette. In a template copy inside the work folder, with concepts.json {"T": 33.1}:
+ *   node render.mjs ../mv.json --composition Concepts --props concepts.json
  */
 const GAP = 12;
 
