@@ -238,6 +238,11 @@ First release (0.1.0).
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.
+- The agent guide ships in the package. The wheel carries the skill and `AGENTS.md` in `song2mv/guide/`, and
+  `song2mv --help` and the help of every command end with the installed skill's path and a line telling a coding agent
+  to read it first. Before, the skill lived only in this repository and the help linked to AGENTS.md on GitHub, so an
+  agent working from a pip or uv install never saw concepts first, `check` or the 9:16 safe box. A test checks that
+  every command, flag and choice the skill, `AGENTS.md` and `llms.txt` name exists.
 - The skill, after making two videos with it:
   - **Checkpoints don't block.** The agent shows the concept stills with its pick and the reason in one line, and
     the song map, and keeps going; the user can redirect it. It decides timing by measurement, makes the ear-check

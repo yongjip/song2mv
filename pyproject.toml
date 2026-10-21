@@ -72,6 +72,11 @@ path = "src/song2mv/__init__.py"
 packages = ["src/song2mv"]
 exclude = ["**/node_modules", "**/out", "**/__pycache__"]
 
+# the agent guide, copied into the package for `song2mv --help` (not symlinked: symlinks break on Windows checkouts)
+[tool.hatch.build.targets.wheel.force-include]
+".claude/skills/song2mv/SKILL.md" = "song2mv/guide/SKILL.md"
+"AGENTS.md" = "song2mv/guide/AGENTS.md"
+
 [tool.hatch.build.targets.sdist]
 exclude = ["**/node_modules", "**/out", "song2mv-work", ".github"]
 

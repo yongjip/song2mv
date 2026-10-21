@@ -49,6 +49,8 @@ jobs:
         run: |
           unzip -l dist/*.whl | grep -q 'song2mv/render/template/render.mjs'
           unzip -l dist/*.whl | grep -q 'song2mv/check/goals.json'
+          unzip -l dist/*.whl | grep -q 'song2mv/guide/SKILL.md'
+          unzip -l dist/*.whl | grep -q 'song2mv/guide/AGENTS.md'
           ! unzip -l dist/*.whl | grep -E 'node_modules|template/out/|__pycache__'
           ! tar tzf dist/*.tar.gz | grep -E 'node_modules|template/out/|__pycache__'
 
@@ -66,7 +68,11 @@ jobs:
         run: |
           uv venv core
           uv pip install --python core/bin/python dist/*.whl
-          core/bin/song2mv --help > /dev/null
+          core/bin/song2mv --help > help.txt
+          guide=$(grep -A1 '^Coding agent? Read this guide first' help.txt | tail -1 | sed 's/^ *//')
+          case "$guide" in */site-packages/song2mv/guide/SKILL.md) ;; *) echo "help points to '$guide'"; exit 1 ;; esac
+          cmp "$guide" .claude/skills/song2mv/SKILL.md
+          cmp "$(dirname "$guide")/AGENTS.md" AGENTS.md
           core/bin/python -c "import song2mv.check.score"
           ffmpeg -v error -f lavfi -i sine=frequency=440:duration=2 tone.wav
           set +e; core/bin/song2mv sync tone.wav --json > out.json 2> err.txt; code=$?; set -e
