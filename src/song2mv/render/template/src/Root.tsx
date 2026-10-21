@@ -19,9 +19,11 @@ import sample from "./sample-song.json";
  */
 const defaults: MvProps = { song: sample as Song, from: 0, to: null, hold: 0 };
 
+// A draft has the full render's frames 0, 3, 6, … up to its last, the frames `song2mv check` measures in both.
 const duration: CalculateMetadataFunction<MvProps> = ({ props }) => {
   const fps = props.fps ?? FPS;
-  return { fps, durationInFrames: Math.max(1, Math.round(((props.to ?? props.song.duration) - props.from) * fps)) };
+  const full = Math.round(((props.to ?? props.song.duration) - props.from) * FPS);
+  return { fps, durationInFrames: Math.max(1, Math.ceil((full * fps) / FPS)) };
 };
 
 export const RemotionRoot: React.FC = () => (

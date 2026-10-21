@@ -16,15 +16,15 @@ answers may take a few days.
 ```sh
 uv venv --python 3.12
 uv pip install -e ".[sync,dev]"
-source .venv/bin/activate
-ruff check src tests
-pytest -q
+uv run --no-sync ruff check src tests
+uv run --no-sync pytest -q
 ```
 
-(Plain `uv run` would sync the environment to the base dependencies and drop the extras; use `uv run --no-sync` if
-you prefer not to activate.)
+(Plain `uv run` would sync the environment to the base dependencies and drop the extras. To activate the environment
+instead: `source .venv/bin/activate`, or `.venv\Scripts\activate` on Windows.)
 
-Tests build synthetic audio and video. Do not add songs, lyrics, renders or other media to the repository.
+Tests build synthetic audio and video. `tests/test_template.py` renders through the template and runs only after
+`npm ci` in `src/song2mv/render/template`. Do not add songs, lyrics, renders or other media to the repository.
 
 ## Pull requests
 

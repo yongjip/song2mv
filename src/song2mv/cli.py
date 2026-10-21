@@ -188,7 +188,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--from", dest="start", type=float, default=0.0, help="song time of the video's first frame")
     c.add_argument("--to", dest="end", type=float, default=None, help="song time of the video's end (default: from + video length)")
     c.add_argument("--goals", help="goals file; it only needs the values it changes (default: the bundled starting point)")
-    c.add_argument("--src", help="glob of scene sources to check font sizes in, e.g. 'video/src/scenes/**/*.tsx'")
+    c.add_argument("--src", help='glob of scene sources to check font sizes in, e.g. "video/src/scenes/**/*.tsx"')
     c.add_argument("--quiet", action="store_true", help="print failures only")
     c.add_argument("--json", action="store_true", help="print only the JSON result on stdout, no table")
     c.set_defaults(func=cmd_check)

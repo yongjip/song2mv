@@ -149,8 +149,7 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     cut_t = [t0 + i / 10 for i in cut_idx]
 
     # A line sung into the next section is measured up to that section's start, or up to the last cut in the beat
-    # before it: a scene hits the downbeat it hears, which can lead mv.json's bar line, and the 10 fps frames show a
-    # cut up to 0.05 s early.
+    # before it: a scene hits the downbeat it hears, which can lead mv.json's bar line.
     beat = song.get("grid", {}).get("beat", 0.5)
     ordered = sorted(secs, key=lambda s: s["start"])
     stop = {}  # section id → the first frame change (index into diff) that belongs to the next section
@@ -259,7 +258,7 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     # text lint — only when scene sources are given
     gt = goals["text"]
     if not src_glob:
-        skipped["text.min_font"] = "pass --src 'DIR/src/scenes/**/*.tsx' to check font sizes in scene sources"
+        skipped["text.min_font"] = 'pass --src "DIR/src/scenes/**/*.tsx" to check font sizes in scene sources'
     else:
         n_files, sizes, off = lint_text(src_glob, gt["min_font_px"])
         if not n_files:

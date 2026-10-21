@@ -26,16 +26,16 @@ Claude Code or Codex — or a person — can use just the part they need.
 song2mv is not on PyPI yet, so install it from GitHub with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv tool install --python 3.13 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'
+uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"
 ```
 
 Or run it once without installing anything:
 
 ```bash
-uvx --python 3.13 --from 'song2mv[sync] @ git+https://github.com/yongjip/song2mv' song2mv --help
+uvx --python 3.13 --from "song2mv[sync] @ git+https://github.com/yongjip/song2mv" song2mv --help
 ```
 
-Inside a virtual environment, `pip install 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'` works too.
+Inside a virtual environment, `pip install "song2mv[sync] @ git+https://github.com/yongjip/song2mv"` works too.
 
 You also need **ffmpeg** (`brew install ffmpeg`, `apt install ffmpeg`). `render` also needs **Node 18+**.
 
@@ -55,9 +55,8 @@ Install only what you use — the parts differ a lot in size:
 
 ```bash
 song2mv sync song.mp3 --lyrics lyrics.txt --language en --title "My Song"   # → song2mv-work/song/
-song2mv render song2mv-work/song/mv.json --from 60 --to 75 --draft            # 10 fps: quick to render and check
-song2mv check song2mv-work/song/renders/song-16x9-60-75-draft.mp4 --song song2mv-work/song/mv.json --from 60 --to 75
-song2mv render song2mv-work/song/mv.json --aspect both                       # the finished video, 30 fps
+song2mv render song2mv-work/song/mv.json --from 60 --to 75 --aspect both
+song2mv check song2mv-work/song/renders/song-16x9-60-75.mp4 --song song2mv-work/song/mv.json --from 60 --to 75
 ```
 
 The work folder is relative to where you run it: run it outside your code repositories, or pass `--out`. If the

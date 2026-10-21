@@ -101,6 +101,11 @@ jobs:
           name: kit-gallery
           path: src/song2mv/render/template/out/gallery/
           retention-days: 14
+      # renders through render.mjs: a draft and its full render must give check as many frames
+      - uses: astral-sh/setup-uv@v6
+      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - run: uv venv && uv pip install -e '.[dev]' && uv run --no-sync pytest -q tests/test_template.py
+        working-directory: .
 
   windows-render:
     # song2mv render on Windows, where npx is npx.cmd: render.mjs must start Remotion without a shell

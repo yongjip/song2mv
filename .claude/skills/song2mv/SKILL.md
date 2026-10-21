@@ -21,7 +21,7 @@ song's rights, or a lyric only the user knows.
 - **Rights.** Ask whose song it is and whether the user may publish a video of it (AI music services' plan terms
   count). Never copy the song, its lyrics or renders into a repository; everything song-specific lives in the work
   folder (`song2mv-work/<song>/`).
-- **Setup**, once: `uv tool install --python 3.13 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'` (not on
+- **Setup**, once: `uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"` (not on
   PyPI yet; faster-whisper has no Python 3.15 wheels). Needs ffmpeg; `render` needs Node 18+ and installs Remotion
   (~570 MB) on its first run.
 - **What they want**: full 16:9 video, 9:16 short(s), LRC/SRT only, or all. Title text. Mood or references. If you
@@ -123,6 +123,11 @@ or vignette:
 ```bash
 node render.mjs ../mv.json --composition Concepts --props concepts.json
 ```
+
+A copy made by an older song2mv has no `--composition`: its `render.mjs` renders the whole song as a 16:9 video into
+`out/` instead, and prints no PNG path. Stop it and use the `npx remotion still … --props` command in that copy's
+`src/Concepts.tsx` (`src/Contact.tsx` for contact sheets), or make a new `--template` folder and move `src/scenes/`
+and any kit changes into it.
 
 **Then the song map** for the chosen concept, `<work>/map.md`. Show it to the user and carry on:
 
