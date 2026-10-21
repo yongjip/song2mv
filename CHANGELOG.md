@@ -51,6 +51,16 @@ First release (0.1.0).
   the captions of lines the scenes don't draw, the flashes and the fade-out (no template sky, beat glow, title or
   vignette). The band put the template's starry sky and title around every concept, and a scene that drew its own
   lyrics left the bottom 45 % of the screen empty. Without a `VerticalScene` the short renders as before.
+- A style pack for paper cut-out, `paper` in the scene kit (`src/kit/styles/paper.tsx`). The kit's people, places
+  and objects are flat illustration; a style pack is a few drawing pieces that put any object in another art style:
+  - outlines cut by hand: `rect`, `ellipse`, `poly` and `strip`, seeded so that a cut stays the same from frame to
+    frame;
+  - `Cut`, one piece of paper, whose shadow falls further and softer as its `lift` grows;
+  - `Stack`, the paper's grain and a lit edge for every piece inside it;
+  - a paper palette, and `step` for the held 12 steps a second of cut-out motion.
+
+  Gallery tile 13 draws a room of everyday things with it. Packs live in `src/kit/styles/`, one namespace each, so
+  that pixel, ink or watercolour packs can follow.
 - Work folders and caches belong to one audio file, by content: another song in the same folder is refused, a
   changed file is transcribed again, and whisper runs are reused only for the same model, language and settings.
 - A sung line is never dropped: a line with no room between its neighbours is squeezed in (inside the song),
