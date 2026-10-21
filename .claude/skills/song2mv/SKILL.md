@@ -179,7 +179,7 @@ Rules that held up:
    lights, particles, shapes, the camera (`Drift`) — not text.
 3. **Every line a scene draws itself** goes into `linesDrawnByScene`, so the bottom captions don't double it.
 4. **Lay out on the 1920×1080 stage.** In 9:16 the stage is a band; read `VerticalCtx` to stack side-by-side
-   layouts. Keep text ≥ 36 px.
+   layouts, or export a `VerticalScene` that draws the whole 9:16 frame (step 6). Keep text ≥ 36 px.
 5. Pull timing from data: `useSong().lineById["ch1-01"].words[0].t`, `grid.bar(k)`, `grid.pulse(T)`.
 
 Typecheck (`cd <work>/video && npx tsc --noEmit`), then look at stills of the new section before rendering video.
@@ -210,8 +210,16 @@ on the hit and use `--hold` so the first frame already shows the payoff.
 song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --aspect 9x16 --hold 0.17
 ```
 
+By default the short shows `Scene` shrunk into a band, with the template's sky above and below it and the title on
+top. That frame puts the template's look around every concept, and a scene that draws its own lyrics leaves the
+bottom of the screen empty. To fill the phone screen instead, export a `VerticalScene` from `src/scenes/index.ts`:
+a component of `T` that draws the whole 1080×1920 frame. The template then adds only the captions of lines the
+scenes don't draw, the flashes and the fade-out; the background and any title are the scene's. It is usually the
+same world and timing filmed for a tall frame: the camera centred in the safe box, the picture out to every edge.
+
 Keep text inside x 120–960, y 269–1248: that box is clear of the app buttons and caption overlay on Reels, Shorts
-and TikTok, and the template's title, stage and lyrics already sit in it. Check stills.
+and TikTok. The template's title, stage and lyrics already sit in it; a `VerticalScene` keeps its own text there
+and puts only picture below it. Check stills.
 
 ## 7. Deliver
 

@@ -46,6 +46,11 @@ First release (0.1.0).
 
   The `Kit-Gallery` composition shows them in 12 scenes: `npx remotion still src/index.ts Kit-Gallery gallery.png
   --frame=0`. The skill explains how to combine them.
+- A song's scenes can draw the whole 9:16 frame. `src/scenes/index.ts` may export a `VerticalScene`, a component of
+  song time drawn on 1080×1920; the short then shows it instead of the 16:9 scene shrunk into a band, and adds only
+  the captions of lines the scenes don't draw, the flashes and the fade-out (no template sky, beat glow, title or
+  vignette). The band put the template's starry sky and title around every concept, and a scene that drew its own
+  lyrics left the bottom 45 % of the screen empty. Without a `VerticalScene` the short renders as before.
 - Work folders and caches belong to one audio file, by content: another song in the same folder is refused, a
   changed file is transcribed again, and whisper runs are reused only for the same model, language and settings.
 - A sung line is never dropped: a line with no room between its neighbours is squeezed in (inside the song),
