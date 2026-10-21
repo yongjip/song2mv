@@ -54,7 +54,7 @@ Install only what you use — the parts differ a lot in size:
 ## Quick start
 
 ```bash
-song2mv sync song.mp3 --lyrics lyrics.txt --language en        # → song2mv-work/song/
+song2mv sync song.mp3 --lyrics lyrics.txt --language en --title "My Song"   # → song2mv-work/song/
 song2mv render song2mv-work/song/mv.json --from 60 --to 75 --aspect both
 song2mv check song2mv-work/song/renders/song-16x9-60-75.mp4 --song song2mv-work/song/mv.json --from 60 --to 75
 ```
@@ -79,7 +79,7 @@ for example: *"make a lyric video for ~/Music/my-song.mp3"* or *"give me word-ti
 ## `song2mv sync`
 
 ```bash
-song2mv sync song.mp3 [--lyrics lyrics.txt] [--language ko] [--out DIR] [--runs 5] [--model medium] [--bpm 90]
+song2mv sync song.mp3 [--lyrics lyrics.txt] [--language ko] [--title "My Song"] [--out DIR] [--runs 5] [--model medium] [--bpm 90]
 song2mv sync DIR/song.json [--from grid] [--runs 5]   # rerun after editing song.json; options given here are saved
                                                      # to it, finished whisper runs are reused
 ```

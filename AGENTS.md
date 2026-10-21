@@ -9,11 +9,12 @@ music video out. It is a command-line tool built for coding agents. Five command
    plan terms count). Never copy the song, its lyrics or renders into a repository; keep them in the work folder.
    It defaults to `./song2mv-work/<song>/`, relative to the current directory: run outside the user's repository
    or pass `--out`, and make sure `song2mv-work/` is in that repository's `.gitignore` if you work inside it.
-2. **Timing.** Run `song2mv sync AUDIO --lyrics LYRICS --language CODE --json` in the background — three whisper
-   runs take a few minutes on a laptop CPU. Read the JSON on stdout: `outputs` has every file path,
+2. **Timing.** Run `song2mv sync AUDIO --lyrics LYRICS --language CODE --title "TITLE" --json` in the background —
+   three whisper runs take a few minutes on a laptop CPU. Read the JSON on stdout: `outputs` has every file path,
    `line_sources` counts the lines per source (each line's own `source` is in `lyrics.json`), `check_by_ear` lists
    the lines most likely to be wrong, and `warnings` says what to tell the user.
-   If the audio has a lyrics tag (Suno writes one), `--lyrics` is optional. Always set `--language`.
+   If the audio has a lyrics tag (Suno writes one), `--lyrics` is optional; where a lyric sheet and the tag differ,
+   sync with a sheet that matches what the whisper runs (`WORK/asr/run*.json`) heard. Always set `--language`.
 3. **You cannot hear the song.** Turn every judgement that needs ears into a ten-second check for the user:
    `song2mv click WORK --from A --to B --words --json` mixes clicks and word ticks over a stretch into a wav; send
    it with the question in `ask_the_listener`. Fix with `bpm`, `downbeat_mod4` and `manual` in `WORK/song.json`,

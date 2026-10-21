@@ -12,6 +12,11 @@ The loop is: **timing → scene design → render → check → fix**, with the 
 checkpoints. You cannot hear the song, so every judgement that needs ears goes to the user, with a short clip or
 click track that makes it a ten-second check.
 
+**If the user asked you to decide** ("don't ask me, just do it"), still do every step, but don't stop at the
+checkpoints: decide each one yourself and give the reason in one line. Make the ear-check click files anyway and,
+instead of waiting, list those spots as unheard when you deliver, with anything else still open (such as the song's
+rights). Carry on to the finished video.
+
 ## 0. Before anything
 
 - **Rights.** Ask whose song it is and whether the user may publish a video of it (AI music services' plan terms
@@ -25,10 +30,13 @@ click track that makes it a ten-second check.
 ## 1. Timing
 
 ```bash
-song2mv sync <audio> --lyrics <lyrics.txt> --language <code> --json     # run in the background; minutes
+song2mv sync <audio> --lyrics <lyrics.txt> --language <code> --title "<title>" --json   # run in the background; minutes
 ```
 
-`--lyrics` is optional when the audio has a lyrics tag (Suno writes one). Read the progress log and the JSON:
+`--lyrics` is optional when the audio has a lyrics tag (Suno writes one). If you also have a lyric sheet, compare it
+with the tag. Where they differ, the tag is usually what Suno sang, but not always: read what the whisper runs heard
+there (`<work>/asr/run*.json`), which also shows chants or changed lines that neither has, and sync with a sheet that
+matches it. Read the progress log and the JSON:
 
 - **Section parsing** (`── [Chorus] → ch1 (hot)`): are the kinds right? Fix with `section_kinds` in `song.json`.
   Lines in `( )` were skipped as stage directions unless their section is in `keep_parenthesized_in`.
@@ -78,8 +86,8 @@ choruses big. Show it to the user early — sometimes it is all they need.
 Every song gets its own look. One kit or template applied to every song makes every video look alike, so the look is
 decided before you touch the kit.
 
-**Propose two or three concepts and let the user pick one.** They must differ in more than colour: a different art
-style and a different central image. For each, write:
+**Propose two or three concepts and let the user pick one** (or pick one yourself if they asked you to decide).
+They must differ in more than colour: a different art style and a different central image. For each, write:
 
 - **Idea:** one line, the image that carries the song, taken from its lyrics and mood.
 - **Art style:** what fits this song, not what is quickest to build. Some options:
@@ -90,13 +98,14 @@ style and a different central image. For each, write:
   - collage, or watercolour washes;
   - an isometric miniature;
   - kinetic typography only, or neon signs on brick.
-- **Palette and texture.**
+- **Palette, texture and typeface.**
 - **Main character or motif,** and how it changes over the song.
 - **First chorus:** how it hits, the song's biggest moment.
 
 Make each concept concrete enough to picture: render one rough still per concept and show them side by side.
 
-**Then the song map** for the chosen concept, `<work>/map.md`. Agree on it with the user before coding:
+**Then the song map** for the chosen concept, `<work>/map.md`. Agree on it with the user before coding, unless they
+asked you to decide:
 
 - Per section (from `mv.json` sections; `<work>/music.json` has the loudness curve and likely boundaries): bars,
   energy (rising / peak / falling), what the lyrics say, **one visual idea**, colour.

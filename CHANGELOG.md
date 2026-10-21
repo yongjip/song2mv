@@ -119,3 +119,15 @@ First release (0.1.0).
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.
+- The skill, after making two videos with it:
+  - **When the user asks the agent to decide,** it still does every step but waits at no checkpoint: it picks the
+    concept and the song map itself, with the reason in one line, makes the ear-check click files and lists those
+    spots as unheard when it delivers, and carries on to the finished video.
+  - **The first `sync` passes `--title`** (in AGENTS.md and the README too). Step 0 asks for the title, but the
+    command left it out, so the LRC and the video carried the file name until `song.json` was edited.
+  - **Where a lyric sheet and the audio's lyrics tag differ,** the tag is usually what Suno sang, and the whisper runs
+    show which is right. For one song the sheet was right (the tag repeats a line that was sung once); for the other
+    the tag was (the sheet has a couplet once that was sung twice, and the missing copy's words were pulled into the
+    lines around it, one of them on screen for 8 s, with `check_by_ear` empty). The runs also show chants and changed
+    lines that neither has.
+  - **A concept names its typeface** along with its palette and texture.
