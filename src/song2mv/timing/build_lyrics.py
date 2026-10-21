@@ -1,7 +1,7 @@
 """Turn merged word times into the final lyric timing: manual values, estimates for anything still
 missing, in-line interpolation, snapping to the beat grid (to its beat map when grid.json has one; without one,
-not in the stretches grid.json lists under off_grid, where the grid does not fit the music; never the words of a
-line pinned in "manual"), line ends. Writes
+not in the stretches grid.json lists under off_grid, where the grid does not fit the music; 16th notes where its
+swing puts them; never the words of a line pinned in "manual"), line ends. Writes
 
   lyrics.json — every line and word with its time, where the time came from, and how the runs agreed
   mv.json     — the song config the Remotion template reads (lyrics + grid + sections + theme, vignette, flashes)
@@ -96,7 +96,17 @@ def off_grid(grid: dict):
 def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -> list[dict]:
     P, phi, beats = grid["beat"], grid["phi"], grid.get("beats")
     S = P / snap_per_beat if snap_per_beat else 0
-    if beats and S:
+    swing = grid.get("swing") if snap_per_beat == 4 else None
+    if swing:
+        from .beat_grid import map_number, map_time, swung
+
+        if beats:
+            def snap(t: float) -> float:
+                return round(float(map_time(beats, swung(float(map_number(beats, t)), swing))), 3)
+        else:
+            off = off_grid(grid)
+            snap = lambda t: round(t, 3) if off(t) else round(phi + swung((t - phi) / P, swing) * P, 3)  # noqa: E731
+    elif beats and S:
         from .beat_grid import map_number, map_time
 
         def snap(t: float) -> float:
@@ -230,8 +240,9 @@ def build(merged: list[dict], grid: dict, cfg: dict, duration: float) -> tuple[d
     lines = finish(merged, grid, int(cfg.get("snap_per_beat") or 0), end_song)
     secs = sections(lines, grid, duration)
     g = {**{k: grid[k] for k in ("bpm", "beat", "phi", "downbeat_mod4", "bar0")}, "off_grid": grid.get("off_grid") or []}
-    if grid.get("beats"):
-        g["beats"] = grid["beats"]
+    for k in ("beats", "swing"):
+        if grid.get(k):
+            g[k] = grid[k]
     lyrics = {"title": cfg.get("title", ""), "duration": round(duration, 3), "grid": g, "sections": secs, "lines": lines}
     mv = {
         "title": cfg.get("title", ""), "subtitle": cfg.get("subtitle", ""),

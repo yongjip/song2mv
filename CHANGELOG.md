@@ -31,6 +31,18 @@ First release (0.1.0).
   Songs whose beat jumps or whose pulse is too weak to follow keep the one-tempo grid (`beats` is `null`), as do all
   79 JamendoLyrics songs, whose benchmark is unchanged. A `grid.json` with stretches but without `beats` is fitted
   again.
+- Swing. On a swung groove the 2nd and 4th 16th notes of each beat come late, and words snapped to straight 16ths
+  missed them: on a boom-bap demo song, whose hats put those 16ths at 0.325 and 0.829 of a beat, snapping moved 29 %
+  of the words by more than 50 ms, and in an A/B listen its listener preferred the words on the swung 16ths. `sync`
+  and `song2mv beats` now measure where the hats put them, each from the beat's own peak (within 0.005 of a beat on
+  synthetic swung drums), and when the groove is clearly swung — the 8th note straight, the two 16ths standing out
+  and late by 0.05 of a beat on average (60:40 or more) — `grid.json` gets `swing`, the two positions, and the grid
+  in `lyrics.json` and `mv.json` carries it. Lyric words then snap to the swung 16ths (`snap_per_beat` 4), on the
+  beat map when there is one; the word ticks of `song2mv click --words` sit there; the template's `grid.snap(t)`
+  follows it. 3 of the 79 JamendoLyrics songs and one of 11 Suno songs (on its beat map) come out swung; on the 3,
+  words within 0.1 s of the annotations rose from 52 % to 63 % (all 79: from 55.1 % to 55.5 %; within 0.3 s and 1 s
+  unchanged). The other songs get byte-identical files. A `grid.json` made before this is reused as it is:
+  `sync WORK/song.json --from grid` measures the swing.
 - Words pinned in `manual` keep the times you gave: they are no longer snapped to the beat grid.
 - `warnings` says when the tempo pick is uncertain: when the lyric line gaps chose another tempo than the one the
   onsets fit best, it names both. When the grid fits almost none of the song and the music's own tempo there drifts,

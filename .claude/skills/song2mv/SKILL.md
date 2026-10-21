@@ -56,6 +56,8 @@ the progress log and the JSON:
   motion driven by `grid.pulse` or `grid.bar` will miss the music there: drive those stretches by line and word
   times instead. Put a click track over the start of the stretch. A warning that the grid does not fit the whole
   song names a `--bpm` to try; `the tempo pick is uncertain` names the tempo the onsets prefer.
+- **Swing** (`swing: the hats put the 2nd and 4th 16th notes … at 0.325 and 0.829`, `swing` in `grid.json`): words
+  and `grid.snap(t)` sit on those swung 16ths; let the user hear the word ticks of `click --words` over a dense verse.
 - **`check_by_ear`** in the JSON: lines filled by re-listening (`reprompt`), estimated, placed by only one whisper
   run, out of the lyric sheet's order (a repeated line on another copy of its words), with a word no run timed
   between words far apart (the log names the word: `◀ no run timed "…"`; the words around it may be off too), or

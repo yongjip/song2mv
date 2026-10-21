@@ -68,8 +68,8 @@ flag, `--bpm abc`) stop before the command starts: exit `2`, the message on stde
 
 **`grid.json`** — `bpm`, `beat` (seconds per beat), `phi` (time of beat 0), `downbeat_mod4` (which beat index mod 4
 starts a bar), `bar0` (first bar start), `bar` (seconds per bar), `duration`, `why` (how the tempo was chosen),
-plus `candidates`, `phase_stats`, `line_start_hist`, `local_offsets`, `off_grid`, `beats` and `request` (the
-settings and audio hash it was made for). Beat *k* is at `phi + k * beat`: one tempo for the whole song, unless
+plus `candidates`, `phase_stats`, `line_start_hist`, `local_offsets`, `off_grid`, `beats`, `swing` and `request`
+(the settings and audio hash it was made for). Beat *k* is at `phi + k * beat`: one tempo for the whole song, unless
 `beats` holds a beat map. `song2mv beats` writes the same format.
 
 - `off_grid` — where that one tempo does not fit the music: `[{from, to, bpm, kind, offset_ms}]`, empty when it fits
@@ -96,9 +96,17 @@ settings and audio hash it was made for). Beat *k* is at `phi + k * beat`: one t
   start and `phase_stats` are measured on the map; `bpm`, `beat`, `phi`, `line_start_hist` and `local_offsets` stay
   those of the one-tempo grid. Between beats, times are linear; before the first and after the last beat, the
   first and last beat lengths continue.
+- `swing` — only when the groove is clearly swung: `[a, b]`, where the 2nd and 4th 16th notes of each beat fall, in
+  beats from the beat (straight would be `[0.25, 0.75]`; a swung boom-bap song has `[0.325, 0.829]`). Measured on the
+  hats (the percussive part above 6 kHz), folded by position inside the beat — on the beat map when there is one,
+  and without one outside the `off_grid` stretches — each 16th from the beat's own peak. Clearly swung: the 8th note
+  within 0.02 of halfway, both 16ths standing out with nothing else between the beats, and both late, by at least
+  0.03 each and 0.05 on average (60:40 or more). With `snap_per_beat` 4, `sync` snaps lyric words to the beat, the
+  8th note and these two 16ths (of the beat map's beats when there is one); 8th notes stay straight.
 
 A `grid.json` without `off_grid`, or with stretches but without `beats`, was made by an older song2mv; `sync` fits
-it again.
+it again. One made before song2mv measured swing has no `swing`, swung or not, and is reused as it is:
+`sync … --from grid` fits it again.
 
 **`lyrics.json`** — `title`, `duration`, `grid`, `sections` (as in `mv.json`) and `lines`: each with `id`
 (`<section>-<nn>`, e.g. `v1-03`; a section that appears once keeps a bare id, `ch-01`), `section`, `section_name`,
@@ -109,9 +117,9 @@ another line is still sung.
 
 **`mv.json`** — the render template's input: `title`, `subtitle`, `audio` (file name), `audio_path` (absolute),
 `duration`, `grid` (`bpm`, `beat`, `phi`, `downbeat_mod4`, `bar0`, `off_grid` and, when it is a list, `beats` from
-`grid.json`), `sections` (`id`, `name`, `kind`, bar-aligned `start` / `end`), `lines` (`id`, `section`, `text`,
-`start`, `end`, `words`), `captions`, `theme`, and `vignette` and `flashes` when the song config sets them. Also
-what `check` reads.
+`grid.json`, and `swing` when it has one), `sections` (`id`, `name`, `kind`, bar-aligned `start` / `end`), `lines`
+(`id`, `section`, `text`, `start`, `end`, `words`), `captions`, `theme`, and `vignette` and `flashes` when the song
+config sets them. Also what `check` reads.
 
 **`music.json`** — `duration`, `loudness_db_per_half_second` (mean loudness per 0.5 s, 0 dB = the loudest moment),
 `boundaries` (`[{t, novelty}]`, likely section changes; empty for very short songs), `audio_sha256`.

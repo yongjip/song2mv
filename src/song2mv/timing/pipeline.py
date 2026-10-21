@@ -4,7 +4,7 @@ Steps (outputs go to the work folder):
   lyrics  lyrics.txt     the lyric sheet (the config's "lyrics" file, or the audio's lyrics tag)
   asr     asr/runN.json  whisper runs; finished runs are kept and reused
   align   merged.json    runs aligned to the lyric sheet and merged per word
-  grid    grid.json      tempo, first beat, bar start, stretches where it does not fit and there a beat map
+  grid    grid.json      tempo, first beat, bar start, stretches where it does not fit and there a beat map, swing
                          (reused while bpm / downbeat settings are unchanged)
   build   lyrics.json    final word and line times (+ reprompt.json from re-listening to gaps)
           mv.json        the song config the render template reads
@@ -238,7 +238,8 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
     if current and old.get("request") == request and old.get("schema_version") == SCHEMA_VERSION and "grid" not in redo:
         grid = old
         print(f"  cached: {grid['bpm']} BPM, first beat {grid['phi']} s, bar starts at beat % 4 == {grid['downbeat_mod4']}"
-              + (f", a beat map of {len(grid['beats'])} beats" if grid.get("beats") else ""))
+              + (f", a beat map of {len(grid['beats'])} beats" if grid.get("beats") else "")
+              + (f", 16th notes swung to {grid['swing'][0]:g} and {grid['swing'][1]:g} of a beat" if grid.get("swing") else ""))
     else:
         from .beat_grid import find_grid
         starts = [min(t for t in r["wt"] if t is not None) for r in merged if any(t is not None for t in r["wt"])]
