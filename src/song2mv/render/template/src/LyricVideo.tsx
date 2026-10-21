@@ -1,13 +1,13 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Audio, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { BeatGlow, Captions, Flash, MvProps, Sky, SongContext, Vignette, flashesOf, makeSongCtx, sectionLook, span } from "./kit";
+import { BeatGlow, Captions, FPS, Flash, MvProps, Sky, SongContext, Vignette, flashesOf, makeSongCtx, sectionLook, span } from "./kit";
 import { Scene, linesDrawnByScene } from "./scenes";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
 /**
  * 16:9 lyric video. `from` / `to` pick a stretch of the song in seconds (to = null → the end).
- * A video that stops before the song ends fades picture and sound out over its last 24 frames.
+ * A video that stops before the song ends fades picture and sound out over its last 0.8 s.
  *
  * hold (seconds) — for hook cuts: the sound starts at `from` right away, but the picture stays frozen
  * on the moment `from + hold` for the first `hold` seconds and then runs on seamlessly. The first
@@ -16,14 +16,16 @@ const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
  */
 export const LyricVideo: React.FC<MvProps> = ({ song, from, to, hold }) => {
   const frame = useCurrentFrame();
-  const { durationInFrames, fps } = useVideoConfig();
+  const { fps } = useVideoConfig();
   const ctx = useMemo(() => makeSongCtx(song), [song]);
   const hide = useMemo(() => linesDrawnByScene(song), [song]);
   const end = to ?? song.duration;
   const T = Math.max(from + frame / fps, from + hold);
   const { tint, glow, strength } = sectionLook(ctx, T);
   const toEnd = end >= song.duration - 0.05;
-  const fade = (f: number) => (toEnd ? 1 : interpolate(f, [durationInFrames - 24, durationInFrames - 1], [1, 0], clamp));
+  // counted in frames at FPS, also in a draft (fewer fps), whose frames are then the full render's at the same times
+  const frames = Math.round((end - from) * FPS);
+  const fade = (f: number) => (toEnd ? 1 : interpolate((f * FPS) / fps, [frames - 0.8 * FPS, frames - 1], [1, 0], clamp));
   const flashes = useMemo(() => flashesOf(song).filter(([t]) => hold <= 0 || t < from - 1 || t > from + hold), [song, from, hold]);
   return (
     <SongContext.Provider value={ctx}>

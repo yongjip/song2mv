@@ -141,7 +141,7 @@ def _run_filtered(args: list[str], cwd: str) -> int:
 
 def render(mv_json: str, out: str | None = None, template: str | None = None, start: float | None = None,
            end: float | None = None, aspect: str = "16x9", hold: float | None = None, still: float | None = None,
-           audio: str | None = None, name: str | None = None) -> dict:
+           audio: str | None = None, name: str | None = None, draft: bool = False) -> dict:
     mv_json = os.path.abspath(mv_json)
     mv = load_mv(mv_json)  # before installing anything
     dur = float(mv["duration"])
@@ -161,6 +161,11 @@ def render(mv_json: str, out: str | None = None, template: str | None = None, st
         warnings.append(f"no audio file found for {os.path.basename(mv_json)} ({mv.get('audio')!r}): the video is "
                         "silent — pass --audio FILE")
         print(f"  ! {warnings[-1]}", file=sys.stderr)
+    draft = draft and still is None
+    if draft and "draft" not in open(os.path.join(tpl, "render.mjs"), encoding="utf-8").read():
+        warnings.append(f"{tpl} was copied before --draft existed: this render is at the full frame rate "
+                        "(a new --template folder renders drafts)")
+        print(f"  ! {warnings[-1]}", file=sys.stderr)
     out = os.path.abspath(out or os.path.join(os.path.dirname(mv_json), "renders"))
     os.makedirs(out, exist_ok=True)
     fd, manifest = tempfile.mkstemp(prefix="song2mv-", suffix=".txt")
@@ -170,6 +175,8 @@ def render(mv_json: str, out: str | None = None, template: str | None = None, st
                       ("--audio", os.path.abspath(audio) if audio else None), ("--name", name)):
         if val is not None:
             args += [flag, str(val)]
+    if draft:
+        args.append("--draft")
     before = {f: _stat(os.path.join(out, f)) for f in os.listdir(out)}
     t = time.time()
     try:

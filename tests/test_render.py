@@ -144,3 +144,31 @@ def test_per_frame_progress_becomes_a_line_per_quarter(capsys):
     assert code == 0
     assert err == ["  rendered 0/8 frames", "  rendered 2/8 frames", "  rendered 4/8 frames", "  rendered 6/8 frames",
                    "  rendered 8/8 frames", "a warning worth seeing"]
+
+
+def capture_render(tmp_path, monkeypatch, render_mjs):
+    """A template whose render.mjs has the given text; returns the mv.json and the argument lists render.mjs got"""
+    tpl = tmp_path / "tpl"
+    tpl.mkdir()
+    (tpl / "render.mjs").write_text(render_mjs, encoding="utf-8")
+    monkeypatch.setattr(runner, "_require", lambda tool: tool)
+    monkeypatch.setattr(runner, "prepare_template", lambda template: str(tpl))
+    calls = []
+    monkeypatch.setattr(runner, "_run_filtered", lambda args, cwd: calls.append(args) or 0)
+    mv = tmp_path / "mv.json"
+    mv.write_text(json.dumps(MV), encoding="utf-8")
+    return mv, calls
+
+
+@pytest.mark.parametrize("args, drafted", [(["--from", "1", "--to", "2"], True), (["--still", "1.5"], False)])
+def test_draft_reaches_the_template_for_videos_not_stills(tmp_path, capsys, monkeypatch, args, drafted):
+    mv, calls = capture_render(tmp_path, monkeypatch, 'const draft = flag("draft");')
+    code, res = run_json(capsys, ["render", str(mv), "--draft"] + args)
+    assert code == 0 and ("--draft" in calls[0]) is drafted
+    assert not [w for w in res["warnings"] if "--draft" in w]
+
+
+def test_a_copy_made_before_drafts_says_it_rendered_at_the_full_rate(tmp_path, capsys, monkeypatch):
+    mv, calls = capture_render(tmp_path, monkeypatch, "// a copy made by an older song2mv")
+    code, res = run_json(capsys, ["render", str(mv), "--from", "1", "--to", "2", "--draft"])
+    assert code == 0 and any("full frame rate" in w for w in res["warnings"])

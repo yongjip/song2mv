@@ -77,6 +77,18 @@ First release (0.1.0).
   takes under 1 MB and renders right away. Remotion keeps one bundle cache there, so switching between copies costs
   about a second of bundling. A copy whose lock file differs (made by another version, or with packages added)
   installs its own, as before, and a copy that already has its own `node_modules` keeps it (delete it to share).
+- `render --draft` renders a video at 10 fps, the rate `check` measures at, named `…-draft.mp4`, for the render →
+  check loop (`--still` ignores it). Its frames are those of the full render at the same song times: `--hold` and the
+  song time are in seconds, and the end fade is timed for 30 fps. On 30 s of each of the two demo songs, in 16:9 and
+  9:16, drafts rendered in 6.0–10.3 s instead of 14.4–24.8 s (2.4× faster), and `check` gave each draft the same
+  results as its full render: the same passes and fails, the same cuts, per-line motion within 1 %. The skill
+  iterates on drafts and renders the finished video once. A template copy made before this has no drafts: `render`
+  warns and renders at the full rate.
+- `check` measures the frame at each tenth of a second. ffmpeg's default rounding took the frame 1/30 s later from a
+  30 fps video, so a draft and its full render were measured on different frames: per-line motion differed by up to
+  77 % on the demo songs, and one stretch failed `cuts.max_gap` as a draft only. On a full render, cuts can now be
+  reported 0.1 s later, and a check right at its goal can flip (that stretch's longest gap without a cut went from
+  6.0 to 6.1 s, goal ≤ 6).
 - The template's lyrics are easier to read.
   - **Unsung words:** they are drawn at 50 % white with a tight dark shadow. At 32 % they had 2.7:1 contrast against
     the background, below WCAG's 3:1 for large text; now they have 5.3:1.

@@ -61,7 +61,9 @@ def probe_size(mp4: str) -> tuple[int, int]:
 
 
 def decode_gray(mp4: str, W: int, H: int) -> np.ndarray:
-    r = subprocess.run(["ffmpeg", "-v", "error", "-i", mp4, "-vf", f"fps=10,scale={W}:{H},format=gray", "-f", "rawvideo", "-"],
+    """Frame k is the picture at k / 10 s: ffmpeg's default rounding would take the one 1/30 s later from a 30 fps video,
+    so a draft rendered at 10 fps would be measured on other frames than its full render."""
+    r = subprocess.run(["ffmpeg", "-v", "error", "-i", mp4, "-vf", f"fps=10:round=up,scale={W}:{H},format=gray", "-f", "rawvideo", "-"],
                        capture_output=True)
     n = len(r.stdout) // (W * H)
     if n < 2:

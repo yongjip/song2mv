@@ -276,12 +276,16 @@ cd <work>/video && npx remotion still src/index.ts Contact sheet.png --props="{\
 
 ## 5. Render and check
 
+Iterate on drafts:
+
 ```bash
-song2mv render <work>/mv.json --template <work>/video --from A --to B
-song2mv check <work>/renders/<name>-16x9-A-B.mp4 --song <work>/mv.json --from A --to B \
-  --src '<work>/video/src/scenes/**/*.tsx' --json
+song2mv render <work>/mv.json --template <work>/video --from A --to B --draft
+song2mv check <work>/renders/<name>-16x9-A-B-draft.mp4 --song <work>/mv.json --from A --to B --src "<work>/video/src/scenes/**/*.tsx" --json
 ```
 
+A draft is the video at 10 fps, the rate `check` measures at: it renders in well under half the time (30 s of a demo
+song: 8 s instead of 19 s), and `check` gives it the same results as the full render. When the stretch passes, render
+it once without `--draft` and check that too; the user only ever sees full renders, since a draft looks choppy.
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
 work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
 contact sheets outside `src/scenes/`. Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`
@@ -289,8 +293,8 @@ did not run on this stretch; they did not pass. If a FAIL is the ruler's fault (
 intro line), copy the goals file, add the line id to `motion.quiet_allow`, pass `--goals` and tell the user why —
 don't quietly bend the goals.
 
-**Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip and ask what is boring.
-Their answer outranks the check.
+**Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip of the full render and ask
+what is boring. Their answer outranks the check.
 
 ## 6. Shorts (9:16)
 
@@ -300,6 +304,8 @@ on the hit and use `--hold` so the first frame shows the payoff fully drawn; che
 ```bash
 song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --aspect 9x16 --hold <s>
 ```
+
+While you fix the short, render and check it as a draft (`--draft`), as in step 5.
 
 By default the short shows `Scene` shrunk into a band, with the template's sky above and below it and the title on
 top. That frame puts the template's look around every concept, and a scene that draws its own lyrics leaves the

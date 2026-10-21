@@ -55,8 +55,9 @@ Install only what you use — the parts differ a lot in size:
 
 ```bash
 song2mv sync song.mp3 --lyrics lyrics.txt --language en --title "My Song"   # → song2mv-work/song/
-song2mv render song2mv-work/song/mv.json --from 60 --to 75 --aspect both
-song2mv check song2mv-work/song/renders/song-16x9-60-75.mp4 --song song2mv-work/song/mv.json --from 60 --to 75
+song2mv render song2mv-work/song/mv.json --from 60 --to 75 --draft            # 10 fps: quick to render and check
+song2mv check song2mv-work/song/renders/song-16x9-60-75-draft.mp4 --song song2mv-work/song/mv.json --from 60 --to 75
+song2mv render song2mv-work/song/mv.json --aspect both                       # the finished video, 30 fps
 ```
 
 The work folder is relative to where you run it: run it outside your code repositories, or pass `--out`. If the
@@ -210,9 +211,14 @@ measured on one video; your own goals file only needs the values you change. Pas
 ```bash
 song2mv render mv.json                                        # whole song, 16:9, plain lyric video
 song2mv render mv.json --from 95 --to 111 --aspect 9x16 --hold 2.5   # a hook cut whose first frame shows the payoff
+song2mv render mv.json --from 95 --to 111 --draft             # 10 fps, for the render → check loop
 song2mv render mv.json --still 98.5 --aspect both            # PNG frames to look at
 song2mv render mv.json --template video/                     # your own copy of the template, for your own scenes
 ```
+
+`--draft` renders the same frames at 10 fps, the rate `check` measures at, and names the file `…-draft.mp4`. On 30 s
+of the two demo songs it rendered in 6–10 s instead of 14–25 s, and `check` gave each draft the same results as its
+full render. Iterate on drafts and render the finished video once without it.
 
 Out of the box you get a plain lyric video that follows the song's structure: calm sections with a low moon and
 embers, mid sections with a floor grid rolling on the beat, hot sections with rays on the beat and the line itself

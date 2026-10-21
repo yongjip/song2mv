@@ -5,6 +5,7 @@
  *   node render.mjs ../work/my-song/mv.json                         # whole song, 16:9
  *   node render.mjs ../work/my-song/mv.json --from 95 --to 111 --aspect both
  *   node render.mjs ../work/my-song/mv.json --from 95 --to 111 --aspect 9x16 --hold 2.5
+ *   node render.mjs ../work/my-song/mv.json --from 95 --to 111 --draft   # 10 fps, for the render → check loop
  *   node render.mjs ../work/my-song/mv.json --still 98.5            # one PNG frame at song time 98.5 s
  *   node render.mjs ../work/my-song/mv.json --studio                # Remotion Studio with this song
  *
@@ -12,6 +13,7 @@
  *
  * Options: --audio FILE (else: public/<audio>, the mv.json's audio_path, or next to mv.json; none → silent)
  *          --from S  --to S  --hold S  --aspect 16x9|9x16|both  --out DIR (default out/)  --name BASE
+ *          --draft (10 fps, the rate `song2mv check` measures at, written as BASE-…-draft.mp4; --still ignores it)
  *          --manifest FILE (append the path of every file written, one per line)
  *
  * The audio is never copied into this folder: a temporary public folder outside it holds a link to it.
@@ -23,6 +25,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+const FPS = 30; // src/kit/song.tsx
+const DRAFT_FPS = 10;
 const argv = process.argv.slice(2);
 if (!argv.length || argv[0].startsWith("-")) {
   console.error(fs.readFileSync(fileURLToPath(import.meta.url), "utf8").split("*/")[0]);
@@ -69,8 +73,9 @@ if (audio) {
   song.audio = null;
 }
 delete song.audio_path;
+const draft = flag("draft") && opt("still") === undefined;
 const propsFile = path.join(tmp, "props.json");
-fs.writeFileSync(propsFile, JSON.stringify({ song, from, to, hold }));
+fs.writeFileSync(propsFile, JSON.stringify({ song, from, to, hold, ...(draft ? { fps: DRAFT_FPS } : {}) }));
 
 // Without a terminal (coding agents, CI) Remotion's per-frame progress lines are noise: keep warnings only.
 const logLevel = process.env.SONG2MV_REMOTION_LOG || (process.stderr.isTTY ? "info" : "warn");
@@ -86,7 +91,7 @@ if (flag("studio")) {
   remotion(["studio"]);
 } else if (opt("still") !== undefined) {
   const t = Number(opt("still"));
-  const frame = Math.max(0, Math.round((t - from) * 30));
+  const frame = Math.max(0, Math.round((t - from) * FPS));
   for (const id of aspects) {
     const file = path.join(outDir, `${base}-${id.slice(6)}-${t}s.png`);
     remotion(["still", id, file, `--frame=${frame}`]);
@@ -94,7 +99,7 @@ if (flag("studio")) {
   }
 } else {
   for (const id of aspects) {
-    const file = path.join(outDir, `${base}-${id.slice(6)}${range}.mp4`);
+    const file = path.join(outDir, `${base}-${id.slice(6)}${range}${draft ? "-draft" : ""}.mp4`);
     remotion(["render", id, file]);
     wrote(file);
   }

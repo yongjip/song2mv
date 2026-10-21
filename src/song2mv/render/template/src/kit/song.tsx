@@ -55,7 +55,8 @@ export type Song = {
   /** false: no dark vignette over the scenes */
   vignette?: boolean;
 };
-export type MvProps = { song: Song; from: number; to: number | null; hold: number };
+/** fps: frames per second, FPS unless given (drafts are rendered at 10, the rate `song2mv check` measures at) */
+export type MvProps = { song: Song; from: number; to: number | null; hold: number; fps?: number };
 
 export const FPS = 30;
 
