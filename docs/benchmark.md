@@ -281,6 +281,16 @@ How many runs agreed says something about whether a whisper line is right. Of li
 more than 0.3 s off; of those placed by two, 24 %; of those placed by one, 38 %. At `97a552c` it was 12, 32 and 40 %,
 and at `d368734` 44, 59 and 56 %: the first-word error was systematic, and every run made it.
 
+### 4. Words before a line's first timed word
+
+Words that no run timed before a line's first timed word were placed 0.3 s apart before it, so they could start
+under the last words of the line before, and the captions, which switch to the newer line, never lit those up. They
+now start no earlier than a 16th note after the last word of the line before. Measured from the align step with the
+cached whisper runs, at `d297f35` and with the change: it moves 69 words in 21 songs, 45 of them closer to the
+annotation, and 24 instead of 21 of them are within 0.3 s. Words within 0.3 s overall go from 88.92 to 88.93 %,
+lines that start more than 0.3 s off from 534 to 530 and more than 1 s off from 176 to 175. Where the line before
+ends late, its error moves on: two lines now start more than 1 s off, and three no longer do.
+
 ## How well `check_by_ear` points at wrong lines
 
 | | en | de | es | fr | all |
@@ -308,6 +318,43 @@ word is more than 0.3 s off, in 6 more than 1 s. No word time changes, and on th
 lines that start more than 1 s off goes from 59.7 to 61.9 %, at the same precision. Listing every line with a word no run timed would have added 495
 lines, 8 % of them with that word more than 1 s off, and a word more than 0.5 s from every run's nearest word with
 the same letters fires on 42 % of whisper lines, mostly because whisper spells the word differently.
+
+### Lines matched in two places, and words heard off the sheet
+
+Two end-to-end runs on Suno songs found whole-line errors that `check_by_ear` did not list. In one, the lyric sheet
+had a hook's couplet once and the song had it twice: the couplet's lines took words from both copies, one stayed on
+screen for 8 s with its last two words 6 s late, and the list was empty. So `check_by_ear` now also lists a whisper
+line spread over far more time than it is sung in: two neighbouring words more than 3 s apart, the line lasting (first
+word to last) more than 2.5 × its word count × the song's median time from one word to the next in a line, or words
+the runs heard off the sheet (below) between its first and last word. Measured from the align step with the cached
+whisper runs, at `d297f35` and with the change: the list grows from 331 to 354 lines (23, in 16 songs, none removed).
+19 of the 23 have a word more than 1 s off (of the 331, 156 have), 11 start more than 1 s off, and the list's recall
+for lines that start more than 1 s off goes from 61.9 to 68.6 %, its precision from 32.9 to 33.9 %. Of the 23, the
+gap found 11, the line's length 9 and words heard off the sheet 3.
+
+The thresholds were chosen on these songs, with a what-if on the final times at `d297f35`:
+
+| a line is listed when two neighbouring words are more than … apart, or it lasts more than … × words × step | lines added | … with a word > 1 s off | … starting > 1 s off |
+|---|---:|---:|---:|
+| 2 s, 2 × | 83 | 34 | 15 |
+| 2.5 s, 2.5 × | 30 | 19 | 12 |
+| **3 s, 2.5 ×** | 20 | 16 | 10 |
+| 3 s, 3 × | 16 | 13 | 8 |
+
+Many lines here are sung with a long pause in them: of the 64 lines not listed before that have two words more than
+2 s apart, 26 have them as far apart in the annotations (within 0.5 s); of the 11 with more than 3 s, one has. On the
+Suno song the two split lines had 5.5 and 5.9 s between two words and lasted 3.7 and 4.6 × their words × step, so
+they are listed at any of these settings.
+
+`off_sheet` in the `sync` result lists stretches of at least 1.5 s where two or more runs agree on two or more words
+that matched no line of the sheet. These lyric files hold every annotated word, yet it lists 24 stretches in 17 of the
+79 songs. Nine lie where nothing is annotated: vocalisations and ad-libs the files leave out ("oh oh oh", "ja ja
+ja", "all right, all right") and backing vocals. Fifteen lie over annotated words, where the runs heard a line of
+the sheet that the merge placed elsewhere or that they misheard; in 12 of them that line is on `check_by_ear`. 15 of
+the 24 lie over a line more than 1 s off. A stretch that holds at least half as many timed words of the sheet's own
+lines as words heard is left out: without that rule and with single words counted, the list had 51 stretches in 24
+songs. On the Suno song with the doubled couplet, `off_sheet` lists the intro chant that no line holds (two runs)
+and the second copy of the couplet in both hooks (three runs).
 
 ## What the numbers point to
 

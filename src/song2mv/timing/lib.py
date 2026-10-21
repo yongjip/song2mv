@@ -139,13 +139,18 @@ def section_kind(sec_id: str, name: str, overrides: dict) -> str:
 
 
 def parse_lyrics(path: str, cfg: dict) -> list[dict]:
+    """A lyric sheet file → lines (lyric_lines)."""
+    return lyric_lines(open(path, encoding="utf-8-sig").read(), cfg)  # -sig: a BOM would hide the first [Section]
+
+
+def lyric_lines(text: str, cfg: dict) -> list[dict]:
     """Lyric sheet → lines. `[Section]` lines name the section; blank lines are ignored; a line that is
     entirely in parentheses is treated as a stage direction like "(Crowd Chant)" and skipped, unless its
     section is listed in keep_parenthesized_in (Suno also writes sung ad-libs that way).
 
     Line ids are "<section id>-<nn>", e.g. v1-03, ch2-01. A section name that repeats without a number
     ("Chorus" twice) is numbered by occurrence; a name that appears once keeps the bare short id ("br")."""
-    raw = [r.strip() for r in open(path, encoding="utf-8-sig")]  # -sig: a BOM would hide the first [Section]
+    raw = [r.strip() for r in text.splitlines()]
     names = [m.group(1) for r in raw if (m := re.fullmatch(r"\[(.+)\]", r))]
     totals = Counter(b for b, n in map(_section_base, names) if n is None)
     keep = set(cfg.get("keep_parenthesized_in") or [])
@@ -298,10 +303,11 @@ def _one_place(pairs: list[tuple[int, int]], idx: list[tuple[int, int]], Rt: lis
 
 
 def align(lines: list[dict], asr_words: list[dict], only: set[int] | None = None,
-          word_index: bool = False) -> tuple[dict, dict]:
+          word_index: bool = False, heard: set[int] | None = None) -> tuple[dict, dict]:
     """Match lyric characters to recognised characters, in order, and return
     ({(line, word): time of the word's first matched character}, {line: fraction of its characters matched}).
     With word_index the first dict holds the index in asr_words of that character's word instead of its time.
+    `heard` gets the index in asr_words of every recognised word with a matched character.
 
     Two alignments are made, difflib's and a global one (_global_blocks). Where they disagree, the one that matched more
     of that stretch is kept, difflib's on a tie: the global one takes over where difflib put a repeated chorus on its
@@ -334,6 +340,8 @@ def align(lines: list[dict], asr_words: list[dict], only: set[int] | None = None
         key = idx[a]
         hits[key[0]] += 1
         first.setdefault(key, Rw[b] if word_index else Rt[b])
+        if heard is not None:
+            heard.add(Rw[b])
     totals = Counter(li for li, _ in idx)
     return first, {li: hits[li] / totals[li] for li in totals}
 

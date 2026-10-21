@@ -1,7 +1,11 @@
+import shutil
+import subprocess
+
 import pytest
 
 from song2mv.errors import Song2mvError
-from song2mv.timing.lib import DEFAULT_CONFIG, parse_lyrics
+from song2mv.timing.extract_lyrics import lyrics_tag
+from song2mv.timing.lib import DEFAULT_CONFIG, lyric_lines, parse_lyrics
 
 SHEET = """[Intro]
 (Crowd chant)
@@ -75,6 +79,17 @@ def line(id_, wt):
             "words": ["w"] * len(wt), "wt": wt, "source": "asr"}
 
 
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="needs ffmpeg")
+def test_the_lyrics_tag_is_read_when_the_audio_has_one(tmp_path):
+    tagged, plain = tmp_path / "tagged.flac", tmp_path / "plain.flac"
+    for path, meta in ((tagged, ["-metadata", "LYRICS=[Verse]\nhello there"]), (plain, [])):
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=0.2", *meta,
+                        str(path)], check=True)
+    key, text = lyrics_tag(str(tagged))
+    assert key.lower() == "lyrics" and [r["id"] for r in lyric_lines(text, DEFAULT_CONFIG)] == ["v-01"]
+    assert lyrics_tag(str(plain)) is None
+
+
 def test_a_line_ends_after_its_last_word_even_when_another_line_starts_inside_it():
     from song2mv.timing.build_lyrics import finish
 
@@ -92,6 +107,21 @@ def test_trailing_words_never_go_backwards():
     t = [w["t"] for w in out[0]["words"]]
     assert t == sorted(t) and t[0] == 9.0 and t[-1] > 10.0
     assert out[0]["end"] > t[-1]
+
+
+def test_words_before_a_lines_first_timed_word_wait_for_the_line_before():
+    from song2mv.timing.build_lyrics import finish
+
+    # no run heard the first two words of v1-02; 0.3 s apart before "three" they would start before "two" of v1-01, and
+    # the captions would switch to v1-02 before "two" lights up
+    out = finish([line("v1-01", [10.0, 11.0]), line("v1-02", [None, None, 11.3, 11.8])], GRID, 0, 60.0)
+    t = [w["t"] for w in out[1]["words"]]
+    assert t == [11.125, 11.213, 11.3, 11.8]  # from a 16th note (0.125 s) after "two", evenly up to "three"
+    roomy = finish([line("v1-01", [10.0, 10.5]), line("v1-02", [None, None, 12.0])], GRID, 0, 60.0)
+    assert [w["t"] for w in roomy[1]["words"]] == [11.4, 11.7, 12.0]  # room enough: 0.3 s apart, as before
+    # a backing line written after the line it comes before is not held back by it
+    backing = finish([line("v1-01", [10.0, 11.0]), line("bk-01", [None, 9.5])], GRID, 0, 60.0)
+    assert [w["t"] for w in backing[1]["words"]] == [9.2, 9.5]
 
 
 def test_manual_times_out_of_order_are_kept_in_order_with_a_warning():

@@ -14,23 +14,27 @@ Last, lines are kept in the sheet's order (keep_order): a line that starts befor
 lines below it, is merged again from the runs that placed it between them, if any did.
 Lines no run could place keep `wt` all None; reprompt.py listens to those gaps again. A word no run timed inside a
 placed line is None too, and build_lyrics.py spreads it between the words around it; where those are far apart, that
-is a guess (holes), and check_by_ear lists the line.
+is a guess (holes), and check_by_ear lists the line. Words that two runs agree on and no line matched are heard off the
+sheet (off_sheet), and where the sheet and the audio's lyrics tag differ, sheet_vs_tag says which one the runs support.
 
 Usage: python -m song2mv.timing.align work/lyrics.txt work/asr/run1.json work/asr/run2.json ... --out work/merged.json
 """
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import statistics
 
-from .lib import ORDER_SLACK, align, in_order, parse_lyrics, write_json
+from .lib import ORDER_SLACK, align, in_order, norm, parse_lyrics, write_json
 
 MIN_COVERAGE = 0.5
 MAX_SPREAD = 1.0
 FIRST_WORD = 1.0  # a line's first whisper word is cut to this many median word durations of its run (0: not cut)
 MAX_MEDIAN = 0.7  # faster-whisper caps the median word duration at 0.7 s when it shortens words itself
 HOLE = 1.0  # words no run timed, between timed words more than this many seconds apart per word, are a guess
+OFF_SHEET = 1.5  # seconds of words that two runs agree on and no lyric line matched: reported as heard off the sheet
+JOIN = 1.0  # words a run heard closer together than this (seconds) are one stretch
 
 
 def trim_first_words(lines: list[dict], words: list[dict]) -> list[dict]:
@@ -106,8 +110,15 @@ def keep_order(lines: list[dict], merged: list[dict], cands: list[list[dict]]) -
     return out
 
 
-def merge_runs(lines: list[dict], runs: list[dict]) -> list[dict]:
-    per_run = [align(lines, trim_first_words(lines, r["words"])) for r in runs]
+def merge_runs(lines: list[dict], runs: list[dict], heard: list[set[int]] | None = None) -> list[dict]:
+    """The lyric lines with their merged word times. `heard` gets, per run, the indices of the words that matched a
+    letter of the sheet."""
+    per_run = []
+    for r in runs:
+        matched: set[int] = set()
+        per_run.append(align(lines, trim_first_words(lines, r["words"]), heard=matched))
+        if heard is not None:
+            heard.append(matched)
     out, cands = [], []
     for li, ln in enumerate(lines):
         n = len(ln["words"])
@@ -120,6 +131,136 @@ def merge_runs(lines: list[dict], runs: list[dict]) -> list[dict]:
         cands.append(cs)
         out.append(_merge_line(ln, cs, cov))
     return keep_order(lines, out, cands)
+
+
+def _unmatched(words: list[dict], matched: set[int]) -> list[list[int]]:
+    """Indices of the words of one run that matched no letter of the sheet, in stretches: a matched word or JOIN
+    seconds without a word ends one. Numbers are left out: whisper writes "ten" as 10."""
+    out: list[list[int]] = []
+    last = None
+    for i, w in enumerate(words):
+        if i in matched:
+            last = None
+        elif norm(w["t"]) and not norm(w["t"]).isdigit():
+            if last is None or w["s"] - words[last]["e"] > JOIN:
+                out.append([])
+            out[-1].append(i)
+            last = i
+    return out
+
+
+def _within(words: list[dict], idx: list[int], a: float, b: float) -> list[int]:
+    return [i for i in idx if a <= (words[i]["s"] + words[i]["e"]) / 2 <= b]
+
+
+def _same_words(x: str, y: str) -> bool:
+    """Two runs heard the same words: at least half the letters of the shorter match, in runs of two or more."""
+    common = sum(n for *_, n in difflib.SequenceMatcher(None, x, y, autojunk=False).get_matching_blocks() if n >= 2)
+    return min(len(x), len(y)) >= 2 and common >= 0.5 * min(len(x), len(y))
+
+
+def off_sheet(runs: list[dict], heard: list[set[int]], lines: list[dict]) -> list[dict]:
+    """Stretches of at least OFF_SHEET seconds where two or more runs agree on two or more words that matched no line
+    of the lyric sheet: a chant or an ad-lib the sheet leaves out, a line sung differently, a repeat the sheet has
+    once, or a line of the sheet the merge placed elsewhere. A stretch is left out when it holds at least half as many
+    words of the timed lines (`lines`, as in lyrics.json) as words heard: there the runs misheard the sheet's own
+    lines. [{from, to, runs, words, after}] in song time; `words` is what one of the runs heard, `after` the id of the
+    last line that starts before the stretch (None before the first)."""
+    unmatched = [_unmatched(r["words"], h) for r, h in zip(runs, heard)]
+    spans = [(k, idx) for k, parts in enumerate(unmatched) for idx in parts]
+    agreed = []
+    for n, (ka, ia) in enumerate(spans):
+        wa = runs[ka]["words"]
+        for kb, ib in spans[n + 1:]:
+            wb = runs[kb]["words"]
+            a, b = max(wa[ia[0]]["s"], wb[ib[0]]["s"]), min(wa[ia[-1]]["e"], wb[ib[-1]]["e"])
+            if kb != ka and b > a and _same_words("".join(norm(wa[i]["t"]) for i in _within(wa, ia, a, b)),
+                                                  "".join(norm(wb[i]["t"]) for i in _within(wb, ib, a, b))):
+                agreed.append([a, b, {ka, kb}])
+    stretches: list[list] = []
+    for a, b, ks in sorted(agreed, key=lambda x: x[0]):
+        if stretches and a <= stretches[-1][1]:
+            stretches[-1][1] = max(stretches[-1][1], b)
+            stretches[-1][2] |= ks
+        else:
+            stretches.append([a, b, ks])
+    timed = [w["t"] for r in lines for w in r["words"]]
+    out = []
+    for a, b, ks in stretches:
+        words = {k: [runs[k]["words"][i]["t"] for idx in unmatched[k] for i in _within(runs[k]["words"], idx, a, b)]
+                 for k in ks}
+        k = max(sorted(ks), key=lambda k: len(norm("".join(words[k]))))
+        if b - a < OFF_SHEET or len(words[k]) < 2 or 2 * sum(a <= t <= b for t in timed) >= len(words[k]):
+            continue
+        before = [r for r in lines if r["start"] <= a]
+        out.append({"from": round(a, 2), "to": round(b, 2), "runs": [k + 1 for k in sorted(ks)], "words": " ".join(words[k]),
+                    "after": max(before, key=lambda r: r["start"])["id"] if before else None})
+    return out
+
+
+def _quote(lines: list[dict]) -> str:
+    text = " / ".join(r["text"] for r in lines)
+    return f'"{text if len(text) <= 80 else text[:79] + "…"}"'
+
+
+def _ids(lines: list[dict]) -> str:
+    return lines[0]["id"] + (f"–{lines[-1]['id']}" if len(lines) > 1 else "")
+
+
+def _difference(sheet: list[dict], tag: list[dict], a: list[str], b: list[str], op: tuple) -> str:
+    """One place where the sheet (a: its lines' letters) and the tag (b) differ, in words."""
+    _, i1, i2, j1, j2 = op
+    if i1 == i2:
+        n = j2 - j1
+        for at in (i1 - n, i1):
+            if at >= 0 and a[at:at + n] == b[j1:j2]:
+                return f"the audio's lyrics tag repeats {_ids(sheet[at:at + n])} {_quote(sheet[at:at + n])}, which the lyric sheet has once"
+        where = f"after {sheet[i1 - 1]['id']}" if i1 else f"before {sheet[0]['id']}"
+        return f"the audio's lyrics tag has {n} line{'s' * (n > 1)} the lyric sheet does not, {where}: {_quote(tag[j1:j2])}"
+    if j1 == j2:
+        n = i2 - i1
+        if (i1 >= n and a[i1 - n:i1] == a[i1:i2]) or a[i2:i2 + n] == a[i1:i2]:
+            return f"the lyric sheet repeats {_ids(sheet[i1:i2])} {_quote(sheet[i1:i2])}, which the audio's lyrics tag has once"
+        return f"the lyric sheet has {_ids(sheet[i1:i2])} {_quote(sheet[i1:i2])}, which the audio's lyrics tag does not"
+    return f"the lyric sheet has {_ids(sheet[i1:i2])} {_quote(sheet[i1:i2])} where the audio's lyrics tag has {_quote(tag[j1:j2])}"
+
+
+def sheet_vs_tag(sheet: list[dict], tag: list[dict], runs: list[dict]) -> list[str]:
+    """Where the lyric sheet and the audio's lyrics tag differ, and which of the two the whisper runs support there:
+    one message per place, for the warnings. Each version is aligned to every run; around each place, a letter the
+    runs matched counts +1 and a letter they left out −1, and the version that scores clearly higher (by a quarter of
+    the letters that differ) is the one the runs heard. Lines that differ only in case or punctuation are the same."""
+    a, b = [norm(r["text"]) for r in sheet], [norm(r["text"]) for r in tag]
+    ops = difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes()
+    places = [n for n, op in enumerate(ops) if op[0] != "equal"]
+    if not places or not runs:
+        return []
+    cov = {"sheet": [align(sheet, r["words"])[1] for r in runs], "tag": [align(tag, r["words"])[1] for r in runs]}
+
+    def score(which, lines, lo, hi):
+        return sum((2 * c.get(i, 0.0) - 1) * len(norm(lines[i]["text"])) for c in cov[which] for i in range(lo, hi)) / len(runs)
+
+    out, votes = [], {"sheet": 0, "tag": 0, None: 0}
+    for n in places:
+        _, i1, i2, j1, j2 = ops[n]
+        # the equal lines around the place count too, up to its size: with repeated lines, which copy the
+        # difference is in is a guess
+        k = max(i2 - i1, j2 - j1)
+        before = min(k, ops[n - 1][2] - ops[n - 1][1]) if n and ops[n - 1][0] == "equal" else 0
+        after = min(k, ops[n + 1][2] - ops[n + 1][1]) if n + 1 < len(ops) and ops[n + 1][0] == "equal" else 0
+        d = score("tag", tag, j1 - before, j2 + after) - score("sheet", sheet, i1 - before, i2 + after)
+        size = max(sum(map(len, a[i1:i2])), sum(map(len, b[j1:j2])))
+        side = "tag" if d > size / 4 else "sheet" if d < -size / 4 else None
+        votes[side] += 1
+        if len(out) == 3 and len(places) > 4:
+            continue
+        out.append(f"{_difference(sheet, tag, a, b, ops[n])}; the whisper runs support "
+                   f"{'the ' + side if side else 'neither clearly'} here")
+    if len(places) > 4:
+        out.append(f"the lyric sheet and the audio's lyrics tag differ in {len(places) - 3} more places; in all "
+                   f"{len(places)}, the whisper runs support the sheet in {votes['sheet']}, the tag in {votes['tag']} and "
+                   f"neither clearly in {votes[None]}")
+    return out
 
 
 def holes(wt: list[float | None]) -> list[tuple[int, int]]:

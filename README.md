@@ -130,6 +130,11 @@ Why it works the way it does:
   too.
 - **A word no run heard is a guess.** It is spread between the words around it, and where those are more than 1 s
   apart per word, half such words were more than 1 s off on the benchmark; that line goes on `check_by_ear`.
+- **A lyric sheet can leave out what was sung.** One had a hook's couplet once that Suno sang twice: the couplet's
+  lines were matched on both copies, one stayed on screen for 8 s with its last two words 6 s late, and nothing was
+  listed. A line spread over far more time than it is sung in now goes on `check_by_ear`, `off_sheet` lists
+  stretches where the runs agree on words that no line has (chants, ad-libs, changed lines), and where the sheet and
+  the audio's lyrics tag differ, `warnings` says which of the two the runs support.
 
 To hear whether the grid and timing are right, mix a click track over a stretch — a high click on the first beat
 of each bar, a low click on the other beats and, with `--words`, a soft tick on every lyric word:

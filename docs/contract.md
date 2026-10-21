@@ -19,7 +19,7 @@ an error.
 
 | command | fields |
 | --- | --- |
-| `sync` | `work`, `config`, `outputs`, `duration`, `bpm`, `lines`, `line_sources` (source → number of lines), `check_by_ear` (line ids to verify by ear: re-heard, estimated, placed by only one whisper run, out of the lyric sheet's order, or with a word no run timed between words far apart), `dropped` (lyric lines missing from the output — should be empty), `language`, `warnings`, `seconds` |
+| `sync` | `work`, `config`, `outputs`, `duration`, `bpm`, `lines`, `line_sources` (source → number of lines), `check_by_ear` (line ids to verify by ear: re-heard, estimated, placed by only one whisper run, out of the lyric sheet's order, with a word no run timed between words far apart, or spread over far more time than it is sung in), `off_sheet` (words the whisper runs hear that no lyric line has, see below), `dropped` (lyric lines missing from the output — should be empty), `language`, `warnings`, `seconds` |
 | `beats` | `outputs`, `bpm`, `beat`, `phi`, `downbeat_mod4`, `bar0`, `bar`, `duration`, `off_grid` (as in `grid.json`), `warnings` |
 | `click` | `outputs` (the wav), `from`, `to`, `bpm`, `downbeat_mod4`, `ask_the_listener` (the question to put to the person listening) |
 | `check` | `video`, `song`, `goals`, `from`, `to` (the stretch measured, in song time), `passed`, `total`, `results` (check → `{ok, value, goal, msg}`, see below), `skipped` (check → why it could not run on this stretch), `per_line` (`{id, motion, coverage}`), `cuts` (song times), `warnings` |
@@ -28,6 +28,21 @@ an error.
 `check` results: `value` is the measured number and `goal` is `{"min": x}` or `{"max": x}`. Per-line checks
 (`motion.min`, `motion.max`, `coverage.min`) count the failing lines in `value` (goal `{"max": 0}`) and list them in
 `lines` as `{id, value, goal}`. A check in `skipped` neither passed nor failed and is not counted in `total`.
+
+`off_sheet` lists the stretches of at least 1.5 s where two or more whisper runs agree on two or more words that no
+line of the lyric sheet matched: a chant or an ad-lib the sheet leaves out, a line sung differently, a repeat the
+sheet has once, or a line of the sheet that the runs heard there but that was placed elsewhere (compare the words with
+the sheet). Each is `{from, to, runs, words, after}`: `from` and `to` in song time, `runs` the numbers of the runs
+that agree (as in `runs_used`), `words` what one of them heard, and `after` the id of the last line that starts before
+it (`null` before the first). A stretch is left out when it holds at least half as many timed words of the sheet's
+own lines as words heard: there the runs misheard those lines. Each stretch also gets an entry in `warnings`, and a
+line whose first and last words lie on either side of one goes on `check_by_ear`.
+
+When `sync` has a lyric sheet (`--lyrics`) and the audio also has a lyrics tag that differs from it (in more than case
+and punctuation), `warnings` names each place where they differ and says which of the two the whisper runs support
+there, for example `the audio's lyrics tag repeats hk1-05–hk1-06 "…", which the lyric sheet has once; the whisper runs
+support the tag here` (`the sheet`, `the tag` or `neither clearly`). Up to four places are named one by one; with more,
+three are, and a fourth entry counts the rest.
 
 `sync` and `beats` add one entry to `warnings` per `off_grid` stretch (see `grid.json`), saying what was found and
 where, for example `the tempo changes near 0:30 (100 → 120 BPM): the beat grid fits only before that; …`, or a
