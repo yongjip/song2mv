@@ -189,9 +189,10 @@ cut-out:
   on a canvas of its own and `stamp` it on with an outline colour;
 - `pixel.Pixels`: a canvas on the stage, `px` stage px to a pixel (at 8, 240 × 135 pixels fill it);
 - `pixel.Pixelate id`: anything inside turns into blocks on the same grid, `outline` rings them: big type in any font,
-  or any kit drawing. One colour per Pixelate gives clean blocks (the shadow in one, the face in another). Korean
-  type smears under about 18 blocks to the em, so lyrics stay crisp type. Where the stage is drawn smaller, pass its
-  size as `scale` (0.76 in the 9:16 band);
+  or any kit drawing. Pop or slide what is inside, not a group around it, so the blocks stay put. One colour per
+  Pixelate gives clean blocks (the shadow in one, the face in another). Korean type smears under about 18 blocks to
+  the em, so lyrics stay crisp type. Where the stage is drawn smaller, pass its size as `stageScale` (0.76 in the
+  9:16 band);
 - `pixel.colors`, and `pixel.step(T)` for the held 8 steps a second of sprite animation.
 
 Putting a scene together:

@@ -94,7 +94,7 @@ First release (0.1.0).
 
   Gallery tile 22 draws a corner shop at dusk with it and turns the kit's `Person` and `Car` into outlined pixels.
   `Pixelate` samples the picture with one dot per block: where the stage is drawn smaller than full size (0.76 in the
-  9:16 band), pass that size as `scale`, or the picture can flicker or vanish as it moves.
+  9:16 band), pass that size as `stageScale`, or the picture can flicker or vanish as it moves.
 - Adding to the kit by pull request. `CONTRIBUTING.md` says how to add an asset or a style pack: original drawings,
   MIT, no media files, the kit's rules, a gallery tile and a still. The pull request template asks for them, and CI
   renders every gallery tile and keeps the PNGs for 14 days as the run's `kit-gallery` artifact. Once a video is
