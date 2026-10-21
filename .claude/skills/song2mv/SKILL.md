@@ -354,7 +354,7 @@ scenes don't draw, the flashes and the fade-out; the background and any title ar
 same world and timing filmed for a tall frame, which `verticalView` in the kit does:
 
 ```tsx
-const cam = verticalView(cameraAt(T, shots, { hits }));   // a pixel scene: verticalView(cameraAt(T, shots), { px })
+const cam = verticalView(cameraAt(T, shots, { hits }));   // a pixel scene: pixel.cameraAt(T, shots, { px, vertical: true })
 <Svg w={1080} h={1920}><g transform={cam.svg}>…the world, as drawn for 16:9…</g></Svg>
 ```
 
@@ -365,16 +365,18 @@ Where things go (`VERTICAL` in the kit has the numbers):
   too, and a title or big type at the top of the box.
 - **The subject** in the picture area above the captions, y 269–1080. `verticalView` puts the view's point in its
   middle (540, 675), as large as in the 16:9 frame; pass a larger zoom to come closer. A wide shot's point is
-  usually the middle of the stage, not its subject: give the tall frame the subject's point
-  (`{ ...cam, x: 900, y: 820 }`), or the subject drops under the captions.
+  usually the middle of the stage, not its subject: give the tall frame's wide shots the subject's point
+  (`shots.map(s => (s.zoom ?? 1) > 1.5 ? s : { ...s, x: 900, y: 820 })`), or the subject drops under the captions.
+  A close-up shows more below its point than in 16:9, and that part sits under the captions: if it is the subject's
+  body, zoom out until the subject fits above y 1080.
 - **Below y 1248** the apps cover the frame: picture only. The view keeps the frame on the stage's sides and top but
   runs on past its bottom (the kit's places end at y 1080), so draw the ground on down there, or a foreground such
   as a crowd.
 
-A contact sheet with `"vertical": true` draws the safe box and the captions' top as dashed lines: check them there
-before rendering the short. `check` measures the top 56 % of a short, above the captions, also with a
-`VerticalScene`; a large still overlay there (a HUD, a dialogue box) hides cuts from it, so cut between shots that
-look different.
+A contact sheet with `"vertical": true` draws the safe box and the captions' top as dashed lines (a crop sheet
+leaves them out): check them there before rendering the short. `check` measures the top 56 % of a short, above the
+captions, also with a `VerticalScene`; a large still overlay there (a HUD, a dialogue box) hides cuts from it, so cut
+between shots that look different.
 
 ## 7. Deliver
 

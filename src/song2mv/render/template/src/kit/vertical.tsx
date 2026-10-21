@@ -21,21 +21,28 @@ export const VERTICAL = {
  * 16:9 frame (pass a larger zoom to go closer), and rolled as the view is. Where it can, the frame keeps inside
  * `world` [left, top, right, bottom], by default the stage's sides and top but open below: under the picture the frame
  * runs on past the stage's bottom edge, behind the captions and the apps' buttons, so draw the ground on down there,
- * or a foreground. With `px` (a pixel scene's stage px per pixel) the zoom rounds to a whole number, the roll drops
- * and the frame sits on whole pixels, as with pixel.cameraAt.
+ * or a foreground. A pixel scene films its shots with pixel.cameraAt(T, shots, { px, vertical: true }) instead, which
+ * keeps the blocks whole and changes the zoom when its 16:9 version does.
  *
  *   const cam = verticalView(cameraAt(T, shots, { hits }));        // the 16:9 scene's own shots
  *   <Svg w={1080} h={1920}><g transform={cam.svg}>…the world, as drawn for 16:9…</g></Svg>
  *   verticalView({ x: 900, y: 820, zoom: 1.5 })                    // a subject of the tall frame's own
- *   verticalView(cameraAt(T, shots), { px: 8 })                    // a pixel scene: its shots, not pixel.cameraAt
  */
 export function verticalView(
   view: { x: number; y: number; zoom?: number; rotate?: number; shot?: number },
-  o: { px?: number; world?: [number, number, number, number] } = {},
+  o: { world?: [number, number, number, number] } = {},
+): CameraView {
+  return tallView(view, 0, o.world);
+}
+
+/** verticalView on whole pixels of `cell` stage px, with a whole zoom and no roll; 0 for a smooth frame */
+export function tallView(
+  view: { x: number; y: number; zoom?: number; rotate?: number; shot?: number },
+  cell: number,
+  world: [number, number, number, number] = [0, 0, 1920, Infinity],
 ): CameraView {
   const { w, h, picture } = VERTICAL;
-  const [x0, y0, x1, y1] = o.world ?? [0, 0, 1920, Infinity];
-  const cell = o.px ? Math.max(1, Math.round(o.px)) : 0;
+  const [x0, y0, x1, y1] = world;
   const zoom = cell ? Math.max(1, Math.round(view.zoom ?? 1)) : Math.max(0.05, view.zoom ?? 1);
   const rotate = cell ? 0 : view.rotate ?? 0;
   const ax = (picture.left + picture.right) / 2, ay = (picture.top + picture.bottom) / 2;

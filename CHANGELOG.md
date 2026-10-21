@@ -134,10 +134,12 @@ First release (0.1.0).
     template's captions (y 1082–1240) and the picture area above them, where the subject goes (y 269–1080).
   - `verticalView(view)` films the 16:9 world for the tall frame: the point a view looks at (a shot's, or
     `cameraAt`'s) lands in the middle of the picture area, as large as in 16:9; the frame keeps on the stage's sides
-    and top and runs on below its bottom, under the captions and the apps' buttons. With `px` it keeps a pixel scene
-    on whole pixels.
+    and top and runs on below its bottom, under the captions and the apps' buttons. In a pixel scene,
+    `pixel.cameraAt(T, shots, { vertical: true })` films the shots the same way, on whole pixels, its zoom changing
+    when the 16:9 version's does.
   - `Svg` takes `w` and `h` (1080 × 1920 fills the frame).
-  - A vertical contact sheet draws the safe box and the captions' top as dashed lines.
+  - A vertical contact sheet draws the safe box and the captions' top as dashed lines (a crop sheet leaves them
+    out).
 
   Ported to it, that run's short drops its hand-made canvas offsets and per-zoom y corrections and frames its shots
   as the hand-tuned version did, except one close-up whose subject the hand-made tall canvas had cut off, now in the

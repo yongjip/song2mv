@@ -1,4 +1,5 @@
 """The bundled template rendered through render.mjs: needs Node, ffmpeg and `npm ci` in the template (CI's template job)."""
+import json
 import os
 import shutil
 import subprocess
@@ -29,21 +30,19 @@ def test_check_measures_a_draft_on_as_many_frames_as_its_full_render(tmp_path, t
 
 VERTICAL_SCENES = """
 import React from "react";
-import { Svg, Song, verticalView } from "../kit";
+import { Svg, Song, pixel, verticalView } from "../kit";
 
-const VIEWS: Parameters<typeof verticalView>[] = [
-  [{ x: 1000, y: 600, zoom: 2 }],
-  [{ x: 1900, y: 600, zoom: 2 }],
-  [{ x: 1003, y: 597, zoom: 2.4 }, { px: 8 }],
-];
+const SUBJECTS = [[1000, 600], [1900, 600], [1003, 597]];
+const view = (i: number, x: number, y: number) =>
+  i < 2 ? verticalView({ x, y, zoom: 2 }) : pixel.cameraAt(0, [{ t: 0, x, y, zoom: 2.4 }], { px: 8, vertical: true });
 
 export const Scene: React.FC<{ T: number }> = () => null;
 export const linesDrawnByScene = (_song: Song) => new Set<string>();
 export const VerticalScene: React.FC<{ T: number }> = ({ T }) => {
-  const { x, y } = VIEWS[Math.round(T)][0];
+  const [x, y] = SUBJECTS[Math.round(T)];
   return (
     <Svg w={1080} h={1920}>
-      <g transform={verticalView(...VIEWS[Math.round(T)]).svg}>
+      <g transform={view(Math.round(T), x, y).svg}>
         <rect x={0} y={0} width={1920} height={1080} fill="#203040" />
         <rect x={x - 5} y={y - 5} width={10} height={10} fill="#ff0000" />
       </g>
@@ -73,6 +72,31 @@ def test_vertical_view_puts_the_subject_in_the_picture_area_and_keeps_the_frame_
     for i in range(3):
         ys, xs = np.nonzero(red[:, round(gap + i * (tile + gap)):round(gap + i * (tile + gap) + tile)])
         found.append((xs.mean() / scale, (ys.mean() - gap) / scale))
-    # the subject on the picture area's middle; at the stage's right edge the frame stops there; with px on 16 px blocks
+    # the subject on the picture area's middle; at the stage's right edge the frame stops there; a pixel scene on 16 px blocks
     for (x, y), (ex, ey) in zip(found, [(540, 674.5), (1040, 674.5), (534, 682)]):
         assert abs(x - ex) < 3 and abs(y - ey) < 3, found
+
+
+PIXEL_PROBE = """
+import { cameraAt } from "%s";
+
+const RUNS = {
+  glide: [{ t: 0, x: 960, y: 540, zoom: 2 }, { t: 2, x: 700, y: 500, zoom: 1, glide: 1 }],
+  drift: [{ t: 0, x: 960, y: 540, zoom: 1, to: { zoom: 1.8 } }, { t: 4, x: 960, y: 540 }],
+};
+const zooms = (shots: typeof RUNS.glide) => Array.from({ length: 81 }, (_, k) => k / 20)
+  .map((T) => [T, cameraAt(T, shots, { px: 8 }).zoom, cameraAt(T, shots, { px: 8, vertical: true }).zoom]);
+console.log(JSON.stringify({ glide: zooms(RUNS.glide), drift: zooms(RUNS.drift) }));
+"""
+
+
+def test_a_pixel_short_changes_zoom_when_its_16x9_version_does(tmp_path):
+    probe = tmp_path / "probe.ts"
+    probe.write_text(PIXEL_PROBE % os.path.join(BUNDLED, "src", "kit", "styles", "pixel"), encoding="utf-8")
+    subprocess.run([os.path.join(BUNDLED, "node_modules", ".bin", "esbuild"), str(probe), "--bundle", "--platform=node",
+                    "--format=esm", "--log-level=error", f"--outfile={tmp_path / 'probe.mjs'}"], check=True)
+    runs = json.loads(subprocess.run(["node", str(tmp_path / "probe.mjs")], check=True, capture_output=True, text=True).stdout)
+    # a glide from zoom 2 to 1 cuts on its shot's time in both frames; a drift in zoom shows in neither
+    assert [(T, wide) for T, wide, _ in runs["glide"]] == [(T, 2 if T < 2 else 1) for T, _, _ in runs["glide"]]
+    assert all(wide == tall for _, wide, tall in runs["glide"]), runs["glide"]
+    assert {(wide, tall) for _, wide, tall in runs["drift"]} == {(1, 1)}, runs["drift"]
