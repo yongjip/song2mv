@@ -206,19 +206,26 @@ Out of the box you get a plain lyric video that follows the song's structure: ca
 embers, mid sections with a floor grid rolling on the beat, hot sections with rays on the beat and the line itself
 huge in the middle, lit word by word. Colours come from `theme` in the song config.
 
-The real music video is your own scenes. With `--template DIR`, DIR gets its own copy of the template; write scenes in
-`DIR/src/scenes/` with the kit in `DIR/src/kit/`. Besides `useSong()`, beat-grid helpers, `Slam`, `BigLine` and
-karaoke `Captions`, the kit holds:
+The real music video is your own scenes, with a look made for the song. Start from a concept: two or three ideas in
+different art styles, a rough still of each, and pick one (the skill walks through it). With `--template DIR`, DIR gets
+its own copy of the template: write the scenes in `DIR/src/scenes/`, reuse and change what fits the concept from the
+kit in `DIR/src/kit/`, and draw the rest. Besides `useSong()`, beat-grid helpers, `Slam`, `BigLine` and karaoke
+`Captions`, the kit holds:
 
 - **people:** a posable person, a crowd;
 - **places:** a city, a street, a room, hills, the sea;
 - **sky:** sky by time of day, sun, moon and clouds;
 - **objects:** a phone with a chat, a clock, a heart, a car, a plane, lanterns;
-- **effects:** rain, fireworks, confetti.
+- **effects:** rain, fireworks, confetti;
+- **style packs** (`kit/styles/`): drawing pieces that put any object in one art style. `paper` cuts outlines by hand
+  and stacks them with shadows and grain. New assets and packs are welcome
+  ([CONTRIBUTING.md](https://github.com/yongjip/song2mv/blob/main/CONTRIBUTING.md)).
 
-Run `npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR to see them. Rules that held up: a scene is a
-pure function of song time `T`; text pops once and then holds still while it is read; lay out on the 1920×1080
-stage.
+The people, places and objects are drawn in one flat style. To see everything, run
+`npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR. Rules that held up: a scene is a pure
+function of song time `T`; text pops once and then holds still while it is read; lay out on the 1920×1080 stage. For
+9:16, a song can also export a `VerticalScene` that draws the whole 1080×1920 frame, instead of the stage shrunk into a
+band.
 
 Remotion is **not MIT**: it is free for individuals and companies with up to 3 employees; larger companies need a
 company license ([remotion.dev/license](https://www.remotion.dev/license)). Only `render` uses it.

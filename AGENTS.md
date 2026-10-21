@@ -25,8 +25,11 @@ music video out. It is a command-line tool built for coding agents. Five command
    stretches (`--from A --to B`) while working. For the user's own scenes use `--template DIR` and write them in
    `DIR/src/scenes/`: a scene is a pure function of song time `T`; text pops once and then holds still; lay out
    on the 1920×1080 stage. Start from a concept: propose two or three, in different art styles, and let the user
-   pick one. The scene kit in `DIR/src/kit/` (people, places, sky, objects, effects) is optional; use it where it
-   fits the concept. See it with `npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR. Remotion is not MIT — tell company users about its license before they rely on it.
+   pick one. The scene kit in `DIR/src/kit/` (people, places, sky, objects, effects; style packs such as `paper` that
+   put any object in another art style) is optional: reuse what fits the concept, change it in DIR, draw the rest.
+   See it with `npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR. When the video is done,
+   offer the user anything generic you drew as a pull request (`CONTRIBUTING.md`). Remotion is not MIT — tell
+   company users about its license before they rely on it.
 6. **Check after every render.** `song2mv check VIDEO --song WORK/mv.json --from A --to B --json`. Fix FAILs and
    say which numbers moved. The default goals are a starting point; if one is wrong for this song, copy the goals
    file, change it and tell the user why. Passing is necessary, not proof of fun — send a clip and ask what is

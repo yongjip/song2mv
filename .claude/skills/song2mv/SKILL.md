@@ -84,7 +84,8 @@ style and a different central image. For each, write:
 - **Idea:** one line, the image that carries the song, taken from its lyrics and mood.
 - **Art style:** what fits this song, not what is quickest to build. Some options:
   - flat illustration (the kit's own style);
-  - paper cut-out with drop shadows, or ink lines on paper, or chalk on a blackboard;
+  - paper cut-out with drop shadows (the kit has a style pack for it), or ink lines on paper, or chalk on a
+    blackboard;
   - pixel art, or a retro VHS / photocopy look;
   - collage, or watercolour washes;
   - an isometric miniature;
@@ -107,11 +108,21 @@ Make each concept concrete enough to picture: render one rough still per concept
   (2 bars, 1 bar, 3 bars …), not every bar.
 - **Text**: which lines become big type in the scene (`Slam`, `BigLine`), which stay as bottom captions.
 
-**The kit is optional.** Use its pieces where they fit the concept. If the concept is drawn in another style, draw
-its pieces in that style yourself; you can still reuse the kit's timing and motion code:
-- `useSong()` and `grid`;
-- `Drift`, `liveLine`, and the easing and `rng` helpers in `math`;
-- how `effects.tsx` times its particles.
+**Then get the pieces, in this order:**
+
+1. **The concept decides.** Pick it first (above), then look in the kit for what fits it, not for a concept that fits
+   the kit.
+2. **Reuse what fits the concept's style.** A style pack in `src/kit/styles/` puts any object in one art style
+   (`paper`: cut-out pieces with shadows and grain). The kit's own pieces are flat illustration: they fit a flat
+   concept and look out of place in any other.
+3. **Change your copy.** The song's template copy (`--template`, step 4) is yours: change a kit piece or a pack there
+   (a colour, a shape, another pose) instead of working around it. Upgrades never touch it.
+4. **Draw what is new** in the concept's style. With a pack, draw it from the pack's pieces. Without one, build the
+   style first (a pixel canvas, an ink line, a watercolour wash) and draw the song's objects on top. The kit's timing and
+   motion code works in any style:
+   - `useSong()` and `grid`;
+   - `Drift`, `liveLine`, and the easing and `rng` helpers in `math`;
+   - how `effects.tsx` times its particles.
 
 Before rendering the whole song, test a frame: if it could sit in the kit's gallery unchanged, it is not this song's
 video yet.
@@ -139,12 +150,13 @@ the defaults, they put the kit's neon night around every concept, and the title 
 Look at it before you design anything:
 
 ```bash
-cd <work>/video && npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 12 scenes
-npx remotion still src/index.ts Kit-Gallery scene.png --frame=4                        # one at full size (1–12)
+cd <work>/video && npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 13 scenes
+npx remotion still src/index.ts Kit-Gallery scene.png --frame=4                        # one at full size (1–13)
 ```
 
-`src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T` and comes in one flat
-illustrated style; its doc comment in `src/kit/` lists what each prop does.
+`src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc
+comment in `src/kit/` lists what each prop does. Scenes 1–12 are the kit's pieces, in one flat illustrated style.
+Scene 13 is the paper style pack.
 
 | family | pieces | for |
 |---|---|---|
@@ -154,6 +166,15 @@ illustrated style; its doc comment in `src/kit/` lists what each prop does.
 | objects | `Phone` (`messages`, `typing`, `call`), `Clock` (`spin`, `ticks` on the beat, alarm `ring`), `Heart` (`beat`, `crack`), `Car` (`distance` turns the wheels), `Plane` (`trail`), `Lantern`/`Lanterns` | what the lyrics are about |
 | effects | `Rain` (`strength`, splashes on `ground`), `Fireworks` (`bursts` at times), `Confetti` | weather and the big moments |
 | text | `Slam`, `Quiet`, `BigLine`, `Captions` | lines in the scene |
+
+**Style packs** (`src/kit/styles/`, one namespace each: `import { paper } from "../kit"`). `paper`, for paper
+cut-out:
+- outlines cut by hand, each with its own seed: `paper.rect`, `paper.ellipse`, `paper.poly`, `paper.strip` (stems,
+  cords, steam); join outlines to cut holes;
+- `paper.Cut`: one piece, placed with `x`, `y`, `rotate`, `s`; `lift` raises it off the paper under it and its
+  shadow grows; a Cut inside a Cut is glued onto it;
+- `paper.Stack id`: the grain and the light for every piece inside it, one per scene;
+- `paper.colors` and `paper.matte(c)` for paper colours, `paper.step(T)` for the held steps of cut-out motion.
 
 Putting a scene together:
 
@@ -225,3 +246,8 @@ and puts only picture below it. Check stills.
 
 Full render(s), short(s), `song.srt` / `song.lrc`, and a short list of what was hand-fixed (manual timing values,
 goals changed and why). Nothing from the work folder gets committed.
+
+**Give back what other songs can use.** Look over what you drew for the video. Some pieces are generic, not tied to
+this song: an object, a pose, a place, a style pack. Offer those to the user as a pull request to song2mv, following
+`CONTRIBUTING.md` ("Adding an asset or a style pack"): original drawings, no media files, the kit's rules, a gallery
+tile and a still. Open it only if the user agrees, and leave the song, its lyrics and its own scenes out.
