@@ -303,11 +303,13 @@ def _one_place(pairs: list[tuple[int, int]], idx: list[tuple[int, int]], Rt: lis
 
 
 def align(lines: list[dict], asr_words: list[dict], only: set[int] | None = None,
-          word_index: bool = False, heard: set[int] | None = None) -> tuple[dict, dict]:
+          word_index: bool = False, heard: set[int] | None = None,
+          spans: dict[int, list[int]] | None = None) -> tuple[dict, dict]:
     """Match lyric characters to recognised characters, in order, and return
     ({(line, word): time of the word's first matched character}, {line: fraction of its characters matched}).
     With word_index the first dict holds the index in asr_words of that character's word instead of its time.
-    `heard` gets the index in asr_words of every recognised word with a matched character.
+    `heard` gets the index in asr_words of every recognised word with a matched character, and `spans`, per line,
+    the indices of the first and the last of them.
 
     Two alignments are made, difflib's and a global one (_global_blocks). Where they disagree, the one that matched more
     of that stretch is kept, difflib's on a tie: the global one takes over where difflib put a repeated chorus on its
@@ -342,6 +344,8 @@ def align(lines: list[dict], asr_words: list[dict], only: set[int] | None = None
         first.setdefault(key, Rw[b] if word_index else Rt[b])
         if heard is not None:
             heard.add(Rw[b])
+        if spans is not None:
+            spans.setdefault(key[0], [Rw[b], Rw[b]])[1] = Rw[b]
     totals = Counter(li for li, _ in idx)
     return first, {li: hits[li] / totals[li] for li in totals}
 

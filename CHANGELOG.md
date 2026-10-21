@@ -300,6 +300,19 @@ First release (0.1.0).
   rap song it lists the intro chant that two runs hear and no line holds, and the second copy of the doubled couplet
   in both hooks. On JamendoLyrics, whose lyric files hold every annotated word, it lists 24 stretches in 17 of 79
   songs: ad-libs and vocalisations the files leave out, and lines the runs heard where the merge did not place them.
+- `check_by_ear` also lists what a new user's run on a Suno rap song found by reading the raw runs, with the list
+  empty: a whisper line with three words inside 0.1 s (the runs heard only "Brooklyn" of "Beep, beep, Brooklyn"), one
+  whose runs start it more than 0.7 s apart (one run timed "One", two heard "1"; the line started 0.35 s late), one
+  with a word more than 0.5 s from every run's time for it (two runs that disagree, merged to their middle), and a
+  repeat the runs hear alike and not as written while they hear another copy of it as written, with a warning that
+  says what they heard (`hk1-07 "Beep, beep, I'm parallel" is heard as "Back it up, I'm parallel" (runs 1, 2, 3), and
+  hk1-05, the same line, as written`: Suno sang that repeat differently from its own lyrics tag). The log says
+  `◀ hk2-08 stacked: …`, `◀ runs disagree by …` and `◀ no run times "…" near …`. On the JamendoLyrics benchmark the
+  list grows from 354 to 427 lines, its recall for lines that start more than 1 s off from 68.6 to 75.4 % and more
+  than 0.3 s off from 33.4 to 38.7 %, and its precision by line start falls from 50.0 to 48.0 % (> 0.3 s); 56 of the
+  65 lines added for timing have a word more than 0.3 s off. The changed-repeat warning names 10 lines in 9 of the 79
+  songs, all whisper mishearing one copy of a line the same way in every run; without the other copy as a check it
+  would name 44. No word time changes.
 - A section named calm (intro, bridge, outro …) that `music.json` measures about as loud as the mid sections — a
   median loudness less than 2 dB under theirs — is `mid`, with a warning (`br [Bridge] is about as loud as the mid
   sections (median -10.3 dB, theirs -9.4 dB): kind mid, not calm`). On AI-made songs a bridge or outro is often as
