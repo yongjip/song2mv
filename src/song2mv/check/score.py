@@ -70,16 +70,21 @@ def decode_gray(mp4: str, W: int, H: int) -> np.ndarray:
     return np.frombuffer(r.stdout[: n * W * H], np.uint8).reshape(n, H, W).astype(np.int16)
 
 
+FONT_SIZE = re.compile(r"\bfontSize\s*[:=]\s*\{?\s*[\"']?(\d+)(?![\d.])"
+                       r"|<(?:Slam|Quiet|Captions)\b[^>]*?\bsize=\{?\s*[\"']?(\d+)(?![\d.])")
+
+
 def lint_text(pattern: str, min_px: int) -> tuple[int, list[int], list[str]]:
-    """`fontSize` values in scene sources: (files matched, sizes found, offenders under min_px)."""
+    """Font sizes in scene sources, `fontSize` and the kit's text components' `size`: (files, sizes, offenders)."""
     files = glob.glob(pattern, recursive=True)
     sizes, offenders = [], []
     for f in files:
         src = open(f, encoding="utf-8").read()
-        for m in re.finditer(r"\bfontSize\s*[:=]\s*\{?\s*[\"']?(\d+)(?![\d.])", src):
-            sizes.append(int(m.group(1)))
-            if int(m.group(1)) < min_px:
-                offenders.append(f"{f}:{src[: m.start()].count(chr(10)) + 1} {m.group(1)}px")
+        for m in FONT_SIZE.finditer(src):
+            px = int(m.group(1) or m.group(2))
+            sizes.append(px)
+            if px < min_px:
+                offenders.append(f"{f}:{src[: m.start()].count(chr(10)) + 1} {px}px")
     return len(files), sizes, offenders
 
 
