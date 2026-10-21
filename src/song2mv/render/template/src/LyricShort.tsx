@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Audio, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { BeatGlow, Captions, Flash, MvProps, Sky, SongContext, VerticalCtx, Vignette, flashesOf, makeSongCtx, outCubic, sectionLook, span } from "./kit";
+import { BeatGlow, Captions, FPS, Flash, MvProps, Sky, SongContext, VerticalCtx, Vignette, flashesOf, makeSongCtx, outCubic, sectionLook, span } from "./kit";
 import { Scene, VerticalScene, linesDrawnByScene } from "./scenes";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -21,14 +21,15 @@ export const BAND_CY = 670; // the band ends at y 1080, where the captions start
  * fade-out go on top. Its text keeps to the same box; its picture can fill the rest, the bottom too.
  * from / to / hold work as in LyricVideo; with hold > 0 the title is on from the first frame.
  */
-export const LyricShort: React.FC<MvProps> = ({ song, from, hold }) => {
+export const LyricShort: React.FC<MvProps> = ({ song, from, to, hold }) => {
   const frame = useCurrentFrame();
-  const { durationInFrames, fps } = useVideoConfig();
+  const { fps } = useVideoConfig();
   const ctx = useMemo(() => makeSongCtx(song), [song]);
   const hide = useMemo(() => linesDrawnByScene(song), [song]);
   const T = Math.max(from + frame / fps, from + hold);
   const { tint, glow, strength } = sectionLook(ctx, T);
-  const fade = (f: number) => interpolate(f, [durationInFrames - 24, durationInFrames - 1], [1, 0], clamp);
+  const frames = Math.round(((to ?? song.duration) - from) * FPS); // as in LyricVideo
+  const fade = (f: number) => interpolate((f * FPS) / fps, [frames - 0.8 * FPS, frames - 1], [1, 0], clamp);
   const titleIn = hold > 0 ? 1 : outCubic(span(T, from + 0.2, from + 0.7));
   const flashes = useMemo(() => flashesOf(song).filter(([t]) => hold <= 0 || t < from - 1 || t > from + hold), [song, from, hold]);
   const { theme } = ctx;

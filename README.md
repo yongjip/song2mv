@@ -26,16 +26,16 @@ Claude Code or Codex — or a person — can use just the part they need.
 song2mv is not on PyPI yet, so install it from GitHub with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv tool install --python 3.13 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'
+uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"
 ```
 
 Or run it once without installing anything:
 
 ```bash
-uvx --python 3.13 --from 'song2mv[sync] @ git+https://github.com/yongjip/song2mv' song2mv --help
+uvx --python 3.13 --from "song2mv[sync] @ git+https://github.com/yongjip/song2mv" song2mv --help
 ```
 
-Inside a virtual environment, `pip install 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'` works too.
+Inside a virtual environment, `pip install "song2mv[sync] @ git+https://github.com/yongjip/song2mv"` works too.
 
 You also need **ffmpeg** (`brew install ffmpeg`, `apt install ffmpeg`). `render` also needs **Node 18+**.
 
@@ -187,7 +187,7 @@ don't cut to the grid there when it has none.
 ## `song2mv check` (experimental)
 
 ```bash
-song2mv check video.mp4 --song mv.json [--from 92 --to 102] [--goals my-goals.json] [--src 'video/src/scenes/**/*.tsx']
+song2mv check video.mp4 --song mv.json [--from 92 --to 102] [--goals my-goals.json] [--src "video/src/scenes/**/*.tsx"]
 ```
 
 | check | measures (per sung line, 10 fps, the area above the captions) |
@@ -210,9 +210,14 @@ measured on one video; your own goals file only needs the values you change. Pas
 ```bash
 song2mv render mv.json                                        # whole song, 16:9, plain lyric video
 song2mv render mv.json --from 95 --to 111 --aspect 9x16 --hold 2.5   # a hook cut whose first frame shows the payoff
+song2mv render mv.json --from 95 --to 111 --draft             # 10 fps, for the render → check loop
 song2mv render mv.json --still 98.5 --aspect both            # PNG frames to look at
 song2mv render mv.json --template video/                     # your own copy of the template, for your own scenes
 ```
+
+`--draft` renders the same frames at 10 fps, the rate `check` measures at, and names the file `…-draft.mp4`. On 30 s
+of the two demo songs it rendered in 6–10 s instead of 14–25 s, and `check` gave each draft the same results as its
+full render. Iterate on drafts and render the finished video once without it.
 
 Out of the box you get a plain lyric video that follows the song's structure: calm sections with a low moon and
 embers, mid sections with a floor grid rolling on the beat, hot sections with rays on the beat and the line itself

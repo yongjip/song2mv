@@ -8,7 +8,7 @@ import { Scene, VerticalScene } from "./scenes";
  * The song's Scene at each of `times` on one sheet, each frame labelled with its song time: many moments in one
  * render. `vertical` draws the 9:16 frame instead (the VerticalScene, or Scene in the short's band). Each frame is the
  * scene alone on the theme's background, without the frame's sky, captions or vignette. In a template copy:
- *   npx remotion still src/index.ts Contact sheet.png --props="{\"times\": [12, 33.1, 47.5], \"song\": $(cat ../mv.json)}"
+ *   node render.mjs ../mv.json --composition Contact --props sheet.json      (sheet.json: {"times": [12, 33.1, 47.5]})
  * `crop: [x, y, w, h]`, in the frame's pixels (1920×1080, or 1080×1920 with `vertical`), shows only that region,
  * scaled to the tile's width: `cols` sets the zoom, and each label shows it.
  */

@@ -61,7 +61,9 @@ def probe_size(mp4: str) -> tuple[int, int]:
 
 
 def decode_gray(mp4: str, W: int, H: int) -> np.ndarray:
-    r = subprocess.run(["ffmpeg", "-v", "error", "-i", mp4, "-vf", f"fps=10,scale={W}:{H},format=gray", "-f", "rawvideo", "-"],
+    """Frame k is the picture at k / 10 s: ffmpeg's default rounding would take the one 1/30 s later from a 30 fps video,
+    so a draft rendered at 10 fps would be measured on other frames than its full render."""
+    r = subprocess.run(["ffmpeg", "-v", "error", "-i", mp4, "-vf", f"fps=10:round=up,scale={W}:{H},format=gray", "-f", "rawvideo", "-"],
                        capture_output=True)
     n = len(r.stdout) // (W * H)
     if n < 2:
@@ -147,8 +149,7 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     cut_t = [t0 + i / 10 for i in cut_idx]
 
     # A line sung into the next section is measured up to that section's start, or up to the last cut in the beat
-    # before it: a scene hits the downbeat it hears, which can lead mv.json's bar line, and the 10 fps frames show a
-    # cut up to 0.05 s early.
+    # before it: a scene hits the downbeat it hears, which can lead mv.json's bar line.
     beat = song.get("grid", {}).get("beat", 0.5)
     ordered = sorted(secs, key=lambda s: s["start"])
     stop = {}  # section id → the first frame change (index into diff) that belongs to the next section
@@ -257,7 +258,7 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     # text lint — only when scene sources are given
     gt = goals["text"]
     if not src_glob:
-        skipped["text.min_font"] = "pass --src 'DIR/src/scenes/**/*.tsx' to check font sizes in scene sources"
+        skipped["text.min_font"] = 'pass --src "DIR/src/scenes/**/*.tsx" to check font sizes in scene sources'
     else:
         n_files, sizes, off = lint_text(src_glob, gt["min_font_px"])
         if not n_files:

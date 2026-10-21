@@ -11,7 +11,7 @@ import sample from "./sample-song.json";
 /**
  * Two compositions over the same song config. Pass your own with
  *   node render.mjs ../work/my-song/mv.json --from 95 --to 111
- * (or `npx remotion render Lyric-16x9 out.mp4 --props=props.json` with {song, from, to, hold}).
+ * (or `npx remotion render Lyric-16x9 out.mp4 --props=props.json` with {song, from, to, hold} and optionally fps).
  * Without props they show sample-song.json — placeholder lyrics, no audio.
  * Kit-Gallery shows the kit's people, places and objects (frame 0: all, frame k: tile k).
  * Concepts draws the components exported from scenes/concepts side by side at song time T (props: {song, T}).
@@ -19,9 +19,12 @@ import sample from "./sample-song.json";
  */
 const defaults: MvProps = { song: sample as Song, from: 0, to: null, hold: 0 };
 
-const duration: CalculateMetadataFunction<MvProps> = ({ props }) => ({
-  durationInFrames: Math.max(1, Math.round(((props.to ?? props.song.duration) - props.from) * FPS)),
-});
+// A draft has the full render's frames 0, 3, 6, … up to its last, the frames `song2mv check` measures in both.
+const duration: CalculateMetadataFunction<MvProps> = ({ props }) => {
+  const fps = props.fps ?? FPS;
+  const full = Math.round(((props.to ?? props.song.duration) - props.from) * FPS);
+  return { fps, durationInFrames: Math.max(1, Math.ceil((full * fps) / FPS)) };
+};
 
 export const RemotionRoot: React.FC = () => (
   <>

@@ -39,7 +39,7 @@
     ]
   },
   "text": {
-    "_doc": "Smallest in-scene `fontSize`, or `size` on the kit's `Slam`, `Quiet`, `Captions` and comic `Balloon`, `Caption` and `Sfx` (px on the 1920x1080 stage); other `size` props are not read. Checked only when `song2mv check --src 'DIR/src/scenes/**/*.tsx'` is given. Captions live in the kit and are not checked.",
+    "_doc": "Smallest in-scene `fontSize`, or `size` on the kit's `Slam`, `Quiet`, `Captions` and comic `Balloon`, `Caption` and `Sfx` (px on the 1920x1080 stage); other `size` props are not read. Checked only when `song2mv check --src \"DIR/src/scenes/**/*.tsx\"` is given. Captions live in the kit and are not checked.",
     "min_font_px": 36
   }
 }

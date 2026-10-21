@@ -139,7 +139,7 @@ def cmd_render(a) -> dict:
     _existing_file(a.mv, "mv.json")
     _existing_file(a.audio, "audio file")
     from .render.runner import render
-    return render(a.mv, a.out, a.template, a.start, a.end, a.aspect, a.hold, a.still, a.audio, a.name)
+    return render(a.mv, a.out, a.template, a.start, a.end, a.aspect, a.hold, a.still, a.audio, a.name, a.draft)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -188,7 +188,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--from", dest="start", type=float, default=0.0, help="song time of the video's first frame")
     c.add_argument("--to", dest="end", type=float, default=None, help="song time of the video's end (default: from + video length)")
     c.add_argument("--goals", help="goals file; it only needs the values it changes (default: the bundled starting point)")
-    c.add_argument("--src", help="glob of scene sources to check font sizes in, e.g. 'video/src/scenes/**/*.tsx'")
+    c.add_argument("--src", help='glob of scene sources to check font sizes in, e.g. "video/src/scenes/**/*.tsx"')
     c.add_argument("--quiet", action="store_true", help="print failures only")
     c.add_argument("--json", action="store_true", help="print only the JSON result on stdout, no table")
     c.set_defaults(func=cmd_check)
@@ -202,6 +202,8 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--aspect", default="16x9", choices=["16x9", "9x16", "both"])
     r.add_argument("--hold", type=float, help="freeze the first HOLD seconds on the picture at from+hold (hook cuts)")
     r.add_argument("--still", type=float, help="write a PNG (one per aspect) at this song time instead of a video")
+    r.add_argument("--draft", action="store_true", help="a video at 10 fps, the rate check measures at, for the render-check "
+                   "loop (NAME-…-draft.mp4); render the final video without it")
     r.add_argument("--audio", help="audio file (default: the one in mv.json)")
     r.add_argument("--name", help="output file name prefix")
     r.add_argument("--json", action="store_true")

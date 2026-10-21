@@ -207,3 +207,17 @@ def test_json_prints_the_json_and_nothing_else(tmp_path, capfd):
     assert err == "" and json.loads(out)["command"] == "check"
     assert main(["check", str(mp4), "--song", str(song)]) == 1
     assert "passed (song time" in capfd.readouterr().out  # without --json, the table is for people
+
+
+def test_frames_are_measured_at_each_tenth_of_a_second(tmp_path):
+    # A 30 fps video's frame 3k is the picture at k / 10 s, the frame a 10 fps draft of it has: both are measured on it.
+    import numpy as np
+
+    from song2mv.check.score import decode_gray
+
+    mp4 = tmp_path / "v30.mp4"
+    frames = b"".join(np.full((36, 64), 20 + 3 * k, np.uint8).tobytes() for k in range(60))
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "gray", "-s", "64x36", "-r", "30",
+                    "-i", "-", "-c:v", "libx264", "-qp", "0", "-pix_fmt", "yuv444p", str(mp4)], input=frames, check=True)
+    shown = [round((int(f[18, 32]) - 20) / 3) for f in decode_gray(str(mp4), 64, 36)]
+    assert shown == list(range(0, 60, 3))

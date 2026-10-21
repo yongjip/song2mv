@@ -4,7 +4,7 @@
 > tool built for coding agents such as Claude Code and Codex. Alpha (0.x): formats may change; every JSON output
 > carries schema_version.
 
-Install (not on PyPI yet): `uv tool install --python 3.13 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'`
+Install (not on PyPI yet): `uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"`
 (needs ffmpeg; `render` also needs Node 18+; the sync extra needs Python ≤ 3.14).
 
 ## Commands

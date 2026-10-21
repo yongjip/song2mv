@@ -21,7 +21,7 @@ song's rights, or a lyric only the user knows.
 - **Rights.** Ask whose song it is and whether the user may publish a video of it (AI music services' plan terms
   count). Never copy the song, its lyrics or renders into a repository; everything song-specific lives in the work
   folder (`song2mv-work/<song>/`).
-- **Setup**, once: `uv tool install --python 3.13 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'` (not on
+- **Setup**, once: `uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"` (not on
   PyPI yet; faster-whisper has no Python 3.15 wheels). Needs ffmpeg; `render` needs Node 18+ and installs Remotion
   (~570 MB) on its first run.
 - **What they want**: full 16:9 video, 9:16 short(s), LRC/SRT only, or all. Title text. Mood or references. If you
@@ -116,11 +116,18 @@ different central image. For each, write:
 Make each concept concrete enough to picture: one rough still each, shown side by side with your pick and the reason
 in one line. Copy the template now (step 4's first command), draw each concept as a component of `T` in
 `<work>/video/src/scenes/concepts/`, export it by name from `src/scenes/concepts/index.ts`, and render them all at one
-moment, such as the first chorus' downbeat. Each is drawn alone, without the template's sky, captions or vignette:
+moment, such as the first chorus' downbeat: write that time into `<work>/video/concepts.json` (`{"T": 33.1}`) and run
+this in `<work>/video`. It prints the PNG's path. Each concept is drawn alone, without the template's sky, captions
+or vignette:
 
 ```bash
-cd <work>/video && npx remotion still src/index.ts Concepts concepts.png --props="{\"T\": <first chorus start>, \"song\": $(cat ../mv.json)}"
+node render.mjs ../mv.json --composition Concepts --props concepts.json
 ```
+
+A copy made by an older song2mv has no `--composition`: its `render.mjs` renders the whole song as a 16:9 video into
+`out/` instead, and prints no PNG path. Stop it and use the `npx remotion still … --props` command in that copy's
+`src/Concepts.tsx` (`src/Contact.tsx` for contact sheets), or make a new `--template` folder and move `src/scenes/`
+and any kit changes into it.
 
 **Then the song map** for the chosen concept, `<work>/map.md`. Show it to the user and carry on:
 
@@ -178,11 +185,11 @@ scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` pu
 
 ### The scene kit
 
-Look at it before you design anything:
+Look at it before you design anything (in `<work>/video`):
 
 ```bash
-cd <work>/video && npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 23 scenes
-npx remotion still src/index.ts Kit-Gallery scene.png --frame=4                        # one at full size (1–23)
+npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 23 scenes
+npx remotion still src/index.ts Kit-Gallery scene.png --frame=4     # one at full size (1–23)
 ```
 
 `src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc
@@ -287,12 +294,13 @@ Rules that held up:
    `check` reads only the size literals in the source, not what a camera or a `scale()` makes of them.
 5. Pull timing from data: `useSong().lineById["ch1-01"].words[0].t`, `grid.bar(k)`, `grid.pulse(T)`.
 
-Typecheck (`cd <work>/video && npx tsc --noEmit`), then look at stills of the new section before rendering video. A
-contact sheet draws the scene at many song times in one render, each frame labelled with its time (`"cols"`: frames per
-row; `"vertical": true`: the 9:16 frame):
+Typecheck (`npx tsc --noEmit` in `<work>/video`), then look at stills of the new section before rendering video. A
+contact sheet draws the scene at many song times in one render, each frame labelled with its time: write its props
+into `<work>/video/sheet.json`, such as `{"times": [33.1, 34.6, 36.2, 37.7]}` (`"cols"`: frames per row;
+`"vertical": true`: the 9:16 frame), and run this in `<work>/video`:
 
 ```bash
-cd <work>/video && npx remotion still src/index.ts Contact sheet.png --props="{\"times\": [33.1, 34.6, 36.2, 37.7], \"song\": $(cat ../mv.json)}"
+node render.mjs ../mv.json --composition Contact --props sheet.json
 ```
 
 **Before the first full render, look closer.** A whole frame on a sheet hides rough lines. `"crop": [x, y, w, h]`
@@ -307,12 +315,16 @@ npx remotion still src/index.ts Contact hero.png --props="{\"times\": [33.1, 41.
 
 ## 5. Render and check
 
+Iterate on drafts:
+
 ```bash
-song2mv render <work>/mv.json --template <work>/video --from A --to B
-song2mv check <work>/renders/<name>-16x9-A-B.mp4 --song <work>/mv.json --from A --to B \
-  --src '<work>/video/src/scenes/**/*.tsx' --json
+song2mv render <work>/mv.json --template <work>/video --from A --to B --draft
+song2mv check <work>/renders/<name>-16x9-A-B-draft.mp4 --song <work>/mv.json --from A --to B --src "<work>/video/src/scenes/**/*.tsx" --json
 ```
 
+A draft is the video at 10 fps, the rate `check` measures at: it renders in well under half the time (30 s of a demo
+song: 8 s instead of 19 s), and `check` gives it the same results as the full render. When the stretch passes, render
+it once without `--draft` and check that too; the user only ever sees full renders, since a draft looks choppy.
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
 work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
 contact sheets outside `src/scenes/`. Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`
@@ -320,8 +332,8 @@ did not run on this stretch; they did not pass. If a FAIL is the ruler's fault (
 intro line), copy the goals file, add the line id to `motion.quiet_allow`, pass `--goals` and tell the user why —
 don't quietly bend the goals.
 
-**Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip and ask what is boring.
-Their answer outranks the check.
+**Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip of the full render and ask
+what is boring. Their answer outranks the check.
 
 ## 6. Shorts (9:16)
 
@@ -331,6 +343,8 @@ on the hit and use `--hold` so the first frame shows the payoff fully drawn; che
 ```bash
 song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --aspect 9x16 --hold <s>
 ```
+
+While you fix the short, render and check it as a draft (`--draft`), as in step 5.
 
 By default the short shows `Scene` shrunk into a band, with the template's sky above and below it and the title on
 top. That frame puts the template's look around every concept, and a scene that draws its own lyrics leaves the
