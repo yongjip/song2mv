@@ -124,7 +124,7 @@ or vignette:
 node render.mjs ../mv.json --composition Concepts --props concepts.json
 ```
 
-A copy made by an older song2mv has no `--composition`: its `render.mjs` renders the whole song as a 16:9 video into
+A copy made by an older song2mv has a `render.mjs` that does not know `node render.mjs --composition`: it renders the whole song as a 16:9 video into
 `out/` instead, and prints no PNG path. Stop it and use the `npx remotion still … --props` command in that copy's
 `src/Concepts.tsx` (`src/Contact.tsx` for contact sheets), or make a new `--template` folder and move `src/scenes/`
 and any kit changes into it.
