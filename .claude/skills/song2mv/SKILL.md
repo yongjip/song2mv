@@ -257,7 +257,9 @@ same world and timing filmed for a tall frame: the camera centred in the safe bo
 
 Keep text inside x 120–960, y 269–1248: that box is clear of the app buttons and caption overlay on Reels, Shorts
 and TikTok. The template's title, stage and lyrics already sit in it; a `VerticalScene` keeps its own text there
-and puts only picture below it. Check stills.
+and puts only picture below it. Check stills. `check` measures the top 56 % of a short, above the captions, also with
+a `VerticalScene`; a large still overlay there (a HUD, a dialogue box) hides cuts from it, so cut between shots that
+look different.
 
 ## 7. Deliver
 

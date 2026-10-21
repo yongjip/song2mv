@@ -138,3 +138,24 @@ def test_the_font_lint_reads_font_sizes_not_size_props(tmp_path):
     font = res["results"]["text.min_font"]
     assert font["ok"] is False and font["value"] == 24
     assert font["offenders"] == [f"{scene}:2 24px", f"{scene}:3 30px"]
+
+
+def test_in_9x16_the_caption_rows_are_not_picture_even_with_a_vertical_scene(tmp_path):
+    # The template draws the captions of lines the scenes don't draw at y 1080-1240 of 1920, over a VerticalScene too,
+    # and a VerticalScene keeps its own text in the safe box (y 269-1248). Only those rows move here: the line is still.
+    from song2mv.check.score import score
+
+    mp4 = tmp_path / "short.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y",
+                    "-f", "lavfi", "-i", "color=c=0x303030:size=360x640:rate=10:duration=8",
+                    "-f", "lavfi", "-i", "testsrc2=size=280x40:rate=10:duration=8",
+                    "-filter_complex", "[0:v][1:v]overlay=40:372[v]", "-map", "[v]", str(mp4)], check=True)
+    scenes = tmp_path / "video" / "src" / "scenes"
+    scenes.mkdir(parents=True)
+    (scenes / "index.ts").write_text('export { Wide as Scene, Tall as VerticalScene, linesDrawnByScene } from "./Tall";\n')
+    (scenes / "Tall.tsx").write_text("export const Wide = () => null;\nexport const Tall = () => null;\n"
+                                     "export const linesDrawnByScene = () => new Set<string>();\n")
+    song = write(tmp_path, "mv.json", {"duration": 8.0, "sections": [{"id": "ch1", "kind": "hot", "start": 0.0, "end": 8.0}],
+                                       "lines": [{"id": "ch1-01", "section": "ch1", "text": "sung", "start": 2.0, "end": 6.0}]})
+    res = score(str(mp4), str(song), src_glob=str(scenes / "**" / "*.tsx"), quiet=True)
+    assert res["per_line"][0]["motion"] < 0.1 and res["results"]["motion.min"]["ok"] is False
