@@ -653,24 +653,54 @@ const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
 };
 
 const ComicKitchen: React.FC<{ T: number }> = ({ T }) => {
-  const { Page, Panel, Ink, Flat, Dots, Balloon, Caption, Sfx, colors: K } = comic;
+  const { Page, Panel, Ink, Flat, Edge, Brush, brushPath, Dots, Balloon, Caption, Sfx, colors: K } = comic;
   const POP = 9.3;
   const said = (id: string, text: string, t0: number, step: number): Line => {
     const words = text.split(" ").map((w, i) => ({ w, t: t0 + i * step }));
     return { id, section: "g23", text, start: t0, end: t0 + words.length * step, words };
   };
-  const capsule = (ax: number, ay: number, bx: number, by: number, r: number) => {
-    const L = Math.hypot(bx - ax, by - ay) || 1, nx = (-(by - ay) / L) * r, ny = ((bx - ax) / L) * r;
-    return `M ${ax + nx} ${ay + ny} L ${bx + nx} ${by + ny} A ${r} ${r} 0 0 0 ${bx - nx} ${by - ny} L ${ax - nx} ${ay - ny} A ${r} ${r} 0 0 0 ${ax + nx} ${ay + ny} Z`;
-  };
-  const polygon = (pts: Pt[]) => `M ${pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(" L ")} Z`;
-  const bristly = (pts: Pt[], r: number, fur: number) => {
-    const side = (sign: number) => pts.map(([x, y], i): Pt => {
-      const [px, py] = pts[Math.max(0, i - 1)], [qx, qy] = pts[Math.min(pts.length - 1, i + 1)];
-      const L = Math.hypot(qx - px, qy - py) || 1, k = sign * (r + (i % 2 ? fur : 0));
-      return [x - ((qy - py) / L) * k, y + ((qx - px) / L) * k];
+  const n1 = (v: number) => v.toFixed(1);
+  const at = ([x, y]: Pt) => `${n1(x)} ${n1(y)}`;
+  const path = (pts: Pt[]) => `M ${pts.map(at).join(" L ")}`;
+  /** the two sides of brushPath(path(pts), [w0, w1]), left and right as it runs */
+  const sides = (pts: Pt[], w0: number, w1: number): [Pt[], Pt[]] => {
+    const s = pts.map((_, i) => pts.slice(1, i + 1).reduce((a, p, k) => a + Math.hypot(p[0] - pts[k][0], p[1] - pts[k][1]), 0));
+    const L = s[s.length - 1] || 1;
+    const out: [Pt[], Pt[]] = [[], []];
+    pts.forEach(([x, y], i) => {
+      const [ax, ay] = pts[Math.max(0, i - 1)], [bx, by] = pts[Math.min(pts.length - 1, i + 1)];
+      const l = Math.hypot(bx - ax, by - ay) || 1, r = (w0 + ((w1 - w0) * s[i]) / L) / 2;
+      out[0].push([x - ((by - ay) / l) * r, y + ((bx - ax) / l) * r]);
+      out[1].push([x + ((by - ay) / l) * r, y - ((bx - ax) / l) * r]);
     });
-    return polygon([...side(1), ...side(-1).reverse()]);
+    return out;
+  };
+  /** the part of a polyline that runs below y */
+  const below = (pts: Pt[], y: number): Pt[] => {
+    const i = pts.findIndex(([, py]) => py > y);
+    if (i <= 0) return pts;
+    const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+    return [[ax + ((bx - ax) * (y - ay)) / (by - ay), y], ...pts.slice(i)];
+  };
+  /** tufts of hair or fur evenly round an ellipse from angle a0 to a1, one per length, each tip turned `lean` radians; `soft` rounds the dips */
+  const tufts = (cx: number, cy: number, rx: number, ry: number, a0: number, a1: number, lens: number[], lean: number | ((a: number) => number) = 0, soft = false): [Pt, string] => {
+    const on = (a: number, out: number): Pt => [cx + (rx + out) * Math.cos(a), cy + (ry + out) * Math.sin(a)];
+    const steps = 240, run = [0];
+    for (let k = 1; k <= steps; k++) {
+      const [x0, y0] = on(a0 + ((a1 - a0) * (k - 1)) / steps, 0), [x1, y1] = on(a0 + ((a1 - a0) * k) / steps, 0);
+      run.push(run[k - 1] + Math.hypot(x1 - x0, y1 - y0));
+    }
+    const angle = (f: number) => {
+      const k = Math.max(1, run.findIndex((v) => v >= f * run[steps]));
+      return a0 + ((a1 - a0) * (k - 1 + (f * run[steps] - run[k - 1]) / (run[k] - run[k - 1] || 1))) / steps;
+    };
+    return [on(a0, 0), lens.map((len, i) => {
+      const a = angle(i / lens.length), b = angle((i + 1) / lens.length), m = angle((i + 0.5) / lens.length);
+      const tip = on(m + (typeof lean === "number" ? lean : lean(m)), len);
+      return soft
+        ? `C ${at(on(a + (b - a) * 0.12, 0))} ${at(on(a + (b - a) * 0.18, len * 0.6))} ${at(tip)} C ${at(on(b - (b - a) * 0.12, len * 0.45))} ${at(on(b - (b - a) * 0.12, 0))} ${at(on(b, 0))}`
+        : `Q ${at(on(a + (b - a) * 0.2, len * 0.55))} ${at(tip)} Q ${at(on(b - (b - a) * 0.15, len * 0.25))} ${at(on(b, 0))}`;
+    }).join(" ")];
   };
   const puff = (cx: number, cy: number, r: number) => {
     const pts = Array.from({ length: 6 }, (_, i): Pt => [cx + r * Math.cos((i / 6) * 2 * Math.PI), cy + r * Math.sin((i / 6) * 2 * Math.PI)]);
@@ -719,65 +749,113 @@ const ComicKitchen: React.FC<{ T: number }> = ({ T }) => {
   };
   const person = (t: number) => {
     const scared = startled(t);
-    const spike = scared ? 30 : 8;
-    const hair = `M 862 404 Q 854 334 900 314 L 890 ${306 - spike} L 918 310 L 924 ${290 - spike} L 946 308 L 968 ${294 - spike} L 966 316 Q 1008 334 998 404 Q 988 356 952 348 Q 922 362 896 350 Q 872 366 862 404 Z`;
-    const face = "M 864 404 A 66 80 0 1 0 996 404 A 66 80 0 1 0 864 404 Z";
+    const up = scared ? 20 : 0;
+    const [crownFrom, crown] = tufts(930, 394, 78, 86, Math.PI * 1.06, Math.PI * 1.94,
+      scared ? [28, 44, 36, 36, 44, 28] : [10, 15, 19, 17, 14, 10], scared ? 0 : 0.1);
+    const fringe = `Q 990 ${380 - up} 976 ${362 - up} Q 966 ${368 - up} 958 ${372 - up} Q 952 ${358 - up} 942 ${350 - up} Q 934 ${364 - up} 920 ${370 - up} `
+      + `Q 914 ${356 - up} 904 ${350 - up} Q 896 ${364 - up} 884 ${370 - up} Q 872 ${384 - up} 868 410`;
+    const face = "M 930 318 C 972 318 998 352 998 398 C 998 436 980 466 952 480 Q 940 486 930 486 Q 920 486 908 480 C 880 466 862 436 862 398 C 862 352 888 318 930 318 Z";
+    // The forearm, in a later Ink, crosses the upper arm. The upper arm narrows to the width at which the forearm's
+    // top edge leaves its outer edge right at the elbow, so the crease starts on the arm's outline.
+    const shoulder: Pt = [830, 560], elbow: Pt = [814, 670], fore: Pt = [0.62, -0.78], foreR = 17;
+    const L = Math.hypot(elbow[0] - shoulder[0], elbow[1] - shoulder[1]);
+    const outward: Pt = [-(elbow[1] - shoulder[1]) / L, (elbow[0] - shoulder[0]) / L];
+    const upperR = foreR * (fore[1] * outward[0] - fore[0] * outward[1]);
+    const holdArm: Pt[] = [shoulder, elbow];
+    const hangArm: Pt[] = [[1030, 560], [1040, 668], [1034, 780]];
+    const [, holdInside] = sides(holdArm, 42, 2 * upperR);
+    const [hangInside] = sides(hangArm, 42, 28);
+    const skin = (d: string, key?: React.Key) => (
+      <React.Fragment key={key}>
+        <path d={d} fill={K.peach} />
+        <Dots d={d} color={K.magenta} r={1.6} gap={9} />
+      </React.Fragment>
+    );
     return (
       <>
-        <Ink><path d="M 902 460 H 958 V 530 H 902 Z" fill={K.peach} /></Ink>
-        <Ink>
-          <path d="M 812 760 L 818 566 Q 822 522 868 512 L 904 506 Q 930 524 956 506 L 992 512 Q 1038 522 1042 566 L 1048 760 Z" fill={K.green} />
-          <path d="M 904 506 Q 930 532 956 506" fill="none" />
+        <Ink contour line={4}>
+          {skin("M 990 380 C 1014 364 1030 390 1021 414 C 1014 430 1002 434 990 428 Z")}
+          {skin("M 870 380 C 846 364 830 390 839 414 C 846 430 858 434 870 428 Z")}
+          <Brush d="M 1010 393 Q 1019 396 1017 405 Q 1015 412 1010 414" w={1.8} />
+          <Brush d="M 850 393 Q 841 396 843 405 Q 845 412 850 414" w={1.8} />
         </Ink>
-        <Ink><path d={capsule(1048, 654, 1046, 716, 17)} fill={K.peach} /></Ink>
-        <Ink>
-          <path d={capsule(1026, 548, 1048, 652, 24)} fill={K.green} />
-          <path d={capsule(836, 548, 812, 650, 24)} fill={K.green} />
+        <Ink contour>
+          {skin("M 907 446 L 905 524 L 955 524 L 953 446 Z")}
+          <path d="M 902 506 C 880 510 852 514 838 524 C 828 560 826 640 828 780 L 1032 780 C 1034 640 1032 560 1022 524 C 1008 514 980 510 958 506 Q 930 530 902 506 Z" fill={K.green} />
+          {skin(brushPath(path(holdArm), [42, 2 * upperR]))}
+          {skin(brushPath(path(hangArm), [42, 28]))}
+          <path d="M 881.1 509.8 C 861.4 513.5 810 516 806 556 L 801 590 Q 826 602 852 594 L 856 556 Z" fill={K.green} />
+          <path d="M 978.9 509.8 C 998.6 513.5 1050 516 1054 556 L 1059 590 Q 1034 602 1008 594 L 1004 556 Z" fill={K.green} />
+          <Brush d="M 902 506 Q 930 530 958 506" w={4} taper={0.1} />
+          <Brush d="M 908 514 Q 930 534 952 514" w={2} taper={0.3} />
+          <Brush d="M 801 590 Q 826 602 852 594" w={3.6} taper={0.15} />
+          <Brush d="M 1059 590 Q 1034 602 1008 594" w={3.6} taper={0.15} />
+          <Brush d="M 857 552 L 852 594" w={3.6} taper={[0.7, 0]} />
+          <Brush d="M 1003 552 L 1008 594" w={3.6} taper={[0.7, 0]} />
+          <Brush d={path(below(holdInside, 596))} w={3.6} taper={[0, 0.2]} />
+          <Brush d={path(below(hangInside, 596))} w={3.6} taper={[0, 0.2]} />
+          <Brush d="M 858 566 Q 870 574 878 588" w={2.2} />
+          <Brush d="M 1006 564 Q 998 572 993 584" w={2.2} />
         </Ink>
-        <Ink><path d={capsule(812, 652, 862, 606, 18)} fill={K.peach} /></Ink>
-        <Ink>
-          <ellipse cx={866} cy={412} rx={12} ry={18} fill={K.peach} />
-          <ellipse cx={994} cy={412} rx={12} ry={18} fill={K.peach} />
-        </Ink>
-        <Ink>
-          <path d={face} fill={K.peach} />
-          <Dots d={face} color={K.magenta} r={1.6} gap={9} />
-          <path d={hair} fill={K.brown} />
+        <Ink contour>
+          {skin(face)}
+          <path d={`M 868 410 Q 852 398 ${at(crownFrom)} ${crown} Q 1008 398 992 410 ${fringe} Z`} fill={K.brown} />
+          <Brush d={`M 992 410 ${fringe}`} w={3.2} taper={0.12} />
+          <Brush d="M 934 410 Q 938 428 942 434 Q 938 441 926 439" w={3} taper={[0.5, 0.25]} />
           {scared ? (
             <>
-              <ellipse cx={906} cy={400} rx={17} ry={21} fill={K.white} />
-              <ellipse cx={954} cy={400} rx={17} ry={21} fill={K.white} />
-              <path d="M 886 362 Q 906 346 924 360 M 936 360 Q 954 346 974 362" fill="none" />
-              <path d="M 910 454 Q 930 444 950 454 Q 954 480 930 484 Q 906 480 910 454 Z" fill="#6f1b17" />
-              <path d="M 916 474 Q 930 464 944 474 Q 938 483 930 483 Q 922 483 916 474 Z" fill={K.pink} />
-              <path d="M 858 304 L 842 284 M 894 286 L 888 262 M 966 286 L 972 262 M 1002 304 L 1018 284" fill="none" />
+              <Brush d="M 883 372 Q 902 354 922 366" w={4} />
+              <Brush d="M 938 366 Q 958 354 977 372" w={4} />
+              <Edge>
+                <ellipse cx={904} cy={400} rx={17} ry={21} fill={K.white} />
+                <ellipse cx={956} cy={400} rx={17} ry={21} fill={K.white} />
+              </Edge>
+              <circle cx={906} cy={402} r={4.5} fill={K.ink} />
+              <circle cx={954} cy={402} r={4.5} fill={K.ink} />
+              <Edge line={3.4}>
+                <path d="M 906 452 Q 930 440 954 452 Q 958 474 930 477 Q 902 474 906 452 Z" fill="#6f1b17" />
+              </Edge>
+              <path d="M 914 468 Q 930 458 946 468 Q 940 476 930 476 Q 920 476 914 468 Z" fill={K.pink} />
+              <Edge line={2}>
+                <path d="M 910 453 Q 930 443 950 453 L 949 459 Q 930 451 911 459 Z" fill={K.white} />
+              </Edge>
             </>
           ) : (
             <>
-              <path d="M 892 408 Q 906 416 920 408 M 940 408 Q 954 416 968 408" fill="none" />
-              <path d="M 894 422 Q 906 426 918 422 M 942 422 Q 954 426 966 422" fill="none" />
-              <path d="M 920 458 Q 930 464 940 458" fill="none" />
+              <Brush d="M 886 388 Q 902 380 918 385" w={3.6} />
+              <Brush d="M 942 385 Q 958 380 974 388" w={3.6} />
+              <Brush d="M 883 401 L 891 406 Q 905 416 919 406" w={3.6} taper={[0.2, 0.35]} />
+              <Brush d="M 941 406 Q 955 416 969 406 L 977 401" w={3.6} taper={[0.35, 0.2]} />
+              <Brush d="M 916 460 Q 930 468 944 460" w={3.2} />
             </>
           )}
-          <path d="M 930 410 L 940 434 L 928 438" fill="none" />
         </Ink>
         {scared && (
-          <g fill={K.ink}>
-            <circle cx={908} cy={402} r={4.5} />
-            <circle cx={952} cy={402} r={4.5} />
-          </g>
+          <Ink contour line={4}>
+            <Edge><path d="M 1036 254 Q 1047.2 271.6 1042.4 279.6 Q 1036 286 1029.6 279.6 Q 1026.4 271.6 1036 254 Z" fill={K.sky} /></Edge>
+          </Ink>
         )}
-        <Ink>
-          <path d="M 892 574 Q 920 574 920 592 Q 920 610 896 610" fill="none" />
-          <path d="M 846 562 H 896 V 626 Q 896 634 888 634 H 854 Q 846 634 846 626 Z" fill={K.white} />
-          <path d="M 866 586 Q 873 578 880 586 Q 887 594 880 602 L 866 590 Z" fill={K.red} />
+        <Ink contour line={5}>
+          <path d="M 890 562 L 946 562 L 944 620 Q 943 630 933 630 L 903 630 Q 893 630 892 620 Z" fill={K.white} />
+          <path d="M 945.6 573 C 984 565 986 623 944 619 Z" fill={K.white} />
+          <Edge><path d="M 945.2 584 C 968 581 969 609 944.5 606.5 Z" fill={K.green} /></Edge>
+          <Edge><ellipse cx={918} cy={562} rx={28} ry={6} fill={K.white} /></Edge>
+          <ellipse cx={918} cy={563} rx={22} ry={3.6} fill={mix(K.brown, K.ink, 0.35)} />
+          <Edge line={2}>
+            <path d="M 932 607.9 C 925.2 602.8 924.4 596.8 927.8 596 Q 931.2 595.1 932 598.5 Q 932.8 595.1 936.2 596 C 939.6 596.8 938.8 602.8 932 607.9 Z" fill={K.red} />
+          </Edge>
         </Ink>
-        <Ink><ellipse cx={846} cy={612} rx={19} ry={15} fill={K.peach} /></Ink>
+        <Ink contour>
+          {skin(brushPath(`M ${at(elbow)} Q ${at([elbow[0] + fore[0] * 34, elbow[1] + fore[1] * 34])} 872 626`, [2 * foreR, 24]))}
+          {skin("M 863 616 Q 864 586 882 578 L 896 578 L 898 624 Q 882 634 868 630 Z")}
+          {[0, 1, 2, 3].map((i) => skin(brushPath(`M 888 ${584 + i * 11} Q 901 ${582 + i * 11} 907 ${585 + i * 11}`, 11), i))}
+          {[1, 2, 3].map((i) => <Brush key={i} d={`M 912 ${579 + i * 11} Q 902 ${578 + i * 11} 892 ${579.5 + i * 11}`} w={2.4} taper={[0, 0.7]} />)}
+        </Ink>
         {!scared && (
-          <Ink line={4}>
+          <Ink contour>
             {[0, 1].map((i) => {
-              const x = 862 + i * 20, w = 7 * Math.sin(t * 3 + i * 2);
-              return <path key={i} d={`M ${x} 552 Q ${x + w} 532 ${x} 512 Q ${x - w} 492 ${x} 472`} fill="none" />;
+              const x = 910 + i * 18, w = 4.5 * Math.sin(t * 3 + i * 2);
+              return <Brush key={i} d={`M ${x} 552 Q ${n1(x + w)} 547 ${x} 542 Q ${n1(x - w)} 537 ${x} 532`} w={3} taper={0.45} />;
             })}
           </Ink>
         )}
@@ -851,56 +929,108 @@ const ComicKitchen: React.FC<{ T: number }> = ({ T }) => {
   };
   const cat = (t: number) => {
     const scared = startled(t);
-    const arc = (a0: number, a1: number, n: number, cx: number, cy: number, rx: number, ry: number) =>
-      Array.from({ length: n }, (_, i): Pt => {
-        const a = a0 + ((a1 - a0) * i) / (n - 1);
-        return [cx + rx * Math.cos(a), cy + ry * Math.sin(a)];
-      });
+    const stripe = mix(K.orange, K.brown, 0.55);
+    const head = scared
+      ? "M 250 522 C 284 522 300 540 302 558 L 316 566 L 302 574 L 312 586 L 294 588 C 286 600 270 606 250 606 C 230 606 214 600 206 588 L 188 586 L 198 574 L 184 566 L 198 558 C 200 540 216 522 250 522 Z"
+      : "M 250 522 C 284 522 300 540 300 560 L 310 572 L 298 577 C 292 594 272 604 250 604 C 228 604 208 594 202 577 L 190 572 L 200 560 C 200 540 216 522 250 522 Z";
+    const ears = scared
+      ? ["M 212 546 L 177 536 Q 172 540 175 545 L 204 570 Z", "M 288 546 L 323 536 Q 328 540 325 545 L 296 570 Z"]
+      : ["M 206 552 L 208 498 Q 212 492 217 497 L 246 526 Z", "M 294 552 L 292 498 Q 288 492 283 497 L 254 526 Z"];
+    const innerEars = scared
+      ? ["M 207 551 L 184 541 L 204 561 Z", "M 293 551 L 316 541 L 296 561 Z"]
+      : ["M 214 540 L 214 510 L 236 530 Z", "M 286 540 L 286 510 L 264 530 Z"];
+    const furLens = (n: number, lo: number, hi: number, seed: number) => {
+      const r = rng(seed);
+      return Array.from({ length: n }, () => lo + (hi - lo) * r());
+    };
+    const downward = (a: number) => (Math.cos(a) < 0 ? -0.1 : 0.1);
+    const fur = (cx: number, cy: number, rx: number, ry: number, a0: number, a1: number, lens: number[]) => {
+      const [from, d] = tufts(cx, cy, rx, ry, a0, a1, lens, downward, true);
+      return `M ${at(from)} ${d}${a1 - a0 < 2 * Math.PI - 1e-6 ? ` A ${rx} ${ry} 0 0 1 ${at(from)}` : ""} Z`;
+    };
     const body = scared
-      ? polygon([[206, 704], ...arc(Math.PI * 0.72, Math.PI * 2.28, 27, 250, 644, 60, 64).map(([x, y], i): Pt =>
-          i % 2 ? [250 + (x - 250) * 1.14, 644 + (y - 644) * 1.12] : [x, y]), [294, 704]])
-      : "M 198 704 Q 190 616 222 586 Q 250 572 278 586 Q 310 616 302 704 Z";
-    const tail = scared
-      ? bristly(Array.from({ length: 13 }, (_, i): Pt => [298 + 50 * Math.sin((i / 12) * 1.3), 692 - 150 * (i / 12)]), 18, 10)
-      : "M 296 700 Q 352 704 348 662 Q 344 634 326 642 Q 334 664 316 680 Q 304 690 290 688 Z";
+      ? fur(250, 644, 58, 54, Math.PI * 0.5 + 0.5, Math.PI * 2.5 - 0.5, furLens(11, 13, 22, 5))
+      : "M 250 586 C 282 586 302 616 305 650 C 308 682 300 704 284 704 L 216 704 C 200 704 192 682 195 650 C 198 616 218 586 250 586 Z";
+    const legs: [Pt, Pt][] = scared ? [[[234, 680], [218, 734]], [[266, 680], [282, 734]]] : [[[236, 644], [233, 693]], [[264, 644], [267, 693]]];
+    const foot = scared ? 736 : 700;
+    const paws = legs.map(([, [x]], i) => (
+      <React.Fragment key={i}>
+        <Edge><ellipse cx={x} cy={foot} rx={scared ? 15 : 14} ry={8} fill={K.white} /></Edge>
+        {[-4.5, 4.5].map((dx) => <Brush key={dx} d={`M ${x + dx} ${foot + 7} L ${x + dx * 1.2} ${foot + 1}`} w={2.2} taper={[0, 0.8]} />)}
+      </React.Fragment>
+    ));
     return (
       <g transform={`translate(0 ${(-catHop(t)).toFixed(1)})`}>
-        <Ink><path d={tail} fill={K.orange} /></Ink>
-        <Ink>
-          <path d={body} fill={K.orange} />
-          <ellipse cx={250} cy={652} rx={24} ry={34} fill={K.white} />
-          <ellipse cx={232} cy={702} rx={15} ry={9} fill={K.white} />
-          <ellipse cx={268} cy={702} rx={15} ry={9} fill={K.white} />
-        </Ink>
-        <Ink>
-          <path d={scared ? "M 208 552 L 180 522 L 226 530 Z M 292 552 L 320 522 L 274 530 Z" : "M 212 548 L 210 500 L 240 526 Z M 288 548 L 290 500 L 260 526 Z"} fill={K.orange} />
-        </Ink>
-        <Ink>
-          <ellipse cx={250} cy={560} rx={48} ry={42} fill={K.orange} />
-          <path d="M 236 524 L 238 540 M 250 520 V 538 M 264 524 L 262 540" fill="none" />
-          {scared ? (
-            <>
-              <ellipse cx={230} cy={556} rx={14} ry={16} fill={K.yellow} />
-              <ellipse cx={270} cy={556} rx={14} ry={16} fill={K.yellow} />
-              <path d="M 234 586 Q 250 574 266 586 L 262 598 Q 250 592 238 598 Z" fill="#6f1b17" />
-              <path d="M 240 584 L 243 592 L 246 583 M 260 584 L 257 592 L 254 583" fill={K.white} />
-            </>
-          ) : (
-            <path d="M 220 558 Q 230 566 240 558 M 260 558 Q 270 566 280 558" fill="none" />
-          )}
-          <path d="M 244 572 H 256 L 250 580 Z" fill={K.pink} />
-          <path d="M 214 576 L 180 570 M 214 584 L 182 590 M 286 576 L 320 570 M 286 584 L 318 590" fill="none" />
+        <Ink contour>
+          <path d={scared
+            ? fur(336, 598, 22, 84, Math.PI * 0.5, Math.PI * 2.5, furLens(13, 9, 16, 9).map((len, i) => (i === 6 ? 24 : len)))
+            : brushPath("M 284 696 C 330 704 352 684 348 654 C 345 630 330 626 322 636", [17, 13], [0, 0.12])} fill={K.orange} />
+          {!scared && <Brush d="M 343 643 Q 349 652 347 662" w={2.4} />}
         </Ink>
         {scared && (
-          <>
-            <g fill={K.ink}>
-              <ellipse cx={230} cy={557} rx={3} ry={10} />
-              <ellipse cx={270} cy={557} rx={3} ry={10} />
-            </g>
-            <Ink line={4}>
-              <path d="M 214 724 V 800 M 250 730 V 830 M 286 724 V 800" fill="none" />
-            </Ink>
-          </>
+          <Ink contour>
+            {legs.map(([a, b], i) => <path key={i} d={brushPath(path([a, b]), [22, 19])} fill={K.orange} />)}
+            {paws}
+          </Ink>
+        )}
+        <Ink contour>
+          <path d={body} fill={K.orange} />
+          <path d={scared
+            ? "M 250 604 C 270 604 278 630 272 656 Q 264 676 250 690 Q 236 676 228 656 C 222 630 230 604 250 604 Z"
+            : "M 250 600 C 270 600 277 628 272 656 L 262 700 L 238 700 L 228 656 C 223 628 230 600 250 600 Z"} fill={K.white} />
+          {!scared && (
+            <>
+              {legs.map(([a, b], i) => <path key={i} d={brushPath(path([a, b]), [22, 19])} fill={K.orange} />)}
+              {paws}
+              {legs.map(([a, b], i) => sides([a, b], 22, 19).map((side, k) => (
+                <Brush key={`${i}${k}`} d={path(below(side, 652))} w={3} taper={[0.5, 0]} />
+              )))}
+              <Brush d="M 208 640 C 224 652 228 680 222 703" w={3.2} taper={[0.6, 0]} />
+              <Brush d="M 292 640 C 276 652 272 680 278 703" w={3.2} taper={[0.6, 0]} />
+            </>
+          )}
+        </Ink>
+        <Ink contour>
+          {ears.map((d, i) => <path key={i} d={d} fill={K.orange} />)}
+          <path d={head} fill={K.orange} />
+          {innerEars.map((d, i) => <path key={i} d={d} fill={K.pink} />)}
+          {[[238, 2], [250, 0], [262, -2]].map(([x, dx]) => <path key={x} d={brushPath(`M ${x} 523 L ${x + dx} 542`, 6, [0, 0.9])} fill={stripe} />)}
+          {[[204, 566, 220, 568], [296, 566, 280, 568]].map(([x0, y0, x1, y1]) => <path key={x0} d={brushPath(`M ${x0} ${y0} L ${x1} ${y1}`, 5, [0, 0.9])} fill={stripe} />)}
+          <path d="M 250 574 C 262 571 273 577 273 586 C 273 597 261 599 250 595 C 239 599 227 597 227 586 C 227 577 238 571 250 574 Z" fill={K.white} />
+          {scared ? (
+            <>
+              <Edge>
+                <ellipse cx={231} cy={557} rx={14} ry={16} fill={K.yellow} />
+                <ellipse cx={269} cy={557} rx={14} ry={16} fill={K.yellow} />
+              </Edge>
+              <ellipse cx={231} cy={557} rx={3} ry={10} fill={K.ink} />
+              <ellipse cx={269} cy={557} rx={3} ry={10} fill={K.ink} />
+              <Brush d="M 214 538 L 240 546" w={3.6} />
+              <Brush d="M 286 538 L 260 546" w={3.6} />
+              <Edge line={3}>
+                <path d="M 234 588 Q 250 578 266 588 L 263 601 Q 250 596 237 601 Z" fill="#6f1b17" />
+              </Edge>
+              <Edge line={1.8}>
+                <path d="M 239 587 L 242 595 L 245 585 Z M 261 587 L 258 595 L 255 585 Z" fill={K.white} />
+              </Edge>
+            </>
+          ) : (
+            <>
+              <Brush d="M 219 562 Q 229 570 240 562" w={3.4} />
+              <Brush d="M 260 562 Q 271 570 281 562" w={3.4} />
+              <Brush d="M 240 589 Q 245 595 250 589 Q 255 595 260 589" w={2.6} taper={0.2} />
+            </>
+          )}
+          <Edge line={2}><path d="M 243 576 H 257 L 250 584 Z" fill={K.pink} /></Edge>
+          {(scared
+            ? ["M 226 584 L 176 566", "M 226 590 L 174 592", "M 228 596 L 180 616", "M 274 584 L 324 566", "M 274 590 L 326 592", "M 272 596 L 320 616"]
+            : ["M 228 584 Q 206 579 182 581", "M 228 590 Q 206 590 184 597", "M 272 584 Q 294 579 318 581", "M 272 590 Q 294 590 316 597"]
+          ).map((d) => <Brush key={d} d={d} w={2.2} taper={[0.1, 0.7]} />)}
+        </Ink>
+        {scared && (
+          <Ink contour>
+            {[[176, 744], [324, 744], [196, 760], [304, 760]].map(([x, y]) => <Brush key={x} d={`M ${x} ${y} V ${y + 40}`} w={4} taper={0.4} />)}
+          </Ink>
         )}
       </g>
     );
@@ -936,7 +1066,7 @@ const ComicKitchen: React.FC<{ T: number }> = ({ T }) => {
         {toaster(T)}
         {toast(T)}
       </Panel>
-      <Panel id="g23-face" T={T} {...face} t={POP} shots={[{ t: 0, x: 930, y: 338, zoom: 1.6 }]}>
+      <Panel id="g23-face" T={T} {...face} t={POP} shots={[{ t: 0, x: 937, y: 316, zoom: 1.4 }]}>
         <Dots color={K.cyan} r={3.2} />
         {person(T)}
       </Panel>
@@ -945,8 +1075,8 @@ const ComicKitchen: React.FC<{ T: number }> = ({ T }) => {
         {cat(T)}
       </Panel>
       <Caption T={T} line={said("g23-when", "Monday, 7:05 a.m.", 7.4, 0.3)} x={62} y={60} width={420} size={38} />
-      <Balloon T={T} line={said("g23-dream", "five more minutes...", 7.9, 0.3)} x={880} y={150} tail={[918, 302]} kind="thought" width={300} size={36} />
-      <Balloon T={T} line={said("g23-shout", "not my toast!", 9.46, 0.07)} x={1296} y={612} tail={[1340, 724]} kind="shout" width={260} size={42} />
+      <Balloon T={T} line={said("g23-dream", "five more minutes...", 7.9, 0.3)} x={860} y={150} tail={[1010, 312]} kind="thought" width={300} size={36} />
+      <Balloon T={T} line={said("g23-shout", "not my toast!", 9.46, 0.07)} x={1311} y={602} tail={[1302, 731]} kind="shout" width={230} size={36} />
       <Sfx T={T} t={POP} text="POP!" x={1300} y={330} size={140} rotate={-12} />
       <Sfx T={T} t={POP + 0.15} text="HISS!" x={1650} y={985} size={72} rotate={-6} fill={K.white} shadow={K.magenta} seed={4} />
     </Page>
