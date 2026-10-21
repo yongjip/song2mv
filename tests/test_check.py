@@ -97,6 +97,25 @@ def test_a_frantic_line_says_where_its_motion_comes_from(tmp_path, capsys):
     assert f"     v1-01    {line['msg']}" in capsys.readouterr().out  # the report prints it under the FAIL
 
 
+@pytest.mark.parametrize("box, goals, cuts", [
+    ("c=white:t=fill:enable='between(t,2.0,2.05)+between(t,3.0,3.05)'", {}, [2.0, 3.0]),
+    ("x=0:y=0:w=iw/2:h=ih:c=gray:t=fill:enable='between(t,1.9,1.95)',drawbox=c=white:t=fill:enable='gte(t,2.0)'",
+     {"motion": {"max_per_line": 3.0}}, [1.9]),
+])
+def test_cut_frames_that_count_as_one_cut_are_still_left_out_of_the_motion_between_cuts(tmp_path, box, goals, cuts):
+    # One-frame white flashes, or a change 0.1 s before a hard cut: cuts within 0.3 s are listed once, but every frame
+    # of them is a cut in the peak and in the motion without the cuts, which stays the dim shot's own.
+    from song2mv.check.score import score
+
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10:duration=6",
+                    "-vf", f"lutyuv=y=val/5,drawbox={box}", str(mp4)], check=True)
+    res = score(str(mp4), str(write(tmp_path, "mv.json", SONG)), str(write(tmp_path, "goals.json", goals)), quiet=True)
+    (line,) = res["results"]["motion.max"]["lines"]
+    assert line["cuts"] == cuts and line["peak"]["value"] > 100 and ", a cut)" in line["msg"]
+    assert line["without_cuts"] < 2.0
+
+
 def test_without_to_the_stretch_ends_with_the_video(tmp_path):
     # the video covers 12 s of a 60 s song: the 48 s after it are not "a stretch without a cut"
     from song2mv.check.score import score

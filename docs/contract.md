@@ -32,9 +32,11 @@ measured for the line and `cuts` the cuts in it (song times), and `msg` says it 
 empty (`coverage.min`) line adds `stretch` `{from, to, value}`: its longest part whose every second is under the goal
 (or else its lowest second), without the frames at its ends that reach the goal, and the mean over it. A frantic line
 (`motion.max`) adds `peak` `{t, value}`, its biggest frame change and the song time of the frame it shows on, and
-`without_cuts`, its motion with the frame changes of its cuts left out. `variation.repeats` lists every repeated line pair in `pairs` as `[pair, correlation]`,
-worst first; its `value` is their mean, or the worst pair with a line in a hot section when that is higher. A check in
-`skipped` neither passed nor failed and is not counted in `total`.
+`without_cuts`, its motion with every cut-like frame change left out, also those that `cuts` lists as one cut because
+they fall within 0.3 s of each other (`msg` calls the peak a cut when it is one of them). In a pixel scene a
+whole-pixel camera step can be one of them too. `variation.repeats` lists every repeated line pair in `pairs` as
+`[pair, correlation]`, worst first; its `value` is their mean, or the worst pair with a line in a hot section when
+that is higher. A check in `skipped` neither passed nor failed and is not counted in `total`.
 
 `off_sheet` lists the stretches of at least 1.5 s where two or more whisper runs agree on two or more words that no
 line of the lyric sheet matched: a chant or an ad-lib the sheet leaves out, a line sung differently, a repeat the

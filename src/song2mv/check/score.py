@@ -181,7 +181,7 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
         return [(x["id"], x["value"]) for x in rows][:12]
 
     song_t = lambda i: round(t0 + i / 10, 2)  # noqa: E731
-    cut_set = set(cut_idx)
+    raw_cuts = set(raw)  # also the cut-like frames the 0.3 s merge folds into one cut
 
     def under_goal(series, i0, i1, goal):
         """The longest part of series[i0:i1] whose every second (all of it, when shorter) is under the goal, or else
@@ -214,10 +214,10 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
         said = [f"{song_t(i0):.1f}–{song_t(i1):.1f} s: {x['value']} (goal {'≥' if bound == 'min' else '≤'} {goal})"]
         if name == "motion.max":
             k = i0 + int(np.argmax(diff[i0:i1]))
-            rest = [diff[j] for j in range(i0, i1) if j + 1 not in cut_set]
+            rest = [diff[j] for j in range(i0, i1) if j + 1 not in raw_cuts]
             x["peak"] = {"t": song_t(k + 1), "value": round(float(diff[k]), 2)}
             x["without_cuts"] = round(float(np.mean(rest)) if rest else 0.0, 2)
-            said.append(f"biggest change at {song_t(k + 1):.1f} s ({diff[k]:.1f}{', a cut' if k + 1 in cut_set else ''})")
+            said.append(f"biggest change at {song_t(k + 1):.1f} s ({diff[k]:.1f}{', a cut' if k + 1 in raw_cuts else ''})")
         else:
             series, word, digits = (diff, "still", 2) if name == "motion.min" else (cover, "empty", 3)
             a, b, v = under_goal(series, i0, i1, goal)
