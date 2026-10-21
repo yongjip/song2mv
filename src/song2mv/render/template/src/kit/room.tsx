@@ -1,5 +1,6 @@
 import React from "react";
 import { mix, shade } from "./color";
+import { clamp01 } from "./math";
 
 /**
  * Places: backdrops that fill the stage. Use inside <Svg>, after the sky and before people. Distance reads as
@@ -14,6 +15,28 @@ const poly = (p: Pt[]) => "M" + p.map(([x, y]) => `${n1(x)} ${n1(y)}`).join("L")
 const box = (x: number, y: number, w: number, h: number) => `M${n1(x)} ${n1(y)}h${n1(w)}v${n1(h)}h${n1(-w)}z`;
 
 const STARS: [number, number, number][] = [[0.08, 0.12, 1.4], [0.22, 0.3, 1], [0.35, 0.08, 1.6], [0.48, 0.42, 1.1], [0.15, 0.55, 1.2], [0.86, 0.6, 1], [0.92, 0.15, 1.4], [0.6, 0.65, 1.2], [0.28, 0.75, 0.9], [0.75, 0.82, 1.1], [0.42, 0.2, 0.9]];
+
+/** A smooth closed path through pts (Catmull-Rom as cubic Béziers) */
+function smoothPath(pts: Pt[]): string {
+  const n = pts.length, at = (i: number) => pts[((i % n) + n) % n];
+  let d = `M${n1(pts[0][0])} ${n1(pts[0][1])}`;
+  for (let i = 0; i < n; i++) {
+    const [p0, p1, p2, p3] = [at(i - 1), at(i), at(i + 1), at(i + 2)];
+    d += `C${n1(p1[0] + (p2[0] - p0[0]) / 6)} ${n1(p1[1] + (p2[1] - p0[1]) / 6)} ${n1(p2[0] - (p3[0] - p1[0]) / 6)} ${n1(p2[1] - (p3[1] - p1[1]) / 6)} ${n1(p2[0])} ${n1(p2[1])}`;
+  }
+  return `${d}Z`;
+}
+
+/** A smooth open path through pts */
+function smoothLine(pts: Pt[]): string {
+  const n = pts.length, at = (i: number) => pts[Math.max(0, Math.min(n - 1, i))];
+  let d = `M${n1(pts[0][0])} ${n1(pts[0][1])}`;
+  for (let i = 0; i < n - 1; i++) {
+    const [p0, p1, p2, p3] = [at(i - 1), at(i), at(i + 1), at(i + 2)];
+    d += `C${n1(p1[0] + (p2[0] - p0[0]) / 6)} ${n1(p1[1] + (p2[1] - p0[1]) / 6)} ${n1(p2[0] - (p3[0] - p1[0]) / 6)} ${n1(p2[1] - (p3[1] - p1[1]) / 6)} ${n1(p2[0])} ${n1(p2[1])}`;
+  }
+  return d;
+}
 
 /** Catmull-Rom through pts, k samples per span */
 function smooth(pts: Pt[], k: number): Pt[] {
@@ -94,14 +117,17 @@ function drape(x0: number, x1: number, top: number, bottom: number, T: number, n
  * floor-length curtains that stir, a wooden floor with the window's light on it and a rug, and, optionally, a desk
  * with an anglepoise lamp, books and a steaming mug, a shelf of books, framed prints and a plant. Put a Person in
  * front of it. The window opening is at win {x, y, w, h}; furniture and decor that would overlap it are left out.
+ * `bed` puts a Bed where the desk stands (the desk and its lamp go, so only the window lights the room); `sleeper`
+ * is drawn in it, under the blanket: <Room bed sleeper={<Person x={0} y={0} pose="lie" T={T} />} />. `cover` is how
+ * far up the blanket reaches (see Bed).
  */
 export const Room: React.FC<{
   T: number; wall?: string; floorY?: number; win?: { x: number; y: number; w: number; h: number }; view?: React.ReactNode;
   curtains?: boolean; desk?: boolean; lamp?: boolean; curtain?: string; id?: string;
-  plant?: boolean; shelf?: boolean; poster?: boolean; rug?: boolean;
+  plant?: boolean; shelf?: boolean; poster?: boolean; rug?: boolean; bed?: boolean; sleeper?: React.ReactNode; cover?: number;
 }> = ({
   T, wall = "#1a1f45", floorY = 900, win = { x: 260, y: 170, w: 620, h: 520 }, view, curtains = true, desk = true, lamp = true,
-  curtain = "#5b2d6e", id = "room", plant = true, shelf = true, poster = true, rug = true,
+  curtain = "#5b2d6e", id = "room", plant = true, shelf = true, poster = true, rug = true, bed = false, sleeper, cover,
 }) => {
   const { x, y, w, h } = win;
   const cool = "#9fb1ff", warm = "#ffc777";
@@ -167,7 +193,8 @@ export const Room: React.FC<{
   const BOOKS: [number, number, string][] = [[15, 80, "#c45a3c"], [19, 88, "#e2b04f"], [12, 70, "#4f86a8"], [17, 84, "#e8dcc0"], [13, 76, "#6c9a72"], [21, 72, "#8a5a86"], [14, 82, "#d07b52"]];
   const showPoster = poster && clear(1150, 1440, 200, 440);
   const showPlant = plant && clear(20, 180, 540, floorY - 60, 30);
-  const showDesk = desk && clear(dx0, dx1, deskY - 250, floorY);
+  const showBed = bed && clear(1160, 1760, floorY - 360, floorY);
+  const showDesk = desk && !showBed && clear(dx0, dx1, deskY - 250, floorY);
   /** the lamp is the room's key light: without it only the window lights the room */
   const lit = showDesk && lamp;
 
@@ -482,8 +509,110 @@ export const Room: React.FC<{
         </g>
       )}
 
+      {showBed && (
+        <Bed x={1450} y={floorY + 26} s={1.4} wall={wall} cover={cover} id={`${id}-bed`}>{sleeper}</Bed>
+      )}
+
       {/* the room's own vignette */}
       <rect x={0} y={0} width={1920} height={1080} fill={`url(#${id}-vig)`} />
+    </g>
+  );
+};
+
+// ── bed ──────────────────────────────────────────────────────
+
+/** Bed sizes at s = 1: the mattress' half length and its top and bottom, the frame rail, where the hips lie */
+const BED = { half: 185, top: -112, bot: -62, rail: -30, hip: 10 };
+/**
+ * The blanket's top over a sleeper in the `lie` pose, as heights above the mattress along the bed (x from the hips):
+ * the chest with a hand on it, the belly, the hips, the thighs, the near knee, the shins (bridged), the toes
+ */
+const OVER_SLEEPER: Pt[] = [[-110, 58], [-80, 63], [-45, 64], [-12, 62], [16, 56], [44, 50], [72, 53], [100, 47], [126, 45], [150, 54], [164, 51], [178, 36], [190, 22]];
+
+/**
+ * A bed seen from the side, standing on (x, y) with its middle there, `s` times a size that fits a Person of the same
+ * s: a wooden frame with a headboard and a low footboard, a mattress in a sheet, a pillow and a blanket.
+ * - The sleeper goes in as children, drawn between the mattress and the blanket, at (0, 0) where a lying Person's hips
+ *   go: <Bed …><Person x={0} y={0} pose="lie" T={T} /></Bed> (the bed scales them with it). Without children the
+ *   blanket lies flat.
+ * - `head` "left" or "right": the end with the headboard (right mirrors the bed and the sleeper). `cover` 0–1: how far
+ *   up the sleeper the blanket reaches (0 folded at the foot, 1 to the shoulders).
+ * - Colours: `frame`, `sheet`, `blanket`, `pillow`; they lean towards `wall`, the room's colour, as everything does in
+ *   a dim room (the Room's night wall by default; pass a light colour by day). `id` keeps the gradients apart.
+ */
+export const Bed: React.FC<{
+  x: number; y: number; s?: number; head?: "left" | "right"; cover?: number; wall?: string;
+  frame?: string; sheet?: string; blanket?: string; pillow?: string; id?: string; children?: React.ReactNode;
+}> = ({ x, y, s = 1, head = "left", cover = 0.75, wall = "#1a1f45", frame = "#9a6644", sheet = "#e9e5f2", blanket = "#c8644e", pillow, id = "bed", children }) => {
+  const { half: H, top, bot, rail, hip } = BED;
+  const wood = mix(frame, wall, 0.4), woodDark = shade(wood, 0.66), woodHi = mix(wood, "#ffd9a8", 0.2);
+  const sheetC = mix(sheet, wall, 0.32), sheetS = mix(sheetC, wall, 0.3);
+  const pillowC = mix(pillow ?? sheet, wall, 0.26);
+  const blank = mix(blanket, wall, 0.36), blankS = shade(blank, 0.72), blankHi = mix(blank, "#ffe2c8", 0.22);
+  // the blanket's top along the bed, from its edge (at `cover`) to the foot end; then it hangs down the near side
+  const edge = hip + 150 - 250 * clamp01(cover);
+  const over: Pt[] = (children ? OVER_SLEEPER : [[-200, 12], [200, 12]]).map(([u, h]) => [u + hip, top - h] as Pt);
+  const lift = (bx: number) => {
+    for (let i = 0; i < over.length - 1; i++) {
+      const [a, b] = [over[i], over[i + 1]];
+      if (bx <= b[0]) return a[1] + (b[1] - a[1]) * clamp01((bx - a[0]) / (b[0] - a[0]));
+    }
+    return over[over.length - 1][1];
+  };
+  const ridge: Pt[] = [[edge, lift(edge)], ...over.filter((p) => p[0] > edge + 12 && p[0] < H - 14), [H - 2, lift(H - 2)]];
+  const hem = bot + 14;
+  const foot: Pt = [H + 10, hem - 4];
+  const blanketD = smoothPath([
+    [edge - 1, hem], [edge - 3, (ridge[0][1] + hem) / 2], ...ridge, [H + 6, lift(H) + 8], [H + 11, (lift(H) + hem) / 2], foot,
+    [H - 30, hem + 3], [(edge + H) / 2, hem + 1], [edge + 30, hem + 3],
+  ]);
+  const ridgeD = smoothLine(ridge);
+  // the sheet turned down over the blanket at its edge, a band down the side
+  const tw = 11;
+  const turn = smoothPath([[edge - 3, hem + 1], [edge - 5, (ridge[0][1] + hem) / 2], [edge - 1, ridge[0][1] - 3], [edge + tw, lift(edge + tw) - 2], [edge + tw + 2, (lift(edge + tw) + hem) / 2], [edge + tw, hem + 2]]);
+  const folds = [0.3, 0.56, 0.8].map((k) => {
+    const fx = edge + (H - edge) * k, fy = lift(fx) + 18;
+    return `M${n1(fx)} ${n1(fy)}Q${n1(fx - 9)} ${n1((fy + hem) / 2)} ${n1(fx - 3)} ${n1(hem - 3)}`;
+  });
+  const pillowD = smoothPath([[-178, top + 2], [-182, top - 18], [-166, top - 40], [-130, top - 46], [-104, top - 34], [-84, top - 36], [-66, top - 22], [-62, top], [-120, top + 4]]);
+  return (
+    <g transform={`translate(${x} ${y}) scale(${head === "right" ? -s : s} ${s})`}>
+      <defs>
+        <linearGradient id={`${id}-blanket`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={blank} />
+          <stop offset="1" stopColor={blankS} />
+        </linearGradient>
+      </defs>
+      {/* the shadow it casts, the legs, the rail */}
+      <ellipse cx={0} cy={4} rx={H + 30} ry={14} fill="#000000" opacity={0.35} filter="url(#blur-10)" />
+      {[-H + 8, H - 14].map((lx) => (
+        <path key={lx} d={`M${lx} ${rail}h12l-2 ${-rail}h-8Z`} fill={woodDark} />
+      ))}
+      <rect x={-H - 6} y={bot - 2} width={2 * H + 12} height={rail - bot + 2} rx={4} fill={wood} />
+      <rect x={-H - 6} y={bot - 2} width={2 * H + 12} height={3} fill={woodHi} />
+      <rect x={-H - 6} y={rail - 6} width={2 * H + 12} height={6} fill={woodDark} opacity={0.6} />
+      {/* the headboard and the footboard: posts down to the floor, a rounded top, a lit edge */}
+      <path d={`M${-H - 26} 0V-236Q${-H - 26} -252 ${-H - 10} -252H${-H - 4}V0Z`} fill={wood} />
+      <path d={`M${-H - 26} -236Q${-H - 26} -252 ${-H - 10} -252H${-H - 4}V-246H${-H - 12}Q${-H - 20} -246 ${-H - 20} -232V0H${-H - 26}Z`} fill={woodHi} />
+      <rect x={-H - 18} y={-226} width={9} height={100} rx={4.5} fill={woodDark} opacity={0.55} />
+      <path d={`M${H + 4} 0V-122Q${H + 4} -134 ${H + 14} -134H${H + 20}V0Z`} fill={wood} />
+      <path d={`M${H + 4} -122Q${H + 4} -134 ${H + 14} -134H${H + 20}V-129H${H + 15}Q${H + 9} -129 ${H + 9} -118V0H${H + 4}Z`} fill={woodHi} />
+      {/* the mattress in its sheet */}
+      <rect x={-H} y={top} width={2 * H} height={bot - top} rx={14} fill={sheetC} />
+      <rect x={-H} y={bot - 12} width={2 * H} height={12} rx={6} fill={sheetS} />
+      <path d={`M${-H + 14} ${top + 1.5}H${H - 14}`} stroke={mix(sheetC, "#ffffff", 0.35)} strokeWidth={3} strokeLinecap="round" />
+      {/* the pillow, dented where a head lies */}
+      <path d={pillowD} fill={pillowC} />
+      <path d={`M-170 ${top - 4}Q-120 ${top + 6} -70 ${top - 4}`} stroke={shade(pillowC, 0.8)} strokeWidth={5} fill="none" strokeLinecap="round" />
+      <path d={`M-160 ${top - 38}Q-140 ${top - 46} -118 ${top - 42}`} stroke={mix(pillowC, "#ffffff", 0.4)} strokeWidth={4} fill="none" strokeLinecap="round" />
+      {/* the sleeper, lying with the hips at (0, 0) */}
+      {children && <g transform={`translate(${hip} ${top})`}>{children}</g>}
+      {/* the blanket over them, its sheet turned down at the edge, folds where it hangs */}
+      <path d={blanketD} fill={`url(#${id}-blanket)`} />
+      <path d={ridgeD} transform="translate(0 2.5)" stroke={blankHi} strokeWidth={3} fill="none" strokeLinecap="round" />
+      <path d={folds.join("")} stroke={blankS} strokeWidth={5} fill="none" strokeLinecap="round" opacity={0.6} />
+      <path d={turn} fill={sheetC} />
+      <path d={`M${n1(edge + tw + 1)} ${n1(hem)}Q${n1(edge + tw + 3)} ${n1((lift(edge + tw) + hem) / 2)} ${n1(edge + tw)} ${n1(lift(edge + tw) + 2)}`} stroke={sheetS} strokeWidth={3} fill="none" strokeLinecap="round" />
     </g>
   );
 };

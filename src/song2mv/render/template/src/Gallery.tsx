@@ -681,6 +681,20 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
     name: "Tears: crying in close-up, and flat on paper",
     draw: (T) => <Crying T={T} />,
   },
+  {
+    name: "Bed: lying awake at night (Person pose lie)",
+    draw: (T) => (
+      <Svg>
+        <Room T={T} id="g19-room" bed sleeper={<Person x={0} y={0} pose="lie" T={T} look={{ hair: "long", top: "#d8d0c0", hairColor: "#20160f" }} />} view={
+          <>
+            <SkyGradient time="night" id="g19-view-sky" />
+            <Moon T={T} color="#ffd36b" x={700} y={300} r={46} />
+            <City T={T} y={690} scale={0.45} id="g19-view-city" />
+          </>
+        } />
+      </Svg>
+    ),
+  },
 ];
 
 const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNode }> = ({ x, y, k, children }) => (

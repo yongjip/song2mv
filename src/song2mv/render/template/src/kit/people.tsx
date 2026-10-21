@@ -14,6 +14,9 @@ import { mix } from "./color";
  * strings, hem) follow through.
  * `walk` and `run` take `phase` (one stride pair per 1.0): move x by STRIDE (or RUN_STRIDE) × s per phase unit and
  * the foot on the ground stays put.
+ * `lie` lies on the back, head to the left (`flip`: to the right), the upper body a little raised as on a pillow, one
+ * hand on the chest and the near knee a little bent. Its origin is under the hips, on what the person lies on: put it
+ * on a mattress (a Bed in room.tsx draws one, with a blanket over the sleeper), a sofa or the floor.
  */
 
 export const STRIDE = 176; // px per walk cycle at s = 1
@@ -21,7 +24,7 @@ export const RUN_STRIDE = 250;
 
 export type Pose =
   | "stand" | "walk" | "run" | "sit" | "kneel" | "armsUp" | "lookUp" | "phone" | "sing" | "point" | "hold" | "reach"
-  | "wave" | "balance";
+  | "wave" | "balance" | "lie";
 export type Outfit = "hoodie" | "suit" | "dress";
 export type Hair = "short" | "long" | "ponytail";
 export const SKINS = { light: "#f0c3a0", medium: "#d9a07a", tan: "#b97c55", deep: "#7a4b32" } as const;
@@ -194,7 +197,16 @@ const POSES: Record<Exclude<Pose, "walk" | "run">, Spec> = {
   reach: { lean: -3, head: -10, hip: [-2, -149.6], armL: { s: 4, e: 4 }, armR: { s: 100, e: -14, hand: "open" }, legL: { at: [-9, -12], f: 0 }, legR: { at: [16, -18], f: 14 } },
   wave: { lean: -3, head: -4, hip: [-3, -151.2], armL: { s: 4, e: 4 }, armR: { s: 112, e: 58, hand: "open" }, ...FEET },
   balance: { lean: 12, head: -8, hip: [0, -149.6], armL: { s: 96, e: -16, hand: "open" }, armR: { s: -74, e: -8, hand: "open" }, legL: { at: [2, -12], f: 0 }, legR: { h: -42, k: -32, f: 64 } },
+  // drawn standing and then laid down (LIE): forward here is up there, the back of the body lies on the surface
+  lie: { lean: 12, head: -9, hip: [0, -150], armL: { s: -14, e: 6 }, armR: { s: -18, e: -100, at: [22, -54] }, legL: { h: -4, k: 0, f: 24 }, legR: { h: 6, k: -22, f: 20 }, still: true },
 };
+
+/**
+ * The lying pose is solved standing and then laid on its back: turned −90° (the head goes left, forward goes up) and
+ * moved so the hips sit at the origin with the back of the body on y = 0 (sunk in a little, as into a mattress)
+ */
+const LIE = "translate(150 -22) rotate(-90)";
+const lieAt = (p: V): V => [p[1] + 150, -p[0] - 22];
 
 /**
  * Walk and run as keyframed foot paths, the legs solved to them. A planted foot rocks on its heel, lies flat, then
@@ -343,7 +355,8 @@ function solve(pose: Pose, phase: number, T: number, outfit: Outfit): Rig {
  */
 export function personHand(pose: Pose, s = 1, phase = 0, T = 0, outfit: Outfit = "hoodie"): [number, number] {
   const a = solve(pose, phase, T, outfit).arms[1];
-  const p = add(a.wr, rot([0, 9], -a.ang));
+  const q = add(a.wr, rot([0, 9], -a.ang));
+  const p = pose === "lie" ? lieAt(q) : q;
   return [p[0] * s, p[1] * s];
 }
 
@@ -573,9 +586,20 @@ export const Person: React.FC<{
     );
   }
 
-  // long hair: below the head it hangs straight down whatever the head does, and the ends trail
+  const lying = pose === "lie";
+  // long hair: below the head it hangs straight down whatever the head does, and the ends trail; lying, it spreads
+  // behind the head over what the head rests on (towards −x here, before the pose is laid down)
   let hairBack: React.ReactNode = null;
-  if (hair === "long") {
+  if (hair === "long" && lying) {
+    const a1 = atHead([-18, -25]), a4 = atHead([-2, 19]);
+    const at = (u: number, v: number): V => [r.hc[0] + u, r.hc[1] + v];
+    hairBack = (
+      <>
+        <path d={smooth([a1, at(-34, -27), at(-44, -6), at(-43, 18), at(-34, 42), [at(-18, 54)[0], at(-18, 54)[1], 1], at(-8, 40), a4])} fill={hairColor} />
+        <path d={tube([at(-30, -14), at(-37, 6), at(-33, 30), at(-22, 44)], [2.6, 3.6, 3, 0])} fill={hairHi} opacity={0.5} />
+      </>
+    );
+  } else if (hair === "long") {
     const a1 = atHead([-18, -25]), a2 = atHead([-29, -4]), a3 = atHead([-22, 13]), a4 = atHead([-2, 19]);
     const end = r.neckBase[1] + 50;
     const bx = Math.min(a2[0], a3[0]) - 1, fx = Math.max(a4[0] + 2, bx + 24);
@@ -591,7 +615,9 @@ export const Person: React.FC<{
   let pony: React.ReactNode = null;
   if (hair === "ponytail") {
     const tie = atHead(PONY_TIE);
-    const c: V[] = [tie, add(tie, [-8 + dr * 0.2, 5]), add(tie, [-13 + dr * 0.5, 20]), add(tie, [-12 + dr * 0.8, 36]), add(tie, [-7 + dr, 50])];
+    const c: V[] = lying
+      ? [tie, add(tie, [-9, 4]), add(tie, [-17, 13]), add(tie, [-21, 26]), add(tie, [-20, 40])]
+      : [tie, add(tie, [-8 + dr * 0.2, 5]), add(tie, [-13 + dr * 0.5, 20]), add(tie, [-12 + dr * 0.8, 36]), add(tie, [-7 + dr, 50])];
     pony = (
       <>
         <path d={tube(c, [8, 12, 12, 7, 0])} fill={hairColor} />
@@ -611,92 +637,94 @@ export const Person: React.FC<{
           <path d={torsoD} transform={torsoTf} />
         </clipPath>
       </defs>
-      {shadow && (
+      {shadow && !lying && (
         <>
           <ellipse cx={6} cy={2} rx={60} ry={9} fill="#000" opacity={0.2} />
           <ellipse cx={6} cy={2} rx={38} ry={5.5} fill="#000" opacity={0.22} />
         </>
       )}
-      {/* far arm and leg, a tone darker */}
-      {!r.pocket && arm(armFar, true)}
-      {!r.pocket && hand(armFar, true)}
-      {leg(legFar, true)}
-      {leg(legNear, false)}
-      {skirt}
-      {/* the hood lies on the upper back, behind the neck */}
-      {hoodie && (
+      <g transform={lying ? LIE : undefined}>
+        {/* far arm and leg, a tone darker */}
+        {!r.pocket && arm(armFar, true)}
+        {!r.pocket && hand(armFar, true)}
+        {leg(legFar, true)}
+        {leg(legNear, false)}
+        {skirt}
+        {/* the hood lies on the upper back, behind the neck */}
+        {hoodie && (
+          <g transform={torsoTf}>
+            <path d={smooth([[6, -82 - b], [-2, -89.5 - b], [-13, -93 - b], [-23.5, -90 - b], [-28.5, -81 - b], [-28, -70], [-25.5, -60], [-17, -70], [-8, -78 - b]])} fill={shadeOf(top, 0.1)} />
+            <path d={smooth([[2, -85 - b], [-6, -90.5 - b], [-17, -91.5 - b], [-24.5, -86.5 - b], [-15, -87.5 - b], [-5, -86 - b]])} fill={shadeOf(top, 0.45)} />
+          </g>
+        )}
+        {dress && <path d={smooth(place([[0, -86 - b], [9, -84 - b], [15, -75 - b], [6, -70 - b], [-1, -76 - b]], r.hip, r.lean))} fill={skin} />}
+        <path d={limbD([r.neckBase, lerpV(r.neckBase, r.neckTop, 0.5), r.neckTop], [6.8, 6.5, 6.5], [-6.8, -6.5, -6.5], { cap2: true })} fill={skinS} />
+        {/* the garment, its shading clipped to it */}
         <g transform={torsoTf}>
-          <path d={smooth([[6, -82 - b], [-2, -89.5 - b], [-13, -93 - b], [-23.5, -90 - b], [-28.5, -81 - b], [-28, -70], [-25.5, -60], [-17, -70], [-8, -78 - b]])} fill={shadeOf(top, 0.1)} />
-          <path d={smooth([[2, -85 - b], [-6, -90.5 - b], [-17, -91.5 - b], [-24.5, -86.5 - b], [-15, -87.5 - b], [-5, -86 - b]])} fill={shadeOf(top, 0.45)} />
-        </g>
-      )}
-      {dress && <path d={smooth(place([[0, -86 - b], [9, -84 - b], [15, -75 - b], [6, -70 - b], [-1, -76 - b]], r.hip, r.lean))} fill={skin} />}
-      <path d={limbD([r.neckBase, lerpV(r.neckBase, r.neckTop, 0.5), r.neckTop], [6.8, 6.5, 6.5], [-6.8, -6.5, -6.5], { cap2: true })} fill={skinS} />
-      {/* the garment, its shading clipped to it */}
-      <g transform={torsoTf}>
-        <path d={torsoD} fill={top} />
-        <g clipPath={clip}>
-          <path d={smooth([[-36, -104], [-17, -88], [-15, -50], [-13, -12], [-12, 26], [-36, 26]])} fill={topS} />
+          <path d={torsoD} fill={top} />
+          <g clipPath={clip}>
+            <path d={smooth([[-36, -104], [-17, -88], [-15, -50], [-13, -12], [-12, 26], [-36, 26]])} fill={topS} />
+            {hoodie && (
+              <>
+                <path d={smooth(POCKET_LIP)} fill={shadeOf(top, 0.3)} />
+                <path d={smooth(POCKET_PANEL)} fill={lightOf(top, 0.05)} />
+                <rect x={-30} y={2.5} width={60} height={14} fill={shadeOf(top, 0.16)} />
+              </>
+            )}
+            {suit && (
+              <>
+                <path d={smooth([[9, -86 - b], [21, -75 - b], [25, -54], [19.5, -30, 1], [14.5, -34], [15, -56], [11, -76 - b]])} fill={lightOf(top, 0.12)} />
+                <path d={smooth([[2, -9, 1], [17, -10.5, 1], [17.2, -7.5, 1], [2, -6, 1]])} fill={topS} />
+              </>
+            )}
+            {dress && <rect x={-30} y={-38.5} width={60} height={10.5} fill={shadeOf(top, 0.35)} />}
+          </g>
           {hoodie && (
             <>
-              <path d={smooth(POCKET_LIP)} fill={shadeOf(top, 0.3)} />
-              <path d={smooth(POCKET_PANEL)} fill={lightOf(top, 0.05)} />
-              <rect x={-30} y={2.5} width={60} height={14} fill={shadeOf(top, 0.16)} />
+              <path d={smooth([[-3, -84 - b], [5, -80 - b], [13, -83 - b], [11, -87 - b], [3, -86.5 - b]])} fill={topS} />
+              <path d={tube([[12, -81 - b], [12.6 + dr * 0.15, -71 - b], [13 + dr * 0.35, -62 - b]], [2.4, 2.4, 2.2])} fill={lightOf(top, 0.6)} />
             </>
           )}
           {suit && (
             <>
-              <path d={smooth([[9, -86 - b], [21, -75 - b], [25, -54], [19.5, -30, 1], [14.5, -34], [15, -56], [11, -76 - b]])} fill={lightOf(top, 0.12)} />
-              <path d={smooth([[2, -9, 1], [17, -10.5, 1], [17.2, -7.5, 1], [2, -6, 1]])} fill={topS} />
+              {tie ? (
+                <path d={smooth([[11, -85 - b], [15.5, -85 - b], [19, -76 - b], [24.5, -56], [22.5, -53, 1], [17, -74 - b]])} fill={accent} />
+              ) : (
+                <path d={smooth([[12, -85 - b], [17.5, -80 - b], [22, -64], [21.5, -56, 1], [19.5, -57], [16.5, -72 - b]])} fill="#eef0fa" />
+              )}
+              <path d={smooth([[3, -88 - b], [8, -93.5 - b], [14.5, -89.5 - b], [13, -84.5 - b], [6.5, -84 - b]])} fill="#eef0fa" />
+              <path d={smooth([[11, -87 - b], [18, -82 - b, 1], [13.5, -80.5 - b]])} fill="#dfe3f2" />
             </>
           )}
-          {dress && <rect x={-30} y={-38.5} width={60} height={10.5} fill={shadeOf(top, 0.35)} />}
         </g>
-        {hoodie && (
-          <>
-            <path d={smooth([[-3, -84 - b], [5, -80 - b], [13, -83 - b], [11, -87 - b], [3, -86.5 - b]])} fill={topS} />
-            <path d={tube([[12, -81 - b], [12.6 + dr * 0.15, -71 - b], [13 + dr * 0.35, -62 - b]], [2.4, 2.4, 2.2])} fill={lightOf(top, 0.6)} />
-          </>
+        {hairBack}
+        {pony}
+        {/* head */}
+        <g transform={`translate(${pt(r.hc)}) rotate(${num(r.headAng)})`}>
+          <path d={smooth(HEAD)} fill={skin} />
+          <path d={smooth(CHEEK)} fill={mix(skin, "#ff6f7d", 0.24)} />
+          {HAIR[hair].ear && <path d={smooth(EAR)} fill={skinS} />}
+          <path d={smooth(HAIR[hair].cap)} fill={hairColor} />
+          <path d={smooth(HAIR[hair].hi)} fill={hairHi} />
+        </g>
+        {/* near arm, in front of everything */}
+        {arm(armNear, false)}
+        {pose === "phone" && (
+          <g transform={`translate(${pt(add(armNear.wr, rot([2, 9], -armNear.ang)))}) rotate(${num(-armNear.ang - 60)})`}>
+            <rect x={-4} y={-16} width={8} height={32} rx={2.5} fill="#11142e" />
+            <rect x={1.5} y={-14} width={2.5} height={28} rx={1} fill={accent} />
+          </g>
         )}
-        {suit && (
-          <>
-            {tie ? (
-              <path d={smooth([[11, -85 - b], [15.5, -85 - b], [19, -76 - b], [24.5, -56], [22.5, -53, 1], [17, -74 - b]])} fill={accent} />
-            ) : (
-              <path d={smooth([[12, -85 - b], [17.5, -80 - b], [22, -64], [21.5, -56, 1], [19.5, -57], [16.5, -72 - b]])} fill="#eef0fa" />
-            )}
-            <path d={smooth([[3, -88 - b], [8, -93.5 - b], [14.5, -89.5 - b], [13, -84.5 - b], [6.5, -84 - b]])} fill="#eef0fa" />
-            <path d={smooth([[11, -87 - b], [18, -82 - b, 1], [13.5, -80.5 - b]])} fill="#dfe3f2" />
-          </>
+        {r.pocket ? (
+          <g transform={torsoTf} clipPath={clip}>
+            <path d={smooth(POCKET_LIP)} fill={shadeOf(top, 0.3)} />
+            <path d={smooth(POCKET_PANEL)} fill={lightOf(top, 0.05)} />
+            <rect x={-30} y={2.5} width={60} height={14} fill={shadeOf(top, 0.16)} />
+          </g>
+        ) : (
+          hand(armNear, false)
         )}
       </g>
-      {hairBack}
-      {pony}
-      {/* head */}
-      <g transform={`translate(${pt(r.hc)}) rotate(${num(r.headAng)})`}>
-        <path d={smooth(HEAD)} fill={skin} />
-        <path d={smooth(CHEEK)} fill={mix(skin, "#ff6f7d", 0.24)} />
-        {HAIR[hair].ear && <path d={smooth(EAR)} fill={skinS} />}
-        <path d={smooth(HAIR[hair].cap)} fill={hairColor} />
-        <path d={smooth(HAIR[hair].hi)} fill={hairHi} />
-      </g>
-      {/* near arm, in front of everything */}
-      {arm(armNear, false)}
-      {pose === "phone" && (
-        <g transform={`translate(${pt(add(armNear.wr, rot([2, 9], -armNear.ang)))}) rotate(${num(-armNear.ang - 60)})`}>
-          <rect x={-4} y={-16} width={8} height={32} rx={2.5} fill="#11142e" />
-          <rect x={1.5} y={-14} width={2.5} height={28} rx={1} fill={accent} />
-        </g>
-      )}
-      {r.pocket ? (
-        <g transform={torsoTf} clipPath={clip}>
-          <path d={smooth(POCKET_LIP)} fill={shadeOf(top, 0.3)} />
-          <path d={smooth(POCKET_PANEL)} fill={lightOf(top, 0.05)} />
-          <rect x={-30} y={2.5} width={60} height={14} fill={shadeOf(top, 0.16)} />
-        </g>
-      ) : (
-        hand(armNear, false)
-      )}
       {prop}
     </g>
   );
