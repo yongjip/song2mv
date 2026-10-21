@@ -111,9 +111,11 @@ Why it works the way it does:
 - **The grid has one tempo, and songs do not always keep one.** A live band drifts, jazz speeds up for a solo, a song
   slows down at the end, an AI-generated song can jump by a 16th note between sections. So tempo and phase are fitted
   again in windows of 4 bars, and where the music's beats are more than half a 16th note off the grid (a tempo
-  change, a drift, or a beat that moved), `grid.json` lists the stretch under `off_grid`, the `--json` result says so
-  under `warnings`, and lyric words there keep whisper's times instead of being snapped. The grid itself does not
-  follow the change yet: beat effects in the video stay on the one tempo.
+  change, a drift, or a beat that moved), `grid.json` lists the stretch under `off_grid` and the `--json` result says
+  so under `warnings`. Where those windows can be chained beat by beat, as in AI-made songs that drift, `grid.json`
+  gets a beat map (`beats`, the time of every beat): words snap to it, and the clicks and the video's beat effects
+  follow it. Where they cannot (a beat that jumps, a weak pulse), lyric words in the stretch keep whisper's times
+  instead of being snapped, and beat effects stay on the one tempo.
 - **Shouts, chants and whispers are what whisper misses.** Lines no run placed are re-heard with just that stretch of
   audio and the expected words as the prompt. Those lines are marked `reprompt` and listed in the `--json` result
   under `check_by_ear`; pin anything wrong in `manual`. A line heard there more often than the lyric sheet has it
@@ -150,7 +152,7 @@ See [`examples/song.example.json`](https://github.com/yongjip/song2mv/blob/main/
 | `section_ids`, `section_kinds` | `{}` | override the short id (`"Verse 1"` → `v1`) or kind (`calm` / `mid` / `hot`) of a section |
 | `bpm` | `"auto"` | a number forces the tempo |
 | `downbeat_mod4` | `null` | force which beat index (mod 4) starts a bar |
-| `snap_per_beat` | `4` | snap word times to 1/4 beat (16th notes); `3` = a triplet grid (8th-note triplets, for swing and shuffle), `2` = 8th notes, `0` = off. Never inside an `off_grid` stretch |
+| `snap_per_beat` | `4` | snap word times to 1/4 beat (16th notes); `3` = a triplet grid (8th-note triplets, for swing and shuffle), `2` = 8th notes, `0` = off. On the beat map when `grid.json` has one; without it, never inside an `off_grid` stretch. Words pinned in `manual` are never snapped |
 | `whisper` | small × 3, CPU int8 | `model`, `runs`, `device`, `compute_type`, `threads`, `beam_size` |
 | `auto_reprompt` | `true` | re-hear gaps where no run found a line |
 | `reprompt` | `[]` | extra windows found by ear: `[{"from": 17.5, "to": 30.5, "prompt": "the words sung there"}]` |
@@ -170,7 +172,8 @@ song2mv beats song.mp3 [--out song.grid.json] [--bpm 128] [--downbeat 0]
 
 Tempo, first beat and bar start for cutting video to the beat — no lyrics needed. Without lyrics, `auto` tempo
 picks the candidate with the strongest onset score, so check the result by ear or pass `--bpm`. Stretches where the
-song leaves that one tempo are in `off_grid` (and `warnings`): don't cut to the grid there.
+song leaves that one tempo are in `off_grid` (and `warnings`): cut to `beats` there when the file has a beat map, and
+don't cut to the grid there when it has none.
 
 ## `song2mv check` (experimental)
 

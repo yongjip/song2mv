@@ -14,7 +14,11 @@ export type Section = {
   /** optional per-section colours, overriding the theme's colours for its kind */
   tint?: string; glow?: string; strength?: number;
 };
-export type Grid = { bpm: number; beat: number; phi: number; downbeat_mod4: number; bar0?: number };
+export type Grid = {
+  bpm: number; beat: number; phi: number; downbeat_mod4: number; bar0?: number;
+  /** the time of every beat, when the song's tempo drifts (`sync` writes a beat map then); beat n is beats[n] */
+  beats?: number[] | null;
+};
 type KindStyle = { tint: string; glow: string; strength: number };
 export type Theme = {
   bg: string;
@@ -78,24 +82,52 @@ export function mergeTheme(t: ThemeInput | undefined): Theme {
   };
 }
 
-/** Beat-grid helpers. Beat n (integer) sits at phi + n·beat; a bar starts where n % 4 == downbeat_mod4. */
+/** Beat number at time T on a beat map: straight between its beats, at the first and last beat's length outside them */
+function mapPos(beats: number[], T: number): number {
+  const n = beats.length - 1;
+  if (T < beats[0]) return (T - beats[0]) / (beats[1] - beats[0]);
+  if (T >= beats[n]) return n + (T - beats[n]) / (beats[n] - beats[n - 1]);
+  let lo = 0, hi = n;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (beats[mid] <= T) lo = mid; else hi = mid;
+  }
+  return lo + (T - beats[lo]) / (beats[lo + 1] - beats[lo]);
+}
+
+/** Time of beat number b on a beat map (the inverse of mapPos) */
+function mapTime(beats: number[], b: number): number {
+  const i = Math.min(Math.max(Math.floor(b), 0), beats.length - 2);
+  return beats[i] + (b - i) * (beats[i + 1] - beats[i]);
+}
+
+/**
+ * Beat-grid helpers. Beat n (integer) sits at phi + n·beat, or at beats[n] when the song has a beat map; a bar
+ * starts where n % 4 == downbeat_mod4.
+ */
 export function makeGrid(g: Grid) {
-  const bar0 = g.bar0 ?? g.phi + g.downbeat_mod4 * g.beat;
-  const beatPos = (T: number) => (T - g.phi) / g.beat;
+  const map = g.beats && g.beats.length > 1 ? g.beats : null;
+  const beatTime = map ? (b: number) => mapTime(map, b) : (b: number) => g.phi + b * g.beat;
+  const bar0 = g.bar0 ?? beatTime(g.downbeat_mod4);
+  const beatPos = map ? (T: number) => mapPos(map, T) : (T: number) => (T - g.phi) / g.beat;
   return {
     ...g,
     bar0,
     /** continuous beat number — whole numbers are beats */
     beatPos,
+    /** time of beat number b (the inverse of beatPos) */
+    beatTime,
     /** start time of bar k (bar 0 = first full bar) */
-    bar: (k: number) => bar0 + k * 4 * g.beat,
+    bar: map ? (k: number) => beatTime(g.downbeat_mod4 + 4 * k) : (k: number) => bar0 + k * 4 * g.beat,
     /** snap a time to the grid, `div` steps per beat (4 = 16th notes) */
-    snap: (t: number, div = 4) => g.phi + Math.round((t - g.phi) / (g.beat / div)) * (g.beat / div),
+    snap: map
+      ? (t: number, div = 4) => beatTime(Math.round(beatPos(t) * div) / div)
+      : (t: number, div = 4) => g.phi + Math.round((t - g.phi) / (g.beat / div)) * (g.beat / div),
     /** 0–1 decay right after each beat; the first beat of a bar is stronger */
     pulse: (T: number, tau = 0.16) => {
       const b = Math.floor(beatPos(T));
       const down = ((b % 4) + 4) % 4 === g.downbeat_mod4;
-      return Math.exp(-(T - (g.phi + b * g.beat)) / tau) * (down ? 1 : 0.6);
+      return Math.exp(-(T - beatTime(b)) / tau) * (down ? 1 : 0.6);
     },
   };
 }

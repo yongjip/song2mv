@@ -18,6 +18,24 @@ First release (0.1.0).
   and in the `grid` of `lyrics.json` and `mv.json`), `warnings` says what was found and where, and `sync` leaves lyric
   words there at whisper's times instead of snapping them to 16th notes. A grid made before this is fitted again.
   `local_offsets` now has one 4-bar window per 2 bars instead of 20-second windows.
+- A beat map for songs whose tempo drifts. AI-made songs can: of 12 Suno songs measured, 4 drift by 0.9–3 % and the
+  best one-tempo grid misses their beats by 135–910 ms, so no `--bpm` fits them. When the fit check finds stretches
+  off the grid and its 4-bar windows chain from 8th note to 8th note without a guess, `grid.json` gets `beats`, the
+  time of every beat, and the bar start is found again on them (`downbeat_mod4`, `bar0`). The grid in `lyrics.json`
+  and `mv.json` carries them too; lyric words snap to 16ths of those beats, also inside the stretches; sections start
+  on their bar lines; `song2mv click` clicks on them; and the template's `grid.beatPos`, `grid.bar(k)`,
+  `grid.pulse`, `grid.snap` and the new `grid.beatTime` follow them. On the 6 Suno songs that get a map, the beats'
+  worst error against an independent beat tracker fell from 138–4315 ms to 5–22 ms and the mean onset strength on
+  them rose from 1.5–3.9 to 3.2–5.5 (1.0 = random); a song that speeds up from 118 to 121 BPM now starts its
+  choruses on the music's downbeat instead of 0.35 s after it. Songs that one tempo fits get byte-identical files.
+  Songs whose beat jumps or whose pulse is too weak to follow keep the one-tempo grid (`beats` is `null`), as do all
+  79 JamendoLyrics songs, whose benchmark is unchanged. A `grid.json` with stretches but without `beats` is fitted
+  again.
+- Words pinned in `manual` keep the times you gave: they are no longer snapped to the beat grid.
+- `warnings` says when the tempo pick is uncertain: when the lyric line gaps chose another tempo than the one the
+  onsets fit best, it names both. When the grid fits almost none of the song and the music's own tempo there drifts,
+  the warning no longer names a `--bpm` taken from it (on a drifting song it advised 80 BPM, two thirds of the real
+  tempo).
 - `song2mv click`: a stretch of the song with clicks on the beat grid and ticks on the lyric words, so a person can
   check the timing by ear.
 - `song2mv check` (experimental): per-line motion, coverage, chorus variation and cut rhythm of a rendered video,

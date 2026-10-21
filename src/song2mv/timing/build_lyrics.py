@@ -1,6 +1,7 @@
 """Turn merged word times into the final lyric timing: manual values, estimates for anything still
-missing, in-line interpolation, snapping to the beat grid (not in the stretches grid.json lists under
-off_grid, where the grid does not fit the music), line ends. Writes
+missing, in-line interpolation, snapping to the beat grid (to its beat map when grid.json has one; without one,
+not in the stretches grid.json lists under off_grid, where the grid does not fit the music; never the words of a
+line pinned in "manual"), line ends. Writes
 
   lyrics.json — every line and word with its time, where the time came from, and how the runs agreed
   mv.json     — the song config the Remotion template reads (lyrics + grid + sections + theme)
@@ -37,7 +38,7 @@ def manual_times(r: dict, v) -> list[float | None]:
 
 def apply_manual(lines: list[dict], manual: dict) -> None:
     """"manual": {"ch1-01": [98.5, 99.2]} sets word start times (seconds). A single number sets the first word;
-    words without a value are spread out after the last given one. Times are still snapped to the beat grid.
+    words without a value are spread out after the last given one. The line's words are not snapped to the beat grid.
     reprompt.fill_gaps has already fitted the re-heard lines between these pins."""
     ids = {r["id"] for r in lines}
     for k in manual:
@@ -93,10 +94,16 @@ def off_grid(grid: dict):
 
 
 def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -> list[dict]:
-    P, phi = grid["beat"], grid["phi"]
+    P, phi, beats = grid["beat"], grid["phi"], grid.get("beats")
     S = P / snap_per_beat if snap_per_beat else 0
-    off = off_grid(grid)
-    snap = lambda t: round(t, 3) if not S or off(t) else round(phi + round((t - phi) / S) * S, 3)  # noqa: E731
+    if beats and S:
+        from .beat_grid import map_number, map_time
+
+        def snap(t: float) -> float:
+            return round(float(map_time(beats, round(float(map_number(beats, t)) * snap_per_beat) / snap_per_beat)), 3)
+    else:
+        off = off_grid(grid)
+        snap = lambda t: round(t, 3) if not S or off(t) else round(phi + round((t - phi) / S) * S, 3)  # noqa: E731
     starts = {i: min(_known(r)) for i, r in enumerate(lines) if _known(r)}
     out = []
     for i, r in enumerate(lines):
@@ -123,7 +130,7 @@ def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -
             wt[k] = tl + (tail - tl) * (k - kl) / n_tail
         for k in range(1, len(wt)):  # sung words stay in order (runs that disagree, manual times out of order)
             wt[k] = max(wt[k], wt[k - 1])
-        wt = [snap(max(0.0, t)) for t in wt]
+        wt = [round(max(0.0, t), 3) if r.get("source") == "manual" else snap(max(0.0, t)) for t in wt]
         last = wt[-1]
         # shown until 0.9 s after the last word or just before the next line, but always past its own last word
         end = max(snap(min(nxt_start - 0.15, last + 0.9)), round(last + max(S, 0.15), 3))
@@ -139,7 +146,9 @@ def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -
 
 
 def sections(lines: list[dict], grid: dict, duration: float) -> list[dict]:
-    P, bar0 = grid["beat"], grid["bar0"]
+    P, bar0, beats, down = grid["beat"], grid["bar0"], grid.get("beats"), grid.get("downbeat_mod4", 0)
+    if beats:
+        from .beat_grid import map_number, map_time
     first: dict = {}
     for r in lines:
         s = first.setdefault(r["section"], {"id": r["section"], "name": r["section_name"], "kind": r["kind"], "start": r["start"]})
@@ -149,8 +158,11 @@ def sections(lines: list[dict], grid: dict, duration: float) -> list[dict]:
         return []
     late_start = secs[0]["start"] > 4.0 and secs[0]["kind"] != "calm"
     for s in secs:  # start the section on the bar line next to its first lyric (pickups, late entries)
-        k = round((s["start"] - bar0) / (4 * P))
-        d = bar0 + k * 4 * P
+        if beats:
+            d = float(map_time(beats, down + 4 * round((float(map_number(beats, s["start"])) - down) / 4)))
+        else:
+            k = round((s["start"] - bar0) / (4 * P))
+            d = bar0 + k * 4 * P
         if s["start"] - 2 * P <= d <= s["start"] + 1.5 * P:
             s["start"] = round(max(0.0, d), 3)
     if late_start:  # music before the first sung section gets a quiet section of its own
@@ -196,6 +208,8 @@ def build(merged: list[dict], grid: dict, cfg: dict, duration: float) -> tuple[d
     lines = finish(merged, grid, int(cfg.get("snap_per_beat") or 0), end_song)
     secs = sections(lines, grid, duration)
     g = {**{k: grid[k] for k in ("bpm", "beat", "phi", "downbeat_mod4", "bar0")}, "off_grid": grid.get("off_grid") or []}
+    if grid.get("beats"):
+        g["beats"] = grid["beats"]
     lyrics = {"title": cfg.get("title", ""), "duration": round(duration, 3), "grid": g, "sections": secs, "lines": lines}
     mv = {
         "title": cfg.get("title", ""), "subtitle": cfg.get("subtitle", ""),

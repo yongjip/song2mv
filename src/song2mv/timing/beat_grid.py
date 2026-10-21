@@ -10,8 +10,9 @@ rhythm made a false peak). Here the grid is fitted directly to percussive onsets
   4. fine phase search, then the bar's first beat = the beat position with the strongest kick
      (harmony change is printed as a second opinion — off-beat chord changes can fool it);
   5. does the grid fit everywhere? Tempo and phase are fitted again in windows of 4 bars (`fit_check`); where the
-     music's beats leave the grid — a tempo change, a drift, a beat that jumps — the stretch goes into `off_grid`,
-     and sync does not snap lyric words there.
+     music's beats leave the grid — a tempo change, a drift, a beat that jumps — the stretch goes into `off_grid`;
+  6. a song with such stretches gets a beat map (`beat_map`): the windows chained into one time per beat, so
+     beats, bars and snapped words follow the music where the one tempo does not. The bar start is found again on it.
 
 Usage: python -m song2mv.timing.beat_grid song.mp3 work/grid.json [--bpm 90|auto] [--merged work/merged.json]
 """
@@ -34,23 +35,39 @@ FIT_RANGE = 1.25
 FIT_GAP = 6.0
 FIT_LOOSE = 3.0  # below this the global grid does about as well as the window's own: the window fits
 
+# beat_map chains the fit_check windows: each window's best grid puts a beat (or an off-beat) near its middle, and
+# the next window sits a whole number of 8th notes later. A window joins when its pulse is clear (its best grid
+# MAP_Z standard deviations above the mean of all it tried), its tempo is within MAP_TEMPO of the chain's (another
+# tempo only when most of the next windows agree), and it lies within MAP_TOL of a whole number of 8th notes from the
+# last one — MAP_SURE after more than MAP_GAP seconds without a clear window, where the count comes from the tempo
+# on both sides. MAP_JUMP windows in a row that do not join mean the beat moved by part of an 8th note, or the count
+# over a gap would be a guess: then there is no map, and the grid stays as it is. Measured on 12 Suno and the 9
+# flagged JamendoLyrics songs: drifting songs chain cleanly; songs whose beat jumps, or whose pulse is weak, do not.
+MAP_Z = 6.0
+MAP_TEMPO = 0.04
+MAP_TOL = 0.25
+MAP_SURE = 0.1
+MAP_JUMP = 4
+MAP_GAP = 4.0
 
-def fit_check(oenv, ft, dur: float, P: float, phi: float) -> tuple[list[dict], list[dict]]:
+
+def fit_check(oenv, ft, dur: float, P: float, phi: float) -> tuple[list[dict], list[dict], list[dict]]:
     """Fit tempo and phase per window and compare them with the global grid (beat P, first beat phi).
 
-    Returns (local, off_grid): `local` has one entry per 2 bars — {from, to, bpm, offset_ms (the window's beats
-    against the grid's, at its middle), strength, fits (true, false, or null when the window cannot tell)} — and
+    Returns (local, off_grid, windows): `local` has one entry per 2 bars — {from, to, bpm, offset_ms (the window's
+    beats against the grid's, at its middle), strength, fits (true, false, or null when the window cannot tell)} — and
     `off_grid` the stretches where the grid does not fit: {from, to, bpm (the music's tempo there), kind ("tempo",
-    "drift" or "shift": the same tempo, the beat moved), offset_ms (for a shift)}."""
+    "drift" or "shift": the same tempo, the beat moved), offset_ms (for a shift)}. `windows` are every window's own
+    fit, for beat_map."""
     import numpy as np
 
     W = max(6.0, FIT_BEATS * P)
     H = FIT_HOP * P
     if dur < W + H:
-        return [], []
+        return [], [], []
 
     def search(c, ratios):
-        """The best (score, beat, phase from c) among these beat lengths, and the spread of every grid's score."""
+        """The best (score, beat, phase from c) among these beat lengths, and the mean and spread of every grid's score."""
         best, tot, tot2, n = (-1.0, P, 0.0), 0.0, 0.0, 0
         for r in ratios:
             Pw = P * r
@@ -61,7 +78,7 @@ def fit_check(oenv, ft, dur: float, P: float, phi: float) -> tuple[list[dict], l
             j = int(s.argmax())
             if s[j] > best[0]:
                 best = (float(s[j]), float(Pw), float(phs[j]))
-        return best, max(tot2 / n - (tot / n) ** 2, 1e-12) ** 0.5
+        return best, tot / n, max(tot2 / n - (tot / n) ** 2, 1e-12) ** 0.5
 
     def grid_score(lo, hi, shift):
         g = np.arange(phi + shift + np.ceil((lo - phi - shift) / P) * P, hi, P)
@@ -69,8 +86,8 @@ def fit_check(oenv, ft, dur: float, P: float, phi: float) -> tuple[list[dict], l
 
     wins = []
     for c in np.arange(W / 2, dur - W / 2 + 1e-9, H):
-        (s, Pw, ph), sd = search(c, np.exp(np.arange(-np.log(FIT_RANGE), np.log(FIT_RANGE) + 1e-9, 0.005)))
-        fine, _ = search(c, Pw / P * np.exp(np.arange(-0.005, 0.0051, 0.0005)))
+        (s, Pw, ph), mean, sd = search(c, np.exp(np.arange(-np.log(FIT_RANGE), np.log(FIT_RANGE) + 1e-9, 0.005)))
+        fine, _, _ = search(c, Pw / P * np.exp(np.arange(-0.005, 0.0051, 0.0005)))
         if fine[0] > s:
             s, Pw, ph = fine
         g8 = max(grid_score(c - W / 2, c + W / 2, 0.0), grid_score(c - W / 2, c + W / 2, P / 2))
@@ -78,7 +95,7 @@ def fit_check(oenv, ft, dur: float, P: float, phi: float) -> tuple[list[dict], l
         d8 = (lb - phi) - np.round((lb - phi) / (P / 2)) * (P / 2)
         off = (c + ph - phi) - round((c + ph - phi) / P) * P
         wins.append({"c": float(c), "s": s, "beat": Pw, "gap": (s - g8) / sd, "d8": float(np.abs(d8).max()) if len(d8) else 0.0,
-                     "offset": float(off)})
+                     "offset": float(off), "x": float(c + ph), "z": (s - mean) / sd})
     weak = 0.5 * float(np.median([w["s"] for w in wins]))
     for w in wins:
         same_tempo = abs(w["beat"] / P - 1) < 0.01
@@ -96,11 +113,17 @@ def fit_check(oenv, ft, dur: float, P: float, phi: float) -> tuple[list[dict], l
                  "offset_ms": int(round(w["offset"] * 1000)), "strength": round(w["s"], 2), "fits": w["fits"]}
                 for w in wins[::4]]
 
-    # the whole song at one other tempo: the grid's tempo is wrong, not changing (a pick off by up to ×/÷ FIT_RANGE)
+    # the whole song at one other tempo: the grid's tempo is wrong (a pick off by up to ×/÷ FIT_RANGE); a "drift"
+    # when that tempo also moves by more than 1 % from the first to the last quarter of the song
     clear = [w for w in wins if w["s"] >= weak]
     other = 60 / float(np.median([w["beat"] for w in clear]))
     if abs(other * P / 60 - 1) > 0.03 and sum(abs(60 / w["beat"] / other - 1) < 0.02 and w["gap"] >= FIT_LOOSE for w in clear) >= 0.75 * len(clear):
-        return local_list(), [{"from": 0.0, "to": round(dur, 3), "bpm": round(other, 1), "kind": "tempo", "offset_ms": None}]
+        whole = {"from": 0.0, "to": round(dur, 3), "bpm": round(other, 1), "kind": "tempo", "offset_ms": None}
+        q = max(1, len(clear) // 4)
+        first, last = (60 / float(np.median([w["beat"] for w in part])) for part in (clear[:q], clear[-q:]))
+        if abs(last / first - 1) > 0.01:
+            whole.update(kind="drift", bpm_from=round(first, 1), bpm_to=round(last, 1))
+        return local_list(), [whole], wins
 
     # runs of off windows; a hole between two is bridged when it holds less than 2 bars of fitting windows, or when
     # a drift only passes an 8th note there (local tempo still off the same way, for no longer than that takes)
@@ -155,7 +178,82 @@ def fit_check(oenv, ft, dur: float, P: float, phi: float) -> tuple[list[dict], l
                          "offset_ms": int(round(offset * 1000)) if kind == "shift" and offset is not None else None})
         if kind == "drift":
             off_grid[-1]["bpm_from"], off_grid[-1]["bpm_to"] = round(first, 1), round(last, 1)
-    return local_list(), off_grid
+    return local_list(), off_grid, wins
+
+
+def whole_song(off_grid: list[dict], dur: float) -> bool:
+    """Whether one off_grid stretch covers the whole song: the grid's tempo is wrong there, not changing."""
+    return any(s["from"] <= 0.0 and s["to"] >= round(dur, 3) - 0.01 for s in off_grid)
+
+
+def beat_map(wins: list[dict], dur: float, ft, oenv) -> list[float] | None:
+    """Beat times that follow the music, from fit_check's windows (see MAP_* above), or None when they cannot be
+    followed without a guess or fewer than 8 join the chain. Of the two 8th-note phases, the one on stronger onsets is
+    the beat, as for the grid's phi."""
+    import numpy as np
+
+    clear = [w for w in wins if w["z"] >= MAP_Z]
+    chain: list[dict] = []  # m: 8th notes since the first window, x: the window's beat, u: its 8th-note length
+    miss = 0
+    for j, w in enumerate(clear):
+        u = w["beat"] / 2
+        if not chain:
+            chain.append({"m": 0, "x": w["x"], "u": u})
+            continue
+        recent = float(np.median([a["u"] for a in chain[-8:]]))
+        new_tempo = abs(u / recent - 1) > MAP_TEMPO
+        if new_tempo and sum(abs(c["beat"] / w["beat"] - 1) < 0.015 for c in clear[j + 1:j + 9]) < 5:
+            continue
+        last = chain[-1]
+        dt = w["x"] - last["x"]
+        gap = dt > MAP_GAP
+        ub = 0.5 * (recent + float(np.median([c["beat"] / 2 for c in clear[j:j + 8]]))) if gap else 0.5 * (u + last["u"])
+        k = int(np.rint(dt / ub))
+        if abs(dt / ub - k) > (MAP_SURE if gap or new_tempo else MAP_TOL):
+            miss += 1
+            if miss >= MAP_JUMP:
+                return None
+            continue
+        miss = 0
+        chain.append({"m": last["m"] + k, "x": w["x"], "u": u})
+    if len(chain) < 8:
+        return None
+    m = np.array([a["m"] for a in chain], float)
+    x = np.array([a["x"] for a in chain])
+    u = float(np.median([a["u"] for a in chain]))
+    teeth = np.arange(m[0] - np.ceil(x[0] / u) - 2, m[-1] + np.ceil((dur - x[-1]) / u) + 3)
+    e = min(5, len(m) - 1)
+    head, tail = (x[e] - x[0]) / (m[e] - m[0]), (x[-1] - x[-1 - e]) / (m[-1] - m[-1 - e])
+    t = np.interp(teeth, m, x)
+    t = np.where(teeth < m[0], x[0] + (teeth - m[0]) * head, t)
+    t = np.where(teeth > m[-1], x[-1] + (teeth - m[-1]) * tail, t)
+    inner = (t > 0.3) & (t < dur - 0.3)
+    beat = int(np.argmax([np.interp(t[inner & (teeth % 2 == p)], ft, oenv).mean() for p in (0, 1)]))
+    t = t[teeth % 2 == beat]
+    return [round(float(b), 3) for b in t[(t >= 0) & (t <= dur)]]
+
+
+def map_time(beats: list[float], b):
+    """Time of beat number b (whole or fractional) on a beat map: straight between its beats, and at the first and
+    last beat's length before and after them."""
+    import numpy as np
+
+    n = len(beats) - 1
+    b = np.asarray(b, float)
+    t = np.interp(b, np.arange(n + 1), beats)
+    t = np.where(b < 0, beats[0] + b * (beats[1] - beats[0]), t)
+    return np.where(b > n, beats[n] + (b - n) * (beats[n] - beats[n - 1]), t)
+
+
+def map_number(beats: list[float], t):
+    """Beat number (fractional) at time t on a beat map; the inverse of map_time."""
+    import numpy as np
+
+    n = len(beats) - 1
+    t = np.asarray(t, float)
+    b = np.interp(t, beats, np.arange(n + 1))
+    b = np.where(t < beats[0], (t - beats[0]) / (beats[1] - beats[0]), b)
+    return np.where(t > beats[n], n + (t - beats[n]) / (beats[n] - beats[n - 1]), b)
 
 
 def _mmss(t: float) -> str:
@@ -166,11 +264,20 @@ def describe_off_grid(grid: dict) -> list[str]:
     """One warning per stretch where the beat grid does not fit, for the --json `warnings`."""
     stretches = grid.get("off_grid") or []
     dur, g = grid["duration"], round(grid["bpm"], 1)
-    tail = ("lyric words there keep whisper's times (no snapping), and beat effects drawn from grid.json will miss the "
-            "music there; hear it with `song2mv click`")
-    if stretches and sum(s["to"] - s["from"] for s in stretches) > 0.8 * dur:
-        bpm = max(stretches, key=lambda s: s["to"] - s["from"])["bpm"]
+    if grid.get("beats"):
+        tail = "the beat map in grid.json (`beats`) follows the music there, and lyric words are snapped to it; hear it with `song2mv click`"
+    else:
+        tail = ("lyric words there keep whisper's times (no snapping), and beat effects drawn from grid.json will miss the "
+                "music there; hear it with `song2mv click`")
+    if stretches and not grid.get("beats") and sum(s["to"] - s["from"] for s in stretches) > 0.8 * dur:
+        longest = max(stretches, key=lambda s: s["to"] - s["from"])
+        bpm = longest["bpm"]
         wrong = "The tempo given is probably wrong" if grid.get("why") == "given" else "The tempo was probably picked wrong"
+        if longest["kind"] == "drift":
+            return [f"the beat grid ({g:g} BPM) does not fit this song: almost everywhere its beats move at another tempo, and "
+                    f"that tempo drifts ({longest['bpm_from']:g} → {longest['bpm_to']:g} BPM), so no --bpm taken from it fits. "
+                    f"{wrong} — find the song's tempo by ear among grid.json's `candidates` and rerun with it as --bpm: sync "
+                    "then follows the drift; until then " + tail.replace(" there", "")]
         return [f"the beat grid ({g:g} BPM) does not fit this song: almost everywhere its beats move at about {bpm:g} BPM. "
                 f"{wrong} — rerun with --bpm {round(bpm)} and check by ear; until then " + tail.replace(" there", "")]
     out = []
@@ -194,6 +301,17 @@ def describe_off_grid(grid: dict) -> list[str]:
             msg = f"the tempo changes near {a} ({g:g} → {s['bpm']:g} BPM) and back near {b}: the beat grid does not fit in between"
         out.append(msg + "; " + tail)
     return out
+
+
+def describe_pick(grid: dict) -> list[str]:
+    """A warning when the lyric line gaps chose another tempo than the one the onsets fit best."""
+    cands = grid.get("candidates") or []
+    if not cands or "line_fit" not in cands[0] or abs(cands[0]["P"] / grid["beat"] - 1) < 0.01:
+        return []
+    top, pick = cands[0], min(cands, key=lambda c: abs(c["P"] / grid["beat"] - 1))
+    return [f"the tempo pick is uncertain: the onsets fit {top['bpm']:g} BPM best, but more lyric line gaps are whole bars at "
+            f"{pick['bpm']:g} BPM ({pick['line_fit']:.0%} against {top['line_fit']:.0%}), so the grid has {grid['bpm']:g} BPM; "
+            "hear it with `song2mv click`, and set \"bpm\" in song.json if the clicks miss the drums"]
 
 
 def bar_gaps(line_starts: list[float]) -> list[float]:
@@ -282,13 +400,7 @@ def find_grid(audio: str, bpm: str | float | None = "auto", line_starts: list[fl
     print(f"  → {60 / P:.2f} BPM (beat {P:.4f} s, first beat {phi:.3f} s) — {why}")
 
     # 4) bar start
-    beats = np.arange(phi, dur, P)
-    bf = librosa.time_to_frames(beats, sr=sr, hop_length=hop)
     chroma = librosa.feature.chroma_cqt(y=yh, sr=sr, hop_length=hop)
-    bf = bf[bf < chroma.shape[1]]
-    cs = librosa.util.sync(chroma, bf, aggregate=np.median)
-    cs = cs / (np.linalg.norm(cs, axis=0, keepdims=True) + 1e-9)
-    chg = np.r_[0, 1 - np.sum(cs[:, 1:] * cs[:, :-1], axis=0)]
     S = np.abs(librosa.stft(yp, hop_length=hop))
     fr = librosa.fft_frequencies(sr=sr)
     low = S[fr < 120].sum(axis=0)
@@ -296,20 +408,31 @@ def find_grid(audio: str, bpm: str | float | None = "auto", line_starts: list[fl
     mid = S[(fr > 1500) & (fr < 5000)].sum(axis=0)
     midon = np.maximum(0, np.diff(mid, prepend=0))
     win = lambda arr, f: arr[max(0, f - 2):f + 3].max()  # noqa: E731
-    kick = np.array([win(lowon, f) for f in bf])
-    snare = np.array([win(midon, f) for f in bf])
-    n = min(len(chg), len(kick))
-    phase_stats = []
-    for p in range(4):
-        st = {"beat_mod4": p, "chord_change": round(float(chg[p:n:4].mean()), 3),
-              "low_onset": round(float(kick[p:n:4].mean()), 1), "mid_onset": round(float(snare[p:n:4].mean()), 1)}
-        phase_stats.append(st)
-        print(f"  beat % 4 == {p}: chord change {st['chord_change']:.3f}  kick {st['low_onset']:7.1f}  snare {st['mid_onset']:7.1f}")
-    kick_pick = int(np.argmax([st["low_onset"] for st in phase_stats]))
-    chord_pick = int(np.argmax([st["chord_change"] for st in phase_stats]))
-    down = kick_pick if downbeat is None else int(downbeat)
-    print(f"  bar starts at beat % 4 == {down}" + (" (given)" if downbeat is not None else
-          f" (strongest kick; harmony change says {chord_pick}) — confirm by ear"))
+
+    def bar_start(beats) -> tuple[list[dict], int]:
+        """Chord change, kick and snare per beat position mod 4, and the bar's first beat: the strongest kick."""
+        bf = librosa.time_to_frames(beats, sr=sr, hop_length=hop)
+        bf = bf[bf < chroma.shape[1]]
+        cs = librosa.util.sync(chroma, bf, aggregate=np.median)
+        cs = cs / (np.linalg.norm(cs, axis=0, keepdims=True) + 1e-9)
+        chg = np.r_[0, 1 - np.sum(cs[:, 1:] * cs[:, :-1], axis=0)]
+        kick = np.array([win(lowon, f) for f in bf])
+        snare = np.array([win(midon, f) for f in bf])
+        n = min(len(chg), len(kick))
+        stats = []
+        for p in range(4):
+            st = {"beat_mod4": p, "chord_change": round(float(chg[p:n:4].mean()), 3),
+                  "low_onset": round(float(kick[p:n:4].mean()), 1), "mid_onset": round(float(snare[p:n:4].mean()), 1)}
+            stats.append(st)
+            print(f"  beat % 4 == {p}: chord change {st['chord_change']:.3f}  kick {st['low_onset']:7.1f}  snare {st['mid_onset']:7.1f}")
+        kick_pick = int(np.argmax([st["low_onset"] for st in stats]))
+        chord_pick = int(np.argmax([st["chord_change"] for st in stats]))
+        down = kick_pick if downbeat is None else int(downbeat)
+        print(f"  bar starts at beat % 4 == {down}" + (" (given)" if downbeat is not None else
+              f" (strongest kick; harmony change says {chord_pick}) — confirm by ear"))
+        return stats, down
+
+    phase_stats, down = bar_start(np.arange(phi, dur, P))
 
     hist = None
     if line_starts:
@@ -318,16 +441,28 @@ def find_grid(audio: str, bpm: str | float | None = "auto", line_starts: list[fl
         print("  where lyric lines start inside the bar (8 bins of half a beat, from beat 0):", hist)
 
     # 5) does the grid fit everywhere?
-    local, off_grid = fit_check(oenv, ft, dur, P, phi)
+    local, off_grid, wins = fit_check(oenv, ft, dur, P, phi)
     tempos = sorted(x["bpm"] for x in local if x["fits"] is not None) or sorted(x["bpm"] for x in local)
     print(f"  grid fit, 4-bar windows (local tempo {tempos[len(tempos) // 10]:g}–{tempos[len(tempos) * 9 // 10]:g} BPM): "
           + (", ".join(f"off {_mmss(s['from'])}–{_mmss(s['to'])} ({s['kind']}, {s['bpm']:g} BPM)" for s in off_grid) or "fits everywhere")
           if tempos else "  grid fit: too short to check")
 
-    bar0 = phi + down * P
-    return {"bpm": round(60 / P, 3), "beat": P, "phi": round(phi, 3), "downbeat_mod4": down, "bar0": round(bar0, 3),
-            "bar": 4 * P, "duration": round(dur, 3), "why": why, "candidates": cands, "phase_stats": phase_stats,
-            "line_start_hist": hist, "local_offsets": local, "off_grid": off_grid}
+    # 6) where it does not, a beat map
+    out = {"bpm": round(60 / P, 3), "beat": P, "phi": round(phi, 3), "downbeat_mod4": down, "bar0": round(phi + down * P, 3),
+           "bar": 4 * P, "duration": round(dur, 3), "why": why, "candidates": cands, "phase_stats": phase_stats,
+           "line_start_hist": hist, "local_offsets": local, "off_grid": off_grid}
+    if off_grid:
+        beats = None if whole_song(off_grid, dur) else beat_map(wins, dur, ft, oenv)
+        out["beats"] = beats
+        if beats:
+            ends = [60 / float(np.median(np.diff(part))) for part in (beats[:40], beats[-40:])]
+            print(f"  beat map: {len(beats)} beats, {ends[0]:.1f} → {ends[1]:.1f} BPM at the start and the end; on it:")
+            out["phase_stats"], out["downbeat_mod4"] = bar_start(np.array(beats))
+            out["bar0"] = beats[out["downbeat_mod4"]]
+        else:
+            print("  no beat map: the windows cannot be followed without a guess (a beat that jumps, a weak pulse, or the "
+                  "tempo is wrong everywhere)")
+    return out
 
 
 if __name__ == "__main__":

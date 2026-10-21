@@ -398,7 +398,7 @@ function heartbeat(T: number, grid: ReturnType<typeof useSong>["grid"]): number 
   const n = Math.floor(grid.beatPos(T));
   let h = 0;
   for (const k of [n - 1, n, n + 1]) {
-    const tk = grid.phi + k * grid.beat;
+    const tk = grid.beatTime(k);
     const amp = ((k % 4) + 4) % 4 === grid.downbeat_mod4 ? 1 : 0.8;
     h += amp * (env(T - tk) + 0.55 * env(T - tk - dub));
   }

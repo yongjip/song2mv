@@ -1,6 +1,7 @@
 """Where the fixed beat grid stops fitting. Synthetic click tracks (made like test_beats.py) with a tempo step and a
-slow drift are flagged within a bar or two of where the beats leave the grid, a steady track is not, and lyric words
-keep their own times only inside the flagged stretch."""
+slow drift are flagged within a bar or two of where the beats leave the grid, a steady track is not. A flagged track
+gets a beat map that follows its beats, and lyric words snap to it; without a map they keep their own times inside
+the flagged stretch."""
 import contextlib
 import io
 import json
@@ -73,6 +74,26 @@ def test_a_steady_track_fits_everywhere(runs):
     assert abs(grid["bpm"] - 100) < 0.5
     assert grid["off_grid"] == [] and res["off_grid"] == [] and res["warnings"] == []
     assert grid["local_offsets"] and not any(w["fits"] is False for w in grid["local_offsets"])
+    assert "beats" not in grid  # one tempo fits: no beat map, grid.json as before
+
+
+def map_error(grid, beats):
+    """Seconds from each of the track's beats to the nearest beat of the map (the onset envelope puts beats ~15 ms late)."""
+    m = np.array(grid["beats"])
+    return np.array([np.abs(m - b).min() for b in beats])
+
+
+@pytest.mark.parametrize("name", ["step", "drift"])
+def test_a_flagged_track_gets_a_beat_map_that_follows_it(runs, name):
+    res, grid, beats = runs[name]
+    err = map_error(grid, beats)
+    assert np.median(err) < 0.03 and err.max() < 0.06
+    fixed = np.abs(beats - (grid["phi"] + np.round((beats - grid["phi"]) / grid["beat"]) * grid["beat"]))
+    assert fixed.max() > 0.1  # the one tempo misses
+    m = np.array(grid["beats"])
+    bars = m[grid["downbeat_mod4"]::4]
+    assert grid["bar0"] == bars[0] and np.abs(bars[:, None] - beats[None, ::4]).min(axis=1).max() < 0.06  # on the kicks
+    assert "beat map in grid.json (`beats`) follows the music there" in res["warnings"][0]
 
 
 def test_a_tempo_step_is_flagged_where_it_happens(runs):
@@ -106,6 +127,27 @@ def line(id_, wt):
             "words": ["w"] * len(wt), "wt": wt, "source": "asr"}
 
 
+def test_words_snap_to_the_beat_map_and_pinned_words_stay():
+    from song2mv.timing.build_lyrics import apply_manual, finish, sections
+
+    beats = list(np.round(0.5 + np.cumsum(np.r_[0, np.linspace(0.6, 0.5, 109)]), 3))  # 100 → 120 BPM
+    stretch = {"from": 30.0, "to": 60.0, "bpm": 116.0, "kind": "drift", "offset_ms": None, "bpm_from": 110.0, "bpm_to": 120.0}
+    grid = {"bpm": 100.0, "beat": 0.6, "phi": 0.5, "downbeat_mod4": 1, "bar0": beats[1], "off_grid": [stretch], "beats": beats}
+    k = 80  # a beat inside the stretch
+    q = (beats[k + 1] - beats[k]) / 4
+    merged = [line("v1-01", [beats[10] + 0.02, beats[12] + 0.5 * q + 0.01]), line("v2-01", [beats[k] + q + 0.02]),
+              line("v2-02", [beats[k + 4] + 0.02, beats[k + 5] + 0.03])]
+    apply_manual(merged, {"v2-02": [beats[k + 4] + 0.02, beats[k + 5] + 0.03]})
+    out = {r["id"]: [w["t"] for w in r["words"]] for r in finish(merged, grid, 4, 60.0)}
+    assert out["v1-01"] == [beats[10], round(beats[12] + (beats[13] - beats[12]) / 4, 3)]  # 16ths of the map's beats
+    assert out["v2-01"] == [round(beats[k] + q, 3)]  # inside the stretch too
+    assert out["v2-02"] == [round(beats[k + 4] + 0.02, 3), round(beats[k + 5] + 0.03, 3)]  # pinned: kept
+    lines = [{"id": "v1-01", "section": "v1", "section_name": "Verse 1", "kind": "mid", "start": beats[9] + 0.1},
+             {"id": "ch-01", "section": "ch", "section_name": "Chorus", "kind": "hot", "start": beats[81] - 0.2}]
+    secs = sections(lines, grid, 60.0)
+    assert [s["start"] for s in secs] == [0.0, beats[9], beats[81]]  # on the map's bar lines (beats 9 and 81: % 4 == 1)
+
+
 def test_words_snap_only_where_the_grid_fits():
     from song2mv.timing.build_lyrics import build
 
@@ -122,8 +164,8 @@ def test_words_snap_only_where_the_grid_fits():
 def test_warnings_name_the_kind_of_misfit():
     from song2mv.timing.beat_grid import describe_off_grid
 
-    def msg(*stretches):
-        return [m.split(";")[0] for m in describe_off_grid({"bpm": 90.0, "duration": 290.0, "off_grid": list(stretches)})]
+    def msg(*stretches, **grid):
+        return [m.split(";")[0] for m in describe_off_grid({"bpm": 90.0, "duration": 290.0, "off_grid": list(stretches), **grid})]
 
     assert msg() == []
     assert msg({"from": 182.0, "to": 250.0, "bpm": 90.0, "kind": "shift", "offset_ms": 175}) == [
@@ -132,3 +174,21 @@ def test_warnings_name_the_kind_of_misfit():
         "the tempo is about 86.7 BPM until 2:18, then 90 BPM: the beat grid fits only after that"]
     [whole] = msg({"from": 0.0, "to": 290.0, "bpm": 100.0, "kind": "tempo", "offset_ms": None})
     assert whole.startswith("the beat grid (90 BPM) does not fit this song") and "picked wrong — rerun with --bpm 100" in whole
+    # a drift everywhere: no single --bpm to rerun with
+    [whole] = msg({"from": 0.0, "to": 290.0, "bpm": 80.0, "kind": "drift", "offset_ms": None, "bpm_from": 78.5, "bpm_to": 80.9})
+    assert "drifts (78.5 → 80.9 BPM)" in whole and "--bpm 80" not in whole and "--bpm 81" not in whole
+    # with a beat map the stretch is still named, and the map follows it
+    shift = {"from": 182.0, "to": 250.0, "bpm": 90.0, "kind": "shift", "offset_ms": 175}
+    [mapped] = describe_off_grid({"bpm": 90.0, "duration": 290.0, "off_grid": [shift], "beats": [0.1, 0.77, 1.43]})
+    assert mapped.startswith("from 3:02 to 4:10 the beats sit 0.17 s later") and "the beat map in grid.json (`beats`) follows" in mapped
+
+
+def test_a_tempo_pick_against_the_strongest_onsets_is_called_uncertain():
+    from song2mv.timing.beat_grid import describe_pick
+
+    cands = [{"P": 0.5084, "bpm": 118.02, "score": 0.18, "line_fit": 0.25}, {"P": 0.6778, "bpm": 88.52, "score": 0.12, "line_fit": 0.37}]
+    [w] = describe_pick({"bpm": 88.522, "beat": 0.6778, "candidates": cands})
+    assert w.startswith("the tempo pick is uncertain: the onsets fit 118.02 BPM best") and "(37% against 25%)" in w
+    assert describe_pick({"bpm": 118.02, "beat": 0.5084, "candidates": cands}) == []  # the strongest one won
+    given = [{k: v for k, v in c.items() if k != "line_fit"} for c in cands]
+    assert describe_pick({"bpm": 88.52, "beat": 0.6778, "candidates": given}) == []  # given, or no lyric lines to vote

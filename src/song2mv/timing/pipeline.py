@@ -4,8 +4,8 @@ Steps (outputs go to the work folder):
   lyrics  lyrics.txt     the lyric sheet (the config's "lyrics" file, or the audio's lyrics tag)
   asr     asr/runN.json  whisper runs; finished runs are kept and reused
   align   merged.json    runs aligned to the lyric sheet and merged per word
-  grid    grid.json      tempo, first beat, bar start, stretches where it does not fit (reused while bpm / downbeat
-                         settings are unchanged)
+  grid    grid.json      tempo, first beat, bar start, stretches where it does not fit and there a beat map
+                         (reused while bpm / downbeat settings are unchanged)
   build   lyrics.json    final word and line times (+ reprompt.json from re-listening to gaps)
           mv.json        the song config the render template reads
           song.lrc       line-timed LRC; song.words.lrc adds word timestamps
@@ -186,20 +186,23 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
     report(merged, len(runs))
 
     print("[grid] beat grid")
-    from .beat_grid import describe_off_grid
+    from .beat_grid import describe_off_grid, describe_pick
     request = {"bpm": cfg.get("bpm"), "downbeat_mod4": cfg.get("downbeat_mod4"), "audio_sha256": sha}
     old = json.load(open(P("grid.json"))) if os.path.exists(P("grid.json")) else None
-    # a grid without off_grid was made before the fit check: refit it
-    if old and old.get("request") == request and old.get("schema_version") == SCHEMA_VERSION and "off_grid" in old and "grid" not in redo:
+    # a grid without off_grid was made before the fit check, and one with stretches but no "beats" before the beat
+    # map: refit those
+    current = bool(old) and "off_grid" in old and (not old["off_grid"] or "beats" in old)
+    if current and old.get("request") == request and old.get("schema_version") == SCHEMA_VERSION and "grid" not in redo:
         grid = old
-        print(f"  cached: {grid['bpm']} BPM, first beat {grid['phi']} s, bar starts at beat % 4 == {grid['downbeat_mod4']}")
+        print(f"  cached: {grid['bpm']} BPM, first beat {grid['phi']} s, bar starts at beat % 4 == {grid['downbeat_mod4']}"
+              + (f", a beat map of {len(grid['beats'])} beats" if grid.get("beats") else ""))
     else:
         from .beat_grid import find_grid
         starts = [min(t for t in r["wt"] if t is not None) for r in merged if any(t is not None for t in r["wt"])]
         grid = stamp(find_grid(cfg["audio"], cfg.get("bpm"), starts, cfg.get("downbeat_mod4")))
         grid["request"] = request
         write_json(grid, P("grid.json"))
-    for msg in describe_off_grid(grid):
+    for msg in describe_pick(grid) + describe_off_grid(grid):
         warn(msg)
 
     print("[build] gaps, manual values, snapping")

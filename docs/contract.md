@@ -30,7 +30,9 @@ Every result has `command` and `ok`; `outputs` is always an object, file name �
 `sync` and `beats` add one entry to `warnings` per `off_grid` stretch (see `grid.json`), saying what was found and
 where, for example `the tempo changes near 0:30 (100 → 120 BPM): the beat grid fits only before that; …`, or a
 single entry when the grid fits almost none of the song (`the beat grid (80 BPM) does not fit this song: …`, with a
-`--bpm` to try). Read the stretches from `off_grid`, not from the text.
+`--bpm` to try, except when that other tempo drifts too). Read the stretches from `off_grid`, not from the text.
+`sync` also warns when the tempo pick is uncertain: when the lyric line gaps chose another tempo than the one the
+onsets fit best (`the tempo pick is uncertain: the onsets fit 118.02 BPM best, but …`).
 
 ## Exit codes and errors
 
@@ -49,9 +51,9 @@ flag, `--bpm abc`) stop before the command starts: exit `2`, the message on stde
 
 **`grid.json`** — `bpm`, `beat` (seconds per beat), `phi` (time of beat 0), `downbeat_mod4` (which beat index mod 4
 starts a bar), `bar0` (first bar start), `bar` (seconds per bar), `duration`, `why` (how the tempo was chosen),
-plus `candidates`, `phase_stats`, `line_start_hist`, `local_offsets`, `off_grid` and `request` (the settings and
-audio hash it was made for). Beat *k* is at `phi + k * beat`: one tempo for the whole song. `song2mv beats` writes
-the same format.
+plus `candidates`, `phase_stats`, `line_start_hist`, `local_offsets`, `off_grid`, `beats` and `request` (the
+settings and audio hash it was made for). Beat *k* is at `phi + k * beat`: one tempo for the whole song, unless
+`beats` holds a beat map. `song2mv beats` writes the same format.
 
 - `off_grid` — where that one tempo does not fit the music: `[{from, to, bpm, kind, offset_ms}]`, empty when it fits
   everywhere. `bpm` is the music's own tempo in the stretch; `kind` is `tempo` (another tempo), `drift` (the tempo
@@ -59,26 +61,39 @@ the same format.
   how far the music's beats sit after the grid's, negative = before, or `null` when it varies). A stretch is where,
   for at least 2 bars, a grid fitted to that part of the song (tempo within ×/÷ 1.25 and phase, in windows of 16
   beats) lands on the onsets clearly better than the global grid and its beats are more than half a 16th note from
-  the global grid's 8th notes — so a section that accents the off-beat is not flagged. `sync` does not snap lyric
-  words to the grid inside a stretch (section starts still sit on the grid's bar lines). One stretch covering the
-  whole song means the grid's tempo is probably wrong. The grid itself is unchanged there: anything that draws beats
-  from it is off there too.
+  the global grid's 8th notes — so a section that accents the off-beat is not flagged. With a beat map (`beats`),
+  `sync` snaps lyric words to it everywhere and starts sections on its bar lines. Without one, it does not snap lyric
+  words inside a stretch (section starts still sit on the grid's bar lines), and anything that draws beats from the
+  grid is off there. One stretch covering the whole song means the grid's tempo is probably wrong; it is a `drift`
+  (with `bpm_from` and `bpm_to`) when that other tempo also moves by more than 1 % from the song's first quarter to
+  its last.
 - `local_offsets` — the check behind `off_grid`, one window per 2 bars: `{from, to, bpm, offset_ms, strength, fits}`,
   where `offset_ms` is how far the window's own beats sit from the grid's at its middle, `strength` its onset score
   and `fits` `true`, `false`, or `null` when the window has no clear pulse to judge.
+- `beats` — only when `off_grid` has stretches: the time of every beat from the start of the song (beat *k* is
+  `beats[k]`), following the music where the one tempo does not, or `null` when it could not be followed without a
+  guess (a beat that moves by part of an 8th note, a weak pulse, a gap whose beat count is unsure) or one stretch
+  covers the whole song. The fit check's windows are chained 8th note by 8th note; of the two 8th-note phases, the
+  one on stronger onsets holds the beats. With a map, `downbeat_mod4` counts in `beats` (a bar starts at `beats[k]`
+  where `k % 4 == downbeat_mod4`, found again on the map from the kick unless given), `bar0` is that first bar
+  start and `phase_stats` are measured on the map; `bpm`, `beat`, `phi`, `line_start_hist` and `local_offsets` stay
+  those of the one-tempo grid. Between beats, times are linear; before the first and after the last beat, the
+  first and last beat lengths continue.
 
-A `grid.json` without `off_grid` was made by an older song2mv; `sync` fits it again.
+A `grid.json` without `off_grid`, or with stretches but without `beats`, was made by an older song2mv; `sync` fits
+it again.
 
 **`lyrics.json`** — `title`, `duration`, `grid`, `sections` (as in `mv.json`) and `lines`: each with `id`
 (`<section>-<nn>`, e.g. `v1-03`; a section that appears once keeps a bare id, `ch-01`), `section`, `section_name`,
 `kind` (`calm` / `mid` / `hot`), `text`, `start`, `end`, `source` (`asr` / `reprompt` / `manual` / `estimated`),
 `runs_used`, `coverage` and `words: [{w, t}]`. Word times never go backwards and `end` is after the line's last
-word. Lines may overlap: a backing vocal can start while another line is still sung.
+word; a line pinned in `manual` keeps its word times unsnapped. Lines may overlap: a backing vocal can start while
+another line is still sung.
 
 **`mv.json`** — the render template's input: `title`, `subtitle`, `audio` (file name), `audio_path` (absolute),
-`duration`, `grid` (`bpm`, `beat`, `phi`, `downbeat_mod4`, `bar0`, `off_grid` from `grid.json`), `sections` (`id`,
-`name`, `kind`, bar-aligned `start` / `end`), `lines` (`id`, `section`, `text`, `start`, `end`, `words`), `captions`,
-`theme`. Also what `check` reads.
+`duration`, `grid` (`bpm`, `beat`, `phi`, `downbeat_mod4`, `bar0`, `off_grid` and, when it is a list, `beats` from
+`grid.json`), `sections` (`id`, `name`, `kind`, bar-aligned `start` / `end`), `lines` (`id`, `section`, `text`,
+`start`, `end`, `words`), `captions`, `theme`. Also what `check` reads.
 
 **`music.json`** — `duration`, `loudness_db_per_half_second` (mean loudness per 0.5 s, 0 dB = the loudest moment),
 `boundaries` (`[{t, novelty}]`, likely section changes; empty for very short songs), `audio_sha256`.
