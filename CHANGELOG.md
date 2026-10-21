@@ -84,6 +84,17 @@ First release (0.1.0).
   `FlamesAlong` for an object's edge, a strike's `to` for a point). A recipe combines parts into a new asset in a few
   lines: `SleeplessStorm` (`src/kit/recipes.tsx`, tile 21) has someone lying awake in bed while a storm crosses the
   window, with a tear and the camera closing in. The gallery overview now holds 21 tiles.
+- A style pack for pixel art, `pixel` in the scene kit (`src/kit/styles/pixel.tsx`):
+  - `Canvas`, a picture of big square pixels drawn in code: boxes, discs, polygons, lines, dithered tones, a 5×7 font
+    for Latin letters and digits, and `stamp` to put a sprite on with a dark 1-px outline;
+  - `Pixels`, a canvas on the stage, `px` stage px to a pixel;
+  - `Pixelate`, which turns anything inside it into blocks on the same grid, outlined if asked: type in any font
+    (Korean from about 18 blocks to the em; lyrics stay crisp type) or any of the kit's drawings;
+  - a palette, and `step` for the held 8 steps a second of sprite animation.
+
+  Gallery tile 22 draws a corner shop at dusk with it and turns the kit's `Person` and `Car` into outlined pixels.
+  `Pixelate` samples the picture with one dot per block: where the stage is drawn smaller than full size (0.76 in the
+  9:16 band), pass that size as `scale`, or the picture can flicker or vanish as it moves.
 - Adding to the kit by pull request. `CONTRIBUTING.md` says how to add an asset or a style pack: original drawings,
   MIT, no media files, the kit's rules, a gallery tile and a still. The pull request template asks for them, and CI
   renders every gallery tile and keeps the PNGs for 14 days as the run's `kit-gallery` artifact. Once a video is

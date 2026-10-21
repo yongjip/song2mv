@@ -86,7 +86,7 @@ style and a different central image. For each, write:
   - flat illustration (the kit's own style);
   - paper cut-out with drop shadows (the kit has a style pack for it), or ink lines on paper, or chalk on a
     blackboard;
-  - pixel art, or a retro VHS / photocopy look;
+  - pixel art (the kit has a style pack for it too), or a retro VHS / photocopy look;
   - collage, or watercolour washes;
   - an isometric miniature;
   - kinetic typography only, or neon signs on brick.
@@ -113,12 +113,13 @@ Make each concept concrete enough to picture: render one rough still per concept
 1. **The concept decides.** Pick it first (above), then look in the kit for what fits it, not for a concept that fits
    the kit.
 2. **Reuse what fits the concept's style.** A style pack in `src/kit/styles/` puts any object in one art style
-   (`paper`: cut-out pieces with shadows and grain). The kit's own pieces are flat illustration: they fit a flat
-   concept and look out of place in any other.
+   (`paper`: cut-out pieces with shadows and grain; `pixel`: sprites on a canvas of big pixels). The kit's own pieces
+   are flat illustration: they fit a flat concept and look out of place in any other, unless a pack restyles them
+   (`pixel.Pixelate` turns any of them into pixels).
 3. **Change your copy.** The song's template copy (`--template`, step 4) is yours: change a kit piece or a pack there
    (a colour, a shape, another pose) instead of working around it. Upgrades never touch it.
 4. **Draw what is new** in the concept's style. With a pack, draw it from the pack's pieces. Without one, build the
-   style first (a pixel canvas, an ink line, a watercolour wash) and draw the song's objects on top. The kit's timing and
+   style first (an ink line, a watercolour wash) and draw the song's objects on top. The kit's timing and
    motion code works in any style:
    - `useSong()` and `grid`;
    - `Camera` and `cameraAt()`, `Drift`, `liveLine`, and the easing and `rng` helpers in `math`;
@@ -152,8 +153,8 @@ the defaults, they put the kit's neon night around every concept, and the title 
 Look at it before you design anything:
 
 ```bash
-cd <work>/video && npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 21 scenes
-npx remotion still src/index.ts Kit-Gallery scene.png --frame=4                        # one at full size (1–21)
+cd <work>/video && npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 22 scenes
+npx remotion still src/index.ts Kit-Gallery scene.png --frame=4                        # one at full size (1–22)
 ```
 
 `src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc
@@ -161,7 +162,7 @@ comment in `src/kit/` lists what each prop does. Scenes 1–12 are the kit's pie
 Scene 13 is the paper style pack. Scenes 14–20 are helpers that fit any style, their colours and shapes being props
 (most of those tiles draw the helper again, flat on paper), and a person in bed: one world filmed as shots (14), hits
 (15), flames (16), a storm (17), tears (18), lying awake in bed (19), falling cash (20). Scene 21 is a recipe that
-combines them.
+combines them. Scene 22 is the pixel style pack.
 
 | family | pieces | for |
 |---|---|---|
@@ -173,7 +174,7 @@ combines them.
 | effects | `Rain` (`strength`, splashes on `ground`), `Fireworks` (`bursts` at times), `Confetti`, `Hit` (`burst`, `sparkle` or `ring` at a point and time), `Flames` (a fire to a candle; `flat`, `wind`, `strength`) and `FlamesAlong` (an object's edge on fire), `Storm` (a storm deck of `Clouds` lit from inside by its `strikes`) and `Lightning` (`fork` or `zigzag` bolts; a strike's `to` aims it at a point), `strikeFlashes()` (for `Flash`), `Tears` (well up, run down a cheek, drip; `spot` dampens where they land), `Cash` (banknotes tumbling down) | weather, hits and the big moments |
 | text | `Slam`, `Quiet`, `BigLine`, `Captions` | lines in the scene |
 
-**Style packs** (`src/kit/styles/`, one namespace each: `import { paper } from "../kit"`). `paper`, for paper
+**Style packs** (`src/kit/styles/`, one namespace each: `import { paper, pixel } from "../kit"`). `paper`, for paper
 cut-out:
 - outlines cut by hand, each with its own seed: `paper.rect`, `paper.ellipse`, `paper.poly`, `paper.strip` (stems,
   cords, steam); join outlines to cut holes;
@@ -181,6 +182,17 @@ cut-out:
   shadow grows; a Cut inside a Cut is glued onto it;
 - `paper.Stack id`: the grain and the light for every piece inside it, one per scene;
 - `paper.colors` and `paper.matte(c)` for paper colours, `paper.step(T)` for the held steps of cut-out motion.
+
+`pixel`, for pixel art:
+- `new pixel.Canvas()`: a picture in big pixels, drawn with `box`, `disc`, `poly`, `line`, `dither` (a tone of a
+  colour) and `text` (a 5×7 font: Latin letters, digits, punctuation); positions round to whole pixels. Draw a sprite
+  on a canvas of its own and `stamp` it on with an outline colour;
+- `pixel.Pixels`: a canvas on the stage, `px` stage px to a pixel (at 8, 240 × 135 pixels fill it);
+- `pixel.Pixelate id`: anything inside turns into blocks on the same grid, `outline` rings them: big type in any font,
+  or any kit drawing. One colour per Pixelate gives clean blocks (the shadow in one, the face in another). Korean
+  type smears under about 18 blocks to the em, so lyrics stay crisp type. Where the stage is drawn smaller, pass its
+  size as `scale` (0.76 in the 9:16 band);
+- `pixel.colors`, and `pixel.step(T)` for the held 8 steps a second of sprite animation.
 
 Putting a scene together:
 
@@ -191,7 +203,8 @@ Putting a scene together:
   camera, so that a punch or a roll never moves it.
 - **Any style:** `Hit`, `Flames`, `Lightning`/`Storm`, `Tears` and `Cash` take their colours and shapes as props. For
   a flat or paper look pass the style's colours with `glow={0}` or `flat`; inside a `paper.Stack`, wrapping one in
-  `<paper.Cut d="" fill="none" lift={6}>` gives it the paper's shadow (gallery tiles 15–18 and 20).
+  `<paper.Cut d="" fill="none" lift={6}>` gives it the paper's shadow (gallery tiles 15–18 and 20). Inside
+  `<pixel.Pixelate outline={…}>`, any kit drawing turns into outlined pixels (`Person` and `Car` in scene 22).
 - **Recipes:** parts fit together by the same scale `s` (1 = a Person 300 px tall), the line things stand on and
   anchors (`personHand()`, `personEye()`, a strike's `to`, `FlamesAlong`), so a new asset can be a recipe of a few
   lines that combines them, like `SleeplessStorm` in `src/kit/recipes.tsx` (scene 21); recipes are welcome as pull
