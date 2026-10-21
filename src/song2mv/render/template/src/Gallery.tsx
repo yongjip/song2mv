@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
-  Camera, Car, City, Flames, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
+  Camera, Car, Cash, City, Flames, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, shade, SKINS, STRIDE,
 } from "./kit";
 import sample from "./sample-song.json";
@@ -257,7 +257,7 @@ const CameraShots: React.FC = () => {
           <div style={{ position: "absolute", width: 1920, height: 1080, transform: "scale(0.4979)", transformOrigin: "0 0" }}>
             <Camera T={t} shots={shots} hits={hits} punch={0.08}>{world(t, k)}</Camera>
           </div>
-          <Label x={14} y={12} text={`${k + 1}. ${label}`} size={22} />
+          <Label x={14} y={484} text={`${k + 1}. ${label}`} size={22} />
         </div>
       ))}
     </AbsoluteFill>
@@ -695,6 +695,33 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
       </Svg>
     ),
   },
+  {
+    name: "Cash: raining at night, and flat on paper",
+    draw: (T) => (
+      <>
+        <div style={{ position: "absolute", left: 0, top: 0, width: 1280, height: 1080, overflow: "hidden" }}>
+          <Svg>
+            <SkyGradient time="night" id="g20-sky" />
+            <City T={T} y={950} signs id="g20-city" />
+            <Street T={T} y={950} speed={0} id="g20-street" />
+            <Person x={560} y={985} s={1.2} pose="armsUp" T={T} look={{ outfit: "suit", accent: "#ffd36b" }} />
+            <Cash T={T} n={34} />
+          </Svg>
+        </div>
+        <Svg>
+          <defs><clipPath id="g20-panel"><rect x={1280} y={0} width={640} height={1080} /></clipPath></defs>
+          <paper.Stack id="g20">
+            <Cut d={rect(1280, -20, 660, 1120, 600)} fill={PC.navy} />
+            <g clipPath="url(#g20-panel)">
+              <Cut d="" fill="none" lift={6}>
+                <Cash T={paper.step(T)} n={36} size={120} colors={[PC.leaf, PC.green]} wind={0} seed={9} />
+              </Cut>
+            </g>
+          </paper.Stack>
+        </Svg>
+      </>
+    ),
+  },
 ];
 
 const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNode }> = ({ x, y, k, children }) => (
@@ -703,8 +730,9 @@ const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNod
   </div>
 );
 
-/** The overview's grid: 4 × 4 tiles, 5 × 5 once there are more than 16 */
+/** The overview's grid: 4 × 4 tiles, 5 across once there are more than 16, the rows centred on the frame */
 const COLS = TILES.length > 16 ? 5 : 4;
+const TOP = (1080 - Math.ceil(TILES.length / COLS) * (1080 / COLS)) / 2;
 
 export const KitGallery: React.FC<{ T: number }> = ({ T }) => {
   const frame = useCurrentFrame();
@@ -717,7 +745,7 @@ export const KitGallery: React.FC<{ T: number }> = ({ T }) => {
           <Tile x={0} y={0} k={1}>{one.draw(T)}</Tile>
         ) : (
           TILES.map((t, i) => {
-            const x = (i % COLS) * (1920 / COLS), y = Math.floor(i / COLS) * (1080 / COLS);
+            const x = (i % COLS) * (1920 / COLS), y = TOP + Math.floor(i / COLS) * (1080 / COLS);
             return (
               <React.Fragment key={i}>
                 <Tile x={x} y={y} k={1 / COLS}>{t.draw(T)}</Tile>
