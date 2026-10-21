@@ -117,6 +117,10 @@ First release (0.1.0).
   labelled with its time: props `times` and `cols` (frames per row), and `vertical` for the 9:16 frame (the
   `VerticalScene`, or `Scene` in the short's band). Many moments cost one render; each `render --still` bundles again
   (about 5 s), so both demo runs built their own contact sheet to review a video. The skill's step 4 has the command.
+  `crop: [x, y, w, h]` shows only that region of each frame, in the frame's pixels, scaled to the tile width (`cols`
+  sets the zoom; the labels show it). Before the first full render the skill now asks for one crop sheet per character
+  and per big-type moment: a whole frame on a sheet hides rough lines, seams, gaps and clipped text, and in the two demo
+  runs the owner found three of them after delivery. Without `crop` the sheet is unchanged.
 - A style pack for paper cut-out, `paper` in the scene kit (`src/kit/styles/paper.tsx`). The kit's people, places
   and objects are flat illustration; a style pack is a few drawing pieces that put any object in another art style:
   - outlines cut by hand: `rect`, `ellipse`, `poly` and `strip`, seeded so that a cut stays the same from frame to
