@@ -27,7 +27,9 @@ an error.
 
 `check` results: `value` is the measured number and `goal` is `{"min": x}` or `{"max": x}`. Per-line checks
 (`motion.min`, `motion.max`, `coverage.min`) count the failing lines in `value` (goal `{"max": 0}`) and list them in
-`lines` as `{id, value, goal}`. A check in `skipped` neither passed nor failed and is not counted in `total`.
+`lines` as `{id, value, goal}`. `variation.repeats` lists every repeated line pair in `pairs` as `[pair, correlation]`,
+worst first; its `value` is their mean, or the worst pair with a line in a hot section when that is higher. A check in
+`skipped` neither passed nor failed and is not counted in `total`.
 
 `sync` and `beats` add one entry to `warnings` per `off_grid` stretch (see `grid.json`), saying what was found and
 where, for example `the tempo changes near 0:30 (100 → 120 BPM): the beat grid fits only before that; …`, or a

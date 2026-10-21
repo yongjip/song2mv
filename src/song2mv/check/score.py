@@ -214,11 +214,18 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
                     f2 -= f2.mean()
                     cs.append(float((f1 * f2).sum() / (np.sqrt((f1 ** 2).sum() * (f2 ** 2).sum()) + 1e-9)))
                 if cs:
-                    pairs.append((f"{r1['id']}~{r2['id']}", round(float(np.mean(cs)), 2)))
+                    pairs.append((f"{r1['id']}~{r2['id']}", float(np.mean(cs)), "hot" in (r1["kind"], r2["kind"])))
     if pairs:
-        m = float(np.mean([c for _, c in pairs]))
-        check("variation.repeats", m <= gv["repeat_corr_max_mean"], round(m, 2), {"max": gv["repeat_corr_max_mean"]},
-              f"mean correlation {m:.2f} {pairs[:8]} (goal ≤ {gv['repeat_corr_max_mean']})", pairs=pairs)
+        # a verse may come back to the same place, but no chorus line may look like its first copy
+        goal = gv["repeat_corr_max_mean"]
+        pairs.sort(key=lambda p: -p[1])
+        m = float(np.mean([c for _, c, _ in pairs]))
+        hot = [(name, c) for name, c, is_hot in pairs if is_hot]
+        worst = max(m, hot[0][1]) if hot else m
+        chorus = f", worst chorus pair {hot[0][0]} {hot[0][1]:.2f}" if hot else ""
+        shown = [(name, round(c, 2)) for name, c, _ in pairs]
+        check("variation.repeats", worst <= goal, round(worst, 2), {"max": goal},
+              f"mean correlation {m:.2f}{chorus} (goal ≤ {goal}); worst first {shown[:8]}", pairs=shown)
     else:
         skipped["variation.repeats"] = "no repeated section (ch1 and ch2 …) has lines in both copies in this stretch"
 

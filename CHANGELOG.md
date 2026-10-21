@@ -51,6 +51,12 @@ First release (0.1.0).
     `fontSize={30}` on SVG text.
   - **`--json` prints only the JSON.** The table went to stderr, so `> out.json 2>&1` was not JSON. Now nothing
     else is printed, ffmpeg's messages included.
+- `check` after the second end-to-end run: **`variation.repeats` judges every chorus line pair on its own.** It
+  passed on the mean over all repeated line pairs, and its message showed the first 8 pairs in song order, all from
+  the verses: two hook pairs at 0.61 and 0.63 hid behind a mean of 0.28 (goal ≤ 0.55). A pair with a line in a hot
+  section now fails when it is over the goal; other repeats are still judged by the mean, and `value` is the mean or
+  the worst chorus pair, whichever is higher. The message and `pairs` list the worst pairs first. Both runs' final
+  videos still pass (worst chorus pairs 0.30 and 0.48).
 - `song2mv render` (experimental): Remotion lyric-video template, 16:9 and 9:16, `--hold` for hook cuts,
   `--template DIR` for your own scenes. `outputs` names exactly the files written.
 - `render --template DIR` shares the cached Remotion install: while DIR's `package-lock.json` matches the bundled
