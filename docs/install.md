@@ -39,7 +39,7 @@ After the first PyPI release these become `uv tool install 'song2mv[sync]'`, `pi
 | librosa, scipy, numba, llvmlite (`beats`) | ~300 MB | install |
 | faster-whisper, ctranslate2, onnxruntime, PyAV (`sync`) | ~130 MB | install |
 | whisper model `small` | ~460 MB | first `sync` (Hugging Face cache); `--model base` is ~3× smaller, less accurate |
-| Remotion + Chrome (`render`) | ~570 MB | first `render` (`~/.cache/song2mv/` or your `--template` folder) |
+| Remotion + Chrome (`render`) | ~570 MB | first `render`, in `~/.cache/song2mv/`; a `--template` folder links to it (it installs its own only when its `package-lock.json` differs) |
 
 Set `SONG2MV_CACHE` to move the render cache.
 

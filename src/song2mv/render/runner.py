@@ -1,12 +1,14 @@
 """Render an mv.json with the bundled Remotion template (experimental).
 
 The template ships inside the package (render/template). It needs Node 18+ and npm; the first render installs
-Remotion and a headless Chrome (about 570 MB) into the template folder.
+Remotion and a headless Chrome (about 570 MB) into the shared copy of the template.
 
-- Without --template: a shared copy in the cache (~/.cache/song2mv/template-<version>, or $SONG2MV_CACHE) renders
+- Without --template: the shared copy in the cache (~/.cache/song2mv/template-<version>, or $SONG2MV_CACHE) renders
   the plain lyric video. It is refreshed from the package on every render; do not edit it.
 - With --template DIR: DIR becomes your own copy of the template (copied there the first time). Write your scenes
-  in DIR/src/scenes and render from it; the copy is yours, upgrades never touch it.
+  in DIR/src/scenes and render from it; the copy is yours, upgrades never touch it. Its node_modules is a link to
+  the shared copy's install while their package-lock.json files match; a copy whose lock file differs (made by
+  another version, packages added) installs its own, and one that already has its own node_modules keeps it.
 
 Remotion is not MIT: free for individuals and companies with up to 3 employees, a company license otherwise
 (https://www.remotion.dev/license).
@@ -28,6 +30,7 @@ from ..errors import Song2mvError
 
 BUNDLED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "template")
 INSTALLED = ".song2mv-installed"  # written into node_modules once npm finished
+NOT_COPIED = shutil.ignore_patterns("node_modules", "out", "__pycache__")
 RENDERED = re.compile(r"Rendered (\d+)/(\d+)")
 PROGRESS = re.compile(r"(Bundling \d+%|Getting composition|Encoded \d+/\d+|Stitching|Downloading .*\d+%)")
 
@@ -52,31 +55,54 @@ def _lock_hash(target: str) -> str:
     return hashlib.sha256(open(lock, "rb").read()).hexdigest()
 
 
+def _installed(target: str) -> bool:
+    """node_modules counts as installed only after npm finished: an interrupted install has no marker and is redone."""
+    marker = os.path.join(target, "node_modules", INSTALLED)
+    return os.path.exists(marker) and open(marker, encoding="utf-8").read().strip() == _lock_hash(target)
+
+
+def _install(target: str) -> None:
+    if _installed(target):
+        return
+    npm = _require("npm")
+    print(f"[render] installing Remotion into {target} (first run only, ~570 MB) …")
+    cmd = [npm, "ci"] if os.path.exists(os.path.join(target, "package-lock.json")) else [npm, "install"]
+    r = subprocess.run(cmd + ["--no-audit", "--no-fund"], cwd=target, stdout=sys.stderr)
+    if r.returncode != 0:
+        raise Song2mvError("npm install failed — see the output above", hint="check your network and Node version, then run again")
+    open(os.path.join(target, "node_modules", INSTALLED), "w", encoding="utf-8").write(_lock_hash(target) + "\n")
+
+
+def _shared_template() -> str:
+    """The cache's copy, refreshed from the package and installed: it always matches this song2mv (not for editing)."""
+    target = os.path.join(cache_root(), f"template-{__version__}")
+    shutil.copytree(BUNDLED, target, dirs_exist_ok=True, ignore=NOT_COPIED)
+    _install(target)
+    return target
+
+
 def prepare_template(template: str | None) -> str:
     """Return a template folder that has node_modules installed, copying the bundled template if needed."""
-    ignore = shutil.ignore_patterns("node_modules", "out", "__pycache__")
-    if template:
-        target = os.path.abspath(template)
-        if not os.path.exists(os.path.join(target, "render.mjs")):
-            if os.path.exists(target) and os.listdir(target):
-                raise Song2mvError(f"{target} exists and is not a song2mv template (no render.mjs)",
-                                   hint="pick an empty or new folder for --template")
-            shutil.copytree(BUNDLED, target, dirs_exist_ok=True, ignore=ignore)
-            print(f"[render] template copied to {target} — write your scenes in src/scenes/")
-    else:  # the shared copy always matches the installed song2mv (it is not for editing)
-        target = os.path.join(cache_root(), f"template-{__version__}")
-        shutil.copytree(BUNDLED, target, dirs_exist_ok=True, ignore=ignore)
-    # node_modules counts as installed only after npm finished: an interrupted install has no marker and is redone
-    marker = os.path.join(target, "node_modules", INSTALLED)
-    want = _lock_hash(target)
-    if not os.path.exists(marker) or open(marker, encoding="utf-8").read().strip() != want:
-        npm = _require("npm")
-        print(f"[render] installing Remotion into {target} (first run only, ~570 MB) …")
-        cmd = [npm, "ci"] if os.path.exists(os.path.join(target, "package-lock.json")) else [npm, "install"]
-        r = subprocess.run(cmd + ["--no-audit", "--no-fund"], cwd=target, stdout=sys.stderr)
-        if r.returncode != 0:
-            raise Song2mvError("npm install failed — see the output above", hint="check your network and Node version, then run again")
-        open(marker, "w", encoding="utf-8").write(want + "\n")
+    if not template:
+        return _shared_template()
+    target = os.path.abspath(template)
+    if not os.path.exists(os.path.join(target, "render.mjs")):
+        if os.path.exists(target) and os.listdir(target):
+            raise Song2mvError(f"{target} exists and is not a song2mv template (no render.mjs)",
+                               hint="pick an empty or new folder for --template")
+        shutil.copytree(BUNDLED, target, dirs_exist_ok=True, ignore=NOT_COPIED)
+        print(f"[render] template copied to {target} — write your scenes in src/scenes/")
+    modules = os.path.join(target, "node_modules")
+    if os.path.islink(modules) and not _installed(target):  # the shared install is gone or no longer matches
+        os.unlink(modules)
+    if not os.path.lexists(modules) and _lock_hash(target) == _lock_hash(BUNDLED):
+        shared = _shared_template()
+        try:
+            os.symlink(os.path.join(shared, "node_modules"), modules, target_is_directory=True)
+            print(f"[render] {modules} links to the Remotion install in {shared}")
+        except OSError:  # a file system without symlinks: the copy installs its own
+            pass
+    _install(target)
     return target
 
 

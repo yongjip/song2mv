@@ -25,6 +25,12 @@ First release (0.1.0).
   stretch are listed under `skipped`. A goals file only needs the values it changes.
 - `song2mv render` (experimental): Remotion lyric-video template, 16:9 and 9:16, `--hold` for hook cuts,
   `--template DIR` for your own scenes. `outputs` names exactly the files written.
+- `render --template DIR` shares the cached Remotion install: while DIR's `package-lock.json` matches the bundled
+  one, `DIR/node_modules` is a link to the install in `~/.cache/song2mv/template-<version>/`. Each song's copy used to
+  run its own `npm ci` and download its own headless Chrome (455 MB, plus a 130–180 MB bundle cache); a new copy now
+  takes under 1 MB and renders right away. Remotion keeps one bundle cache there, so switching between copies costs
+  about a second of bundling. A copy whose lock file differs (made by another version, or with packages added)
+  installs its own, as before, and a copy that already has its own `node_modules` keeps it (delete it to share).
 - The template's lyrics are easier to read.
   - **Unsung words:** they are drawn at 50 % white with a tight dark shadow. At 32 % they had 2.7:1 contrast against
     the background, below WCAG's 3:1 for large text; now they have 5.3:1.
