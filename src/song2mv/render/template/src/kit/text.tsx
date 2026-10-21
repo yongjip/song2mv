@@ -86,7 +86,7 @@ export function liveLine(lines: Line[], T: number, lead = 0.12, all: Line[] = li
 
 /** Rough rendered width in em: Hangul / CJK full width, Latin about half, spaces a third */
 const emWidth = (s: string) =>
-  [...s].reduce((a, ch) => a + (/\s/.test(ch) ? 0.3 : /[ᄀ-ᇿ⺀-鿿가-힯＀-￯]/.test(ch) ? 1 : 0.62), 0);
+  [...s].reduce((a, ch) => a + (/\s/.test(ch) ? 0.3 : /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch) ? 1 : 0.62), 0);
 
 /**
  * The whole current line, huge, in the middle of the stage — pops once when the line starts, then each

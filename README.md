@@ -277,8 +277,3 @@ This repository contains no songs and no lyrics. Before you publish a video, mak
 
 MIT — see [LICENSE](https://github.com/yongjip/song2mv/blob/main/LICENSE). song2mv is developed with the help of coding agents (Claude Code, Codex).
 
----
-
-**한국어 요약** — 노래 파일과 가사를 넣으면 박자에 맞춘 가사 타이밍(LRC·SRT·단어별 JSON)을 만들고, 코드로 그린
-가사 영상·뮤직비디오까지 이어 주는 도구입니다. Claude Code·Codex 같은 코딩 에이전트가 쓰기 좋게 만들었고, 필요한
-명령만 골라 쓸 수 있습니다. 지금은 알파(0.x)라 형식이 바뀔 수 있습니다.

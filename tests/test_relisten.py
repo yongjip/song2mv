@@ -35,12 +35,10 @@ def word(t, s, e, p):
 
 
 def test_a_shout_heard_twice_skips_the_hearing_stretched_over_music(tmp_path, monkeypatch):
-    # the end of 천만닉스: the prompted model stretched "천만닉스!" over 5.6 s of music after the last sung line and
-    # heard the closing shout at 283.1 s; taking the first hearing put the line 16 s early
-    lines = [{"id": "ou-04", "text": "다시 부를 때까지", "words": ["다시", "부를", "때까지"], "wt": [263.3, 264.1, 264.8]},
-             {"id": "ou-05", "text": "천만닉스!", "words": ["천만닉스!"], "wt": [None]}]
-    gap([word("그대까지", 264.7, 265.46, 0.65), word("저", 265.46, 266.24, 0.12),
-         word("천만닉스!", 266.24, 271.88, 0.53), word("천만닉스!", 283.14, 284.54, 0.97)], monkeypatch)
+    lines = [{"id": "ou-04", "text": "sing it again", "words": ["sing", "it", "again"], "wt": [263.3, 264.1, 264.8]},
+             {"id": "ou-05", "text": "Bingo!", "words": ["Bingo!"], "wt": [None]}]
+    gap([word("you", 264.7, 265.46, 0.65), word("there", 265.46, 266.24, 0.12),
+         word("Bingo!", 266.24, 271.88, 0.53), word("Bingo!", 283.14, 284.54, 0.97)], monkeypatch)
     lib.WARNINGS.clear()
     fill_gaps(lines, CFG, 289.56, str(tmp_path / "reprompt.json"))
     assert lines[1]["source"] == "reprompt" and 283.1 <= lines[1]["wt"][0] < 284.6
@@ -49,11 +47,11 @@ def test_a_shout_heard_twice_skips_the_hearing_stretched_over_music(tmp_path, mo
 
 
 def test_two_lines_with_the_same_text_take_one_hearing_each(tmp_path, monkeypatch):
-    lines = [{"id": "br-08", "text": "꿈 하나", "words": ["꿈", "하나"], "wt": [246.8, 247.6]},
-             {"id": "ou-01", "text": "천만닉스…", "words": ["천만닉스…"], "wt": [None]},
-             {"id": "ou-02", "text": "천만닉스…", "words": ["천만닉스…"], "wt": [None]},
-             {"id": "ou-03", "text": "먼 훗날", "words": ["먼", "훗날"], "wt": [257.1, 257.5]}]
-    gap([word("천만닉스…", 253.72, 255.12, 0.6), word("천만닉스…", 255.12, 256.51, 0.9)], monkeypatch)
+    lines = [{"id": "br-08", "text": "one dream", "words": ["one", "dream"], "wt": [246.8, 247.6]},
+             {"id": "ou-01", "text": "Bingo…", "words": ["Bingo…"], "wt": [None]},
+             {"id": "ou-02", "text": "Bingo…", "words": ["Bingo…"], "wt": [None]},
+             {"id": "ou-03", "text": "far away", "words": ["far", "away"], "wt": [257.1, 257.5]}]
+    gap([word("Bingo…", 253.72, 255.12, 0.6), word("Bingo…", 255.12, 256.51, 0.9)], monkeypatch)
     lib.WARNINGS.clear()
     fill_gaps(lines, CFG, 289.56, str(tmp_path / "reprompt.json"))
     assert 253.7 <= lines[1]["wt"][0] < 255.1 <= lines[2]["wt"][0] < 256.6  # in lyric order, one hearing each
@@ -61,11 +59,9 @@ def test_two_lines_with_the_same_text_take_one_hearing_each(tmp_path, monkeypatc
 
 
 def test_hearings_of_a_line_written_elsewhere_do_not_move_the_line(tmp_path, monkeypatch):
-    # 천만닉스 post-chorus: four "HEY!" in po-02's gap; the last two belong to po-04, a "HEY! HEY!" written after po-03
-    # but sung before it, and whisper timed them at zero length — po-02 keeps the first two
-    lines = [{"id": "po-01", "text": "가자 가자", "words": ["가자", "가자"], "wt": [124.1, 124.6]},
+    lines = [{"id": "po-01", "text": "go go", "words": ["go", "go"], "wt": [124.1, 124.6]},
              {"id": "po-02", "text": "HEY! HEY!", "words": ["HEY!", "HEY!"], "wt": [None, None]},
-             {"id": "po-03", "text": "올라 올라", "words": ["올라", "올라"], "wt": [128.8, 129.1]}]
+             {"id": "po-03", "text": "up up", "words": ["up", "up"], "wt": [128.8, 129.1]}]
     gap([word("DETERMINESS", 124.06, 125.64, 0.1), word("HEY!", 125.64, 126.32, 0.1), word("HEY!", 126.7, 126.96, 0.5),
          word("HEY!", 127.76, 127.76, 0.9), word("HEY!", 128.38, 128.38, 0.9)], monkeypatch)
     lib.WARNINGS.clear()

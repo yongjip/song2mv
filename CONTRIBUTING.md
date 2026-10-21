@@ -31,6 +31,8 @@ Tests build synthetic audio and video. Do not add songs, lyrics, renders or othe
 - Add a `CHANGELOG.md` entry under `## Unreleased`. Do not bump the version.
 - A change to a JSON output follows `docs/contract.md` (new fields are fine; renames bump `schema_version`).
 - New commands, flags, config keys or output files explain the workflow they serve (`docs/product-scope.md`).
+- English only: code, docs, test data and commit messages.
+- Few comments: let names and types explain the code, and comment only what they cannot say.
 - Coding agents are welcome to help; `AGENTS.md` has the rules they should follow here.
 
 ## Adding an asset or a style pack
@@ -56,7 +58,7 @@ A song's own characters and scenes stay in that song's copy of the template; con
   - a pure function of song time `T`, never of the frame number or state;
   - an `id` prop for anything it puts in SVG `<defs>`, so two copies on one stage don't clash;
   - text pops once and then holds still: no wobble, bob or beat-shake on letters;
-  - laid out on the 1920×1080 stage, with a doc comment on each component and its props.
+  - laid out on the 1920×1080 stage, with props named so that they need no comment.
 - **A gallery tile and a still.** Add a tile that uses it to `src/Gallery.tsx` (a style pack's tile draws a few
   everyday objects in the style). In the template folder, run `npx tsc --noEmit`, render the tile with
   `npx remotion still src/index.ts Kit-Gallery out/tile.png --frame=N` and attach the PNG to the pull request (`out/`

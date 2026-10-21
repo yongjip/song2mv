@@ -67,7 +67,7 @@ function textWidth(s: string, font: string): number {
   if (measurer && measurer.font.includes(`${FONT}px`)) {
     w = measurer.measureText(s).width;
   } else {
-    w = FONT * [...s].reduce((a, ch) => a + (/\s/.test(ch) ? 0.28 : /[ᄀ-ᇿ⺀-鿿가-힯＀-￯]/.test(ch) ? 0.95 : 0.56), 0);
+    w = FONT * [...s].reduce((a, ch) => a + (/\s/.test(ch) ? 0.28 : /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch) ? 0.95 : 0.56), 0);
   }
   widths.set(key, w);
   return w;

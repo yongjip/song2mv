@@ -24,7 +24,7 @@ A line can be heard more often than the lyric sheet has it in the gap: a singer 
 elsewhere in the sheet is sung here, or the model smears the prompt over a stretch of music. Then the earliest
 hearing with believable word timing wins, and the others are reported in the warnings. Whisper's word timing fails
 in two visible ways: a word stretched over seconds of music (its start is not where it is sung) and a word of zero
-length. On the test song the closing "천만닉스!" was heard at 266.2 s, stretched over 5.6 s, and at 283.1 s; taking
+length. On the test song the closing shout was heard at 266.2 s, stretched over 5.6 s, and at 283.1 s; taking
 the first put the line 16 s early. Whisper's confidence is no guide here: in the same song the clearest "HEY! HEY!"
 in one gap belonged to another line that is written later but sung there.
 

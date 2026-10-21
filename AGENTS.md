@@ -50,3 +50,6 @@ music video out. It is a command-line tool built for coding agents. Five command
 5. Before committing: `ruff check src tests` and `pytest -q` in the activated `.venv` (or `uv run --no-sync …`).
    Tests build synthetic audio and video; never add songs, lyrics, renders or other media to the repository.
 6. Pin a dependency upper bound only with a comment that says what broke (see `av<19` in pyproject.toml).
+7. Write everything in English: code, docs, test data, messages and commits. Write a non-Latin character range in
+   a regex as escapes (`\uac00-\ud7af`).
+8. Add a comment only when the code cannot say it; prefer clear names and types.
