@@ -448,6 +448,14 @@ function tailPath(rx: number, ry: number, [tx, ty]: Pt): string {
   return `M ${f2(ax)} ${f2(ay)} Q ${f2(mx)} ${f2(my)} ${f2(tx)} ${f2(ty)} Q ${f2(mx * 0.86)} ${f2(my * 0.86)} ${f2(bx)} ${f2(by)} Z`;
 }
 
+/** a shout's tail: a straight wedge from inside the burst, `half` wide on each side there, so it shows between spikes */
+function wedgePath(rx: number, ry: number, [tx, ty]: Pt, half: number): string {
+  const a = Math.atan2(ty / ry, tx / rx);
+  const da = half / Math.hypot(rx * Math.sin(a), ry * Math.cos(a));
+  const at = (d: number) => `${f2(0.9 * rx * Math.cos(a + d))} ${f2(0.9 * ry * Math.sin(a + d))}`;
+  return `M ${at(-da)} L ${f2(tx)} ${f2(ty)} L ${at(da)} Z`;
+}
+
 export const Balloon: React.FC<Said & { tail?: Pt; kind?: "speech" | "shout" | "thought"; seed?: number }> = ({
   T, line, slice, x, y, tail, kind = "speech", width = 520, size = 46, until, fill = colors.white, color, ghost = 0.28,
   font = fonts.lettering, caps = true, seed = 1,
@@ -476,7 +484,7 @@ export const Balloon: React.FC<Said & { tail?: Pt; kind?: "speech" | "shout" | "
     }
   } else {
     shapes.push(kind === "shout" ? <path key="body" d={spiky(rx, ry, size * 0.55, seed)} /> : <ellipse key="body" rx={rx} ry={ry} />);
-    if (to) shapes.push(<path key="tail" d={tailPath(rx, ry, to)} />);
+    if (to) shapes.push(<path key="tail" d={kind === "shout" ? wedgePath(rx, ry, to, size * 0.45) : tailPath(rx, ry, to)} />);
   }
   const s = 0.85 + 0.15 * outBack((T - t0) / 0.16);
   return (

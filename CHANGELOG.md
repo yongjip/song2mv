@@ -188,9 +188,12 @@ First release (0.1.0).
   - Contour and inner lines grow with the camera's zoom like the pack's other lines (by its square root), so the
     contour stays twice the inner line in every panel.
   - `Flat` and `Dots` draw only in an Ink's colour layer, so a Ben-Day pattern's id is no longer defined three times.
+  - A shout balloon's tail is a straight wedge from inside the burst, so a short tail shows between the spikes
+    instead of as a thin sliver.
 
   Gallery tile 23 redraws its person and cat with them: one outline round each figure, an elbow whose crease starts
-  on the arm's outline, fingers round the mug, tapered features, and puffed fur and hair drawn as tufts.
+  on the arm's outline, fingers round the mug, tapered features, Ben-Day dots on all skin, and puffed fur and hair
+  drawn as tufts, the fur's dips rounded so the outline keeps its weight in them.
 - Adding to the kit by pull request. `CONTRIBUTING.md` says how to add an asset or a style pack: original drawings,
   MIT, no media files, the kit's rules, a gallery tile and a still. The pull request template asks for them, and CI
   renders every gallery tile and keeps the PNGs for 14 days as the run's `kit-gallery` artifact. Once a video is

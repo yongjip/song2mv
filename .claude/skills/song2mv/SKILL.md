@@ -229,7 +229,9 @@ prints colour off register under ink lines (one Ink per layer, back to front), w
 Draw characters and small props in `comic.Ink contour`: one heavy outline round all of it, colour in register, and
 inside only the lines you place: `comic.Brush` (tapered: features, folds, an arm's edge over the body), `comic.Edge`
 (eyes, a mouth) and `fill="none"` paths. `comic.brushPath` makes limbs and tails to fill. A form in front of another
-(a forearm over the body) goes in a later contour Ink; check the joints at 2×.
+(a forearm over the body) goes in a later contour Ink; check the joints at 2×. The contour fills narrow gaps and sharp
+notches: give a small form (an ear) a lighter `line`, draw a hole (a mug handle's) as a filled shape in an `Edge`,
+round the dips between tufts of fur, and keep balloons, tails and trailing bubbles clear of the figure.
 
 Putting a scene together:
 
