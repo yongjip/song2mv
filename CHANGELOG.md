@@ -197,4 +197,12 @@ First release (0.1.0).
     the tag was (the sheet has a couplet once that was sung twice, and the missing copy's words were pulled into the
     lines around it, one of them on screen for 8 s, with `check_by_ear` empty). The runs also show chants and changed
     lines that neither has.
-  - **A concept names its typeface** along with its palette and texture.
+  - **A concept names its typeface** along with its palette and texture: an OFL font file imported from the template
+    copy's `src/`, not a system font, which differs between machines. `song2mv render` ignores the copy's `public/`:
+    a font there shows in `npx remotion still` but falls back to sans-serif in every `song2mv render`.
+  - **Making the song too?** Name a BPM in the style prompt: the song whose prompt named 92 BPM kept it, the one
+    whose prompt named no tempo drifted.
+  - **`--hold` is checked with `--still` at from + hold** before the short is rendered. The example's 0.17 s, from
+    another song, would have frozen the second song's lettering mid-pop; the command now leaves the value open.
+  - **Text is at least 36 px on screen,** and `check` reads only the size literals in the source, not what a camera
+    or a `scale()` makes of them.

@@ -24,7 +24,8 @@ song's rights, or a lyric only the user knows.
 - **Setup**, once: `uv tool install --python 3.13 'song2mv[sync] @ git+https://github.com/yongjip/song2mv'` (not on
   PyPI yet; faster-whisper has no Python 3.15 wheels). Needs ffmpeg; `render` needs Node 18+ and installs Remotion
   (~570 MB) on its first run.
-- **What they want**: full 16:9 video, 9:16 short(s), LRC/SRT only, or all. Title text. Mood or references.
+- **What they want**: full 16:9 video, 9:16 short(s), LRC/SRT only, or all. Title text. Mood or references. If you
+  make the song too (Suno and the like), name a BPM in the style prompt: it tends to give a steady tempo.
 
 ## 1. Timing
 
@@ -101,7 +102,8 @@ different central image. For each, write:
   - collage, or watercolour washes;
   - an isometric miniature;
   - kinetic typography only, or neon signs on brick.
-- **Palette, texture and typeface.**
+- **Palette, texture and typeface.** The typeface is part of the look: rather than a system font, use an OFL font
+  file imported from `src/` (`song2mv render` ignores `public/`), and check stills on the machine that renders.
 - **Main character or motif,** and how it changes over the song.
 - **First chorus:** how it hits, the song's biggest moment.
 
@@ -250,7 +252,8 @@ Rules that held up:
    lights, particles, shapes, the camera (`Camera`, `Drift`) — not text.
 3. **Every line a scene draws itself** goes into `linesDrawnByScene`, so the bottom captions don't double it.
 4. **Lay out on the 1920×1080 stage.** In 9:16 the stage is a band; read `VerticalCtx` to stack side-by-side
-   layouts, or export a `VerticalScene` that draws the whole 9:16 frame (step 6). Keep text ≥ 36 px.
+   layouts, or export a `VerticalScene` that draws the whole 9:16 frame (step 6). Keep text ≥ 36 px on screen:
+   `check` reads only the size literals in the source, not what a camera or a `scale()` makes of them.
 5. Pull timing from data: `useSong().lineById["ch1-01"].words[0].t`, `grid.bar(k)`, `grid.pulse(T)`.
 
 Typecheck (`cd <work>/video && npx tsc --noEmit`), then look at stills of the new section before rendering video.
@@ -276,10 +279,10 @@ Their answer outranks the check.
 ## 6. Shorts (9:16)
 
 Pick 10–35 s around the hook (usually the first chorus). The first two seconds decide whether people stay: start
-on the hit and use `--hold` so the first frame already shows the payoff.
+on the hit and use `--hold` so the first frame shows the payoff fully drawn; check it with `--still` at from + hold.
 
 ```bash
-song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --aspect 9x16 --hold 0.17
+song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --aspect 9x16 --hold <s>
 ```
 
 By default the short shows `Scene` shrunk into a band, with the template's sky above and below it and the title on
