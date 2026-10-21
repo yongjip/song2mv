@@ -22,12 +22,14 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import statistics
 import time
+from collections.abc import Sequence
 
 from ..contract import SCHEMA_VERSION, stamp
 from ..errors import Song2mvError
 from . import lib
-from .lib import asr_key, audio_duration, file_sha256, in_order, load_config, parse_lyrics, warn, write_json
+from .lib import asr_key, audio_duration, file_sha256, in_order, load_config, lyric_lines, parse_lyrics, warn, write_json
 
 STEPS = ["lyrics", "asr", "align", "grid", "build"]
 OUTPUTS = ["grid.json", "lyrics.json", "mv.json", "song.lrc", "song.words.lrc", "song.srt", "music.json"]
@@ -117,18 +119,50 @@ def update_config(path: str, lyrics: str | None = None, language: str | None = N
     return changed
 
 
-def check_by_ear(lines: list[dict], n_runs: int, guessed: set[str] | frozenset[str] = frozenset()) -> list[str]:
+GAP = 3.0  # seconds between two neighbouring words of a line
+SPAN = 2.5  # a line lasting this many times its word count × the song's median time from one word to the next
+
+
+def stretched(lines: list[dict], off: Sequence[dict] = ()) -> dict[str, str]:
+    """Lines whose words are spread over far more time than such a line is sung in, with the reason: two neighbouring
+    words more than GAP s apart, the line lasting (first word to last) more than SPAN × its word count × the song's
+    median time from one word to the next in a line, or words the runs heard off the lyric sheet (`off`,
+    align.off_sheet) between its first word and its last. Such a line was usually matched in two places: its words are
+    split between two copies of a repeat the sheet has once."""
+    steps = [b["t"] - a["t"] for r in lines for a, b in zip(r.get("words") or [], (r.get("words") or [])[1:]) if b["t"] > a["t"]]
+    step = statistics.median(steps) if steps else 0.0
+    out = {}
+    for r in lines:
+        w = r.get("words") or []
+        if len(w) < 2:
+            continue
+        k = max(range(len(w) - 1), key=lambda k: w[k + 1]["t"] - w[k]["t"])
+        inside = [x for x in off if w[0]["t"] < x["from"] and x["to"] < w[-1]["t"]]
+        if w[k + 1]["t"] - w[k]["t"] > GAP:
+            out[r["id"]] = f'{w[k + 1]["t"] - w[k]["t"]:.1f} s between "{w[k]["w"]}" and "{w[k + 1]["w"]}"'
+        elif step and w[-1]["t"] - w[0]["t"] > SPAN * len(w) * step:
+            out[r["id"]] = f"{len(w)} words over {w[-1]['t'] - w[0]['t']:.1f} s"
+        elif inside:
+            out[r["id"]] = f"words heard off the lyric sheet at {inside[0]['from']:.1f}–{inside[0]['to']:.1f} s lie between its words"
+    return out
+
+
+def check_by_ear(lines: list[dict], n_runs: int, guessed: set[str] | frozenset[str] = frozenset(),
+                 off: Sequence[dict] = ()) -> list[str]:
     """Line ids most likely to be wrong: re-heard or estimated lines, lines only one of several whisper runs placed —
     one run alone can put a line seconds off (12.7 s once on the test song) — lines out of the lyric sheet's order
-    (lib.in_order), where a repeated line was placed on another copy of its words, and the whisper lines in `guessed`,
-    with a word no run timed between words far apart (align.holes). Lines pinned in "manual" are not listed."""
+    (lib.in_order), where a repeated line was placed on another copy of its words, the whisper lines in `guessed`,
+    with a word no run timed between words far apart (align.holes), and whisper lines spread over far more time than
+    they are sung in (stretched, with the stretches heard off the sheet in `off`). Lines pinned in "manual" are not
+    listed."""
     def one_run(r):
         return n_runs > 1 and r.get("source") == "asr" and len(r.get("runs_used") or []) < 2
     starts = [r.get("start") for r in lines]
     order = in_order(starts)
+    spread = stretched(lines, off)
     return [r["id"] for i, r in enumerate(lines) if r.get("source") in ("reprompt", "estimated") or one_run(r)
             or (starts[i] is not None and i not in order and r.get("source") != "manual")
-            or (r["id"] in guessed and r.get("source") == "asr")]
+            or ((r["id"] in guessed or r["id"] in spread) and r.get("source") == "asr")]
 
 
 def run(config_path: str, work: str | None = None, start: str | None = None) -> dict:
@@ -181,10 +215,18 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
     runs = [json.load(open(p, encoding="utf-8")) for p in paths]
 
     print("[align] lyric sheet ↔ each run, merged per word")
-    from .align import holes, merge_runs, report
-    merged = merge_runs(lines, runs)
+    from .align import holes, merge_runs, off_sheet, report, sheet_vs_tag
+    heard: list[set[int]] = []
+    merged = merge_runs(lines, runs, heard)
     write_json({"lines": merged}, P("merged.json"))
     report(merged, len(runs))
+    if lyrics_from == "file":
+        from .extract_lyrics import lyrics_tag
+        tag = lyrics_tag(cfg["audio"])
+        tag_lines = lyric_lines(tag[1], cfg) if tag else []
+        if tag_lines:
+            for msg in sheet_vs_tag(lines, tag_lines, runs):
+                warn(msg)
 
     print("[grid] beat grid")
     from .beat_grid import describe_off_grid, describe_pick
@@ -214,6 +256,15 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
     merged = fill_gaps(merged, cfg, float(cfg.get("end") or duration), P("reprompt.json"), key=key)
     guessed = {r["id"] for r in merged if r.get("source") == "asr" and holes(r["wt"])}
     lyrics, mv = build(merged, grid, cfg, duration)
+    not_on_sheet = off_sheet(runs, heard, lyrics["lines"])
+    for x in not_on_sheet:
+        words = x["words"] if len(x["words"]) <= 60 else x["words"][:59] + "…"
+        warn(f"heard but not on the lyric sheet: {x['from']:.1f}–{x['to']:.1f} s"
+             f"{', after ' + x['after'] if x['after'] else ''}, \"{words}\" (runs {', '.join(map(str, x['runs']))})")
+    source = {r["id"]: r["source"] for r in lyrics["lines"]}
+    for i, why in stretched(lyrics["lines"], not_on_sheet).items():
+        if source[i] == "asr":
+            print(f"  ◀ {i} spread out: {why}")
     write_json(stamp(lyrics), P("lyrics.json"))
     write_json(stamp(mv), P("mv.json"))
     meta = {"ti": cfg.get("title"), "length": f"{int(duration // 60)}:{int(duration % 60):02d}"}
@@ -246,7 +297,8 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
         "bpm": grid["bpm"],
         "lines": len(lyrics["lines"]),
         "line_sources": sources,
-        "check_by_ear": check_by_ear(lyrics["lines"], len(runs), guessed),
+        "check_by_ear": check_by_ear(lyrics["lines"], len(runs), guessed, not_on_sheet),
+        "off_sheet": not_on_sheet,
         "dropped": [r["id"] for r in lines if r["id"] not in {x["id"] for x in lyrics["lines"]}],
         "language": cfg.get("language") or (runs[0].get("language") if runs else None),
         "warnings": list(lib.WARNINGS),

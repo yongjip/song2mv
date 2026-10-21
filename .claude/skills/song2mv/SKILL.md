@@ -33,10 +33,13 @@ rights). Carry on to the finished video.
 song2mv sync <audio> --lyrics <lyrics.txt> --language <code> --title "<title>" --json   # run in the background; minutes
 ```
 
-`--lyrics` is optional when the audio has a lyrics tag (Suno writes one). If you also have a lyric sheet, compare it
-with the tag. Where they differ, the tag is usually what Suno sang, but not always: read what the whisper runs heard
-there (`<work>/asr/run*.json`), which also shows chants or changed lines that neither has, and sync with a sheet that
-matches it. Read the progress log and the JSON:
+`--lyrics` is optional when the audio has a lyrics tag (Suno writes one). If you also have a lyric sheet, pass it:
+where it and the tag differ, `warnings` names the lines and says which of the two the whisper runs support there (for
+one song the sheet was right, for another the tag). `off_sheet` lists stretches where the runs agree on words that no
+line matched: chants, ad-libs, changed lines, a repeat the sheet has once, or a line of the sheet placed elsewhere
+(its words are on the sheet; that line is then usually on `check_by_ear`). Sync again with a sheet that matches what
+the runs heard (`<work>/asr/run*.json` has every word), and put the stretches you add into the user's ear check. Read
+the progress log and the JSON:
 
 - **Section parsing** (`── [Chorus] → ch1 (hot)`): are the kinds right? Fix with `section_kinds` in `song.json`.
   Lines in `( )` were skipped as stage directions unless their section is in `keep_parenthesized_in`.
@@ -54,10 +57,11 @@ matches it. Read the progress log and the JSON:
   times instead. Put a click track over the start of the stretch. A warning that the grid does not fit the whole
   song names a `--bpm` to try; `the tempo pick is uncertain` names the tempo the onsets prefer.
 - **`check_by_ear`** in the JSON: lines filled by re-listening (`reprompt`), estimated, placed by only one whisper
-  run, out of the lyric sheet's order (a repeated line on another copy of its words), or with a word no run timed
-  between words far apart (the log names the word: `◀ no run timed "…"`; the words around it may be off too). Most
-  likely wrong. A warning "heard N times" names the other times a re-heard line was heard: make the click track
-  cover them all.
+  run, out of the lyric sheet's order (a repeated line on another copy of its words), with a word no run timed
+  between words far apart (the log names the word: `◀ no run timed "…"`; the words around it may be off too), or
+  spread over far more time than they are sung in (`◀ … spread out: …` in the log: usually split between two copies
+  of a repeat the sheet has once; look for an `off_sheet` stretch or a tag warning next to it). Most likely wrong. A
+  warning "heard N times" names the other times a re-heard line was heard: make the click track cover them all.
 
 Then make the ear check cheap for the user:
 

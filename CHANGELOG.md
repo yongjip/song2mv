@@ -176,6 +176,25 @@ First release (0.1.0).
   song one run timed a line's last word 1.6 s late from a single matched letter, and the word before it, which no
   run heard, was spread into the gap. The `sync` log says `◀ no run timed "…", N s between the words around it`. On
   the JamendoLyrics benchmark the list grows by 10 lines, to 331, and in 6 of them that word is more than 1 s off.
+- `check_by_ear` also lists a line spread over far more time than it is sung in: two neighbouring words more than 3 s
+  apart, the line lasting more than 2.5 × its word count × the song's median time from one word to the next, or words
+  heard off the sheet (`off_sheet`, below) between its first and last word. Such a line was matched in two places: on
+  a Suno song whose sheet had the hook's couplet once and the song twice, one line stayed on screen for 8 s with its
+  last two words 6 s late, and the list was empty. The `sync` log says `◀ hk1-06 spread out: 5.9 s between "wish"
+  and "me"`. On the JamendoLyrics benchmark the list grows by 23 lines, to 354, and 19 of them have a word more than
+  1 s off; at 2 s and 2 × it would have grown by 83, 34 of them with a word more than 1 s off.
+- Where a lyric sheet (`--lyrics`) and the audio's lyrics tag differ, `warnings` names the lines that differ and says
+  which of the two the whisper runs support there (`the audio's lyrics tag repeats hk1-05–hk1-06 "…", which the lyric
+  sheet has once; the whisper runs support the tag here`). Each version is aligned to the runs, and around each place
+  the one whose letters they match better wins. Of two Suno songs, the sheet was right for one (its tag repeats a line
+  that is sung once) and the tag for the other (its sheet has a couplet once that is sung twice); `sync` says so for
+  both.
+- `off_sheet` in the `sync` result, with a warning for each: stretches of at least 1.5 s where two or more whisper runs
+  agree on two or more words that no lyric line matched, such as a chant or an ad-lib the sheet leaves out, a line
+  sung differently, or a repeat the sheet has once. Before, such words were dropped and nothing said so. On a Suno
+  rap song it lists the intro chant that two runs hear and no line holds, and the second copy of the doubled couplet
+  in both hooks. On JamendoLyrics, whose lyric files hold every annotated word, it lists 24 stretches in 17 of 79
+  songs: ad-libs and vocalisations the files leave out, and lines the runs heard where the merge did not place them.
 - Words before a line's first timed word start no earlier than a 16th note after the last word of the line before.
   Spread 0.3 s apart, they could start under that line's last words, which then never lit up: the captions switch to
   the newer line. On JamendoLyrics 69 words move, 45 of them closer to where they are sung; words within 0.3 s go from
