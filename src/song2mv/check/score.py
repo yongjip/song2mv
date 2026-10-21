@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import math
 import os
 import re
 import subprocess
@@ -127,9 +128,33 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     cover = (body > 40).mean(axis=(1, 2))
     idx = lambda t: int(round((t - t0) * 10))  # noqa: E731
 
+    # cuts: a cut is a frame whose correlation with the previous one collapses
+    small = body[:, ::2, ::2].astype(np.float32)
+    small -= small.mean(axis=(1, 2), keepdims=True)
+    num = (small[1:] * small[:-1]).sum(axis=(1, 2))
+    den = np.sqrt((small[1:] ** 2).sum(axis=(1, 2)) * (small[:-1] ** 2).sum(axis=(1, 2))) + 1e-6
+    corr = num / den
+    # pair k is frames (k, k+1); the cut is at k+1. Thresholds: real cuts < 0.6, within-scene 5th percentile 0.70
+    raw = [k + 1 for k in range(len(diff)) if corr[k] < 0.62 and diff[k] > 2.5]
+    cut_idx: list[int] = []
+    for i in raw:  # cuts within 0.3 s count once
+        if not cut_idx or i - cut_idx[-1] > 3:
+            cut_idx.append(i)
+    cut_t = [t0 + i / 10 for i in cut_idx]
+
+    # A line sung into the next section is measured up to that section's start, or up to the last cut in the beat
+    # before it: a scene hits the downbeat it hears, which can lead mv.json's bar line, and the 10 fps frames show a
+    # cut up to 0.05 s early.
+    beat = song.get("grid", {}).get("beat", 0.5)
+    ordered = sorted(secs, key=lambda s: s["start"])
+    stop = {}  # section id → the first frame change (index into diff) that belongs to the next section
+    for s, nxt in zip(ordered, ordered[1:]):
+        hits = [t for t in cut_t if nxt["start"] - beat <= t <= nxt["start"]]
+        stop[s["id"]] = math.ceil(round(((hits[-1] if hits else nxt["start"]) - t0) * 10, 6)) - 1
+
     per = []
     for r in lines:
-        i0, i1 = idx(r["start"]), min(len(diff), idx(r["end"]))
+        i0, i1 = idx(r["start"]), min(len(diff), idx(r["end"]), stop.get(r["sec"], len(diff)))
         if i1 - i0 < 3:
             continue
         per.append((r, float(diff[i0:i1].mean()), float(cover[i0:i1].mean())))
@@ -193,20 +218,8 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     else:
         skipped["variation.repeats"] = "no repeated section (ch1 and ch2 …) has lines in both copies in this stretch"
 
-    # cuts: a cut is a frame whose correlation with the previous one collapses
+    # cuts: uneven inside cv_kinds sections, and never too far apart
     gk = goals["cuts"]
-    small = body[:, ::2, ::2].astype(np.float32)
-    small -= small.mean(axis=(1, 2), keepdims=True)
-    num = (small[1:] * small[:-1]).sum(axis=(1, 2))
-    den = np.sqrt((small[1:] ** 2).sum(axis=(1, 2)) * (small[:-1] ** 2).sum(axis=(1, 2))) + 1e-6
-    corr = num / den
-    # pair k is frames (k, k+1); the cut is at k+1. Thresholds: real cuts < 0.6, within-scene 5th percentile 0.70
-    raw = [k + 1 for k in range(len(diff)) if corr[k] < 0.62 and diff[k] > 2.5]
-    cut_idx: list[int] = []
-    for i in raw:  # cuts within 0.3 s count once
-        if not cut_idx or i - cut_idx[-1] > 3:
-            cut_idx.append(i)
-    cut_t = [t0 + i / 10 for i in cut_idx]
     for s in secs:
         if s["kind"] not in gk["cv_kinds"] or s["end"] <= t0 or s["start"] >= t_end:
             continue

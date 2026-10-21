@@ -91,3 +91,33 @@ def test_check_says_when_it_was_given_another_song2mv_file(tmp_path, capsys):
     cfg = write(tmp_path, "song.json", {"audio": "song.mp3", "language": "en"})
     assert main(["check", str(mp4), "--song", str(cfg), "--json"]) == 2
     assert "song config (song.json), not an mv.json" in json.loads(capsys.readouterr().out)["error"]["message"]
+
+
+COUNT_IN = {
+    "duration": 12.0,
+    "grid": {"beat": 0.5},
+    "sections": [{"id": "pc1", "kind": "mid", "start": 0.0, "end": 6.0}, {"id": "ch1", "kind": "hot", "start": 6.0, "end": 12.0}],
+    "lines": [
+        {"id": "pc1-04", "section": "pc1", "text": "one, two, three", "start": 4.8, "end": 6.8},
+        {"id": "ch1-01", "section": "ch1", "text": "the chorus", "start": 7.0, "end": 10.0},
+    ],
+}
+
+
+@pytest.mark.parametrize("cut, blamed", [(6.0, False), (5.7, False), (5.2, True)])
+def test_the_hit_that_opens_a_section_is_not_blamed_on_the_line_sung_into_it(tmp_path, cut, blamed):
+    # The count runs past the chorus downbeat (6.0 s); the picture cuts from a dim, gently moving shot to a bright one.
+    # On the downbeat or up to a beat before it (a scene on a drifting tempo hears the downbeat early) the cut is the
+    # chorus's hit; 0.8 s before it, it is the count's own cut.
+    from song2mv.check.score import score
+
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y",
+                    "-f", "lavfi", "-i", f"testsrc2=size=320x180:rate=10:duration={cut},lutyuv=y=val/5",
+                    "-f", "lavfi", "-i", f"color=c=white:size=320x180:rate=10:duration={12 - cut}",
+                    "-filter_complex", "[0:v][1:v]concat=n=2:v=1[v]", "-map", "[v]", str(mp4)], check=True)
+    res = score(str(mp4), str(write(tmp_path, "mv.json", COUNT_IN)), quiet=True)
+    assert res["cuts"] == [cut]
+    frantic = res["results"]["motion.max"]
+    assert [x["id"] for x in frantic["lines"]] == (["pc1-04"] if blamed else [])
+    assert next(r for r in res["per_line"] if r["id"] == "pc1-04")["motion"] > 0.6  # its own shot still moves

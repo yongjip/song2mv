@@ -23,6 +23,11 @@ First release (0.1.0).
 - `song2mv check` (experimental): per-line motion, coverage, chorus variation and cut rhythm of a rendered video,
   measured over the video's own stretch. Every result has `value` and `goal`; checks that cannot run on the
   stretch are listed under `skipped`. A goals file only needs the values it changes.
+- `check` fixes from the first end-to-end run of the skill:
+  - **The hit that opens a section is that section's.** A line sung into the next section is measured up to that
+    section's start, or up to the last cut in the beat before it: a scene hits the downbeat it hears, which on a
+    drifting tempo comes before mv.json's bar line. The run's two pre-chorus counts ended on the chorus downbeat and
+    were blamed for the chorus hit: 12.2 and 11.6 against `motion.max`'s 9. They now measure 1.8 and 3.9.
 - `song2mv render` (experimental): Remotion lyric-video template, 16:9 and 9:16, `--hold` for hook cuts,
   `--template DIR` for your own scenes. `outputs` names exactly the files written.
 - The template's lyrics are easier to read.
