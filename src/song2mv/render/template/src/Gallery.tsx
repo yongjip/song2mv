@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
-  Camera, Car, City, Hit, HitKind, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
+  Camera, Car, City, Flames, Hit, HitKind, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, shade, SKINS, STRIDE,
 } from "./kit";
 import sample from "./sample-song.json";
@@ -288,6 +288,65 @@ const Hits: React.FC<{ T: number }> = ({ T }) => {
   );
 };
 
+/**
+ * A campfire on a hill at night, someone sitting by it; and, on paper, the same Flames redrawn flat (a candle and a
+ * small fire in paper colours, no glow).
+ */
+const Fire: React.FC<{ T: number }> = ({ T }) => {
+  const fx = 700, fy = 905;
+  const log = (x0: number, y0: number, x1: number, y1: number, r: number, c: string) => (
+    <g>
+      <line x1={x0} y1={y0} x2={x1} y2={y1} stroke={c} strokeWidth={r * 2} strokeLinecap="round" />
+      <line x1={x0} y1={y0 - r * 0.45} x2={x1} y2={y1 - r * 0.45} stroke={mix(c, "#ffb36b", 0.35)} strokeWidth={r * 0.5} strokeLinecap="round" />
+      <ellipse cx={x1} cy={y1} rx={r * 0.95} ry={r} fill={mix(c, "#e8b98a", 0.55)} />
+    </g>
+  );
+  return (
+    <Svg>
+      <SkyGradient time="night" stars={1} T={T} id="g16-sky" />
+      <Moon T={T} color="#ffd36b" x={260} y={190} r={56} />
+      <Ground T={T} y={860} town={false} glow="#ff8a3c" id="g16-ground" />
+      <ellipse cx={fx} cy={fy + 10} rx={150} ry={22} fill="#120c1c" opacity={0.6} />
+      {[-120, -80, -36, 12, 60, 104, 136].map((dx, i) => {
+        const cy = fy + 12 + (Math.abs(dx) < 70 ? 14 : 0), c = i % 2 ? "#4a4258" : "#3a3448";
+        return (
+          <g key={i}>
+            <ellipse cx={fx + dx} cy={cy} rx={26} ry={15} fill={c} />
+            <ellipse cx={fx + dx - Math.sign(dx) * 3} cy={cy - 5} rx={18} ry={7} fill={mix(c, "#ff9a4a", 0.35)} />
+          </g>
+        );
+      })}
+      {log(fx - 110, fy + 6, fx + 40, fy - 20, 15, "#5a3424")}
+      {log(fx + 110, fy + 4, fx - 34, fy - 24, 14, "#4a2a1e")}
+      <Flames T={T} x={fx} y={fy - 14} w={190} id="g16-fire" />
+      {log(fx - 70, fy + 18, fx + 90, fy + 2, 13, "#62392a")}
+      {/* a log to sit on, its end towards the fire lit */}
+      <path d={`M${fx + 262} ${fy - 72}h124a20 20 0 0 1 0 40h-124a20 20 0 0 1 0 -40Z`} fill="#3a2420" />
+      <path d={`M${fx + 262} ${fy - 72}h124a20 20 0 0 1 9 2.2h-133Z`} fill="#6a4232" />
+      <ellipse cx={fx + 262} cy={fy - 52} rx={16} ry={20} fill="#a8724e" />
+      <ellipse cx={fx + 262} cy={fy - 52} rx={8} ry={10} fill="#7a4a32" />
+      <Person x={1010} y={fy + 2} s={1.05} pose="sit" flip T={T} look={{ top: "#2f8f6b", hair: "long", hairColor: "#2a1a14" }} />
+      {/* the same Flames on paper: flat, the paper's colours, no glow, lifted off the page like a cut piece */}
+      <paper.Stack id="g16">
+        <Cut d={rect(1280, -20, 660, 1120, 299)} fill={PC.navy} />
+        <Cut d={rect(1500, 690, 90, 250, 300)} fill={PC.white} lift={6}>
+          <Cut d={rect(1500, 690, 90, 26, 301)} fill={shade(PC.white, 0.92)} lift={0.6} />
+        </Cut>
+        <Cut d={rect(1543, 660, 5, 34, 302)} fill={PC.charcoal} lift={6} />
+        <Cut d="" fill="none" lift={8}>
+          <Flames T={paper.step(T)} x={1545} y={652} w={46} h={110} tongues={1} sharp={0.6} flat glow={0} embers={0} id="g16-candle"
+            colors={[PC.orange, PC.mustard, PC.white]} />
+        </Cut>
+        <Cut d={rect(1420, 940, 420, 30, 303)} fill={PC.kraft} lift={4} />
+        <Cut d="" fill="none" lift={8}>
+          <Flames T={paper.step(T)} x={1760} y={930} w={120} tongues={3} flat glow={0} embers={0} id="g16-small" seed={4}
+            colors={[PC.red, PC.orange, PC.mustard]} />
+        </Cut>
+      </paper.Stack>
+    </Svg>
+  );
+};
+
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -468,6 +527,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Hit: burst, sparkle, ring (neon and flat)",
     draw: (T) => <Hits T={T} />,
+  },
+  {
+    name: "Flames: a campfire, and flat on paper",
+    draw: (T) => <Fire T={T} />,
   },
 ];
 
