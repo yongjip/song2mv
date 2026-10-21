@@ -295,6 +295,16 @@ row; `"vertical": true`: the 9:16 frame):
 cd <work>/video && npx remotion still src/index.ts Contact sheet.png --props="{\"times\": [33.1, 34.6, 36.2, 37.7], \"song\": $(cat ../mv.json)}"
 ```
 
+**Before the first full render, look closer.** A whole frame on a sheet hides rough lines. `"crop": [x, y, w, h]`
+shows only that region of the frame (its pixels: 1920×1080, or 1080×1920 with `"vertical"`), scaled to the tile
+width: `"cols"` sets the zoom and each label shows it. Make one crop sheet per character and per big-type moment, at
+1× or more, and fix rough lines, seams, gaps between parts and clipped text. Judge soft glows at 1×: above it the
+browser cuts a wide glow (the kit's 90 px text glow) with hard edges the video does not have.
+
+```bash
+npx remotion still src/index.ts Contact hero.png --props="{\"times\": [33.1, 41.2, 52], \"cols\": 3, \"crop\": [700, 380, 312, 400], \"song\": $(cat ../mv.json)}"   # 2×
+```
+
 ## 5. Render and check
 
 ```bash

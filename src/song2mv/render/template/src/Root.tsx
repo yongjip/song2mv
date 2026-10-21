@@ -15,7 +15,7 @@ import sample from "./sample-song.json";
  * Without props they show sample-song.json — placeholder lyrics, no audio.
  * Kit-Gallery shows the kit's people, places and objects (frame 0: all, frame k: tile k).
  * Concepts draws the components exported from scenes/concepts side by side at song time T (props: {song, T}).
- * Contact draws the song's Scene at many song times on one sheet, labelled (props: {song, times, cols, vertical}).
+ * Contact draws the song's Scene at many song times on one sheet, labelled (props: {song, times, cols, vertical, crop}).
  */
 const defaults: MvProps = { song: sample as Song, from: 0, to: null, hold: 0 };
 
