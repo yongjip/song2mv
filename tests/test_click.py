@@ -41,6 +41,24 @@ def test_high_click_on_each_bar_low_click_on_beats_tick_on_words(tmp_path):
     assert peak(2.0) < 0.01                           # nothing between
 
 
+def test_with_a_beat_map_the_clicks_follow_its_beats(tmp_path):
+    from song2mv.timing.click_check import make_click
+
+    work = work_folder(tmp_path)
+    beats = [0.25, 0.8, 1.3, 1.85, 2.4, 2.9, 3.45]  # not one tempo; bars start on beat 1 and 5
+    write_json({"bpm": 120.0, "beat": 0.5, "phi": 0.25, "downbeat_mod4": 1, "beats": beats}, str(work / "grid.json"))
+    res = make_click(str(work), 0.0, 4.0)
+    y, sr = sf.read(res["outputs"]["click-0-4.wav"])
+
+    def peak(t):
+        i = int(t * sr)
+        return float(np.abs(y[i:i + int(0.04 * sr)]).max())
+
+    assert peak(0.8) > 0.45 and peak(2.9) > 0.45                     # bar starts: high click
+    assert all(0.3 < peak(t) < 0.4 for t in (0.25, 1.3, 1.85, 2.4, 3.45))  # other beats: low click
+    assert peak(0.75) < 0.01 and peak(2.25) < 0.01                   # where the one-tempo grid would click
+
+
 def test_click_command_takes_the_song_json_and_prints_one_json(tmp_path, capsys):
     work = work_folder(tmp_path)
     assert main(["click", str(work / "song.json"), "--from", "1", "--to", "2", "--json"]) == 0
