@@ -27,12 +27,10 @@ export const SleeplessStorm: React.FC<{ T: number; strikes?: number[]; tears?: n
 }) => {
   const bolts = strikes.map((t, i) => ({ t, x: [700, 460, 580][i % 3] }));
   const [ex, ey] = personEye("lie", 1, 0, T);
-  const sleeper = (
-    <>
-      <Person x={0} y={0} pose="lie" T={T} look={{ hair: "long", top: "#d8d0c0", hairColor: "#20160f" }} />
-      <Tears T={T} x={ex} y={ey} s={1.8} times={tears} fall={-32} />
-    </>
-  );
+  const sleeper = <Person x={0} y={0} pose="lie" T={T} look={{ hair: "long", top: "#d8d0c0", hairColor: "#20160f" }} />;
+  // drawn over the bedding: from the eye down the cheek to the hairline, then a drop onto the pillow, where a damp
+  // spot grows
+  const tear = <Tears T={T} x={ex} y={ey} s={5.4} times={tears} path={[[0, 0], [-1, 3], [-1.6, 6], [-2, 8.5]]} fall={-33} spot />;
   const view = (
     <>
       <SkyGradient time="night" id={`${id}-sky`} />
@@ -45,7 +43,7 @@ export const SleeplessStorm: React.FC<{ T: number; strikes?: number[]; tears?: n
     <>
       <Camera T={T} shots={[{ t: from, x: 960, y: 540, to: { x: 985, y: 590, zoom: 1.22 } }]}>
         <Svg>
-          <Room T={T} bed sleeper={sleeper} view={view} id={`${id}-room`} />
+          <Room T={T} bed sleeper={sleeper} onBed={tear} view={view} id={`${id}-room`} />
         </Svg>
       </Camera>
       <Flash T={T} flashes={strikeFlashes(bolts, 0.12)} />

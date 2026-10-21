@@ -118,16 +118,16 @@ function drape(x0: number, x1: number, top: number, bottom: number, T: number, n
  * with an anglepoise lamp, books and a steaming mug, a shelf of books, framed prints and a plant. Put a Person in
  * front of it. The window opening is at win {x, y, w, h}; furniture and decor that would overlap it are left out.
  * `bed` puts a Bed where the desk stands (the desk and its lamp go, so only the window lights the room); `sleeper`
- * is drawn in it, under the blanket: <Room bed sleeper={<Person x={0} y={0} pose="lie" T={T} />} />. `cover` is how
- * far up the blanket reaches (see Bed).
+ * is drawn in it, under the blanket: <Room bed sleeper={<Person x={0} y={0} pose="lie" T={T} />} />, and `onBed` on
+ * top of the bedding in the same coordinates (Bed's `over`). `cover` is how far up the blanket reaches (see Bed).
  */
 export const Room: React.FC<{
   T: number; wall?: string; floorY?: number; win?: { x: number; y: number; w: number; h: number }; view?: React.ReactNode;
   curtains?: boolean; desk?: boolean; lamp?: boolean; curtain?: string; id?: string;
-  plant?: boolean; shelf?: boolean; poster?: boolean; rug?: boolean; bed?: boolean; sleeper?: React.ReactNode; cover?: number;
+  plant?: boolean; shelf?: boolean; poster?: boolean; rug?: boolean; bed?: boolean; sleeper?: React.ReactNode; onBed?: React.ReactNode; cover?: number;
 }> = ({
   T, wall = "#1a1f45", floorY = 900, win = { x: 260, y: 170, w: 620, h: 520 }, view, curtains = true, desk = true, lamp = true,
-  curtain = "#5b2d6e", id = "room", plant = true, shelf = true, poster = true, rug = true, bed = false, sleeper, cover,
+  curtain = "#5b2d6e", id = "room", plant = true, shelf = true, poster = true, rug = true, bed = false, sleeper, onBed, cover,
 }) => {
   const { x, y, w, h } = win;
   const cool = "#9fb1ff", warm = "#ffc777";
@@ -510,7 +510,7 @@ export const Room: React.FC<{
       )}
 
       {showBed && (
-        <Bed x={1450} y={floorY + 26} s={1.4} wall={wall} cover={cover} id={`${id}-bed`}>{sleeper}</Bed>
+        <Bed x={1450} y={floorY + 26} s={1.4} wall={wall} cover={cover} over={onBed} id={`${id}-bed`}>{sleeper}</Bed>
       )}
 
       {/* the room's own vignette */}
@@ -533,8 +533,10 @@ const OVER_SLEEPER: Pt[] = [[-110, 58], [-80, 63], [-45, 64], [-12, 62], [16, 56
  * A bed seen from the side, standing on (x, y) with its middle there, `s` times a size that fits a Person of the same
  * s: a wooden frame with a headboard and a low footboard, a mattress in a sheet, a pillow and a blanket.
  * - The sleeper goes in as children, drawn between the mattress and the blanket, at (0, 0) where a lying Person's hips
- *   go: <Bed …><Person x={0} y={0} pose="lie" T={T} /></Bed> (the bed scales them with it). Without children the
- *   blanket lies flat.
+ *   go: <Bed …><Person x={0} y={0} pose="lie" T={T} /></Bed> (the bed scales them with it); the pillow's near side
+ *   comes up over the back of their head, so it sinks in. Without children the blanket lies flat.
+ * - `over` is drawn on top of the bedding, in the same coordinates: what lies on the pillow or the blanket (tears that
+ *   run onto the pillow, a phone, a cat).
  * - `head` "left" or "right": the end with the headboard (right mirrors the bed and the sleeper). `cover` 0–1: how far
  *   up the sleeper the blanket reaches (0 folded at the foot, 1 to the shoulders).
  * - Colours: `frame`, `sheet`, `blanket`, `pillow`; they lean towards `wall`, the room's colour, as everything does in
@@ -542,8 +544,8 @@ const OVER_SLEEPER: Pt[] = [[-110, 58], [-80, 63], [-45, 64], [-12, 62], [16, 56
  */
 export const Bed: React.FC<{
   x: number; y: number; s?: number; head?: "left" | "right"; cover?: number; wall?: string;
-  frame?: string; sheet?: string; blanket?: string; pillow?: string; id?: string; children?: React.ReactNode;
-}> = ({ x, y, s = 1, head = "left", cover = 0.75, wall = "#1a1f45", frame = "#9a6644", sheet = "#e9e5f2", blanket = "#c8644e", pillow, id = "bed", children }) => {
+  frame?: string; sheet?: string; blanket?: string; pillow?: string; id?: string; children?: React.ReactNode; over?: React.ReactNode;
+}> = ({ x, y, s = 1, head = "left", cover = 0.75, wall = "#1a1f45", frame = "#9a6644", sheet = "#e9e5f2", blanket = "#c8644e", pillow, id = "bed", children, over }) => {
   const { half: H, top, bot, rail, hip } = BED;
   const wood = mix(frame, wall, 0.4), woodDark = shade(wood, 0.66), woodHi = mix(wood, "#ffd9a8", 0.2);
   const sheetC = mix(sheet, wall, 0.32), sheetS = mix(sheetC, wall, 0.3);
@@ -551,15 +553,15 @@ export const Bed: React.FC<{
   const blank = mix(blanket, wall, 0.36), blankS = shade(blank, 0.72), blankHi = mix(blank, "#ffe2c8", 0.22);
   // the blanket's top along the bed, from its edge (at `cover`) to the foot end; then it hangs down the near side
   const edge = hip + 150 - 250 * clamp01(cover);
-  const over: Pt[] = (children ? OVER_SLEEPER : [[-200, 12], [200, 12]]).map(([u, h]) => [u + hip, top - h] as Pt);
+  const heights: Pt[] = (children ? OVER_SLEEPER : [[-200, 12], [200, 12]]).map(([u, h]) => [u + hip, top - h] as Pt);
   const lift = (bx: number) => {
-    for (let i = 0; i < over.length - 1; i++) {
-      const [a, b] = [over[i], over[i + 1]];
+    for (let i = 0; i < heights.length - 1; i++) {
+      const [a, b] = [heights[i], heights[i + 1]];
       if (bx <= b[0]) return a[1] + (b[1] - a[1]) * clamp01((bx - a[0]) / (b[0] - a[0]));
     }
-    return over[over.length - 1][1];
+    return heights[heights.length - 1][1];
   };
-  const ridge: Pt[] = [[edge, lift(edge)], ...over.filter((p) => p[0] > edge + 12 && p[0] < H - 14), [H - 2, lift(H - 2)]];
+  const ridge: Pt[] = [[edge, lift(edge)], ...heights.filter((p) => p[0] > edge + 12 && p[0] < H - 14), [H - 2, lift(H - 2)]];
   const hem = bot + 14;
   const foot: Pt = [H + 10, hem - 4];
   const blanketD = smoothPath([
@@ -574,6 +576,8 @@ export const Bed: React.FC<{
     const fx = edge + (H - edge) * k, fy = lift(fx) + 18;
     return `M${n1(fx)} ${n1(fy)}Q${n1(fx - 9)} ${n1((fy + hem) / 2)} ${n1(fx - 3)} ${n1(hem - 3)}`;
   });
+  // the pillow's near side, drawn over the sleeper: it swells round where the head lies, so the head sinks in
+  const lipD = smoothPath([[-176, top + 1], [-178, top - 8], [-160, top - 17], [-138, top - 26], [-116, top - 33], [-96, top - 35], [-80, top - 31], [-68, top - 20], [-62, top - 6], [-64, top + 2], [-120, top + 4]]);
   const pillowD = smoothPath([[-178, top + 2], [-182, top - 18], [-166, top - 40], [-130, top - 46], [-104, top - 34], [-84, top - 36], [-66, top - 22], [-62, top], [-120, top + 4]]);
   return (
     <g transform={`translate(${x} ${y}) scale(${head === "right" ? -s : s} ${s})`}>
@@ -606,13 +610,21 @@ export const Bed: React.FC<{
       <path d={`M-170 ${top - 4}Q-120 ${top + 6} -70 ${top - 4}`} stroke={shade(pillowC, 0.8)} strokeWidth={5} fill="none" strokeLinecap="round" />
       <path d={`M-160 ${top - 38}Q-140 ${top - 46} -118 ${top - 42}`} stroke={mix(pillowC, "#ffffff", 0.4)} strokeWidth={4} fill="none" strokeLinecap="round" />
       {/* the sleeper, lying with the hips at (0, 0) */}
-      {children && <g transform={`translate(${hip} ${top})`}>{children}</g>}
+      {children && (
+        <>
+          <g transform={`translate(${hip} ${top})`}>{children}</g>
+          <path d={lipD} fill={pillowC} />
+          <path d={`M-160 ${top - 15}Q-130 ${top - 29} -100 ${top - 33}Q-84 ${top - 33} -74 ${top - 26}`} stroke={mix(pillowC, "#ffffff", 0.35)} strokeWidth={3} fill="none" strokeLinecap="round" />
+          <path d={`M-170 ${top - 4}Q-120 ${top + 6} -70 ${top - 4}`} stroke={shade(pillowC, 0.8)} strokeWidth={5} fill="none" strokeLinecap="round" />
+        </>
+      )}
       {/* the blanket over them, its sheet turned down at the edge, folds where it hangs */}
       <path d={blanketD} fill={`url(#${id}-blanket)`} />
       <path d={ridgeD} transform="translate(0 2.5)" stroke={blankHi} strokeWidth={3} fill="none" strokeLinecap="round" />
       <path d={folds.join("")} stroke={blankS} strokeWidth={5} fill="none" strokeLinecap="round" opacity={0.6} />
       <path d={turn} fill={sheetC} />
       <path d={`M${n1(edge + tw + 1)} ${n1(hem)}Q${n1(edge + tw + 3)} ${n1((lift(edge + tw) + hem) / 2)} ${n1(edge + tw)} ${n1(lift(edge + tw) + 2)}`} stroke={sheetS} strokeWidth={3} fill="none" strokeLinecap="round" />
+      {over && <g transform={`translate(${hip} ${top})`}>{over}</g>}
     </g>
   );
 };

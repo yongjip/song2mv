@@ -14,8 +14,8 @@ import { mix } from "./color";
  * strings, hem) follow through.
  * `walk` and `run` take `phase` (one stride pair per 1.0): move x by STRIDE (or RUN_STRIDE) × s per phase unit and
  * the foot on the ground stays put.
- * `lie` lies on the back, head to the left (`flip`: to the right), the upper body a little raised as on a pillow, one
- * hand on the chest and the near knee a little bent. Its origin is under the hips, on what the person lies on: put it
+ * `lie` lies on the back, head to the left (`flip`: to the right), the upper body a little raised as on a pillow, the
+ * arms along the sides (under a blanket) and the near knee a little bent; the face shows its profile and a shut eye. Its origin is under the hips, on what the person lies on: put it
  * on a mattress (a Bed in room.tsx draws one, with a blanket over the sleeper), a sofa or the floor.
  */
 
@@ -198,7 +198,7 @@ const POSES: Record<Exclude<Pose, "walk" | "run">, Spec> = {
   wave: { lean: -3, head: -4, hip: [-3, -151.2], armL: { s: 4, e: 4 }, armR: { s: 112, e: 58, hand: "open" }, ...FEET },
   balance: { lean: 12, head: -8, hip: [0, -149.6], armL: { s: 96, e: -16, hand: "open" }, armR: { s: -74, e: -8, hand: "open" }, legL: { at: [2, -12], f: 0 }, legR: { h: -42, k: -32, f: 64 } },
   // drawn standing and then laid down (LIE): forward here is up there, the back of the body lies on the surface
-  lie: { lean: 12, head: -9, hip: [0, -150], armL: { s: -14, e: 6 }, armR: { s: -18, e: -100, at: [22, -54] }, legL: { h: -4, k: 0, f: 24 }, legR: { h: 6, k: -22, f: 20 }, still: true },
+  lie: { lean: 12, head: -9, hip: [0, -150], armL: { s: -14, e: 6 }, armR: { s: -12, e: 12 }, legL: { h: -4, k: 0, f: 24 }, legR: { h: 6, k: -22, f: 20 }, still: true },
 };
 
 /**
@@ -380,6 +380,10 @@ export function personEye(pose: Pose, s = 1, phase = 0, T = 0, outfit: Outfit = 
 const HEAD: K[] = [[-2, -27.5], [9, -25.5], [16.5, -19.5], [20.2, -11], [21.6, -4], [21.4, 3], [20.6, 9.5], [19.6, 14.5], [17.4, 19], [13, 21.2], [6, 20.6], [-0.5, 17.6], [-5.5, 12.5], [-13, 12], [-21.5, 5], [-25.5, -7], [-21.5, -20], [-12, -26.5]];
 const EAR: K[] = [[-9.6, -3.6], [-4.6, -4.8], [-2.4, 0], [-3.2, 5.4], [-6.6, 7.6], [-9.8, 3.6]];
 const CHEEK: K[] = [[9.5, 6.5], [14.5, 4.6], [17.8, 7.6], [15.6, 11.4], [10.6, 11]];
+// Lying, the face looks up and is seen against the pillow and the wall: without a profile it reads as a blank oval, so
+// it gets a brow, a small nose, lips and a chin, and a shut eye (a lid line and a lash), the only feature on a face
+const HEAD_LIE: K[] = [[-2, -27.5], [9, -25.5], [16.5, -19.5], [20.4, -11.5], [21.9, -6.4], [21, -3.2], [22.8, -0.4], [25.4, 3.6, 1], [22.2, 5.6], [22.6, 8.2], [21.3, 10.1], [22, 12.2], [20.4, 14.6], [20.9, 17.6], [17.6, 20.8], [12, 21.6], [6, 20.6], [-0.5, 17.6], [-5.5, 12.5], [-13, 12], [-21.5, 5], [-25.5, -7], [-21.5, -20], [-12, -26.5]];
+const EYE_SHUT = "M12.6 -2.8Q16 0.4 19.6 -1.8M13.4 -1.6l-1.8 1.6";
 const HAIR: Record<Hair, { cap: K[]; hi: K[]; ear: boolean }> = {
   // a short side-swept cut: volume on top, a temple notch, a short sideburn in front of the ear, tapered nape
   short: {
@@ -608,8 +612,8 @@ export const Person: React.FC<{
     const at = (u: number, v: number): V => [r.hc[0] + u, r.hc[1] + v];
     hairBack = (
       <>
-        <path d={smooth([a1, at(-34, -27), at(-44, -6), at(-43, 18), at(-34, 42), [at(-18, 54)[0], at(-18, 54)[1], 1], at(-8, 40), a4])} fill={hairColor} />
-        <path d={tube([at(-30, -14), at(-37, 6), at(-33, 30), at(-22, 44)], [2.6, 3.6, 3, 0])} fill={hairHi} opacity={0.5} />
+        <path d={smooth([a1, at(-24, -37), at(-36, -33), at(-42, -14), at(-41, 8), at(-34, 26), [at(-22, 34)[0], at(-22, 34)[1], 1], at(-10, 27), a4])} fill={hairColor} />
+        <path d={tube([at(-27, -30), at(-35, -14), at(-35, 6), at(-28, 22)], [2.4, 3.4, 3, 0])} fill={hairHi} opacity={0.5} />
       </>
     );
   } else if (hair === "long") {
@@ -714,8 +718,9 @@ export const Person: React.FC<{
         {pony}
         {/* head */}
         <g transform={`translate(${pt(r.hc)}) rotate(${num(r.headAng)})`}>
-          <path d={smooth(HEAD)} fill={skin} />
-          <path d={smooth(CHEEK)} fill={mix(skin, "#ff6f7d", 0.24)} />
+          <path d={smooth(lying ? HEAD_LIE : HEAD)} fill={skin} />
+          <path d={smooth(CHEEK)} fill={mix(skin, "#ff6f7d", lying ? 0.16 : 0.24)} />
+          {lying && <path d={EYE_SHUT} stroke={mix(skin, "#2a1418", 0.78)} strokeWidth={1.3} strokeLinecap="round" fill="none" />}
           {HAIR[hair].ear && <path d={smooth(EAR)} fill={skinS} />}
           <path d={smooth(HAIR[hair].cap)} fill={hairColor} />
           <path d={smooth(HAIR[hair].hi)} fill={hairHi} />

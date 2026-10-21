@@ -731,7 +731,7 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   },
   {
     name: "Recipe: sleepless in a storm (8 parts)",
-    draw: (T) => <SleeplessStorm T={T} strikes={[6.2, 9.5]} tears={[8.6]} from={4} />,
+    draw: (T) => <SleeplessStorm T={T} strikes={[6.2, 9.5]} tears={[7, 8.75]} from={4} />,
   },
 ];
 

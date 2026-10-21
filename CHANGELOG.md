@@ -73,7 +73,9 @@ First release (0.1.0).
     strike; forked or flat zigzag bolts that flicker like the real thing; `strikeFlashes()` for the kit's `Flash`.
     `Clouds` gets an optional `size`.
   - `Tears`: well up at an eye, run down the cheek leaving a wet trail, hang and fall.
-  - A `lie` pose for `Person`, and a `Bed` (also `Room`'s `bed` and `sleeper`) with the sleeper under the blanket.
+  - A `lie` pose for `Person` (the face in profile with a shut eye), and a `Bed` (also `Room`'s `bed`, `sleeper` and
+    `onBed`) with the sleeper under the blanket and the head sunk into the pillow; `over` draws what lies on the
+    bedding, such as tears that leave a damp spot (`Tears` `spot`).
   - `Cash`: banknotes tumbling down, with no currency, letters or numbers on them.
 
   `Hit`, `Flames`, `Lightning`, `Storm`, `Tears` and `Cash` take their colours and shapes as props, so they fit any

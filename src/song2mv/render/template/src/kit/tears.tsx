@@ -55,34 +55,48 @@ function along(pts: Pt[], k: number): { p: Pt; a: number; i: number } {
  *   `side` −1 or 1 outward, 18 × s px long, down the cheek of a Person facing that way).
  * - `color` the water, `shine` its highlight; `trail` 0–1 how much the wet trail shows; `flat`: one solid colour
  *   with a highlight dot, no translucency, for flat or paper looks.
+ * - `spot`: a damp spot where they land (at `fall`, under the drip): it darkens with each tear and dries over some
+ *   seconds; for a pillow or a sleeve. Draw the Tears over whatever they land on (Bed's `over`).
  * - `seed` varies the timing of `every`.
  */
 export const Tears: React.FC<{
   T: number; x: number; y: number; s?: number; times?: number[]; every?: number; from?: number; until?: number;
-  path?: Pt[]; side?: number; fall?: number; color?: string; shine?: string; trail?: number; flat?: boolean; seed?: number;
-}> = ({ T, x, y, s = 1, times, every = 1.8, from = 0, until = Infinity, path, side = 1, fall = 1200, color = "#8fd3ff", shine = "#ffffff", trail = 1, flat = false, seed = 1 }) => {
+  path?: Pt[]; side?: number; fall?: number; color?: string; shine?: string; trail?: number; flat?: boolean; spot?: boolean; seed?: number;
+}> = ({ T, x, y, s = 1, times, every = 1.8, from = 0, until = Infinity, path, side = 1, fall = 1200, color = "#8fd3ff", shine = "#ffffff", trail = 1, flat = false, spot = false, seed = 1 }) => {
   const pts: Pt[] = (path ?? [[0, 0], [side * 1.3 * s, 5.7 * s], [side * 2.8 * s, 11.8 * s], [side * 3.3 * s, 18 * s]]).map(([u, v]) => [x + u, y + v]);
   const end = pts[pts.length - 1];
   const R = 0.94 * s;
   const fallTime = Math.sqrt((2 * Math.max(0, fall - end[1])) / (G * s)) + 0.05;
   const LIFE = WELL + RUN + HANG + fallTime;
-  // the tears to draw now: their own times, or the beats of `every` that are still alive
-  let when: number[] = [];
-  if (times) when = times.filter((t) => T >= t && T < t + LIFE + 2);
+  // the tears so far that still show (a damp spot remembers them longer): their own times, or the beats of `every`
+  const DRY = 7, keep = LIFE + (spot ? 4 * DRY : 2);
+  let all: number[] = [];
+  if (times) all = times.filter((t) => T >= t && T < t + keep);
   else if (every > 0) {
-    const k0 = Math.max(0, Math.floor((T - from - LIFE - 2) / every)), k1 = Math.floor((T - from) / every);
+    const k0 = Math.max(0, Math.floor((T - from - keep) / every)), k1 = Math.floor((T - from) / every);
     for (let k = k0; k <= k1; k++) {
       const t = from + (k + 0.35 * (rng(seed * 7919 + k * 31)() - 0.5)) * every;
-      if (t >= from && t < until && T >= t) when.push(t);
+      if (t >= from && t < until && T >= t) all.push(t);
     }
   }
-  if (!when.length) return null;
+  const when = all.filter((t) => T < t + LIFE + 2);
+  // the damp spot: each landed tear wets it at once, then it dries
+  let wet = 0;
+  if (spot) for (const t of all) {
+    const since = T - (t + LIFE - 0.05);
+    if (since >= 0) wet += clamp01(since / 0.15) * Math.exp(-since / DRY) * 0.7;
+  }
+  wet = Math.min(1, wet);
+  if (!when.length && wet < 0.02) return null;
   const water = flat ? color : tint(color, "#ffffff", 0.2);
   const edge = tint(color, "#1a3a6a", 0.35);
   const line = `M${pts.map((p) => `${n1(p[0])} ${n1(p[1])}`).join("L")}`;
   const total = pts.slice(1).reduce((a, q, i) => a + Math.hypot(q[0] - pts[i][0], q[1] - pts[i][1]), 0);
   return (
     <g>
+      {wet >= 0.02 && (
+        <ellipse cx={n1(end[0])} cy={n1(fall)} rx={n1(R * (1.8 + 1.6 * wet))} ry={n1(R * (0.6 + 0.3 * wet))} fill={edge} opacity={n2((flat ? 0.7 : 0.6) * wet)} />
+      )}
       {when.map((t0, j) => {
         const a = T - t0;
         const out: React.ReactNode[] = [];
