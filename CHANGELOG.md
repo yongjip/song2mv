@@ -176,6 +176,10 @@ First release (0.1.0).
   song one run timed a line's last word 1.6 s late from a single matched letter, and the word before it, which no
   run heard, was spread into the gap. The `sync` log says `◀ no run timed "…", N s between the words around it`. On
   the JamendoLyrics benchmark the list grows by 10 lines, to 331, and in 6 of them that word is more than 1 s off.
+- Words before a line's first timed word start no earlier than a 16th note after the last word of the line before.
+  Spread 0.3 s apart, they could start under that line's last words, which then never lit up: the captions switch to
+  the newer line. On JamendoLyrics 69 words move, 45 of them closer to where they are sung; words within 0.3 s go from
+  88.92 to 88.93 %.
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.

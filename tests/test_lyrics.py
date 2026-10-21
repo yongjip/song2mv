@@ -94,6 +94,21 @@ def test_trailing_words_never_go_backwards():
     assert out[0]["end"] > t[-1]
 
 
+def test_words_before_a_lines_first_timed_word_wait_for_the_line_before():
+    from song2mv.timing.build_lyrics import finish
+
+    # no run heard the first two words of v1-02; 0.3 s apart before "three" they would start before "two" of v1-01, and
+    # the captions would switch to v1-02 before "two" lights up
+    out = finish([line("v1-01", [10.0, 11.0]), line("v1-02", [None, None, 11.3, 11.8])], GRID, 0, 60.0)
+    t = [w["t"] for w in out[1]["words"]]
+    assert t == [11.125, 11.213, 11.3, 11.8]  # from a 16th note (0.125 s) after "two", evenly up to "three"
+    roomy = finish([line("v1-01", [10.0, 10.5]), line("v1-02", [None, None, 12.0])], GRID, 0, 60.0)
+    assert [w["t"] for w in roomy[1]["words"]] == [11.4, 11.7, 12.0]  # room enough: 0.3 s apart, as before
+    # a backing line written after the line it comes before is not held back by it
+    backing = finish([line("v1-01", [10.0, 11.0]), line("bk-01", [None, 9.5])], GRID, 0, 60.0)
+    assert [w["t"] for w in backing[1]["words"]] == [9.2, 9.5]
+
+
 def test_manual_times_out_of_order_are_kept_in_order_with_a_warning():
     from song2mv.timing import lib
     from song2mv.timing.build_lyrics import apply_manual, finish

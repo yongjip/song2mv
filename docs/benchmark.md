@@ -281,6 +281,16 @@ How many runs agreed says something about whether a whisper line is right. Of li
 more than 0.3 s off; of those placed by two, 24 %; of those placed by one, 38 %. At `97a552c` it was 12, 32 and 40 %,
 and at `d368734` 44, 59 and 56 %: the first-word error was systematic, and every run made it.
 
+### 4. Words before a line's first timed word
+
+Words that no run timed before a line's first timed word were placed 0.3 s apart before it, so they could start
+under the last words of the line before, and the captions, which switch to the newer line, never lit those up. They
+now start no earlier than a 16th note after the last word of the line before. Measured from the align step with the
+cached whisper runs, at `d297f35` and with the change: it moves 69 words in 21 songs, 45 of them closer to the
+annotation, and 24 instead of 21 of them are within 0.3 s. Words within 0.3 s overall go from 88.92 to 88.93 %,
+lines that start more than 0.3 s off from 534 to 530 and more than 1 s off from 176 to 175. Where the line before
+ends late, its error moves on: two lines now start more than 1 s off, and three no longer do.
+
 ## How well `check_by_ear` points at wrong lines
 
 | | en | de | es | fr | all |

@@ -116,8 +116,12 @@ def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -
         nxt_start = min([t for j, t in starts.items() if j != i and t > my0 + 0.3], default=end_song)
         known = [(k, t) for k, t in enumerate(wt) if t is not None]
         k0, t0 = known[0]
-        for k in range(k0):  # words before the first placed one: 0.3 s apart
-            wt[k] = t0 - (k0 - k) * 0.3
+        # words before the first placed one: 0.3 s apart, but not before a 16th note after the last word of the line
+        # before (the captions switch to the newer line, so that word would never light up)
+        lo = out[-1]["words"][-1]["t"] + P / 4 if out and out[-1]["start"] < t0 else 0.0
+        a = min(max(t0 - 0.3 * k0, lo), t0)
+        for k in range(k0):
+            wt[k] = a + (t0 - a) * k / k0
         for (ka, ta), (kb, tb) in zip(known, known[1:]):
             for k in range(ka + 1, kb):
                 wt[k] = ta + (tb - ta) * (k - ka) / (kb - ka)
