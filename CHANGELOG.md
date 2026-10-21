@@ -186,9 +186,10 @@ First release (0.1.0).
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.
 - The skill, after making two videos with it:
-  - **When the user asks the agent to decide,** it still does every step but waits at no checkpoint: it picks the
-    concept and the song map itself, with the reason in one line, makes the ear-check click files and lists those
-    spots as unheard when it delivers, and carries on to the finished video.
+  - **Checkpoints don't block.** The agent shows the concept stills with its pick and the reason in one line, and
+    the song map, and keeps going; the user can redirect it. It decides timing by measurement, makes the ear-check
+    clips anyway and lists the spots nobody has heard when it delivers. It waits only for the song's rights or a
+    lyric only the user knows. In the second run, 55 of 140 minutes went to waiting for answers nothing needed yet.
   - **The first `sync` passes `--title`** (in AGENTS.md and the README too). Step 0 asks for the title, but the
     command left it out, so the LRC and the video carried the file name until `song.json` was edited.
   - **Where a lyric sheet and the audio's lyrics tag differ,** the tag is usually what Suno sang, and the whisper runs
