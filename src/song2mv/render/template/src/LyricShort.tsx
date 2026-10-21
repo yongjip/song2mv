@@ -4,8 +4,8 @@ import { BeatGlow, Captions, Flash, MvProps, Sky, SongContext, VerticalCtx, Vign
 import { Scene, VerticalScene, linesDrawnByScene } from "./scenes";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
-const BAND_SCALE = 0.76;
-const BAND_CY = 670; // the band ends at y 1080, where the captions start
+export const BAND_SCALE = 0.76;
+export const BAND_CY = 670; // the band ends at y 1080, where the captions start
 
 /**
  * 9:16 short (Reels, YouTube Shorts, TikTok). The full-screen sky and beat glow sit behind the 16:9

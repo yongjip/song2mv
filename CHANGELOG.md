@@ -95,6 +95,10 @@ First release (0.1.0).
   the skill asks for before a concept is picked, in one command (in the skill's step 3). Nothing rendered concepts
   before, so both demo runs exported each one as `Scene` in turn, rendered a still of each and stacked them by hand.
   The template ships an empty `index.ts` there.
+- A `Contact` composition in the template draws the song's `Scene` at a list of song times on one sheet, each frame
+  labelled with its time: props `times` and `cols` (frames per row), and `vertical` for the 9:16 frame (the
+  `VerticalScene`, or `Scene` in the short's band). Many moments cost one render; each `render --still` bundles again
+  (about 5 s), so both demo runs built their own contact sheet to review a video. The skill's step 4 has the command.
 - A style pack for paper cut-out, `paper` in the scene kit (`src/kit/styles/paper.tsx`). The kit's people, places
   and objects are flat illustration; a style pack is a few drawing pieces that put any object in another art style:
   - outlines cut by hand: `rect`, `ellipse`, `poly` and `strip`, seeded so that a cut stays the same from frame to

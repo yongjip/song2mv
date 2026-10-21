@@ -260,7 +260,13 @@ Rules that held up:
    layouts, or export a `VerticalScene` that draws the whole 9:16 frame (step 6). Keep text ≥ 36 px.
 5. Pull timing from data: `useSong().lineById["ch1-01"].words[0].t`, `grid.bar(k)`, `grid.pulse(T)`.
 
-Typecheck (`cd <work>/video && npx tsc --noEmit`), then look at stills of the new section before rendering video.
+Typecheck (`cd <work>/video && npx tsc --noEmit`), then look at stills of the new section before rendering video. A
+contact sheet draws the scene at many song times in one render, each frame labelled with its time (`"cols"`: frames per
+row; `"vertical": true`: the 9:16 frame):
+
+```bash
+cd <work>/video && npx remotion still src/index.ts Contact sheet.png --props="{\"times\": [33.1, 34.6, 36.2, 37.7], \"song\": $(cat ../mv.json)}"
+```
 
 ## 5. Render and check
 
