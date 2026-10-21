@@ -5,6 +5,7 @@ import json
 import pytest
 
 from song2mv.timing import lib, transcribe
+from song2mv.timing.align import holes, merge_runs, report
 from song2mv.timing.pipeline import check_by_ear
 from song2mv.timing.reprompt import fill_gaps, pick_hearings
 
@@ -21,6 +22,26 @@ def test_lines_only_one_run_placed_go_on_check_by_ear():
     assert check_by_ear(lines, 3) == ["v1-02", "ch1-01", "ch1-02"]
     assert check_by_ear([{"id": "v1-03", "source": "asr", "runs_used": [1, 4]}], 5) == []  # two runs agree
     assert check_by_ear([{"id": "v1-04", "source": "asr", "runs_used": [1]}], 1) == []  # one run is all there is
+
+
+def test_a_word_no_run_timed_between_words_far_apart_goes_on_check_by_ear(capsys):
+    # no run heard "three", and "four" comes 3 s after "two": spread evenly, "three" lands 1.5 s after "two"
+    sheet =[{"id": "v1-01", "section": "v1", "section_name": "Verse 1", "kind": "mid", "text": "one two three four",
+              "words": ["one", "two", "three", "four"]}]
+
+    def run(four):
+        return {"words": [{"t": t, "s": s, "e": e, "p": 0.9} for t, s, e in
+                          (("one", 10.0, 10.4), ("two", 10.5, 10.9), ("oops", 11.0, 11.3), ("four", four, four + 0.5))]}
+    late = merge_runs(sheet, [run(13.5)] * 3)
+    assert late[0]["wt"][2] is None and holes(late[0]["wt"]) == [(1, 3)]
+    report(late, 3)
+    assert '◀ no run timed "three", 3.0 s between the words around it' in capsys.readouterr().out
+    assert holes(merge_runs(sheet, [run(11.6)] * 3)[0]["wt"]) == []  # 0.55 s per word: an even spread is a fair guess
+    assert holes([None, 10.0, 13.0, None]) == []  # before the first timed word or after the last: not counted
+    lines = [{"id": "v1-01", "source": "asr", "runs_used": [1, 2, 3]},
+             {"id": "v1-02", "source": "asr", "runs_used": [1, 2, 3]},
+             {"id": "v1-03", "source": "manual", "runs_used": [1, 2, 3]}]  # pinned by hand already
+    assert check_by_ear(lines, 3, guessed={"v1-01", "v1-03"}) == ["v1-01"]
 
 
 def gap(heard, monkeypatch):

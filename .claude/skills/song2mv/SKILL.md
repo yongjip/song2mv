@@ -54,8 +54,10 @@ matches it. Read the progress log and the JSON:
   times instead. Put a click track over the start of the stretch. A warning that the grid does not fit the whole
   song names a `--bpm` to try; `the tempo pick is uncertain` names the tempo the onsets prefer.
 - **`check_by_ear`** in the JSON: lines filled by re-listening (`reprompt`), estimated, placed by only one whisper
-  run, or out of the lyric sheet's order (a repeated line on another copy of its words). Most likely wrong. A
-  warning "heard N times" names the other times a re-heard line was heard: make the click track cover them all.
+  run, out of the lyric sheet's order (a repeated line on another copy of its words), or with a word no run timed
+  between words far apart (the log names the word: `◀ no run timed "…"`; the words around it may be off too). Most
+  likely wrong. A warning "heard N times" names the other times a re-heard line was heard: make the click track
+  cover them all.
 
 Then make the ear check cheap for the user:
 
