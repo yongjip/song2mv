@@ -5,15 +5,19 @@ music video out. It is a command-line tool built for coding agents. Five command
 
 ## Using song2mv for a user
 
+If the user asked you to decide, do not stop at the checkpoints below: choose, give the reason in one line,
+make the ear-check files and list those spots as unheard, and carry on to the finished video.
+
 1. **Rights first.** Ask whose song it is and whether the user may publish a video of it (an AI music service's
    plan terms count). Never copy the song, its lyrics or renders into a repository; keep them in the work folder.
    It defaults to `./song2mv-work/<song>/`, relative to the current directory: run outside the user's repository
    or pass `--out`, and make sure `song2mv-work/` is in that repository's `.gitignore` if you work inside it.
-2. **Timing.** Run `song2mv sync AUDIO --lyrics LYRICS --language CODE --json` in the background — three whisper
-   runs take a few minutes on a laptop CPU. Read the JSON on stdout: `outputs` has every file path,
+2. **Timing.** Run `song2mv sync AUDIO --lyrics LYRICS --language CODE --title "TITLE" --json` in the background —
+   three whisper runs take a few minutes on a laptop CPU. Read the JSON on stdout: `outputs` has every file path,
    `line_sources` counts the lines per source (each line's own `source` is in `lyrics.json`), `check_by_ear` lists
    the lines most likely to be wrong, and `warnings` says what to tell the user.
-   If the audio has a lyrics tag (Suno writes one), `--lyrics` is optional. Always set `--language`.
+   If the audio has a lyrics tag (Suno writes one), `--lyrics` is optional; where a lyric sheet and the tag differ,
+   sync with a sheet that matches what the whisper runs (`WORK/asr/run*.json`) heard. Always set `--language`.
 3. **You cannot hear the song.** Turn every judgement that needs ears into a ten-second check for the user:
    `song2mv click WORK --from A --to B --words --json` mixes clicks and word ticks over a stretch into a wav; send
    it with the question in `ask_the_listener`. Fix with `bpm`, `downbeat_mod4` and `manual` in `WORK/song.json`,
@@ -25,7 +29,7 @@ music video out. It is a command-line tool built for coding agents. Five command
    stretches (`--from A --to B`) while working. For the user's own scenes use `--template DIR` and write them in
    `DIR/src/scenes/`: a scene is a pure function of song time `T`; text pops once and then holds still; lay out
    on the 1920×1080 stage. Start from a concept: propose two or three, in different art styles, and let the user
-   pick one. The scene kit in `DIR/src/kit/` (people, places, sky, objects, effects; style packs such as `paper` that
+   pick one (or pick yourself if they asked you to decide). The scene kit in `DIR/src/kit/` (people, places, sky, objects, effects; style packs such as `paper` that
    put any object in another art style) is optional: reuse what fits the concept, change it in DIR, draw the rest.
    See it with `npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR. When the video is done,
    offer the user anything generic you drew as a pull request (`CONTRIBUTING.md`). Remotion is not MIT — tell
