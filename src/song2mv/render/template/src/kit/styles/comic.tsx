@@ -24,11 +24,24 @@ const f2 = (v: number) => v.toFixed(2);
 type Print = { scope: string; ink: string; line: number; misregister: Pt; zoom: number; styled: boolean };
 const PRINT: Print = { scope: "comic", ink: colors.ink, line: 6, misregister: [4, 3], zoom: 1, styled: false };
 const PrintCtx = createContext<Print>(PRINT);
+type Layer = "contour" | "colour" | "line";
+const LayerCtx = createContext<Layer | null>(null);
+const useLayer = (only: Layer) => {
+  const layer = useContext(LayerCtx);
+  return layer === null || layer === only;
+};
 
 const RULES = `
 .comic-colour * { stroke: none !important; }
 .comic-line * { fill: none !important; stroke: var(--comic-ink) !important; stroke-linejoin: round; stroke-linecap: round; }
-.comic-line .comic-flat, .comic-line [filter] { display: none; }
+.comic-line [filter] { display: none; }
+.comic-line .comic-brush { fill: var(--comic-ink) !important; stroke: none !important; }
+.comic-contour * { fill: var(--comic-ink) !important; stroke: var(--comic-ink) !important; stroke-linejoin: round; stroke-linecap: round; }
+.comic-contour [fill="none"], .comic-contour [filter] { display: none; }
+.comic-inner * { fill: none !important; stroke: none !important; stroke-linejoin: round; stroke-linecap: round; }
+.comic-inner [fill="none"], .comic-inner .comic-edge, .comic-inner .comic-edge * { stroke: var(--comic-ink) !important; }
+.comic-inner [filter] { display: none; }
+.comic-inner .comic-brush { fill: var(--comic-ink) !important; }
 `;
 
 const FIBRES = (() => {
@@ -58,29 +71,182 @@ export const Page: React.FC<{
   </svg>
 );
 
-// Lines are drawn over the colours of their own Ink only: what hides part of another drawing goes in a later Ink.
-export const Ink: React.FC<{ line?: number; misregister?: Pt; children: React.ReactNode }> = ({ line, misregister, children }) => {
+const InnerCtx = createContext<number | null>(null);
+
+/**
+ * Prints its drawing as colour under ink lines. Lines are drawn over the colours of their own Ink only: what hides
+ * part of another drawing goes in a later Ink.
+ * By default every shape gets its own outline and the colour prints off register. With `contour`, the Ink draws one
+ * heavy line round the outside of everything in it, a little heavier on the side away from the light, and keeps its
+ * colour in register; inside, only paths with fill="none", `Edge`s and `Brush`es draw lines, `inner` wide.
+ */
+export const Ink: React.FC<{ line?: number; inner?: number; contour?: boolean; misregister?: Pt; children: React.ReactNode }> = ({
+  line, inner, contour = false, misregister, children,
+}) => {
   const print = useContext(PrintCtx);
-  const [dx, dy] = misregister ?? print.misregister;
-  const lineStyle = { strokeWidth: f2((line ?? print.line) / Math.sqrt(print.zoom)), "--comic-ink": print.ink } as React.CSSProperties;
+  const k = 1 / Math.sqrt(print.zoom);
+  const outer = (line ?? print.line) * k;
+  const lines = contour ? (inner ?? (line ?? print.line) * 0.5) * k : outer;
+  const [dx, dy] = misregister ?? (contour ? [0, 0] : print.misregister);
+  const ink = { "--comic-ink": print.ink } as React.CSSProperties;
   return (
-    <g>
-      {!print.styled && <style>{RULES}</style>}
-      <g className="comic-colour" transform={`translate(${f2(dx / print.zoom)} ${f2(dy / print.zoom)})`}>{children}</g>
-      <g className="comic-line" style={lineStyle}>{children}</g>
-    </g>
+    <InnerCtx.Provider value={lines}>
+      <g>
+        {!print.styled && <style>{RULES}</style>}
+        {contour && (
+          <g className="comic-contour" style={{ ...ink, strokeWidth: f2(2 * outer) }}>
+            <LayerCtx.Provider value="contour">
+              <g transform={`translate(${f2(outer * 0.25)} ${f2(outer * 0.4)})`}>{children}</g>
+              {children}
+            </LayerCtx.Provider>
+          </g>
+        )}
+        <g className="comic-colour" transform={dx || dy ? `translate(${f2(dx / print.zoom)} ${f2(dy / print.zoom)})` : undefined}>
+          <LayerCtx.Provider value="colour">{children}</LayerCtx.Provider>
+        </g>
+        <g className={contour ? "comic-inner" : "comic-line"} style={{ ...ink, strokeWidth: f2(lines) }}>
+          <LayerCtx.Provider value="line">{children}</LayerCtx.Provider>
+        </g>
+      </g>
+    </InnerCtx.Provider>
   );
 };
 
-export const Flat: React.FC<{ children: React.ReactNode }> = ({ children }) => <g className="comic-flat">{children}</g>;
+/** Shapes in a contour Ink that also get an inner line round them, `line` wide (default: the Ink's `inner`) */
+export const Edge: React.FC<{ line?: number; children: React.ReactNode }> = ({ line, children }) => {
+  const { zoom } = useContext(PrintCtx);
+  return <g className="comic-edge" style={line === undefined ? undefined : { strokeWidth: f2(line / Math.sqrt(zoom)) }}>{children}</g>;
+};
+
+/**
+ * An inked stroke along `d` (M, L, H, V, Q, C and Z) that swells and tapers like a brush line: `taper` is the share of
+ * its length that thins out at the start and at the end. `w` defaults to the enclosing Ink's inner line.
+ */
+export const Brush: React.FC<{ d: string; w?: number; taper?: number | [number, number] }> = ({ d, w, taper = 0.35 }) => {
+  const print = useContext(PrintCtx);
+  const inner = useContext(InnerCtx);
+  const shown = useLayer("line");
+  if (!shown) return null;
+  const width = w !== undefined ? w / Math.sqrt(print.zoom) : inner ?? (print.line * 0.5) / Math.sqrt(print.zoom);
+  return <path className="comic-brush" d={brushPath(d, width, taper)} fill={print.ink} />;
+};
+
+function samplePath(d: string): { pts: Pt[]; corners: Set<number> }[] {
+  const tokens = d.match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?/g) ?? [];
+  const out: { pts: Pt[]; corners: Set<number> }[] = [];
+  let cur: { pts: Pt[]; corners: Set<number> } | null = null;
+  let at: Pt = [0, 0], start: Pt = [0, 0], cmd = "", i = 0;
+  const num = () => {
+    const v = Number(tokens[i++]);
+    if (Number.isNaN(v)) throw new Error(`Brush: cannot read the path "${d}"`);
+    return v;
+  };
+  const pt = (rel: boolean): Pt => { const x = num(), y = num(); return rel ? [at[0] + x, at[1] + y] : [x, y]; };
+  const add = (curve: (u: number) => Pt, length: number) => {
+    if (!cur) { cur = { pts: [at], corners: new Set() }; out.push(cur); }
+    cur.corners.add(cur.pts.length - 1);
+    const n = Math.max(1, Math.ceil(length / 3));
+    for (let k = 1; k <= n; k++) cur.pts.push(curve(k / n));
+    at = cur.pts[cur.pts.length - 1];
+  };
+  const dist = (p: Pt, q: Pt) => Math.hypot(q[0] - p[0], q[1] - p[1]);
+  const lineTo = (to: Pt) => { const from = at; add((u) => [from[0] + (to[0] - from[0]) * u, from[1] + (to[1] - from[1]) * u], dist(from, to)); };
+  while (i < tokens.length) {
+    if (/[a-zA-Z]/.test(tokens[i])) cmd = tokens[i++];
+    const rel = cmd === cmd.toLowerCase();
+    switch (cmd.toUpperCase()) {
+      case "M":
+        at = start = pt(rel); cur = null; cmd = rel ? "l" : "L"; break;
+      case "L": lineTo(pt(rel)); break;
+      case "H": { const x = num(); lineTo([rel ? at[0] + x : x, at[1]]); break; }
+      case "V": { const y = num(); lineTo([at[0], rel ? at[1] + y : y]); break; }
+      case "Q": {
+        const p0 = at, c = pt(rel), p = pt(rel);
+        add((u) => [(1 - u) ** 2 * p0[0] + 2 * u * (1 - u) * c[0] + u * u * p[0], (1 - u) ** 2 * p0[1] + 2 * u * (1 - u) * c[1] + u * u * p[1]],
+          dist(p0, c) + dist(c, p));
+        break;
+      }
+      case "C": {
+        const p0 = at, c1 = pt(rel), c2 = pt(rel), p = pt(rel);
+        const bez = (a: number, b: number, c: number, e: number, u: number) =>
+          (1 - u) ** 3 * a + 3 * u * (1 - u) ** 2 * b + 3 * u * u * (1 - u) * c + u ** 3 * e;
+        add((u) => [bez(p0[0], c1[0], c2[0], p[0], u), bez(p0[1], c1[1], c2[1], p[1], u)], dist(p0, c1) + dist(c1, c2) + dist(c2, p));
+        break;
+      }
+      case "Z": lineTo(start); cmd = ""; cur = null; at = start; break;
+      default: throw new Error(`Brush: the path command "${cmd}" is not supported in "${d}"`);
+    }
+  }
+  return out;
+}
+
+/**
+ * The outline, as a path to fill, of a stroke along `d` that is `w` wide (or goes from `w[0]` to `w[1]` along its
+ * length) and thins out over the `taper` share of its length at each end: brush lines, and limbs or tails to fill.
+ */
+export function brushPath(d: string, w: number | [number, number], taper: number | [number, number] = 0): string {
+  const [w0, w1] = typeof w === "number" ? [w, w] : w;
+  const [taperStart, taperEnd] = typeof taper === "number" ? [taper, taper] : taper;
+  const thin = (x: number, share: number) => (share <= 0 || x >= share ? 1 : 1 - (1 - Math.max(0, x) / share) ** 2);
+  return samplePath(d).map(({ pts: raw, corners: joins }) => {
+    const pts: Pt[] = [], corners = new Set<number>();
+    raw.forEach((p, k) => {
+      const last = pts[pts.length - 1];
+      if (!last || Math.hypot(p[0] - last[0], p[1] - last[1]) > 1e-6) pts.push(p);
+      if (joins.has(k)) corners.add(pts.length - 1);
+    });
+    if (pts.length < 2) return "";
+    const s = [0];
+    for (let k = 1; k < pts.length; k++) s.push(s[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]));
+    const L = s[s.length - 1];
+    const half = s.map((v) => ((w0 + ((w1 - w0) * v) / (L || 1)) / 2) * Math.max(0.12, thin(v / L, taperStart) * thin((L - v) / L, taperEnd)));
+    const dir = (k: number): Pt => {
+      const [x0, y0] = pts[k - 1], [x1, y1] = pts[k], l = Math.hypot(x1 - x0, y1 - y0);
+      return [(x1 - x0) / l, (y1 - y0) / l];
+    };
+    const cuts = [0];
+    for (let k = 1; k < pts.length - 1; k++) {
+      const [ax, ay] = dir(k), [bx, by] = dir(k + 1);
+      if (corners.has(k) && ax * bx + ay * by < Math.cos(Math.PI / 6)) cuts.push(k);
+    }
+    cuts.push(pts.length - 1);
+    return cuts.slice(1).map((end, c) => {
+      const from = cuts[c];
+      const tan = (k: number): Pt => {
+        const [x0, y0] = pts[Math.max(from, k - 1)], [x1, y1] = pts[Math.min(end, k + 1)], l = Math.hypot(x1 - x0, y1 - y0) || 1;
+        return [(x1 - x0) / l, (y1 - y0) / l];
+      };
+      const left: Pt[] = [], right: Pt[] = [];
+      for (let k = from; k <= end; k++) {
+        const [tx, ty] = tan(k), r = half[k];
+        left.push([pts[k][0] - ty * r, pts[k][1] + tx * r]);
+        right.push([pts[k][0] + ty * r, pts[k][1] - tx * r]);
+      }
+      const cap = (k: number, sign: number): Pt[] => {
+        const [tx, ty] = tan(k), r = half[k];
+        return [1, 2, 3, 4, 5].map((j): Pt => {
+          const a = (j / 6) * Math.PI, nx = -ty * Math.cos(a) * sign, ny = tx * Math.cos(a) * sign;
+          return [pts[k][0] + (nx + tx * Math.sin(a) * sign) * r, pts[k][1] + (ny + ty * Math.sin(a) * sign) * r];
+        });
+      };
+      const ring = [...left, ...cap(end, 1), ...right.reverse(), ...cap(from, -1)];
+      return `M ${ring.map(([x, y]) => `${f2(x)} ${f2(y)}`).join(" L ")} Z`;
+    }).join(" ");
+  }).join(" ");
+}
+
+/** Colour without a line */
+export const Flat: React.FC<{ children: React.ReactNode }> = ({ children }) => (useLayer("colour") ? <g>{children}</g> : null);
 
 export const Dots: React.FC<{
   color: string; d?: string; x?: number; y?: number; w?: number; h?: number; r?: number; gap?: number; angle?: number; opacity?: number;
 }> = ({ color, d, x = -4000, y = -4000, w = 8000, h = 8000, r = 3, gap = 11, angle = 45, opacity }) => {
   const { scope, zoom } = useContext(PrintCtx);
+  const shown = useLayer("colour");
+  if (!shown) return null;
   const id = `${scope}-dots-${[color, r, gap, angle].join("-").replace(/[^a-zA-Z0-9]+/g, "_")}`;
   return (
-    <g className="comic-flat" opacity={opacity}>
+    <g opacity={opacity}>
       <defs>
         <pattern id={id} width={gap} height={gap} patternUnits="userSpaceOnUse" patternTransform={`rotate(${angle}) scale(${f2(1 / zoom)})`}>
           <circle cx={gap / 2} cy={gap / 2} r={r} fill={color} />

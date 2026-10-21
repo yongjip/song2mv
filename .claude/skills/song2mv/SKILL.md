@@ -226,6 +226,10 @@ paper cut-out:
 `comic`, for a comic page: `comic.Page` holds `comic.Panel`s, each filming the world with its own `shots`; `comic.Ink`
 prints colour off register under ink lines (one Ink per layer, back to front), with `comic.Dots` for Ben-Day dots;
 `comic.Balloon` and `comic.Caption` letter a `Line` as it is sung, unsung words ghosted; `comic.Sfx` slams once.
+Draw characters and small props in `comic.Ink contour`: one heavy outline round all of it, colour in register, and
+inside only the lines you place: `comic.Brush` (tapered: features, folds, an arm's edge over the body), `comic.Edge`
+(eyes, a mouth) and `fill="none"` paths. `comic.brushPath` makes limbs and tails to fill. A form in front of another
+(a forearm over the body) goes in a later contour Ink; check the joints at 2×.
 
 Putting a scene together:
 

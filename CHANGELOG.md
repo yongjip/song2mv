@@ -166,8 +166,9 @@ First release (0.1.0).
     its own camera (the kit's `shots`, `hits` and punch) and pops or slides in at `t`; `layout` splits a page into
     rows of panels;
   - `Ink`, which prints its drawing twice: the colours a few px off register, then ink outlines over them, heavier in
-    close-ups. One `Ink` per layer, back to front, since an `Ink` draws its lines over its own colours only. `Flat`
-    marks colour without a line, and `Dots` are Ben-Day dots that keep their size on the page at any zoom;
+    close-ups (`contour` for characters, below). One `Ink` per layer, back to front, since an `Ink` draws its lines
+    over its own colours only. `Flat` marks colour without a line, and `Dots` are Ben-Day dots that keep their size
+    on the page at any zoom;
   - `Balloon` (speech, shout or thought) and `Caption`, which letter a `Line` word by word as it is sung, unsung words
     ghosted, and `Sfx`, sound-effect lettering that slams in once and holds still;
   - a palette, and font stacks for lettering and display type.
@@ -175,6 +176,21 @@ First release (0.1.0).
   Gallery tile 23 draws a kitchen morning as a comic page: the wide panel frozen just before the toaster pops, then
   close-ups of the pop, the face and the cat. The second demo run, drawn as a comic, had to build this engine in the
   song's copy before it could draw the song.
+- Clean character lines in the comic pack. The second demo run's video looked right as a whole, but up close its
+  characters' lines were sloppy: every part of a figure (head, arms, body, knees, a bun) was outlined on its own, so
+  lines ran through the figure where the parts met, every line had the same weight, and the off-register colour
+  pushed faces, hair and a cup out of their lines. Now:
+  - `Ink contour` draws one heavy line round the outside of everything in it, a little heavier on the side away from
+    the light, and prints its colour in register. Inside, only what is asked for draws a line, `inner` wide (half
+    the contour by default): paths with `fill="none"`, shapes in an `Edge`, and `Brush` strokes, which swell and
+    taper like a brush line. `brushPath` gives that outline as a path to fill, for limbs and tails. A plain `Ink`
+    still outlines every shape over off-register colour, for backgrounds and big shapes.
+  - Contour and inner lines grow with the camera's zoom like the pack's other lines (by its square root), so the
+    contour stays twice the inner line in every panel.
+  - `Flat` and `Dots` draw only in an Ink's colour layer, so a Ben-Day pattern's id is no longer defined three times.
+
+  Gallery tile 23 redraws its person and cat with them: one outline round each figure, an elbow whose crease starts
+  on the arm's outline, fingers round the mug, tapered features, and puffed fur and hair drawn as tufts.
 - Adding to the kit by pull request. `CONTRIBUTING.md` says how to add an asset or a style pack: original drawings,
   MIT, no media files, the kit's rules, a gallery tile and a still. The pull request template asks for them, and CI
   renders every gallery tile and keeps the PNGs for 14 days as the run's `kit-gallery` artifact. Once a video is
