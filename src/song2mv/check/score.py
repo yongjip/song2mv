@@ -71,11 +71,11 @@ def decode_gray(mp4: str, W: int, H: int) -> np.ndarray:
 
 
 FONT_SIZE = re.compile(r"\bfontSize\s*[:=]\s*\{?\s*[\"']?(\d+)(?![\d.])"
-                       r"|<(?:Slam|Quiet|Captions)\b[^>]*?\bsize=\{?\s*[\"']?(\d+)(?![\d.])")
+                       r"|<(?:comic\.)?(?:Slam|Quiet|Captions|Balloon|Caption|Sfx)\b[^>]*?\bsize=\{?\s*[\"']?(\d+)(?![\d.])")
 
 
 def lint_text(pattern: str, min_px: int) -> tuple[int, list[int], list[str]]:
-    """Font sizes in scene sources, `fontSize` and the kit's text components' `size`: (files, sizes, offenders)."""
+    """Font sizes in scene sources, `fontSize` and `size` on the kit's text: (files, sizes, offenders)."""
     files = glob.glob(pattern, recursive=True)
     sizes, offenders = [], []
     for f in files:

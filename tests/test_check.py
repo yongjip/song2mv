@@ -166,12 +166,13 @@ def test_the_font_lint_reads_font_sizes_not_size_props(tmp_path):
                      '<div style={{ fontSize: 24, padding: 8 }}>small</div>\n'
                      '<text x={10} y={20} fontSize={30}>small</text>\n'
                      '<text fontSize="48">big</text>\n'
-                     '<Slam T={T} t={4} text="HEY" x={960} y={400}\n  size={28} />\n', encoding="utf-8")
+                     '<Slam T={T} t={4} text="HEY" x={960} y={400}\n  size={28} />\n'
+                     '<comic.Balloon T={T} line={line} x={100} y={100} size={32} />\n', encoding="utf-8")
     res = score(str(make_video(tmp_path)), str(write(tmp_path, "mv.json", SONG)), src_glob=str(scenes / "**" / "*.tsx"),
                 quiet=True)
     font = res["results"]["text.min_font"]
     assert font["ok"] is False and font["value"] == 24
-    assert font["offenders"] == [f"{scene}:2 24px", f"{scene}:3 30px", f"{scene}:5 28px"]
+    assert font["offenders"] == [f"{scene}:2 24px", f"{scene}:3 30px", f"{scene}:5 28px", f"{scene}:7 32px"]
 
 
 def test_in_9x16_the_caption_rows_are_not_picture_even_with_a_vertical_scene(tmp_path):

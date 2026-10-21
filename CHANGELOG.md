@@ -59,7 +59,7 @@ First release (0.1.0).
     drifting tempo comes before mv.json's bar line. The run's two pre-chorus counts ended on the chorus downbeat and
     were blamed for the chorus hit: 12.2 and 11.6 against `motion.max`'s 9. They now measure 1.8 and 3.9.
   - **`text.min_font` reads font sizes only:** `fontSize` (`fontSize: 30`, `fontSize={30}`, `fontSize="30"`) and `size`
-    on the kit's `Slam`, `Quiet` and `Captions`. It read any `size` prop, such as `Hit size={…}`, and missed
+    on the kit's text: `Slam`, `Quiet`, `Captions` and the comic pack's `Balloon`, `Caption` and `Sfx`. It read any `size` prop, such as `Hit size={…}`, and missed
     `fontSize={30}` on SVG text.
   - **`--json` prints only the JSON.** The table went to stderr, so `> out.json 2>&1` was not JSON. Now nothing
     else is printed, ffmpeg's messages included.
