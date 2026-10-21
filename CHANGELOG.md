@@ -158,9 +158,31 @@ First release (0.1.0).
     (Korean from about 18 blocks to the em; lyrics stay crisp type) or any of the kit's drawings;
   - a palette, and `step` for the held 8 steps a second of sprite animation.
 
-  Gallery tile 22 draws a corner shop at dusk with it and turns the kit's `Person` and `Car` into outlined pixels.
+  Gallery tile 22 draws a corner shop at dusk with it, its sign in pixelated type.
   `Pixelate` samples the picture with one dot per block: where the stage is drawn smaller than full size (0.76 in the
   9:16 band), pass that size as `stageScale`, or the picture can flicker or vanish as it moves.
+- Clean pixels and lines in the pixel pack. The first demo run's video looked right as a whole, but up close its
+  characters' lines were sloppy: sprites scaled by 1.4 or 2.4 put blocks of different sizes in one shot and softened
+  their edges, outlines doubled pixels on curves, and a cat built from discs read as a lump. Now:
+  - `cameraAt`, the kit's camera for a pixel scene: the zoom rounds to a whole number and the frame to whole pixels of
+    the world, kept on the stage, so every block on screen is `px` × zoom stage px. A close-up at 2× or 3× keeps one
+    pixel size. A shot that changes the zoom cuts on its time, glide or not, since blocks can only change size in one
+    jump; a glide or drift at one zoom pans by whole pixels.
+  - `Pixels` rounds its pixel size and place to whole stage px and draws each block exactly that size; the last block
+    of a run was 1 px wider.
+  - `sprite(rows, palette)` draws a character from a character map, a string per row and a character per pixel.
+    `stamp` fills a silhouette's inside corners before it outlines it, so the 1-px outline turns them on a diagonal
+    instead of an L of three pixels, and a 1-px `line` is pixel perfect: no doubled pixel where it turns (a bicycle
+    wheel had 15).
+  - `Pixelate` grows each block from one sampled pixel to exactly its size (blocks were 7 to 9 px and could mix the
+    colours of two neighbours) and outlines across and down, one block wide, instead of in a square that doubled
+    every diagonal step. Under `cameraAt`, pass the camera's zoom as `stageScale`: up close, a block sampled with a
+    dot wider than one screen pixel came out a pixel short or off the grid.
+
+  Gallery tile 22 redraws its walker as a girl in four walk frames and adds a cat asleep on the vending machine, a
+  plant, a bicycle parked by the shop window and a car, all character-map sprites. Its camera cuts in to 2× on the cat
+  at 10.5 s, to 3× on the girl walking into the sunset at 13 s, and back out at 14.25 s (render the tile with
+  `--props '{"T": 13}'` to see the close-up).
 - A style pack for comic pages, `comic` in the scene kit (`src/kit/styles/comic.tsx`):
   - `Page`, the paper (1920×1080, or 1080×1920 with `w` and `h`), and `Panel`, a box on it that films the scene with
     its own camera (the kit's `shots`, `hits` and punch) and pops or slides in at `t`; `layout` splits a page into

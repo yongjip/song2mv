@@ -495,6 +495,188 @@ const Crying: React.FC<{ T: number }> = ({ T }) => {
   );
 };
 
+/** Tile 22's characters as character maps (pixel.sprite), one character per pixel: a girl walking right in four frames */
+const WALKER_HEAD = [
+  "......HHHH....",
+  "....HHhhhHH...",
+  "..HrHHHHHhHH..",
+  ".HHrHHHHHHHH..",
+  "Hh.HHHHHHsss..",
+  "HH.HHHSssses..",
+  "HH.HHHSsssess.",
+  ".H..HHsssbss..",
+  ".....Hsssss...",
+  ".....HSSs.....",
+];
+/** the near arm (T) over a torso that keeps its columns in every frame */
+const WALKER_ARMS = {
+  back: [
+    ".....ttttt....",
+    ".....TTttt....",
+    "....TTtttt....",
+    "...TTttttt....",
+    "..ss.ttttt....",
+    ".....ttttt....",
+    ".....ttttt....",
+  ],
+  down: [
+    ".....ttttt....",
+    ".....ttTTt....",
+    ".....ttTTt....",
+    ".....ttTTt....",
+    ".....ttTTt....",
+    ".....ttsst....",
+    ".....ttttt....",
+  ],
+  forward: [
+    ".....ttttt....",
+    ".....tttTT....",
+    ".....ttttTT...",
+    ".....tttttTT..",
+    ".....ttttt.ss.",
+    ".....ttttt....",
+    ".....ttttt....",
+  ],
+};
+/** the near leg (p) forward, passing on it (the far leg's heel up, toe down), the far leg (P) forward, passing on that */
+const WALKER_LEGS = [
+  [
+    ".....ppppp....",
+    "....PPPpppp...",
+    "....PP..ppp...",
+    "...PP....pp...",
+    "...PP....ppp..",
+    "..PP......pp..",
+    "..PP......pp..",
+    ".WW.......wwww",
+    "..WWW.....wwww",
+  ],
+  [
+    ".....ppppp....",
+    ".....PPppp....",
+    "....PPPppp....",
+    "....PP.ppp....",
+    "...PP..ppp....",
+    "...WW..ppp....",
+    "....WW.ppp....",
+    ".......ppp....",
+    ".......wwwww..",
+    ".......wwwww..",
+  ],
+  [
+    ".....ppppp....",
+    "....pppPPPP...",
+    "....pp..PPP...",
+    "...pp....PP...",
+    "...pp....PPP..",
+    "..pp......PP..",
+    "..pp......PP..",
+    ".ww.......WWWW",
+    "..www.....WWWW",
+  ],
+  [
+    ".....ppppp....",
+    ".....ppPPP....",
+    "....pppPPP....",
+    "....pp.PPP....",
+    "...pp..PPP....",
+    "...ww..PPP....",
+    "....ww.PPP....",
+    ".......PPP....",
+    ".......WWWWW..",
+    ".......WWWWW..",
+  ],
+];
+const WALKER = ([WALKER_ARMS.back, WALKER_ARMS.down, WALKER_ARMS.forward, WALKER_ARMS.down] as const).map((arms, i) => [...WALKER_HEAD, ...arms, ...WALKER_LEGS[i]]);
+
+/** a cat curled up asleep, breathing out and in */
+const CAT = [
+  [
+    ".................",
+    ".o....o..........",
+    ".on..no..oooOo...",
+    ".oooooo.oooOoooO.",
+    "oooooooOooOoooOoo",
+    "oeeoeeoOoooooOooo",
+    "oocncooOooooooooo",
+    ".occcooOOOOOOOOOo",
+    "..OoooOoooOoooOo.",
+  ],
+  [
+    ".................",
+    ".o....o...ooo....",
+    ".on..no..oooOo...",
+    ".oooooo.oooOoooO.",
+    "oooooooOooOoooOoo",
+    "oeeoeeoOoooooOooo",
+    "oocncooOooooooooo",
+    ".occcooOOOOOOOOOo",
+    "..OoooOoooOoooOo.",
+  ],
+];
+
+/** leaves that touch are parted by dark green (D), so only the silhouette is inked */
+const PLANT = [
+  "......y.......",
+  "......yL......",
+  "......yL.y....",
+  "....y.yL.yL...",
+  "...yLDyLDyL...",
+  ".y.yLDyLDyL.y.",
+  "yL.yLDyLDyLDyL",
+  "yLDyLDyLDyLDyL",
+  ".LDyLDyLDyLDL.",
+  "..DDLDDLDDLD..",
+  "..DDDDDDDDDD..",
+  "..rrrrrrrrrr..",
+  "...oooooooO...",
+  "...oooooooO...",
+  "...oooooooO...",
+  "....ooooOO....",
+];
+
+/** a bicycle, wheels as round pixel circles */
+const BIKE = [
+  ".........kkkk................",
+  "...........g.......kkg.......",
+  "...........g.........g.......",
+  "...........bbbbbbbbbbb.......",
+  "....kkk...bb........bbkkk....",
+  "..kk...kkb..b......bkkb..kk..",
+  ".k......bk..b.....bk..b....k.",
+  ".k.....b.k..b....b.k...b...k.",
+  "k.....b...k.b...b.k....b....k",
+  "k....gbbb.k..b.b..k....g....k",
+  "k........bbbbgb...k.........k",
+  ".k.......k....g....k.......k.",
+  ".k.......k.....k...k.......k.",
+  "..kk...kk...........kk...kk..",
+  "....kkk...............kkk....",
+];
+
+/** a small car driving right, wheels as round pixel discs */
+const CAR = [
+  "............bbbbbbbbbbbbb...............",
+  "...........bbggGgggbgggGggb.............",
+  "..........bbggGggggbggGgggggb...........",
+  ".........bbggggggggbggggggggggb.........",
+  "..bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb....",
+  ".rbbbbbbbbbbbbbbbbbdbbbbbbbbbbbbbbbbbbb.",
+  ".rbbbbbaaabbbbbbbbbdbbbbbbbbbbaaabbbbbhh",
+  ".bbbbaakkkaabbbbbbbdbbbbbbbbaakkkaabbbbb",
+  ".BBBBakkkkkaBBBBBBBBBBBBBBBBakkkkkaBBBBB",
+  ".BBBakkmmmkkaBBBBBBBBBBBBBBakkmmmkkaBBBB",
+  "..BBakkmnmkkaBBBBBBBBBBBBBBakkmnmkkaBBB.",
+  ".....kkmmmkk................kkmmmkk.....",
+  "......kkkkk..................kkkkk......",
+  ".......kkk....................kkk.......",
+];
+
+/**
+ * A street corner at dusk in the pixel style pack: everything on one grid of 240 × 135 pixels, the girl, the cat, the
+ * plant, the bicycle and the car as character-map sprites, and a camera that cuts in by whole numbers so a close-up
+ * keeps one pixel size.
+ */
 const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
   const t = pixel.step(T);
   const { Canvas, colors: X } = pixel;
@@ -532,10 +714,13 @@ const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
       const wingsUp = (Math.floor(t * 4) + i) % 2 === 0;
       back.line(wingsUp ? [[x - 2, y - 1], [x, y + 1], [x + 2, y - 1]] : [[x - 2, y + 1], [x, y], [x + 2, y + 1]], 1, X.ink);
     });
+  // the rooms behind the cat's head and along the girl's path in the close-ups stay dark, so no window touches them
+  const keptDark = (x: number, y: number) => (x > 131 && x < 146 && y > 50 && y < 64) || (x > 99 && x < 186 && y > 73);
   const townWithLitWindows = () =>
     ([[104, 16, 54], [118, 12, 62], [129, 18, 46], [146, 10, 58], [155, 17, 42], [172, 12, 66], [184, 34, 90], [218, 10, 58], [228, 12, 48]] as const).forEach(([x, w, top]) => {
       back.box(x, top, w, 96 - top, mix(X.dusk, X.ink, 0.35));
-      for (let y = top + 3; y < 92; y += 4) for (let wx = x + 2; wx < x + w - 1; wx += 3) if (random() < 0.3) back.box(wx, y, 1, 2, X.gold);
+      for (let y = top + 3; y < 92; y += 4)
+        for (let wx = x + 2; wx < x + w - 1; wx += 3) if (random() < 0.3 && !keptDark(wx, y)) back.box(wx, y, 1, 2, X.gold);
     });
   const shop = () => {
     const mortar = shade(X.brick, 0.8), lit = mix(X.cream, X.gold, 0.35);
@@ -574,11 +759,8 @@ const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
     back.box(73, 64, 21, 32, X.teal);
     back.box(75, 66, 17, 17, lit);
     back.dither(75, 66, 17, 17, X.gold, 0.25);
-    back.box(89, 85, 2, 4, X.gold);
-    const plant = new Canvas();
-    plant.poly([[97, 89], [105, 89], [104, 96], [98, 96]], X.orange);
-    plant.disc(101, 85, 4, 4, X.green); plant.disc(98, 83, 2, 3, X.leaf); plant.disc(104, 82, 2, 3, X.leaf);
-    back.stamp(plant, X.ink);
+    back.box(74, 85, 2, 4, X.gold);
+    back.stamp(pixel.sprite(PLANT, { y: mix(X.leaf, X.gold, 0.45), L: X.leaf, D: X.green, r: mix(X.orange, X.cream, 0.4), o: X.orange, O: shade(X.orange, 0.78) }), X.ink, 96, 80);
   };
   const streetInLamplight = () => {
     const pavement = mix(X.grey, X.plum, 0.3);
@@ -592,7 +774,7 @@ const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
     glow(back, 126, 101, 17, 4.5, X.gold, 0.75);
     glow(back, 143, 101, 12, 4.5, X.cream, 0.35);
   };
-  const vendingMachine = () => {
+  const vendingMachineWithACat = () => {
     const machine = new Canvas();
     machine.box(134, 64, 18, 32, X.red);
     machine.box(149, 64, 3, 32, shade(X.red, 0.75));
@@ -601,6 +783,16 @@ const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
     for (let i = 0; i < 3; i++) machine.set(138 + i * 4, 84, X.cream);
     machine.box(137, 89, 9, 3, X.ink);
     back.stamp(machine, X.ink);
+    const breath = Math.floor(t * 0.8) % 2;
+    back.stamp(pixel.sprite(CAT[breath], { o: X.orange, O: shade(X.orange, 0.78), c: X.cream, n: X.rose, e: X.ink }), X.ink, 135, 54);
+  };
+  const walker = () => {
+    const x = ((t * 22 + 170) % 280) - 20, frame = WALKER[Math.floor(t * 4) % 4];
+    const look = {
+      H: shade(X.brown, 0.72), h: X.brown, r: X.red, s: mix(X.cream, X.tan, 0.45), S: mix(X.tan, X.coral, 0.4),
+      b: X.rose, e: X.ink, t: X.coral, T: shade(X.coral, 0.8), p: mix(X.navy, X.blue, 0.45), P: X.navy, w: X.white, W: X.stone,
+    };
+    front.stamp(pixel.sprite(frame, look), X.ink, Math.round(x), 104 - frame.length);
   };
   const streetLamp = () => {
     const lamp = new Canvas();
@@ -609,12 +801,15 @@ const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
     glow(front, 126, 41, 10, 6, X.cream, 0.5);
     front.stamp(lamp, X.ink);
   };
-  const bicycle = () => {
-    for (const cx of [163, 182]) front.line(Array.from({ length: 33 }, (_, i): Pt => [cx + 5 * Math.cos(i / 5), 100 + 5 * Math.sin(i / 5)]), 1, X.ink);
-    front.line([[163, 100], [171, 100], [169, 92], [163, 100]], 1, X.blue);
-    front.line([[169, 92], [179, 92], [171, 100]], 1, X.blue);
-    front.line([[179, 92], [182, 100]], 1, X.blue);
-    front.box(167, 90, 4, 1, X.brown); front.box(178, 90, 3, 1, X.ink);
+  const bicycleByTheWindow = () => back.stamp(pixel.sprite(BIKE, { k: X.ink, b: X.blue, g: X.grey }), undefined, 20, 87);
+  const carDrivingBy = () => {
+    const car = pixel.sprite(CAR, {
+      b: X.sky, B: shade(X.sky, 0.78), a: shade(X.sky, 0.4), d: shade(X.sky, 0.62), g: mix(X.night, X.sky, 0.25),
+      G: mix(X.sky, X.white, 0.5), h: X.cream, r: X.red, k: X.ink, m: X.grey, n: X.stone,
+    });
+    const turn = ([[0, -1], [1, 0], [0, 1], [-1, 0]] as const)[Math.floor(t * 8) % 4];
+    for (const hub of [8, 31]) car.set(hub + turn[0], 10 + turn[1], X.ink);
+    front.stamp(car, X.ink, Math.round(((t * 37.5 + 187.5) % 325) - 70), 114);
   };
 
   skyAndSun();
@@ -625,29 +820,31 @@ const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
   townWithLitWindows();
   shop();
   streetInLamplight();
-  vendingMachine();
+  bicycleByTheWindow();
+  vendingMachineWithACat();
   streetLamp();
-  bicycle();
+  walker();
+  carDrivingBy();
 
-  const walk = t * 0.8, s = 0.8;
-  const carX = ((t * 300 + 1500) % 2600) - 400;
+  // wide, then cuts: in on the cat as the girl walks under it (2×), on her walking into the sunset (3×), and back out
+  const camera = pixel.cameraAt(T, [
+    { t: 0, x: 960, y: 540 },
+    { t: 10.5, x: 1130, y: 620, zoom: 2 },
+    { t: 13, x: 1416, y: 692, zoom: 3 },
+    { t: 14.25, x: 960, y: 540 },
+  ]);
   return (
     <Svg>
-      <pixel.Pixels canvas={back} />
-      {/* one colour per Pixelate: a fill meeting another colour would leave mixed blocks */}
-      {([[X.red, 8, "g22-sign-shadow"], [X.cream, 0, "g22-sign"]] as const).map(([c, d, id]) => (
-        <pixel.Pixelate key={id} id={id}>
-          <text x={432 + d} y={300 + d} textAnchor="middle" dominantBaseline="central" fontSize={104} fontWeight={900} fill={c}>MINI MART</text>
-        </pixel.Pixelate>
-      ))}
-      <pixel.Pixelate id="g22-walker" outline={X.ink}>
-        <Person x={((STRIDE * s * walk + 300) % 2300) - 200} y={828} s={s} pose="walk" phase={walk} T={t} shadow={false}
-          look={{ hair: "ponytail", top: X.coral, pants: X.navy, hairColor: X.ink }} />
-      </pixel.Pixelate>
-      <pixel.Pixels canvas={front} />
-      <pixel.Pixelate id="g22-car" outline={X.ink}>
-        <Car T={t} x={carX} y={1022} s={0.62} color={X.sky} time="dusk" distance={(t * 300) / 0.62} id="g22-car-body" />
-      </pixel.Pixelate>
+      <g transform={camera.svg}>
+        <pixel.Pixels canvas={back} />
+        {/* one colour per Pixelate: a fill meeting another colour would leave mixed blocks */}
+        {([[X.red, 8, "g22-sign-shadow"], [X.cream, 0, "g22-sign"]] as const).map(([c, d, id]) => (
+          <pixel.Pixelate key={id} id={id} stageScale={camera.zoom}>
+            <text x={432 + d} y={300 + d} textAnchor="middle" dominantBaseline="central" fontSize={104} fontWeight={900} fill={c}>MINI MART</text>
+          </pixel.Pixelate>
+        ))}
+        <pixel.Pixels canvas={front} />
+      </g>
     </Svg>
   );
 };
