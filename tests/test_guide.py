@@ -8,16 +8,19 @@ from song2mv.cli import build_parser, main
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / ".claude" / "skills" / "song2mv" / "SKILL.md"
 FLAG = re.compile(r"--[a-z][a-z0-9-]*")
+SHELL_SEPARATOR = re.compile(r"&&|\|\||;|\s\|\s")
 
 
 def _code(text: str):
-    """Every line of the fenced blocks and every inline code span, whitespace collapsed."""
+    """Every line of the fenced blocks, every inline code span and every flag named in prose."""
     fence = re.compile(r"^```[^\n]*\n(.*?)^```", re.M | re.S)
     for block in fence.findall(text):
         for line in block.replace("\\\n", " ").splitlines():
             yield re.sub(r"\s#.*", "", line).strip()
-    for span in re.findall(r"`([^`]+)`", fence.sub("", text)):
+    prose = fence.sub("", text)
+    for span in re.findall(r"`([^`]+)`", prose):
         yield " ".join(span.split())
+    yield from re.findall(r"(?<![\w-])--[a-z][\w-]*", re.sub(r"`[^`]+`", "", prose))
 
 
 def _options() -> dict:
@@ -38,32 +41,35 @@ def test_help_points_agents_to_the_guide(command, capsys):
 @pytest.mark.parametrize("guide", [SKILL, ROOT / "AGENTS.md", ROOT / "llms.txt"], ids=lambda p: p.name)
 def test_guide_names_only_real_commands_flags_and_choices(guide):
     options = _options()
+    commands = [c for c in options if c]
     wrong = []
     for code in _code(guide.read_text(encoding="utf-8")):
-        words = [w.strip("[]") for w in code.split()]
-        prefixed = len(words) > 1 and words[0] == "song2mv"
-        if prefixed:
-            words = words[1:]
-        if words and words[0] in options and words[0]:
-            owners, words = [words[0]], words[1:]
-        elif prefixed and words[0].startswith("--"):
-            owners = [""]
-        elif prefixed:
-            wrong.append(f"`{code}`: no command {words[0]}")
-            continue
-        elif words and words[0].startswith("--"):
-            owners = [c for c in options if c]
-        else:
-            continue
-        for word, value in zip(words, words[1:] + [""]):
-            flag = word.split("=")[0]
-            if not FLAG.fullmatch(flag):
+        for part in (p.strip() for p in SHELL_SEPARATOR.split(code)):
+            words = [w.strip("[]") for w in part.split()]
+            prefixed = "song2mv" in words[:-1]
+            if prefixed:
+                words = words[words.index("song2mv") + 1:]
+            if words and words[0] in commands:
+                owners, words = [words[0]], words[1:]
+            elif words and words[0].startswith("--"):
+                owners = [""] if prefixed else commands
+            elif prefixed:
+                wrong.append(f"`{part}`: no command {words[0]}")
                 continue
-            actions = [options[o][flag] for o in owners if flag in options[o]]
-            if not actions:
-                wrong.append(f"`{code}`: {' or '.join(owners) or 'song2mv'} has no {flag}")
-            elif len(owners) == 1 and actions[0].choices and re.fullmatch(r"[a-z0-9|]+", value):
-                bad = [v for v in value.split("|") if v not in map(str, actions[0].choices)]
-                if bad:
-                    wrong.append(f"`{code}`: {flag} takes {', '.join(map(str, actions[0].choices))}, not {', '.join(bad)}")
+            else:
+                continue
+            for word, after in zip(words, words[1:] + [""]):
+                flag, eq, value = word.partition("=")
+                if not FLAG.fullmatch(flag):
+                    continue
+                defined = [o for o in owners if flag in options[o]]
+                if not defined:
+                    wrong.append(f"`{part}`: {' or '.join(owners) or 'song2mv'} has no {flag}")
+                    continue
+                choices = list(map(str, options[defined[0]][flag].choices or []))
+                value = value if eq else after
+                if len(defined) == 1 and choices and re.fullmatch(r"[\w:|]+", value):
+                    bad = [v for v in value.split("|") if v not in choices]
+                    if bad:
+                        wrong.append(f"`{part}`: {flag} takes {', '.join(choices)}, not {', '.join(bad)}")
     assert not wrong, "\n".join(wrong)

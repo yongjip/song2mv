@@ -157,7 +157,7 @@ def build_parser() -> argparse.ArgumentParser:
     guide = f"Coding agent? Read this guide first, before running any command:\n  {guide_path()}"
     p = argparse.ArgumentParser(
         prog="song2mv",
-        description="Song in, beat-synced lyric timing and a code-drawn music video out. Built for coding agents.",
+        description="Song in, beat-synced lyric timing and a code-drawn music video out.\nBuilt for coding agents.",
         epilog=f"{guide}\nDocs: https://github.com/yongjip/song2mv",
         formatter_class=argparse.RawDescriptionHelpFormatter)  # keeps the guide's path on one line, unbroken
     p.add_argument("--version", action="version", version=f"song2mv {__version__}")
