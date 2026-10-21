@@ -229,7 +229,9 @@ kit in `DIR/src/kit/`, and draw the rest. Besides `useSong()`, beat-grid helpers
 - **recipes:** new assets combined from these parts in a few lines, such as a sleepless night in a storm;
 - **style packs** (`kit/styles/`): drawing pieces that put any object in one art style. `paper` cuts outlines by hand
   and stacks them with shadows and grain; `pixel` draws sprites on a canvas of big pixels and turns type or any kit
-  drawing into the same pixels. New assets and packs are welcome
+  drawing into the same pixels; `comic` inks drawings over off-register colour and Ben-Day dots, in panels that each
+  film the scene with their own camera, with speech balloons and captions lettered as the line is sung. New assets
+  and packs are welcome
   ([CONTRIBUTING.md](https://github.com/yongjip/song2mv/blob/main/CONTRIBUTING.md)).
 
 The people, places and objects are drawn in one flat style. To see everything, run

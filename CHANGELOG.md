@@ -139,6 +139,20 @@ First release (0.1.0).
   Gallery tile 22 draws a corner shop at dusk with it and turns the kit's `Person` and `Car` into outlined pixels.
   `Pixelate` samples the picture with one dot per block: where the stage is drawn smaller than full size (0.76 in the
   9:16 band), pass that size as `stageScale`, or the picture can flicker or vanish as it moves.
+- A style pack for comic pages, `comic` in the scene kit (`src/kit/styles/comic.tsx`):
+  - `Page`, the paper (1920×1080, or 1080×1920 with `w` and `h`), and `Panel`, a box on it that films the scene with
+    its own camera (the kit's `shots`, `hits` and punch) and pops or slides in at `t`; `layout` splits a page into
+    rows of panels;
+  - `Ink`, which prints its drawing twice: the colours a few px off register, then ink outlines over them, heavier in
+    close-ups. One `Ink` per layer, back to front, since an `Ink` draws its lines over its own colours only. `Flat`
+    marks colour without a line, and `Dots` are Ben-Day dots that keep their size on the page at any zoom;
+  - `Balloon` (speech, shout or thought) and `Caption`, which letter a `Line` word by word as it is sung, unsung words
+    ghosted, and `Sfx`, sound-effect lettering that slams in once and holds still;
+  - a palette, and font stacks for lettering and display type.
+
+  Gallery tile 23 draws a kitchen morning as a comic page: the wide panel frozen just before the toaster pops, then
+  close-ups of the pop, the face and the cat. The second demo run, drawn as a comic, had to build this engine in the
+  song's copy before it could draw the song.
 - Adding to the kit by pull request. `CONTRIBUTING.md` says how to add an asset or a style pack: original drawings,
   MIT, no media files, the kit's rules, a gallery tile and a still. The pull request template asks for them, and CI
   renders every gallery tile and keeps the PNGs for 14 days as the run's `kit-gallery` artifact. Once a video is

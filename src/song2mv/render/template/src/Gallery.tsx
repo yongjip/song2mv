@@ -1,8 +1,8 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
-  Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
-  Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, pixel, rng, shade, SKINS, STRIDE,
+  Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Line, Moon, Person, Phone, Plane, Rain,
+  Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, comic, makeSongCtx, mix, paper, personHand, pixel, rng, shade, SKINS, STRIDE,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -652,6 +652,307 @@ const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
   );
 };
 
+const ComicKitchen: React.FC<{ T: number }> = ({ T }) => {
+  const { Page, Panel, Ink, Flat, Dots, Balloon, Caption, Sfx, colors: K } = comic;
+  const POP = 9.3;
+  const said = (id: string, text: string, t0: number, step: number): Line => {
+    const words = text.split(" ").map((w, i) => ({ w, t: t0 + i * step }));
+    return { id, section: "g23", text, start: t0, end: t0 + words.length * step, words };
+  };
+  const capsule = (ax: number, ay: number, bx: number, by: number, r: number) => {
+    const L = Math.hypot(bx - ax, by - ay) || 1, nx = (-(by - ay) / L) * r, ny = ((bx - ax) / L) * r;
+    return `M ${ax + nx} ${ay + ny} L ${bx + nx} ${by + ny} A ${r} ${r} 0 0 0 ${bx - nx} ${by - ny} L ${ax - nx} ${ay - ny} A ${r} ${r} 0 0 0 ${ax + nx} ${ay + ny} Z`;
+  };
+  const polygon = (pts: Pt[]) => `M ${pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(" L ")} Z`;
+  const bristly = (pts: Pt[], r: number, fur: number) => {
+    const side = (sign: number) => pts.map(([x, y], i): Pt => {
+      const [px, py] = pts[Math.max(0, i - 1)], [qx, qy] = pts[Math.min(pts.length - 1, i + 1)];
+      const L = Math.hypot(qx - px, qy - py) || 1, k = sign * (r + (i % 2 ? fur : 0));
+      return [x - ((qy - py) / L) * k, y + ((qx - px) / L) * k];
+    });
+    return polygon([...side(1), ...side(-1).reverse()]);
+  };
+  const puff = (cx: number, cy: number, r: number) => {
+    const pts = Array.from({ length: 6 }, (_, i): Pt => [cx + r * Math.cos((i / 6) * 2 * Math.PI), cy + r * Math.sin((i / 6) * 2 * Math.PI)]);
+    return `M ${pts[0].join(" ")} ${pts.map((_, i) => `A ${(r * 0.6).toFixed(1)} ${(r * 0.6).toFixed(1)} 0 0 1 ${pts[(i + 1) % 6].map((v) => v.toFixed(1)).join(" ")}`).join(" ")} Z`;
+  };
+  const after = (t: number) => Math.max(0, t - POP);
+  const toastLift = (t: number) => Math.max(0, 1400 * after(t) - 1500 * after(t) ** 2);
+  const catHop = (t: number) => Math.max(0, 1100 * after(t) - 1500 * after(t) ** 2);
+  const startled = (t: number) => t >= POP;
+
+  const wallAndWindow = () => (
+    <>
+      <Dots color={K.yellow} r={3.6} gap={12} />
+      <Ink>
+        <path d="M 96 150 H 484 V 486 H 96 Z M 128 182 V 454 H 452 V 182 Z" fill={K.white} fillRule="evenodd" />
+      </Ink>
+      <rect x={128} y={182} width={324} height={272} fill={K.white} />
+      <Dots color={K.cyan} x={128} y={182} w={324} h={272} r={3.4} />
+      <Ink>
+        <circle cx={392} cy={250} r={40} fill={K.yellow} />
+        <path d="M 128 410 Q 230 356 330 388 Q 400 408 452 384 V 454 H 128 Z" fill={K.leaf} />
+        <path d="M 236 384 V 360" fill="none" />
+        <circle cx={236} cy={346} r={20} fill={K.green} />
+      </Ink>
+      <Ink>
+        <path d="M 283 182 H 297 V 454 H 283 Z M 128 311 H 452 V 325 H 128 Z" fill={K.white} />
+        <path d="M 84 478 H 496 V 500 H 84 Z" fill={K.white} />
+      </Ink>
+      <Ink>
+        <path d="M 140 478 L 132 430 H 188 L 180 478 Z" fill={K.orange} />
+        <path d="M 160 432 Q 128 404 140 380 Q 162 396 160 432 Z M 160 432 Q 166 392 196 386 Q 192 418 160 432 Z" fill={K.green} />
+      </Ink>
+    </>
+  );
+  const clock = (t: number) => {
+    const at = (deg: number, r: number) => [600 + r * Math.sin((deg * Math.PI) / 180), 270 - r * Math.cos((deg * Math.PI) / 180)].map((v) => v.toFixed(1)).join(" ");
+    return (
+      <Ink>
+        <circle cx={600} cy={270} r={62} fill={K.red} />
+        <circle cx={600} cy={270} r={48} fill={K.white} />
+        <path d={Array.from({ length: 12 }, (_, i) => `M ${at(i * 30, 38)} L ${at(i * 30, 44)}`).join(" ")} fill="none" />
+        <path d={`M ${at(212.5, 24)} L 600 270 L ${at(30, 38)}`} fill="none" />
+        <path d={`M 600 270 L ${at(Math.floor(t) * 6, 40)}`} fill="none" />
+      </Ink>
+    );
+  };
+  const person = (t: number) => {
+    const scared = startled(t);
+    const spike = scared ? 30 : 8;
+    const hair = `M 862 404 Q 854 334 900 314 L 890 ${306 - spike} L 918 310 L 924 ${290 - spike} L 946 308 L 968 ${294 - spike} L 966 316 Q 1008 334 998 404 Q 988 356 952 348 Q 922 362 896 350 Q 872 366 862 404 Z`;
+    const face = "M 864 404 A 66 80 0 1 0 996 404 A 66 80 0 1 0 864 404 Z";
+    return (
+      <>
+        <Ink><path d="M 902 460 H 958 V 530 H 902 Z" fill={K.peach} /></Ink>
+        <Ink>
+          <path d="M 812 760 L 818 566 Q 822 522 868 512 L 904 506 Q 930 524 956 506 L 992 512 Q 1038 522 1042 566 L 1048 760 Z" fill={K.green} />
+          <path d="M 904 506 Q 930 532 956 506" fill="none" />
+        </Ink>
+        <Ink><path d={capsule(1048, 654, 1046, 716, 17)} fill={K.peach} /></Ink>
+        <Ink>
+          <path d={capsule(1026, 548, 1048, 652, 24)} fill={K.green} />
+          <path d={capsule(836, 548, 812, 650, 24)} fill={K.green} />
+        </Ink>
+        <Ink><path d={capsule(812, 652, 862, 606, 18)} fill={K.peach} /></Ink>
+        <Ink>
+          <ellipse cx={866} cy={412} rx={12} ry={18} fill={K.peach} />
+          <ellipse cx={994} cy={412} rx={12} ry={18} fill={K.peach} />
+        </Ink>
+        <Ink>
+          <path d={face} fill={K.peach} />
+          <Dots d={face} color={K.magenta} r={1.6} gap={9} />
+          <path d={hair} fill={K.brown} />
+          {scared ? (
+            <>
+              <ellipse cx={906} cy={400} rx={17} ry={21} fill={K.white} />
+              <ellipse cx={954} cy={400} rx={17} ry={21} fill={K.white} />
+              <path d="M 886 362 Q 906 346 924 360 M 936 360 Q 954 346 974 362" fill="none" />
+              <path d="M 910 454 Q 930 444 950 454 Q 954 480 930 484 Q 906 480 910 454 Z" fill="#6f1b17" />
+              <path d="M 916 474 Q 930 464 944 474 Q 938 483 930 483 Q 922 483 916 474 Z" fill={K.pink} />
+              <path d="M 858 304 L 842 284 M 894 286 L 888 262 M 966 286 L 972 262 M 1002 304 L 1018 284" fill="none" />
+            </>
+          ) : (
+            <>
+              <path d="M 892 408 Q 906 416 920 408 M 940 408 Q 954 416 968 408" fill="none" />
+              <path d="M 894 422 Q 906 426 918 422 M 942 422 Q 954 426 966 422" fill="none" />
+              <path d="M 920 458 Q 930 464 940 458" fill="none" />
+            </>
+          )}
+          <path d="M 930 410 L 940 434 L 928 438" fill="none" />
+        </Ink>
+        {scared && (
+          <g fill={K.ink}>
+            <circle cx={908} cy={402} r={4.5} />
+            <circle cx={952} cy={402} r={4.5} />
+          </g>
+        )}
+        <Ink>
+          <path d="M 892 574 Q 920 574 920 592 Q 920 610 896 610" fill="none" />
+          <path d="M 846 562 H 896 V 626 Q 896 634 888 634 H 854 Q 846 634 846 626 Z" fill={K.white} />
+          <path d="M 866 586 Q 873 578 880 586 Q 887 594 880 602 L 866 590 Z" fill={K.red} />
+        </Ink>
+        <Ink><ellipse cx={846} cy={612} rx={19} ry={15} fill={K.peach} /></Ink>
+        {!scared && (
+          <Ink line={4}>
+            {[0, 1].map((i) => {
+              const x = 862 + i * 20, w = 7 * Math.sin(t * 3 + i * 2);
+              return <path key={i} d={`M ${x} 552 Q ${x + w} 532 ${x} 512 Q ${x - w} 492 ${x} 472`} fill="none" />;
+            })}
+          </Ink>
+        )}
+      </>
+    );
+  };
+  const counter = () => (
+    <>
+      <Ink>
+        <rect x={-600} y={728} width={2800} height={600} fill={K.blue} />
+        {[-80, 300, 680, 1060].map((x) => <rect key={x} x={x} y={770} width={340} height={360} rx={8} fill={K.blue} />)}
+        {[230, 350, 990, 1110].map((x) => <circle key={x} cx={x} cy={830} r={10} fill={K.yellow} />)}
+      </Ink>
+      <Dots color={K.navy} x={-600} y={728} w={2800} h={34} r={3} gap={9} />
+      <Ink>
+        <rect x={-600} y={700} width={2800} height={30} fill={K.orange} />
+      </Ink>
+    </>
+  );
+  const toaster = (t: number) => {
+    const slots = startled(t) ? K.ink : K.orange;
+    return (
+      <Ink>
+        <rect x={436} y={560} width={250} height={140} rx={34} fill={K.red} />
+        <rect x={464} y={560} width={194} height={18} rx={9} fill={K.grey} />
+        <rect x={476} y={564} width={62} height={9} rx={4.5} fill={slots} />
+        <rect x={572} y={564} width={62} height={9} rx={4.5} fill={slots} />
+        <circle cx={490} cy={650} r={16} fill={K.white} />
+        <path d="M 490 650 L 498 640" fill="none" />
+        <rect x={684} y={startled(t) ? 588 : 632} width={34} height={16} rx={8} fill={K.ink} />
+        <rect x={460} y={698} width={30} height={10} fill={K.ink} />
+        <rect x={632} y={698} width={30} height={10} fill={K.ink} />
+        <Flat><path d="M 454 600 Q 452 586 466 584 H 476 Q 462 592 464 640 Q 456 640 454 600 Z" fill={K.white} /></Flat>
+      </Ink>
+    );
+  };
+  const toast = (t: number) => {
+    const lift = toastLift(t), d = lift > 0 ? after(t) : 0;
+    const crumb = "M -34 42 V -14 Q -36 -40 -12 -40 Q 0 -50 12 -40 Q 36 -40 34 -14 V 42 Z";
+    const slice = (x: number, dir: number) => (
+      <g key={dir} transform={`translate(${(x + dir * 170 * d).toFixed(1)} ${(600 - lift).toFixed(1)}) rotate(${(dir * 80 * d).toFixed(1)})`}>
+        <path d="M -46 52 V -18 Q -50 -52 -18 -52 Q 0 -66 18 -52 Q 50 -52 46 -18 V 52 Z" fill={K.brown} />
+        <path d={crumb} fill={mix(K.orange, K.brown, 0.45)} />
+        <Dots d={crumb} color={mix(K.brown, K.ink, 0.55)} r={2.4} gap={8} />
+      </g>
+    );
+    if (lift <= 0) {
+      return (
+        <Ink>
+          <path d="M 485 568 V 548 Q 500 534 520 548 V 568 Z M 580 568 V 548 Q 600 534 620 548 V 568 Z" fill={K.brown} />
+        </Ink>
+      );
+    }
+    return (
+      <>
+        <Ink line={4}>
+          {[-1, 1].map((dir) => {
+            const x = (dir < 0 ? 507 : 603) + dir * 170 * d, y = 600 - lift;
+            return <path key={dir} d={[-24, 0, 24].map((o) => `M ${(x + o).toFixed(1)} ${(y + 80).toFixed(1)} V ${(y + 80 + Math.min(150, lift * 0.5)).toFixed(1)}`).join(" ")} fill="none" />;
+          })}
+        </Ink>
+        <Ink>{[slice(507, -1), slice(603, 1)]}</Ink>
+        <Ink>
+          {[0, 1].map((i) => {
+            const k = (after(t) * 1.6 + i * 0.5) % 1;
+            return <path key={i} d={puff(536 + i * 52 + 14 * Math.sin(k * 5 + i), 552 - 120 * k, 14 + 18 * k)} fill={K.white} />;
+          })}
+        </Ink>
+      </>
+    );
+  };
+  const cat = (t: number) => {
+    const scared = startled(t);
+    const arc = (a0: number, a1: number, n: number, cx: number, cy: number, rx: number, ry: number) =>
+      Array.from({ length: n }, (_, i): Pt => {
+        const a = a0 + ((a1 - a0) * i) / (n - 1);
+        return [cx + rx * Math.cos(a), cy + ry * Math.sin(a)];
+      });
+    const body = scared
+      ? polygon([[206, 704], ...arc(Math.PI * 0.72, Math.PI * 2.28, 27, 250, 644, 60, 64).map(([x, y], i): Pt =>
+          i % 2 ? [250 + (x - 250) * 1.14, 644 + (y - 644) * 1.12] : [x, y]), [294, 704]])
+      : "M 198 704 Q 190 616 222 586 Q 250 572 278 586 Q 310 616 302 704 Z";
+    const tail = scared
+      ? bristly(Array.from({ length: 13 }, (_, i): Pt => [298 + 50 * Math.sin((i / 12) * 1.3), 692 - 150 * (i / 12)]), 18, 10)
+      : "M 296 700 Q 352 704 348 662 Q 344 634 326 642 Q 334 664 316 680 Q 304 690 290 688 Z";
+    return (
+      <g transform={`translate(0 ${(-catHop(t)).toFixed(1)})`}>
+        <Ink><path d={tail} fill={K.orange} /></Ink>
+        <Ink>
+          <path d={body} fill={K.orange} />
+          <ellipse cx={250} cy={652} rx={24} ry={34} fill={K.white} />
+          <ellipse cx={232} cy={702} rx={15} ry={9} fill={K.white} />
+          <ellipse cx={268} cy={702} rx={15} ry={9} fill={K.white} />
+        </Ink>
+        <Ink>
+          <path d={scared ? "M 208 552 L 180 522 L 226 530 Z M 292 552 L 320 522 L 274 530 Z" : "M 212 548 L 210 500 L 240 526 Z M 288 548 L 290 500 L 260 526 Z"} fill={K.orange} />
+        </Ink>
+        <Ink>
+          <ellipse cx={250} cy={560} rx={48} ry={42} fill={K.orange} />
+          <path d="M 236 524 L 238 540 M 250 520 V 538 M 264 524 L 262 540" fill="none" />
+          {scared ? (
+            <>
+              <ellipse cx={230} cy={556} rx={14} ry={16} fill={K.yellow} />
+              <ellipse cx={270} cy={556} rx={14} ry={16} fill={K.yellow} />
+              <path d="M 234 586 Q 250 574 266 586 L 262 598 Q 250 592 238 598 Z" fill="#6f1b17" />
+              <path d="M 240 584 L 243 592 L 246 583 M 260 584 L 257 592 L 254 583" fill={K.white} />
+            </>
+          ) : (
+            <path d="M 220 558 Q 230 566 240 558 M 260 558 Q 270 566 280 558" fill="none" />
+          )}
+          <path d="M 244 572 H 256 L 250 580 Z" fill={K.pink} />
+          <path d="M 214 576 L 180 570 M 214 584 L 182 590 M 286 576 L 320 570 M 286 584 L 318 590" fill="none" />
+        </Ink>
+        {scared && (
+          <>
+            <g fill={K.ink}>
+              <ellipse cx={230} cy={557} rx={3} ry={10} />
+              <ellipse cx={270} cy={557} rx={3} ry={10} />
+            </g>
+            <Ink line={4}>
+              <path d="M 214 724 V 800 M 250 730 V 830 M 286 724 V 800" fill="none" />
+            </Ink>
+          </>
+        )}
+      </g>
+    );
+  };
+  const burst = () => (
+    <>
+      <path fill={K.orange} d={Array.from({ length: 18 }, (_, i) => {
+        const a = (i / 18) * 2 * Math.PI, b = a + Math.PI / 18;
+        return `M 560 340 L ${(560 + 1600 * Math.cos(a)).toFixed(1)} ${(340 + 1600 * Math.sin(a)).toFixed(1)} L ${(560 + 1600 * Math.cos(b)).toFixed(1)} ${(340 + 1600 * Math.sin(b)).toFixed(1)} Z`;
+      }).join(" ")} />
+      <Dots color={K.red} r={2.6} gap={10} opacity={0.5} />
+    </>
+  );
+  const kitchen = (t: number) => (
+    <>
+      {wallAndWindow()}
+      {clock(t)}
+      {person(t)}
+      {counter()}
+      {toaster(t)}
+      {toast(t)}
+      {cat(t)}
+    </>
+  );
+
+  const [wide, right] = comic.layout([[1.42, 1]]);
+  const [pop, face, kitty] = comic.layout([[1], [1, 1]], { ...right, heights: [0.92, 1.08] });
+  return (
+    <Page id="g23">
+      <Panel id="g23-wide" T={T} {...wide}>{kitchen(Math.min(T, POP - 0.1))}</Panel>
+      <Panel id="g23-pop" T={T} {...pop} t={POP} fill={K.yellow} shots={[{ t: 0, x: 560, y: 430, zoom: 1.35 }]} hits={[POP]} punch={0.1}>
+        {burst()}
+        {toaster(T)}
+        {toast(T)}
+      </Panel>
+      <Panel id="g23-face" T={T} {...face} t={POP} shots={[{ t: 0, x: 930, y: 338, zoom: 1.6 }]}>
+        <Dots color={K.cyan} r={3.2} />
+        {person(T)}
+      </Panel>
+      <Panel id="g23-cat" T={T} {...kitty} t={POP + 0.1} shots={[{ t: 0, x: 268, y: 640 - catHop(T), zoom: 1.5 }]}>
+        <Dots color={K.magenta} r={3.2} />
+        {cat(T)}
+      </Panel>
+      <Caption T={T} line={said("g23-when", "Monday, 7:05 a.m.", 7.4, 0.3)} x={62} y={60} width={420} size={38} />
+      <Balloon T={T} line={said("g23-dream", "five more minutes...", 7.9, 0.3)} x={880} y={150} tail={[918, 302]} kind="thought" width={300} size={36} />
+      <Balloon T={T} line={said("g23-shout", "not my toast!", 9.46, 0.07)} x={1296} y={612} tail={[1340, 724]} kind="shout" width={260} size={42} />
+      <Sfx T={T} t={POP} text="POP!" x={1300} y={330} size={140} rotate={-12} />
+      <Sfx T={T} t={POP + 0.15} text="HISS!" x={1650} y={985} size={72} rotate={-6} fill={K.white} shadow={K.magenta} seed={4} />
+    </Page>
+  );
+};
+
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -893,6 +1194,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Style pack: pixel art",
     draw: (T) => <PixelCorner T={T} />,
+  },
+  {
+    name: "Style pack: comic page",
+    draw: (T) => <ComicKitchen T={T} />,
   },
 ];
 
