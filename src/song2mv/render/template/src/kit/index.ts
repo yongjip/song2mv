@@ -15,6 +15,7 @@ export * from "./symbols";
 export * from "./vehicles";
 export * from "./effects";
 export * from "./camera";
+export * from "./vertical";
 export * from "./hit";
 export * from "./flames";
 export * from "./storm";

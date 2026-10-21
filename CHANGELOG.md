@@ -127,6 +127,22 @@ First release (0.1.0).
   the captions of lines the scenes don't draw, the flashes and the fade-out (no template sky, beat glow, title or
   vignette). The band put the template's starry sky and title around every concept, and a scene that drew its own
   lyrics left the bottom 45 % of the screen empty. Without a `VerticalScene` the short renders as before.
+- Layout help for a `VerticalScene`. In a new-user run, laying out a pixel video's tall frame took about 5 minutes,
+  4 vertical contact sheets and a re-rendered short: the kit's drawing helpers assume 1920×1080, the street first sat
+  small in the middle and then under the dialogue box, and the box ended 12 px outside the safe box. Now:
+  - `VERTICAL` in the kit holds the 9:16 frame's numbers: the safe box for text (x 120–960, y 269–1248), the
+    template's captions (y 1082–1240) and the picture area above them, where the subject goes (y 269–1080).
+  - `verticalView(view)` films the 16:9 world for the tall frame: the point a view looks at (a shot's, or
+    `cameraAt`'s) lands in the middle of the picture area, as large as in 16:9; the frame keeps on the stage's sides
+    and top and runs on below its bottom, under the captions and the apps' buttons. With `px` it keeps a pixel scene
+    on whole pixels.
+  - `Svg` takes `w` and `h` (1080 × 1920 fills the frame).
+  - A vertical contact sheet draws the safe box and the captions' top as dashed lines.
+
+  Ported to it, that run's short drops its hand-made canvas offsets and per-zoom y corrections and frames its shots
+  as the hand-tuned version did, except one close-up whose subject the hand-made tall canvas had cut off, now in the
+  picture; `check` passes it 6/6 as before. The skill's step 6 says where text, the subject and the ground go. The
+  default template renders as before.
 - `song.json` sets the two effects the template's frame lays over every scene: `"vignette": false` turns off the dark
   vignette, and `"flashes": [[song time, strength 0–1], …]` replaces the white flash at the start of each hot section
   (`[]` for none). `sync` copies both into `mv.json`; without them `mv.json` is as before. Neither could be changed

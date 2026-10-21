@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, CalculateMetadataFunction } from "remotion";
-import { Song, SongContext, VerticalCtx, makeSongCtx } from "./kit";
+import { Song, SongContext, VERTICAL, VerticalCtx, makeSongCtx } from "./kit";
 import { BAND_CY, BAND_SCALE } from "./LyricShort";
 import { Scene, VerticalScene } from "./scenes";
 
@@ -10,11 +10,24 @@ import { Scene, VerticalScene } from "./scenes";
  * scene alone on the theme's background, without the frame's sky, captions or vignette. In a template copy:
  *   node render.mjs ../mv.json --composition Contact --props sheet.json      (sheet.json: {"times": [12, 33.1, 47.5]})
  * `crop: [x, y, w, h]`, in the frame's pixels (1920×1080, or 1080×1920 with `vertical`), shows only that region,
- * scaled to the tile's width: `cols` sets the zoom, and each label shows it.
+ * scaled to the tile's width: `cols` sets the zoom, and each label shows it. A 9:16 frame shows the safe box for text
+ * and the top of the template's captions as dashed lines (VERTICAL in the kit).
  */
 export type ContactProps = { song: Song; times: number[]; cols?: number; vertical?: boolean; crop?: [number, number, number, number] };
 
 const GAP = 12;
+
+/** The 9:16 safe box and the captions' top, dashed lines `k` times as wide as the frame is scaled down */
+const SafeLines: React.FC<{ k: number }> = ({ k }) => {
+  const { w, h, safe, captions } = VERTICAL;
+  const d = `M${safe.left} ${safe.top}H${safe.right}V${safe.bottom}H${safe.left}Z M${safe.left} ${captions.top}H${safe.right}`;
+  return (
+    <svg width={w} height={h} style={{ position: "absolute", inset: 0 }}>
+      <path d={d} fill="none" stroke="#000" strokeOpacity={0.6} strokeWidth={3 / k} />
+      <path d={d} fill="none" stroke="#fff" strokeWidth={1.5 / k} strokeDasharray={`${8 / k} ${6 / k}`} />
+    </svg>
+  );
+};
 
 function sheet({ times, cols, vertical, crop }: ContactProps) {
   const perRow = Math.max(1, Math.round(cols ?? (vertical ? 6 : 4)));
@@ -59,6 +72,7 @@ export const ContactSheet: React.FC<ContactProps> = (props) => {
                   }}
                 >
                   {frame(T)}
+                  {vertical && <SafeLines k={k} />}
                 </div>
                 <div style={{ position: "absolute", left: x, top: y + frameH + label * 0.2, fontSize: label, lineHeight: 1.1, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                   {T.toFixed(2)} s{crop && ` · ${k.toFixed(2)}×`}
