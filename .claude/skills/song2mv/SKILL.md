@@ -218,19 +218,23 @@ by whole numbers; never `scale()` a sprite or a layer, or blocks of two sizes me
   digits, punctuation); positions round to whole pixels;
 - `pixel.sprite(rows, palette)`: a character from a character map, a string per row and a character per pixel
   (`"..HHhh.."` with `{ H: hair, h: shine }`; others stay clear). `canvas.stamp(sprite, outline, x, y)` puts it on
-  with a clean 1-pixel outline (inside corners filled, so the ring turns them on a diagonal). Draw people and animals
-  this way, a frame per pose, not from discs: eyes, ears and a tail need their pixels placed (scene 22: a walk in
-  four frames, a cat asleep). Check them at 1:1 and 2×;
+  with a clean 1-pixel outline (inside corners filled, so the ring turns them on a diagonal). Draw people, animals
+  and anything round this way, a frame per pose, not from discs or sampled curves: eyes, ears, a tail and a wheel
+  need their pixels placed (scene 22: a walk in four frames, a cat asleep, a bicycle, a car). Part shapes that touch
+  inside a sprite (leaves, an arm over the body) with a darker shade, not a gap, since every gap gets an ink line,
+  and stamp what a character walks past before the character, so its outline stays whole. Check them at 1:1 and 2×;
 - `pixel.Pixels`: a canvas on the stage, `px` stage px to a pixel (at 8, 240 × 135 pixels fill it), rounded to
   whole stage px;
 - `pixel.cameraAt(T, shots)`: the kit's camera for a pixel scene, `<g transform={pixel.cameraAt(…).svg}>` round it:
   the zoom rounds to a whole number and the frame to whole pixels, kept on the stage, so a close-up is 2× or 3× with
-  one pixel size and a glide steps;
+  one pixel size. A shot that changes the zoom cuts (blocks change size in one jump), so give each zoom a beat or
+  more; a glide or drift at one zoom pans by whole pixels;
 - `pixel.Pixelate id`: anything inside turns into blocks on the same grid, `outline` rings them one block wide: big
   type in any font, or any kit drawing. Pop or slide what is inside, not a group around it, so the blocks stay put.
   One colour per Pixelate gives clean blocks (the shadow in one, the face in another). Korean type smears under about
-  18 blocks to the em, so lyrics stay crisp type. Where the stage is drawn smaller, pass its size as `stageScale`
-  (0.76 in the 9:16 band);
+  18 blocks to the em, so lyrics stay crisp type. Pass the size it is drawn at on screen as `stageScale`: the
+  camera's zoom under `pixel.cameraAt` (`stageScale={camera.zoom}`), times 0.76 in the 9:16 band; otherwise blocks
+  flicker, vanish or come out a pixel short;
 - `pixel.colors`, and `pixel.step(T)` for the held 8 steps a second of sprite animation.
 
 `comic`, for a comic page: `comic.Page` holds `comic.Panel`s, each filming the world with its own `shots`; `comic.Ink`
@@ -247,7 +251,8 @@ Putting a scene together:
 - **Any style:** `Hit`, `Flames`, `Lightning`/`Storm`, `Tears` and `Cash` take their colours and shapes as props. For
   a flat or paper look pass the style's colours with `glow={0}` or `flat`; inside a `paper.Stack`, wrapping one in
   `<paper.Cut d="" fill="none" lift={6}>` gives it the paper's shadow (gallery tiles 15–18 and 20). Inside
-  `<pixel.Pixelate outline={…}>`, any kit drawing turns into outlined pixels (`Car` in scene 22).
+  `<pixel.Pixelate outline={…}>`, any kit drawing turns into outlined pixels, with in-between colours where it is
+  shaded or soft; draw a sprite for anything seen up close.
 - **Recipes:** parts fit together by the same scale `s` (1 = a Person 300 px tall), the line things stand on and
   anchors (`personHand()`, `personEye()`, a strike's `to`, `FlamesAlong`), so a new asset can be a recipe of a few
   lines that combines them, like `SleeplessStorm` in `src/kit/recipes.tsx` (scene 21); recipes are welcome as pull

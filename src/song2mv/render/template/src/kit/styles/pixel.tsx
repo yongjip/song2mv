@@ -212,16 +212,24 @@ export const Pixelate: React.FC<{ id: string; block?: number; stageScale?: numbe
 };
 
 /**
- * The kit's camera (`cameraAt`) for a pixel world drawn from the stage origin: the zoom rounds to a whole number (1 at
- * least) and the frame to whole pixels of the world, kept on the stage, so every block on screen is `px` × zoom stage
- * px, as if one small picture were scaled up. A glide from 1 to 3 steps through 2; a punch or a roll does not show.
+ * The kit's camera (`cameraAt`) for a pixel world drawn from the stage origin: each shot's zoom rounds to a whole
+ * number (1 at least) and the frame to whole pixels of the world, kept on the stage, so every block on screen is `px`
+ * × zoom stage px, as if one small picture were scaled up. A shot that changes the zoom cuts on its time, glide or not,
+ * since blocks can only change size in one jump; a glide or a drift at one zoom pans by whole pixels. A drift in zoom,
+ * a punch or a roll does not show.
  */
 export function cameraAt(
   T: number, shots: Shot[], o: { hits?: number[]; punch?: number; px?: number; w?: number; h?: number } = {},
 ): CameraView {
   const { px = 8, w = 1920, h = 1080 } = o;
-  const view = kitCameraAt(T, shots, o);
-  const zoom = Math.max(1, Math.round(view.zoom)), cell = Math.max(1, Math.round(px)) * zoom;
+  const whole = (z = 1) => Math.max(1, Math.round(z));
+  const list = [...shots].sort((a, b) => a.t - b.t);
+  const steady = list.map((s, i): Shot => ({
+    ...s, zoom: whole(s.zoom), to: s.to && { ...s.to, zoom: undefined },
+    glide: i > 0 && whole(list[i - 1].zoom) !== whole(s.zoom) ? 0 : s.glide,
+  }));
+  const view = kitCameraAt(T, steady, { w, h, punch: 0 });
+  const zoom = whole(view.zoom), cell = Math.max(1, Math.round(px)) * zoom;
   const snap = (v: number, size: number) => Math.min(0, Math.max(size - size * zoom, Math.round((size / 2 - v * zoom) / cell) * cell));
   const left = snap(view.x, w), top = snap(view.y, h);
   return {
