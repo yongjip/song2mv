@@ -310,7 +310,7 @@ width: `"cols"` sets the zoom and each label shows it. Make one crop sheet per c
 browser cuts a wide glow (the kit's 90 px text glow) with hard edges the video does not have.
 
 ```bash
-npx remotion still src/index.ts Contact hero.png --props="{\"times\": [33.1, 41.2, 52], \"cols\": 3, \"crop\": [700, 380, 312, 400], \"song\": $(cat ../mv.json)}"   # 2×
+node render.mjs ../mv.json --composition Contact --props hero.json --name hero   # hero.json: {"times": [33.1, 41.2, 52], "cols": 3, "crop": [700, 380, 312, 400]}, 2×
 ```
 
 ## 5. Render and check
