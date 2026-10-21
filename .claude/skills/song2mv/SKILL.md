@@ -94,7 +94,15 @@ style and a different central image. For each, write:
 - **Main character or motif,** and how it changes over the song.
 - **First chorus:** how it hits, the song's biggest moment.
 
-Make each concept concrete enough to picture: render one rough still per concept and show them side by side.
+Make each concept concrete enough to picture: render one rough still per concept and show them side by side. Copy
+the template now (step 4's first command), draw each concept as a component of `T` in
+`<work>/video/src/scenes/concepts/`, export it from `src/scenes/concepts/index.ts` under the concept's name, and render
+them all at one moment, such as the first chorus' downbeat. Each is drawn alone, without the template's sky, captions
+or vignette:
+
+```bash
+cd <work>/video && npx remotion still src/index.ts Concepts concepts.png --props="{\"T\": <first chorus start>, \"song\": $(cat ../mv.json)}"
+```
 
 **Then the song map** for the chosen concept, `<work>/map.md`. Agree on it with the user before coding:
 

@@ -62,6 +62,11 @@ First release (0.1.0).
   (`[]` for none). `sync` copies both into `mv.json`; without them `mv.json` is as before. Neither could be changed
   without editing the template copy: a concept with lit corners came out darkened, and on a song whose tempo drifts
   the flash, placed on the one-tempo grid, came 0.35 s before the chorus downbeat.
+- A `Concepts` composition in the template draws every component exported from `src/scenes/concepts/index.ts` side
+  by side at song time `T` (a prop, default 30), each labelled with its export name: the rough still per concept that
+  the skill asks for before a concept is picked, in one command (in the skill's step 3). Nothing rendered concepts
+  before, so both demo runs exported each one as `Scene` in turn, rendered a still of each and stacked them by hand.
+  The template ships an empty `index.ts` there.
 - A style pack for paper cut-out, `paper` in the scene kit (`src/kit/styles/paper.tsx`). The kit's people, places
   and objects are flat illustration; a style pack is a few drawing pieces that put any object in another art style:
   - outlines cut by hand: `rect`, `ellipse`, `poly` and `strip`, seeded so that a cut stays the same from frame to
