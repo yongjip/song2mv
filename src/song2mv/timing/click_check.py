@@ -2,7 +2,8 @@
 
 High click = first beat of a bar, low click = other beats, on the beat map when grid.json has one (a song whose tempo
 drifts) and on the one-tempo grid otherwise. Optionally a soft tick on every lyric word
-(--words), to hear whether the lyric timing sits on the voice. Listen for flams: if the clicks drift
+(--words, at lyrics.json's times: on swung 16ths when grid.json has `swing`), to hear whether the lyric timing sits on
+the voice. Listen for flams: if the clicks drift
 ahead of or behind the drums, the tempo or the first beat is off; if the high click is not on the
 "one", set downbeat_mod4 in the song config.
 
@@ -73,7 +74,9 @@ def make_click(work: str, t0: float = 0.0, t1: float | None = None, words: bool 
                 add(w["t"], tick)
     out = out or os.path.join(work, f"click-{t0:g}-{end:g}.wav")
     wavfile.write(out, SR, (np.clip(mix, -1, 1) * 32767).astype(np.int16))
-    print(f"{out}  ({'the beat map, about ' if beats else ''}{grid['bpm']} BPM, bar starts at beat % 4 == {down})")
+    sw = grid.get("swing")
+    print(f"{out}  ({'the beat map, about ' if beats else ''}{grid['bpm']} BPM, bar starts at beat % 4 == {down}"
+          + (f"; word ticks on 16ths swung to {sw[0]:g} and {sw[1]:g} of a beat" if sw and words else "") + ")")
     print(WHAT_TO_ASK)
     return stamp({"command": "click", "outputs": {os.path.basename(out): os.path.abspath(out)}, "from": t0,
                   "to": round(end, 3), "bpm": grid["bpm"], "downbeat_mod4": down, "ask_the_listener": WHAT_TO_ASK})

@@ -12,7 +12,8 @@ rhythm made a false peak). Here the grid is fitted directly to percussive onsets
   5. does the grid fit everywhere? Tempo and phase are fitted again in windows of 4 bars (`fit_check`); where the
      music's beats leave the grid — a tempo change, a drift, a beat that jumps — the stretch goes into `off_grid`;
   6. a song with such stretches gets a beat map (`beat_map`): the windows chained into one time per beat, so
-     beats, bars and snapped words follow the music where the one tempo does not. The bar start is found again on it.
+     beats, bars and snapped words follow the music where the one tempo does not. The bar start is found again on it;
+  7. is the groove swung? (`swing`): where the hats put the 2nd and 4th 16th notes of each beat.
 
 Usage: python -m song2mv.timing.beat_grid song.mp3 work/grid.json [--bpm 90|auto] [--merged work/merged.json]
 """
@@ -49,6 +50,22 @@ MAP_TOL = 0.25
 MAP_SURE = 0.1
 MAP_JUMP = 4
 MAP_GAP = 4.0
+
+# swing folds the onsets of the hats (the percussive part above SWING_HZ) by position inside the beat, in SWING_BINS
+# bins, and takes the highest peak on the beat, at the 8th note and at the 2nd and 4th 16th notes, each measured from
+# the beat's own peak (the onset envelope's delay cancels: within 0.005 beat on synthetic swung drums). A groove is
+# swung when the 8th note sits within SWING_8TH of halfway, both 16ths stand out from the fold by SWING_PEAK of its
+# range and nothing else does (sextuplets would read as a 1/3–5/6 swing), and both 16ths are late: each by SWING_EACH
+# of a beat, SWING_LATE on average (60:40 or more). Measured on 79 JamendoLyrics songs, 11 Suno songs and two demo
+# songs: the 5 that come out swung are late by 0.055–0.077 on average, the most swung of the rest by 0.038. On the 3
+# swung JamendoLyrics songs, words within 0.1 s of the annotations rose from 52 % to 63 %; snapping the lightly swung
+# ones (0.026–0.027) to their 16ths gained 1.5 points there and lost 0.4 within 0.3 s.
+SWING_HZ = 6000
+SWING_BINS = 96
+SWING_8TH = 0.02
+SWING_PEAK = 0.1
+SWING_EACH = 0.03
+SWING_LATE = 0.05
 
 
 def fit_check(oenv, ft, dur: float, P: float, phi: float) -> tuple[list[dict], list[dict], list[dict]]:
@@ -254,6 +271,69 @@ def map_number(beats: list[float], t):
     b = np.interp(t, beats, np.arange(n + 1))
     b = np.where(t < beats[0], (t - beats[0]) / (beats[1] - beats[0]), b)
     return np.where(t > beats[n], n + (t - beats[n]) / (beats[n] - beats[n - 1]), b)
+
+
+def swing(yp, sr: int, beat_number, fits) -> list[float] | None:
+    """Where the hats put the 2nd and 4th 16th notes of each beat, as fractions of a beat from the beat, when the groove
+    is clearly swung (see SWING_*); None otherwise. `beat_number(t)` is the fractional beat number at times t and
+    `fits(t)` says where those beats follow the music."""
+    import librosa
+    import numpy as np
+
+    n_fft, hop, n = 1024, 128, SWING_BINS
+    S = np.abs(librosa.stft(yp, n_fft=n_fft, hop_length=hop))
+    hats = librosa.amplitude_to_db(S[librosa.fft_frequencies(sr=sr, n_fft=n_fft) > SWING_HZ])
+    env = librosa.onset.onset_strength(S=hats, sr=sr, hop_length=hop, n_fft=n_fft)
+    t = librosa.times_like(env, sr=sr, hop_length=hop)
+    keep = fits(t)
+    k = np.minimum((np.asarray(beat_number(t[keep])) % 1.0 * n).astype(int), n - 1)
+    h = np.bincount(k, env[keep], n) / np.maximum(np.bincount(k, minlength=n), 1)
+    h = np.convolve(np.r_[h[-1:], h, h[:1]], [0.25, 0.5, 0.25], "valid")
+    span = float(h.max() - h.min())
+    tops = [i for i in range(n) if h[i] > h[i - 1] and h[i] >= h[(i + 1) % n]]
+
+    def top(lo, hi):
+        inside = [i for i in tops if lo <= (i / n + 0.5) % 1 - 0.5 < hi] if lo < 0 else [i for i in tops if lo <= i / n < hi]
+        return max(inside, key=lambda i: h[i]) if inside else None
+
+    def at(i):
+        a, b, c = h[i - 1], h[i], h[(i + 1) % n]
+        return (i + 0.5 + 0.5 * (a - c) / (a - 2 * b + c)) / n
+
+    def rise(i, a, b):
+        """How far bin i stands above the lowest points between bins a and i and between i and b, going forward."""
+        left = min(h[j % n] for j in range(a, a + (i - a) % n + 1))
+        right = min(h[j % n] for j in range(i, i + (b - i) % n + 1))
+        return h[i] - max(left, right)
+
+    peaks = [top(-0.08, 0.08), top(0.2, 0.42), top(0.42, 0.58), top(0.7, 0.92)]
+    clear = False
+    if None not in peaks and span > 0:
+        c0, c1, c2, c3 = peaks
+        others = [rise(i, a, b) for a, b in zip(peaks, peaks[1:] + peaks[:1]) for i in tops
+                  if i not in peaks and 0 < (i - a) % n < (b - a) % n]
+        clear = min(rise(c1, c0, c2), rise(c3, c2, c0)) >= SWING_PEAK * span > max(others, default=0.0)
+    if not clear:
+        print("  swing: none (no clear 16th notes in the hats)")
+        return None
+    x0 = (at(c0) + 0.5) % 1 - 0.5
+    s1, e8, s3 = at(c1) - x0, at(c2) - x0, at(c3) - x0
+    late = (s1 - 0.25, s3 - 0.75)
+    if abs(e8 - 0.5) <= SWING_8TH and min(late) >= SWING_EACH and sum(late) / 2 >= SWING_LATE:
+        print(f"  swing: the hats put the 2nd and 4th 16th notes of each beat at {s1:.3f} and {s3:.3f} of a beat "
+              "(straight: 0.25 and 0.75)")
+        return [round(float(s1), 3), round(float(s3), 3)]
+    print(f"  swing: none (the hats' 2nd 16th, 8th and 4th 16th notes at {s1:.3f}, {e8:.3f} and {s3:.3f} of a beat)")
+    return None
+
+
+def swung(b: float, swing: list[float]) -> float:
+    """Beat number b moved to the nearest 16th note of a swung beat: the beat, its 8th note and the 2nd and 4th 16th
+    notes where `swing` puts them."""
+    import math
+
+    n = math.floor(b)
+    return n + min((0.0, swing[0], 0.5, swing[1], 1.0), key=lambda q: abs(b - n - q))
 
 
 def _mmss(t: float) -> str:
@@ -462,6 +542,19 @@ def find_grid(audio: str, bpm: str | float | None = "auto", line_starts: list[fl
         else:
             print("  no beat map: the windows cannot be followed without a guess (a beat that jumps, a weak pulse, or the "
                   "tempo is wrong everywhere)")
+
+    # 7) swing, on the beat map when there is one, and without one only where the grid fits
+    beats = out.get("beats")
+
+    def fits(t):
+        ok = np.ones(len(t), bool)
+        if not beats:
+            for s in off_grid:
+                ok &= (t < s["from"]) | (t >= s["to"])
+        return ok
+    sw = swing(yp, sr, (lambda t: map_number(beats, t)) if beats else (lambda t: (t - phi) / P), fits)
+    if sw:
+        out["swing"] = sw
     return out
 
 

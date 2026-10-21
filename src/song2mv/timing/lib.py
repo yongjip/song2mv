@@ -71,7 +71,7 @@ DEFAULT_CONFIG = {
     "section_kinds": {},        # {"ch1": "hot", "Bridge": "calm"} overrides
     "bpm": "auto",              # number, or "auto" (pick from beat candidates using lyric line spacing)
     "downbeat_mod4": None,      # which beat index (mod 4) starts a bar; None = loudest kick
-    "snap_per_beat": 4,         # snap times to 1/4 beat (16th notes); 0 = no snapping
+    "snap_per_beat": 4,         # snap times to 1/4 beat (16th notes, swung when grid.json has swing); 0 = none
     "whisper": {"model": "small", "runs": 3, "device": "cpu", "compute_type": "int8", "threads": 8, "beam_size": 5},
     "auto_reprompt": True,      # re-listen to gaps where no run found a line, with that line as the prompt
     "reprompt": [],             # extra windows: [{"from": 17.5, "to": 30.5, "prompt": "expected words"}]

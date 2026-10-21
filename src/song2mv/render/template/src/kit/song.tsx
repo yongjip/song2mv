@@ -18,6 +18,8 @@ export type Grid = {
   bpm: number; beat: number; phi: number; downbeat_mod4: number; bar0?: number;
   /** the time of every beat, when the song's tempo drifts (`sync` writes a beat map then); beat n is beats[n] */
   beats?: number[] | null;
+  /** where the 2nd and 4th 16th notes fall inside the beat (fractions of a beat), when the groove is swung */
+  swing?: [number, number] | null;
 };
 type KindStyle = { tint: string; glow: string; strength: number };
 export type Theme = {
@@ -103,6 +105,14 @@ function mapTime(beats: number[], b: number): number {
   return beats[i] + (b - i) * (beats[i + 1] - beats[i]);
 }
 
+/** Beat number b moved to the nearest 16th note of a swung beat: the beat, its 8th note and the swung 16ths */
+function swung(b: number, swing: [number, number]): number {
+  const n = Math.floor(b);
+  let best = 0;
+  for (const q of [swing[0], 0.5, swing[1], 1]) if (Math.abs(b - n - q) < Math.abs(b - n - best)) best = q;
+  return n + best;
+}
+
 /**
  * Beat-grid helpers. Beat n (integer) sits at phi + n·beat, or at beats[n] when the song has a beat map; a bar
  * starts where n % 4 == downbeat_mod4.
@@ -112,6 +122,10 @@ export function makeGrid(g: Grid) {
   const beatTime = map ? (b: number) => mapTime(map, b) : (b: number) => g.phi + b * g.beat;
   const bar0 = g.bar0 ?? beatTime(g.downbeat_mod4);
   const beatPos = map ? (T: number) => mapPos(map, T) : (T: number) => (T - g.phi) / g.beat;
+  const swing = g.swing && g.swing.length === 2 ? g.swing : null;
+  const evenSnap = map
+    ? (t: number, div: number) => beatTime(Math.round(beatPos(t) * div) / div)
+    : (t: number, div: number) => g.phi + Math.round((t - g.phi) / (g.beat / div)) * (g.beat / div);
   return {
     ...g,
     bar0,
@@ -121,10 +135,8 @@ export function makeGrid(g: Grid) {
     beatTime,
     /** start time of bar k (bar 0 = first full bar) */
     bar: map ? (k: number) => beatTime(g.downbeat_mod4 + 4 * k) : (k: number) => bar0 + k * 4 * g.beat,
-    /** snap a time to the grid, `div` steps per beat (4 = 16th notes) */
-    snap: map
-      ? (t: number, div = 4) => beatTime(Math.round(beatPos(t) * div) / div)
-      : (t: number, div = 4) => g.phi + Math.round((t - g.phi) / (g.beat / div)) * (g.beat / div),
+    /** snap a time to the grid, `div` steps per beat (4 = 16th notes, where the swing puts them when the song swings) */
+    snap: (t: number, div = 4) => (swing && div === 4 ? beatTime(swung(beatPos(t), swing)) : evenSnap(t, div)),
     /** 0–1 decay right after each beat; the first beat of a bar is stronger */
     pulse: (T: number, tau = 0.16) => {
       const b = Math.floor(beatPos(T));

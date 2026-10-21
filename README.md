@@ -89,7 +89,7 @@ song2mv sync DIR/song.json [--from grid] [--runs 5]   # rerun after editing song
 | lyrics | `lyrics.txt` | the lyric sheet (`[Verse]`, `[Chorus]` … lines name sections) |
 | asr | `asr/runN.json` | faster-whisper, **several runs** with word timestamps; finished runs are reused |
 | align | `merged.json` | each run aligned to the lyric sheet character by character, then merged per word |
-| grid | `grid.json` | tempo, first beat, which beat starts a bar, and where the song leaves that grid |
+| grid | `grid.json` | tempo, first beat, which beat starts a bar, where the song leaves that grid, and its swing |
 | build | `lyrics.json`, `mv.json`, `song.lrc`, `song.words.lrc`, `song.srt` | gaps re-heard, manual values applied, times snapped to the beat grid |
 | music | `music.json` | loudness curve and likely section boundaries, for scene design |
 
@@ -154,7 +154,7 @@ See [`examples/song.example.json`](https://github.com/yongjip/song2mv/blob/main/
 | `section_ids`, `section_kinds` | `{}` | override the short id (`"Verse 1"` → `v1`) or kind (`calm` / `mid` / `hot`) of a section |
 | `bpm` | `"auto"` | a number forces the tempo |
 | `downbeat_mod4` | `null` | force which beat index (mod 4) starts a bar |
-| `snap_per_beat` | `4` | snap word times to 1/4 beat (16th notes); `3` = a triplet grid (8th-note triplets, for swing and shuffle), `2` = 8th notes, `0` = off. On the beat map when `grid.json` has one; without it, never inside an `off_grid` stretch. Words pinned in `manual` are never snapped |
+| `snap_per_beat` | `4` | snap word times to 1/4 beat (16th notes, swung where `grid.json` has `swing`); `3` = a triplet grid (8th-note triplets, for a shuffle or swung 8ths), `2` = 8th notes, `0` = off. On the beat map when `grid.json` has one; without it, never inside an `off_grid` stretch. Words pinned in `manual` are never snapped |
 | `whisper` | small × 3, CPU int8 | `model`, `runs`, `device`, `compute_type`, `threads`, `beam_size` |
 | `auto_reprompt` | `true` | re-hear gaps where no run found a line |
 | `reprompt` | `[]` | extra windows found by ear: `[{"from": 17.5, "to": 30.5, "prompt": "the words sung there"}]` |
