@@ -1,3 +1,6 @@
+import pytest
+
+from song2mv.errors import Song2mvError
 from song2mv.timing.lib import DEFAULT_CONFIG, parse_lyrics
 
 SHEET = """[Intro]
@@ -113,3 +116,24 @@ def test_squeezed_lines_stay_inside_the_song():
     assert len(out) == 3
     assert all(w["t"] < 30.0 for r in out for w in r["words"])
     assert all(r["end"] <= 30.0 for r in out)
+
+
+def mv_for(**cfg):
+    from song2mv.timing.build_lyrics import build
+
+    grid = {"bpm": 120.0, "beat": 0.5, "phi": 0.0, "downbeat_mod4": 0, "bar0": 0.0}
+    return build([line("v1-01", [1.0, 1.5])], grid, {"audio": "/songs/a.mp3", **cfg}, 30.0)[1]
+
+
+def test_vignette_and_flashes_go_from_the_song_config_into_mv_json():
+    assert list(mv_for()) == ["title", "subtitle", "audio", "audio_path", "duration", "grid", "sections", "lines",
+                              "captions", "theme"]  # without the keys, mv.json is as before
+    mv = mv_for(vignette=False, flashes=[[12.5, 0.4], [20, 1]])
+    assert mv["vignette"] is False and mv["flashes"] == [[12.5, 0.4], [20, 1]]
+    assert mv_for(flashes=[])["flashes"] == []
+
+
+@pytest.mark.parametrize("cfg", [{"vignette": "off"}, {"flashes": False}, {"flashes": [12.5]}, {"flashes": [[1, 0.5, 2]]}])
+def test_a_wrong_vignette_or_flashes_value_is_refused(cfg):
+    with pytest.raises(Song2mvError, match=next(iter(cfg))):
+        mv_for(**cfg)

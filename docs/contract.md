@@ -78,7 +78,7 @@ word. Lines may overlap: a backing vocal can start while another line is still s
 **`mv.json`** — the render template's input: `title`, `subtitle`, `audio` (file name), `audio_path` (absolute),
 `duration`, `grid` (`bpm`, `beat`, `phi`, `downbeat_mod4`, `bar0`, `off_grid` from `grid.json`), `sections` (`id`,
 `name`, `kind`, bar-aligned `start` / `end`), `lines` (`id`, `section`, `text`, `start`, `end`, `words`), `captions`,
-`theme`. Also what `check` reads.
+`theme`, and `vignette` and `flashes` when the song config sets them. Also what `check` reads.
 
 **`music.json`** — `duration`, `loudness_db_per_half_second` (mean loudness per 0.5 s, 0 dB = the loudest moment),
 `boundaries` (`[{t, novelty}]`, likely section changes; empty for very short songs), `audio_sha256`.

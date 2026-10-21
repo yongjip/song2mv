@@ -16,5 +16,7 @@
   "reprompt": [],
   "manual": {},
   "end": null,
-  "theme": {}
+  "theme": {},
+  "vignette": true,
+  "flashes": null
 }

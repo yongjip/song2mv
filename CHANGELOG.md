@@ -51,6 +51,11 @@ First release (0.1.0).
   the captions of lines the scenes don't draw, the flashes and the fade-out (no template sky, beat glow, title or
   vignette). The band put the template's starry sky and title around every concept, and a scene that drew its own
   lyrics left the bottom 45 % of the screen empty. Without a `VerticalScene` the short renders as before.
+- `song.json` sets the two effects the template's frame lays over every scene: `"vignette": false` turns off the dark
+  vignette, and `"flashes": [[song time, strength 0–1], …]` replaces the white flash at the start of each hot section
+  (`[]` for none). `sync` copies both into `mv.json`; without them `mv.json` is as before. Neither could be changed
+  without editing the template copy: a concept with lit corners came out darkened, and on a song whose tempo drifts
+  the flash, placed on the one-tempo grid, came 0.35 s before the chorus downbeat.
 - A style pack for paper cut-out, `paper` in the scene kit (`src/kit/styles/paper.tsx`). The kit's people, places
   and objects are flat illustration; a style pack is a few drawing pieces that put any object in another art style:
   - outlines cut by hand: `rect`, `ellipse`, `poly` and `strip`, seeded so that a cut stays the same from frame to

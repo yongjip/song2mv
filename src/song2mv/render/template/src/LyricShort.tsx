@@ -58,7 +58,7 @@ export const LyricShort: React.FC<MvProps> = ({ song, from, hold }) => {
                 <Sky T={T} tint={tint} />
                 <BeatGlow T={T} color={glow} strength={strength} />
                 <Scene T={T} />
-                <Vignette />
+                {song.vignette !== false && <Vignette />}
               </div>
               {/* title (still) */}
               {song.title && (
