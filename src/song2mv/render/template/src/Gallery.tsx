@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
-  Camera, Car, City, Flames, Flash, Hit, HitKind, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
+  Camera, Car, City, Flames, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, shade, SKINS, STRIDE,
 } from "./kit";
 import sample from "./sample-song.json";
@@ -383,6 +383,111 @@ const Thunder: React.FC<{ T: number }> = ({ T }) => {
   );
 };
 
+/** A smooth closed outline through the points (Catmull-Rom), for the faces below */
+const outline = (pts: Pt[]) => {
+  const n = pts.length, at = (i: number) => pts[((i % n) + n) % n];
+  let d = `M${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 0; i < n; i++) {
+    const [p0, p1, p2, p3] = [at(i - 1), at(i), at(i + 1), at(i + 2)];
+    d += `C${(p1[0] + (p2[0] - p0[0]) / 6).toFixed(1)} ${(p1[1] + (p2[1] - p0[1]) / 6).toFixed(1)} ${(p2[0] - (p3[0] - p1[0]) / 6).toFixed(1)} ${(p2[1] - (p3[1] - p1[1]) / 6).toFixed(1)} ${p2[0]} ${p2[1]}`;
+  }
+  return `${d}Z`;
+};
+
+/**
+ * Crying at night, in close-up: a face drawn for the scene (eyes shut, brows up), tears welling, running down both
+ * cheeks and dripping off the jaw, rain-blurred lights behind. Beside it, on paper, a flat crying face with flat tears.
+ */
+const Crying: React.FC<{ T: number }> = ({ T }) => {
+  const skin = SKINS.light, skinS = mix(skin, "#5b2238", 0.22), hair = "#22161a", hairHi = mix(hair, "#8a6a8a", 0.35), top = "#3b4fb0";
+  const ink = "#3a2228";
+  const face: Pt[] = [[640, 262], [748, 300], [790, 385], [800, 470], [782, 560], [742, 624], [684, 662], [640, 670], [596, 662], [538, 624], [498, 560], [480, 470], [490, 385], [532, 300]];
+  const eye = (cx: number, k: number) => (
+    <g>
+      {/* shut, the outer end turned down; three lashes there */}
+      <path d={`M${cx - 38 * k} 470Q${cx} 494 ${cx + 40 * k} 476`} stroke={ink} strokeWidth={5.5} fill="none" strokeLinecap="round" />
+      {[0.6, 0.82, 1].map((u, i) => (
+        <path key={i} d={`M${cx + 40 * k * u} ${476 + 8 * (1 - u)}l${(7 + 3 * i) * k} ${5 + i * 2.5}`} stroke={ink} strokeWidth={3.6} strokeLinecap="round" />
+      ))}
+      {/* the lid, wet and catching the light */}
+      <path d={`M${cx - 26 * k} 486Q${cx} 501 ${cx + 30 * k} 488`} stroke="#cdeeff" strokeWidth={2.6} fill="none" strokeLinecap="round" opacity={0.75} />
+      {/* the brow: its inner end raised */}
+      <path d={`M${cx + 48 * k} 421Q${cx + 6 * k} 404 ${cx - 32 * k} 388Q${cx - 40 * k} 392 ${cx - 36 * k} 400Q${cx + 4 * k} 414 ${cx + 48 * k} 421Z`} fill={hair} />
+    </g>
+  );
+  return (
+    <>
+      <div style={{ position: "absolute", left: 0, top: 0, width: 1280, height: 1080, overflow: "hidden" }}>
+        <Svg>
+          <defs>
+            <linearGradient id="g18-bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#0a0d26" />
+              <stop offset="1" stopColor="#1d2252" />
+            </linearGradient>
+            <clipPath id="g18-face"><path d={outline(face)} /></clipPath>
+          </defs>
+          <rect x={0} y={0} width={1280} height={1080} fill="url(#g18-bg)" />
+          {/* lights through a rainy window, out of focus */}
+          {([[150, 220, 70, "#ffb36b"], [300, 520, 46, "#5fa8ff"], [96, 760, 80, "#ff5fd2"], [1010, 170, 64, "#5fa8ff"], [1150, 420, 90, "#ffb36b"],
+            [1010, 690, 50, "#ffd36b"], [1200, 860, 70, "#5fa8ff"], [250, 950, 60, "#ffb36b"], [880, 120, 36, "#ffd36b"]] as const).map(([x, y, r, c], i) => (
+            <circle key={i} cx={x + 6 * Math.sin(T * 0.3 + i)} cy={y} r={r} fill={c} opacity={0.26 + 0.05 * Math.sin(T * 0.7 + i * 2)} filter="url(#blur-10)" />
+          ))}
+          <Rain T={T} strength={0.35} speed={1400} n={500} color="#8fa6e8" id="g18-rain" />
+          {/* hair behind the head, falling over the shoulders */}
+          <path d={outline([[640, 200], [784, 236], [858, 360], [866, 600], [896, 850], [812, 892], [640, 870], [468, 892], [384, 850], [414, 600], [422, 360], [496, 236]])} fill={hair} />
+          {/* shoulders in a hoodie: the far side in shadow, the hood round the neck, its strings */}
+          <path d={outline([[640, 768], [806, 794], [968, 904], [1016, 1100], [264, 1100], [312, 904], [474, 794]])} fill={top} />
+          <path d={outline([[760, 790], [900, 850], [990, 960], [1016, 1100], [800, 1100], [820, 960]])} fill={mix(top, "#0b0d26", 0.3)} />
+          <path d={outline([[540, 746], [640, 778], [740, 746], [790, 806], [640, 856], [490, 806]])} fill={mix(top, "#0b0d26", 0.4)} />
+          <path d="M612 842L604 960M668 842L676 960" stroke={mix(top, "#ffffff", 0.7)} strokeWidth={5} strokeLinecap="round" />
+          {/* the neck, a shadow under the chin */}
+          <path d="M598 600Q600 700 590 780Q640 806 690 780Q680 700 682 600Z" fill={skin} />
+          <path d="M598 600Q600 690 596 716Q640 690 684 716Q680 690 682 600Z" fill={skinS} />
+          {/* the face: lit from the window on the left; the far side and under the jaw a tone darker, a cool rim on the near cheek */}
+          <path d={outline(face)} fill={skin} />
+          <g clipPath="url(#g18-face)">
+            <path d="M400 200H900V720H400ZM565 468m-200 0a200 252 0 1 0 400 0a200 252 0 1 0 -400 0Z" fill={skinS} fillRule="evenodd" />
+            <path d="M400 200H900V720H400ZM716 452m-216 0a216 262 0 1 0 432 0a216 262 0 1 0 -432 0Z" fill="#a9c8ff" fillRule="evenodd" opacity={0.2} />
+            <ellipse cx={548} cy={552} rx={44} ry={24} fill="#ff6f86" opacity={0.3} />
+            <ellipse cx={732} cy={552} rx={44} ry={24} fill="#ff6f86" opacity={0.3} />
+          </g>
+          {eye(580, -1)}
+          {eye(700, 1)}
+          {/* nose and a trembling mouth */}
+          <path d="M648 508Q664 548 644 562Q630 566 622 558" stroke={skinS} strokeWidth={5} fill="none" strokeLinecap="round" />
+          <path d="M610 614Q640 598 670 614Q640 628 610 614Z" fill="#9a3a4a" />
+          {/* the fringe, parted a little off the middle, framing the forehead */}
+          <path d={outline([[626, 222], [560, 238], [504, 300], [482, 400], [486, 520], [500, 456], [522, 384], [566, 324], [626, 292]])} fill={hair} />
+          <path d={outline([[626, 222], [700, 230], [770, 290], [798, 400], [794, 520], [778, 452], [752, 380], [700, 318], [626, 292]])} fill={hair} />
+          <path d={outline([[618, 236], [566, 252], [526, 300], [552, 282], [604, 262]])} fill={hairHi} opacity={0.7} />
+          <path d={outline([[640, 236], [700, 244], [748, 286], [700, 262]])} fill={hairHi} opacity={0.5} />
+          {/* tears: from the outer end of each eye, down the cheek, dripping off the jaw */}
+          <Tears T={T} x={544} y={480} s={3.2} times={[7.6, 8.85]} path={[[0, 0], [-4, 50], [-6, 100], [-2, 152]]} fall={1100} />
+          <Tears T={T} x={738} y={482} s={3.2} times={[8.3, 9.3]} path={[[0, 0], [5, 50], [6, 102], [0, 150]]} fall={1100} />
+        </Svg>
+      </div>
+      <Svg>
+        <paper.Stack id="g18">
+          <Cut d={rect(1280, -20, 660, 1120, 500)} fill={PC.plum} />
+          <Cut d={ellipse(1600, 520, 200, 200, 501)} fill={PC.mustard} lift={10}>
+            <Cut d={ellipse(1530, 580, 34, 20, 502)} fill={PC.coral} lift={0.6} />
+            <Cut d={ellipse(1670, 580, 34, 20, 503)} fill={PC.coral} lift={0.6} />
+            <Cut d={strip([[1498, 504], [1514, 514], [1530, 518], [1546, 514], [1562, 504]], 9, 9, 504)} fill={PC.charcoal} lift={0.8} />
+            <Cut d={strip([[1638, 504], [1654, 514], [1670, 518], [1686, 514], [1702, 504]], 9, 9, 505)} fill={PC.charcoal} lift={0.8} />
+            <Cut d={strip([[1494, 458], [1528, 450], [1560, 432]], 8, 8, 506)} fill={PC.brown} lift={0.8} />
+            <Cut d={strip([[1640, 432], [1672, 450], [1706, 458]], 8, 8, 507)} fill={PC.brown} lift={0.8} />
+            <Cut d={ellipse(1600, 630, 34, 22, 508)} fill={PC.charcoal} lift={0.8} />
+          </Cut>
+          <Cut d="" fill="none" lift={4}>
+            <Tears T={paper.step(T)} x={1504} y={512} s={3.6} times={[8.4, 9.2]} side={-1} flat color={PC.sky} shine={PC.white} fall={1080} />
+            <Tears T={paper.step(T)} x={1696} y={512} s={3.6} times={[8.9]} flat color={PC.sky} shine={PC.white} fall={1080} />
+          </Cut>
+        </paper.Stack>
+      </Svg>
+    </>
+  );
+};
+
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -571,6 +676,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Storm and lightning, and flat on paper",
     draw: (T) => <Thunder T={T} />,
+  },
+  {
+    name: "Tears: crying in close-up, and flat on paper",
+    draw: (T) => <Crying T={T} />,
   },
 ];
 
