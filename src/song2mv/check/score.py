@@ -61,12 +61,13 @@ def probe_size(mp4: str) -> tuple[int, int]:
 
 
 def decode_gray(mp4: str, W: int, H: int) -> np.ndarray:
-    p = subprocess.Popen(["ffmpeg", "-v", "error", "-i", mp4, "-vf", f"fps=10,scale={W}:{H},format=gray", "-f", "rawvideo", "-"],
-                         stdout=subprocess.PIPE, bufsize=10**8)
-    assert p.stdout
-    buf = p.stdout.read()
-    n = len(buf) // (W * H)
-    return np.frombuffer(buf[: n * W * H], np.uint8).reshape(n, H, W).astype(np.int16)
+    r = subprocess.run(["ffmpeg", "-v", "error", "-i", mp4, "-vf", f"fps=10,scale={W}:{H},format=gray", "-f", "rawvideo", "-"],
+                       capture_output=True)
+    n = len(r.stdout) // (W * H)
+    if n < 2:
+        detail = (r.stderr.decode(errors="replace").strip().splitlines() or ["no frames"])[-1]
+        raise Song2mvError(f"{mp4} has no frames to measure: {detail}")
+    return np.frombuffer(r.stdout[: n * W * H], np.uint8).reshape(n, H, W).astype(np.int16)
 
 
 def lint_text(pattern: str, min_px: int) -> tuple[int, list[int], list[str]]:
@@ -101,7 +102,7 @@ def load_goals(path: str | None) -> dict:
 
 
 def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0.0, t1: float | None = None,
-          src_glob: str | None = None, quiet: bool = False) -> dict:
+          src_glob: str | None = None, quiet: bool = False, report: bool = True) -> dict:
     if t0 < 0 or (t1 is not None and t1 <= t0):
         raise Song2mvError(f"--from must be zero or more and --to after it (got --from {t0:g}, --to {t1})")
     goals = load_goals(goals_path)
@@ -114,8 +115,6 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     W, H = (180, 320) if portrait else (320, 180)
     body_frac = goals["frame"]["body_frac_9x16" if portrait else "body_frac_16x9"]
     F = decode_gray(mp4, W, H)
-    if len(F) < 2:
-        raise Song2mvError(f"{mp4} has no frames to measure")
     # the measured stretch, in song time: from the video's first frame to its last (or --to, if earlier)
     video_end = t0 + len(F) / 10
     if t1 is not None and t1 > video_end + 0.5:
@@ -255,22 +254,23 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
             check("text.min_font", not off, min(sizes) if sizes else None, {"min": gt["min_font_px"]},
                   f"{len(off)} sizes under {gt['min_font_px']}px {off[:10]}", offenders=off)
 
-    for w in warnings:
-        print(f"  ! {w}")
-    if not quiet:
-        print(f"{'id':8s} {'move':>5s} {'cover':>6s}  text")
-        flagged = {x["id"] for x in low} | {x["id"] for x in empty}
-        for r, m, c in per:
-            print(f"{r['id']:8s} {m:5.2f} {c:6.3f}  {r['text'][:28]}{' ◀' if r['id'] in flagged else ''}")
-        print(f"cuts at: {[round(t, 1) for t in cut_t]}\n")
-    for k, r in results.items():
-        if not quiet or not r["ok"]:
-            print(("PASS " if r["ok"] else "FAIL ") + k + " — " + r["msg"])
-    if not quiet:
-        for k, why in skipped.items():
-            print(f"SKIP {k} — {why}")
     passed = sum(r["ok"] for r in results.values())
-    print(f"\n{passed}/{len(results)} passed (song time {t0:g}–{t_end:.1f} s)")
+    if report:
+        for w in warnings:
+            print(f"  ! {w}")
+        if not quiet:
+            print(f"{'id':8s} {'move':>5s} {'cover':>6s}  text")
+            flagged = {x["id"] for x in low} | {x["id"] for x in empty}
+            for r, m, c in per:
+                print(f"{r['id']:8s} {m:5.2f} {c:6.3f}  {r['text'][:28]}{' ◀' if r['id'] in flagged else ''}")
+            print(f"cuts at: {[round(t, 1) for t in cut_t]}\n")
+        for k, r in results.items():
+            if not quiet or not r["ok"]:
+                print(("PASS " if r["ok"] else "FAIL ") + k + " — " + r["msg"])
+        if not quiet:
+            for k, why in skipped.items():
+                print(f"SKIP {k} — {why}")
+        print(f"\n{passed}/{len(results)} passed (song time {t0:g}–{t_end:.1f} s)")
     return stamp({
         "command": "check",
         "video": os.path.abspath(mp4),

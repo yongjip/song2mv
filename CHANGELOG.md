@@ -30,6 +30,8 @@ First release (0.1.0).
     were blamed for the chorus hit: 12.2 and 11.6 against `motion.max`'s 9. They now measure 1.8 and 3.9.
   - **`text.min_font` reads `fontSize` only** (`fontSize: 30`, `fontSize={30}`, `fontSize="30"`). It read any
     `size` prop, such as `Hit size={…}`, and missed `fontSize={30}` on SVG text.
+  - **`--json` prints only the JSON.** The table went to stderr, so `> out.json 2>&1` was not JSON. Now nothing
+    else is printed, ffmpeg's messages included.
 - `song2mv render` (experimental): Remotion lyric-video template, 16:9 and 9:16, `--hold` for hook cuts,
   `--template DIR` for your own scenes. `outputs` names exactly the files written.
 - The template's lyrics are easier to read.

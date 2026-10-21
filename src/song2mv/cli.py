@@ -132,7 +132,7 @@ def cmd_check(a) -> dict:
     _existing_file(a.song, "mv.json")
     _existing_file(a.goals, "goals file")
     from .check.score import score
-    return score(a.video, a.song, a.goals, a.start, a.end, a.src, a.quiet)
+    return score(a.video, a.song, a.goals, a.start, a.end, a.src, a.quiet, report=not a.json)
 
 
 def cmd_render(a) -> dict:
@@ -190,7 +190,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--goals", help="goals file; it only needs the values it changes (default: the bundled starting point)")
     c.add_argument("--src", help="glob of scene sources to check font sizes in, e.g. 'video/src/scenes/**/*.tsx'")
     c.add_argument("--quiet", action="store_true", help="print failures only")
-    c.add_argument("--json", action="store_true")
+    c.add_argument("--json", action="store_true", help="print only the JSON result on stdout, no table")
     c.set_defaults(func=cmd_check)
 
     r = sub.add_parser("render", help="[experimental] render mv.json with the Remotion template (needs Node)")

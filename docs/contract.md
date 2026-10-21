@@ -13,7 +13,9 @@ What scripts and coding agents can rely on. song2mv is alpha (0.x): formats may 
 ## `--json` results
 
 With `--json`, progress goes to stderr and stdout carries exactly one JSON object — also when the command fails.
-Every result has `command` and `ok`; `outputs` is always an object, file name → absolute path.
+Every result has `command` and `ok`; `outputs` is always an object, file name → absolute path. `check` has no
+progress: with `--json` it prints nothing but the object, so `> out.json 2>&1` holds valid JSON unless it fails with
+an error.
 
 | command | fields |
 | --- | --- |

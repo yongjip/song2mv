@@ -159,3 +159,16 @@ def test_in_9x16_the_caption_rows_are_not_picture_even_with_a_vertical_scene(tmp
                                        "lines": [{"id": "ch1-01", "section": "ch1", "text": "sung", "start": 2.0, "end": 6.0}]})
     res = score(str(mp4), str(song), src_glob=str(scenes / "**" / "*.tsx"), quiet=True)
     assert res["per_line"][0]["motion"] < 0.1 and res["results"]["motion.min"]["ok"] is False
+
+
+def test_json_prints_the_json_and_nothing_else(tmp_path, capfd):
+    # `song2mv check ... --json > out.json 2>&1` gives valid JSON: no table, and nothing from ffmpeg
+    from song2mv.cli import main
+
+    mp4 = make_video(tmp_path)
+    song = write(tmp_path, "mv.json", SONG)
+    assert main(["check", str(mp4), "--song", str(song), "--json"]) == 1  # the frozen chorus line fails
+    out, err = capfd.readouterr()
+    assert err == "" and json.loads(out)["command"] == "check"
+    assert main(["check", str(mp4), "--song", str(song)]) == 1
+    assert "passed (song time" in capfd.readouterr().out  # without --json, the table is for people
