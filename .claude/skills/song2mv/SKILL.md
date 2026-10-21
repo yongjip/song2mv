@@ -181,8 +181,8 @@ scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` pu
 Look at it before you design anything:
 
 ```bash
-cd <work>/video && npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 22 scenes
-npx remotion still src/index.ts Kit-Gallery scene.png --frame=4                        # one at full size (1–22)
+cd <work>/video && npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 23 scenes
+npx remotion still src/index.ts Kit-Gallery scene.png --frame=4                        # one at full size (1–23)
 ```
 
 `src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc
@@ -190,7 +190,7 @@ comment in `src/kit/` lists what each prop does. Scenes 1–12 are the kit's pie
 Scene 13 is the paper style pack. Scenes 14–20 are helpers that fit any style, their colours and shapes being props
 (most of those tiles draw the helper again, flat on paper), and a person in bed: one world filmed as shots (14), hits
 (15), flames (16), a storm (17), tears (18), lying awake in bed (19), falling cash (20). Scene 21 is a recipe that
-combines them. Scene 22 is the pixel style pack.
+combines them. Scene 22 is the pixel style pack, scene 23 the comic style pack.
 
 | family | pieces | for |
 |---|---|---|
@@ -202,8 +202,8 @@ combines them. Scene 22 is the pixel style pack.
 | effects | `Rain` (`strength`, splashes on `ground`), `Fireworks` (`bursts` at times), `Confetti`, `Hit` (`burst`, `sparkle` or `ring` at a point and time), `Flames` (a fire to a candle; `flat`, `wind`, `strength`) and `FlamesAlong` (an object's edge on fire), `Storm` (a storm deck of `Clouds` lit from inside by its `strikes`) and `Lightning` (`fork` or `zigzag` bolts; a strike's `to` aims it at a point), `strikeFlashes()` (for `Flash`), `Tears` (well up, run down a cheek, drip; `spot` dampens where they land), `Cash` (banknotes tumbling down) | weather, hits and the big moments |
 | text | `Slam`, `Quiet`, `BigLine`, `Captions` | lines in the scene |
 
-**Style packs** (`src/kit/styles/`, one namespace each: `import { paper, pixel } from "../kit"`). `paper`, for paper
-cut-out:
+**Style packs** (`src/kit/styles/`, one namespace each: `import { paper, pixel, comic } from "../kit"`). `paper`, for
+paper cut-out:
 - outlines cut by hand, each with its own seed: `paper.rect`, `paper.ellipse`, `paper.poly`, `paper.strip` (stems,
   cords, steam); join outlines to cut holes;
 - `paper.Cut`: one piece, placed with `x`, `y`, `rotate`, `s`; `lift` raises it off the paper under it and its
@@ -222,6 +222,10 @@ cut-out:
   the em, so lyrics stay crisp type. Where the stage is drawn smaller, pass its size as `stageScale` (0.76 in the
   9:16 band);
 - `pixel.colors`, and `pixel.step(T)` for the held 8 steps a second of sprite animation.
+
+`comic`, for a comic page: `comic.Page` holds `comic.Panel`s, each filming the world with its own `shots`; `comic.Ink`
+prints colour off register under ink lines (one Ink per layer, back to front), with `comic.Dots` for Ben-Day dots;
+`comic.Balloon` and `comic.Caption` letter a `Line` as it is sung, unsung words ghosted; `comic.Sfx` slams once.
 
 Putting a scene together:
 
@@ -262,7 +266,13 @@ Rules that held up:
    `check` reads only the size literals in the source, not what a camera or a `scale()` makes of them.
 5. Pull timing from data: `useSong().lineById["ch1-01"].words[0].t`, `grid.bar(k)`, `grid.pulse(T)`.
 
-Typecheck (`cd <work>/video && npx tsc --noEmit`), then look at stills of the new section before rendering video.
+Typecheck (`cd <work>/video && npx tsc --noEmit`), then look at stills of the new section before rendering video. A
+contact sheet draws the scene at many song times in one render, each frame labelled with its time (`"cols"`: frames per
+row; `"vertical": true`: the 9:16 frame):
+
+```bash
+cd <work>/video && npx remotion still src/index.ts Contact sheet.png --props="{\"times\": [33.1, 34.6, 36.2, 37.7], \"song\": $(cat ../mv.json)}"
+```
 
 ## 5. Render and check
 

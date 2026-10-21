@@ -113,6 +113,10 @@ First release (0.1.0).
   the skill asks for before a concept is picked, in one command (in the skill's step 3). Nothing rendered concepts
   before, so both demo runs exported each one as `Scene` in turn, rendered a still of each and stacked them by hand.
   The template ships an empty `index.ts` there.
+- A `Contact` composition in the template draws the song's `Scene` at a list of song times on one sheet, each frame
+  labelled with its time: props `times` and `cols` (frames per row), and `vertical` for the 9:16 frame (the
+  `VerticalScene`, or `Scene` in the short's band). Many moments cost one render; each `render --still` bundles again
+  (about 5 s), so both demo runs built their own contact sheet to review a video. The skill's step 4 has the command.
 - A style pack for paper cut-out, `paper` in the scene kit (`src/kit/styles/paper.tsx`). The kit's people, places
   and objects are flat illustration; a style pack is a few drawing pieces that put any object in another art style:
   - outlines cut by hand: `rect`, `ellipse`, `poly` and `strip`, seeded so that a cut stays the same from frame to
@@ -157,6 +161,20 @@ First release (0.1.0).
   Gallery tile 22 draws a corner shop at dusk with it and turns the kit's `Person` and `Car` into outlined pixels.
   `Pixelate` samples the picture with one dot per block: where the stage is drawn smaller than full size (0.76 in the
   9:16 band), pass that size as `stageScale`, or the picture can flicker or vanish as it moves.
+- A style pack for comic pages, `comic` in the scene kit (`src/kit/styles/comic.tsx`):
+  - `Page`, the paper (1920×1080, or 1080×1920 with `w` and `h`), and `Panel`, a box on it that films the scene with
+    its own camera (the kit's `shots`, `hits` and punch) and pops or slides in at `t`; `layout` splits a page into
+    rows of panels;
+  - `Ink`, which prints its drawing twice: the colours a few px off register, then ink outlines over them, heavier in
+    close-ups. One `Ink` per layer, back to front, since an `Ink` draws its lines over its own colours only. `Flat`
+    marks colour without a line, and `Dots` are Ben-Day dots that keep their size on the page at any zoom;
+  - `Balloon` (speech, shout or thought) and `Caption`, which letter a `Line` word by word as it is sung, unsung words
+    ghosted, and `Sfx`, sound-effect lettering that slams in once and holds still;
+  - a palette, and font stacks for lettering and display type.
+
+  Gallery tile 23 draws a kitchen morning as a comic page: the wide panel frozen just before the toaster pops, then
+  close-ups of the pop, the face and the cat. The second demo run, drawn as a comic, had to build this engine in the
+  song's copy before it could draw the song.
 - Adding to the kit by pull request. `CONTRIBUTING.md` says how to add an asset or a style pack: original drawings,
   MIT, no media files, the kit's rules, a gallery tile and a still. The pull request template asks for them, and CI
   renders every gallery tile and keeps the PNGs for 14 days as the run's `kit-gallery` artifact. Once a video is

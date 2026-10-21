@@ -25,3 +25,4 @@ export * from "./recipes";
 // Style packs: drawing pieces that put any object in one art style, one namespace each (paper.Cut, pixel.Canvas …)
 export * as paper from "./styles/paper";
 export * as pixel from "./styles/pixel";
+export * as comic from "./styles/comic";
