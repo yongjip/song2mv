@@ -184,7 +184,7 @@ song2mv check video.mp4 --song mv.json [--from 92 --to 102] [--goals my-goals.js
 | `coverage.min` / `coverage.median` | share of lit pixels: no empty black screens |
 | `variation.repeats` | chorus 2 should not look like chorus 1 |
 | `cuts.rhythm.<section>` / `cuts.max_gap` | uneven cut intervals inside verses; no long stretch without a cut |
-| `text.min_font` | no font size under 36 px in scene sources (with `--src`) |
+| `text.min_font` | no `fontSize` under 36 px in scene sources (with `--src`) |
 
 `--from` is the song time of the video's first frame; the measured stretch ends with the video unless `--to` ends it
 earlier. Checks that cannot run on a stretch (no repeated section in it, too few cuts) are listed as skipped, not

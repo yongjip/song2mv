@@ -28,6 +28,8 @@ First release (0.1.0).
     section's start, or up to the last cut in the beat before it: a scene hits the downbeat it hears, which on a
     drifting tempo comes before mv.json's bar line. The run's two pre-chorus counts ended on the chorus downbeat and
     were blamed for the chorus hit: 12.2 and 11.6 against `motion.max`'s 9. They now measure 1.8 and 3.9.
+  - **`text.min_font` reads `fontSize` only** (`fontSize: 30`, `fontSize={30}`, `fontSize="30"`). It read any
+    `size` prop, such as `Hit size={…}`, and missed `fontSize={30}` on SVG text.
 - `song2mv render` (experimental): Remotion lyric-video template, 16:9 and 9:16, `--hold` for hook cuts,
   `--template DIR` for your own scenes. `outputs` names exactly the files written.
 - The template's lyrics are easier to read.

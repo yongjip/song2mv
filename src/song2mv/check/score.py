@@ -70,12 +70,12 @@ def decode_gray(mp4: str, W: int, H: int) -> np.ndarray:
 
 
 def lint_text(pattern: str, min_px: int) -> tuple[int, list[int], list[str]]:
-    """Font sizes in scene sources: (files matched, sizes found, offenders under min_px)."""
+    """`fontSize` values in scene sources: (files matched, sizes found, offenders under min_px)."""
     files = glob.glob(pattern, recursive=True)
     sizes, offenders = [], []
     for f in files:
         src = open(f, encoding="utf-8").read()
-        for m in re.finditer(r"(?:size=\{|size: |fontSize: )(\d+)(?![\d.])", src):
+        for m in re.finditer(r"\bfontSize\s*[:=]\s*\{?\s*[\"']?(\d+)(?![\d.])", src):
             sizes.append(int(m.group(1)))
             if int(m.group(1)) < min_px:
                 offenders.append(f"{f}:{src[: m.start()].count(chr(10)) + 1} {m.group(1)}px")

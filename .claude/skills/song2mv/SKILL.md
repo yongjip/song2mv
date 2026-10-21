@@ -230,7 +230,8 @@ song2mv check <work>/renders/<name>-16x9-A-B.mp4 --song <work>/mv.json --from A 
 ```
 
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
-work folder's name, or `--name`). Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`
+work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
+contact sheets outside `src/scenes/`. Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`
 did not run on this stretch; they did not pass. If a FAIL is the ruler's fault (a deliberately still, quiet
 intro line), copy the goals file, add the line id to `motion.quiet_allow`, pass `--goals` and tell the user why —
 don't quietly bend the goals.

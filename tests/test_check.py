@@ -121,3 +121,20 @@ def test_the_hit_that_opens_a_section_is_not_blamed_on_the_line_sung_into_it(tmp
     frantic = res["results"]["motion.max"]
     assert [x["id"] for x in frantic["lines"]] == (["pc1-04"] if blamed else [])
     assert next(r for r in res["per_line"] if r["id"] == "pc1-04")["motion"] > 0.6  # its own shot still moves
+
+
+def test_the_font_lint_reads_font_sizes_not_size_props(tmp_path):
+    from song2mv.check.score import score
+
+    scenes = tmp_path / "video" / "src" / "scenes"
+    scenes.mkdir(parents=True)
+    scene = scenes / "Scene.tsx"
+    scene.write_text('<Hit T={T} t={2} x={960} y={540} size={20} />\n'
+                     '<div style={{ fontSize: 24, padding: 8 }}>small</div>\n'
+                     '<text x={10} y={20} fontSize={30}>small</text>\n'
+                     '<text fontSize="48">big</text>\n', encoding="utf-8")
+    res = score(str(make_video(tmp_path)), str(write(tmp_path, "mv.json", SONG)), src_glob=str(scenes / "**" / "*.tsx"),
+                quiet=True)
+    font = res["results"]["text.min_font"]
+    assert font["ok"] is False and font["value"] == 24
+    assert font["offenders"] == [f"{scene}:2 24px", f"{scene}:3 30px"]
