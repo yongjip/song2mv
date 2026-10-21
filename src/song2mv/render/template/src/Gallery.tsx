@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
   Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
-  Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, shade, SKINS, STRIDE,
+  Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, pixel, rng, shade, SKINS, STRIDE,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -495,6 +495,163 @@ const Crying: React.FC<{ T: number }> = ({ T }) => {
   );
 };
 
+const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
+  const t = pixel.step(T);
+  const { Canvas, colors: X } = pixel;
+  const random = rng(22);
+  const back = new Canvas(), front = new Canvas();
+  const glow = (canvas: pixel.Canvas, cx: number, cy: number, rx: number, ry: number, color: string, strength: number) => {
+    for (let y = Math.ceil(cy - ry); y <= cy + ry; y++)
+      for (let x = Math.ceil(cx - rx); x <= cx + rx; x++) {
+        const d = Math.hypot((x - cx) / rx, (y - cy) / ry);
+        if (d < 1) canvas.dither(x, y, 1, 1, color, strength * (1 - d));
+      }
+  };
+
+  const skyAndSun = () => {
+    const bands: [number, string][] = [[0, X.navy], [22, X.dusk], [42, X.plum], [58, X.rose], [71, X.coral], [83, X.orange]];
+    bands.forEach(([y0, c], i) => {
+      back.box(0, y0, 240, (bands[i + 1]?.[0] ?? 96) - y0, c);
+      if (i) back.dither(0, y0 - 2, 240, 2, c);
+    });
+    [[14, 5], [47, 12], [83, 4], [121, 9], [158, 3], [199, 13], [229, 6]].forEach(([x, y], i) => {
+      back.set(x, y, X.cream);
+      if ((Math.floor(t * 2) + i) % 3 === 0) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) back.set(x + dx, y + dy, X.stone);
+    });
+    back.disc(200, 84, 15, 15, X.gold);
+    for (let y = 86; y < 100; y += 3) back.box(184, y, 33, 1 + Math.floor((y - 86) / 5), X.orange);
+  };
+  const cloudLitFromBelow = (x0: number, base: number, speed: number, puffs: [number, number][]) => {
+    const x = Math.round(((x0 + t * speed) % 300) - 30);
+    for (const [c, dy] of [[X.gold, 2], [X.coral, 1], [X.plum, -1], [X.rose, 0]] as const)
+      for (const [dx, k] of puffs) back.disc(x + dx, base - 0.7 * k + dy, k, 0.7 * k, c);
+  };
+  const birds = () =>
+    [[0, 34], [7, 38], [12, 31]].forEach(([dx, y], i) => {
+      const x = Math.round(250 - ((t * 12 + 246) % 280) + dx);
+      const wingsUp = (Math.floor(t * 4) + i) % 2 === 0;
+      back.line(wingsUp ? [[x - 2, y - 1], [x, y + 1], [x + 2, y - 1]] : [[x - 2, y + 1], [x, y], [x + 2, y + 1]], 1, X.ink);
+    });
+  const townWithLitWindows = () =>
+    ([[104, 16, 54], [118, 12, 62], [129, 18, 46], [146, 10, 58], [155, 17, 42], [172, 12, 66], [184, 34, 90], [218, 10, 58], [228, 12, 48]] as const).forEach(([x, w, top]) => {
+      back.box(x, top, w, 96 - top, mix(X.dusk, X.ink, 0.35));
+      for (let y = top + 3; y < 92; y += 4) for (let wx = x + 2; wx < x + w - 1; wx += 3) if (random() < 0.3) back.box(wx, y, 1, 2, X.gold);
+    });
+  const shop = () => {
+    const mortar = shade(X.brick, 0.8), lit = mix(X.cream, X.gold, 0.35);
+    const goods = [X.red, X.blue, X.leaf, X.teal, X.orange, X.white, X.plum, X.sky];
+    back.box(4, 24, 102, 72, X.brick);
+    for (let y = 27; y < 96; y += 4) {
+      back.box(4, y, 102, 1, mortar);
+      for (let x = 6 + ((y >> 2) % 2) * 4; x < 106; x += 8) back.box(x, y + 1, 1, 3, mortar);
+    }
+    back.box(2, 21, 106, 3, X.tan); back.box(2, 21, 106, 1, X.cream); back.box(2, 24, 106, 1, X.brown);
+    back.box(12, 28, 84, 19, X.ink);
+    for (let i = 0; i < 52; i++) {
+      const [x, y] = i < 21 ? [13 + i * 4, 29] : i < 42 ? [13 + (i - 21) * 4, 45] : i < 47 ? [13, 33 + (i - 42) * 3] : [94, 33 + (i - 47) * 3];
+      back.set(x, y, (i + Math.floor(t * 4)) % 3 === 0 ? X.gold : X.brown);
+    }
+    back.dither(8, 61, 92, 2, X.ink, 0.5);
+    for (let x = 8; x < 100; x += 6) {
+      const c = ((x - 8) / 6) % 2 ? X.cream : X.red;
+      back.box(x, 50, 6, 8, c);
+      back.disc(x + 2.5, 58, 3, 2, c);
+    }
+    back.box(8, 49, 92, 1, X.ink);
+    back.box(11, 63, 57, 31, X.tan);
+    back.box(13, 65, 53, 27, lit);
+    back.dither(13, 65, 53, 27, X.gold, 0.25);
+    back.text("OPEN 24H", 16, 66, X.red);
+    [81, 89].forEach((y) => {
+      back.box(13, y, 53, 2, X.brown);
+      for (let x = 14; x < 63; ) {
+        const w = 2 + Math.floor(random() * 3), h = 3 + Math.floor(random() * 4);
+        back.box(x, y - h, Math.min(w, 64 - x), h, goods[Math.floor(random() * goods.length)]);
+        x += w + 1;
+      }
+    });
+    back.box(71, 62, 25, 34, X.tan);
+    back.box(73, 64, 21, 32, X.teal);
+    back.box(75, 66, 17, 17, lit);
+    back.dither(75, 66, 17, 17, X.gold, 0.25);
+    back.box(89, 85, 2, 4, X.gold);
+    const plant = new Canvas();
+    plant.poly([[97, 89], [105, 89], [104, 96], [98, 96]], X.orange);
+    plant.disc(101, 85, 4, 4, X.green); plant.disc(98, 83, 2, 3, X.leaf); plant.disc(104, 82, 2, 3, X.leaf);
+    back.stamp(plant, X.ink);
+  };
+  const streetInLamplight = () => {
+    const pavement = mix(X.grey, X.plum, 0.3);
+    back.box(0, 96, 240, 10, pavement);
+    for (let x = 3; x < 240; x += 12) back.box(x, 97, 1, 9, shade(pavement, 0.85));
+    back.box(0, 96, 240, 1, shade(pavement, 0.75));
+    back.box(0, 106, 240, 1, X.stone); back.box(0, 107, 240, 1, X.ink);
+    back.box(0, 108, 240, 27, mix(X.ink, X.dusk, 0.35));
+    for (let x = 0; x < 240; x += 20) back.box(x + 4, 121, 12, 1, X.cream);
+    glow(back, 39, 101, 32, 4.5, X.gold, 0.35);
+    glow(back, 126, 101, 17, 4.5, X.gold, 0.75);
+    glow(back, 143, 101, 12, 4.5, X.cream, 0.35);
+  };
+  const vendingMachine = () => {
+    const machine = new Canvas();
+    machine.box(134, 64, 18, 32, X.red);
+    machine.box(149, 64, 3, 32, shade(X.red, 0.75));
+    machine.box(136, 67, 11, 15, X.night);
+    for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) machine.box(137 + i * 4, 68 + j * 5, 2, 3, [X.teal, X.gold, X.leaf, X.sky, X.white][(i + 2 * j) % 5]);
+    for (let i = 0; i < 3; i++) machine.set(138 + i * 4, 84, X.cream);
+    machine.box(137, 89, 9, 3, X.ink);
+    back.stamp(machine, X.ink);
+  };
+  const streetLamp = () => {
+    const lamp = new Canvas();
+    lamp.box(115, 36, 2, 60, X.grey); lamp.box(114, 93, 4, 3, X.grey); lamp.box(115, 36, 12, 2, X.grey);
+    lamp.box(122, 38, 8, 2, X.grey); lamp.box(123, 40, 6, 1, X.cream);
+    glow(front, 126, 41, 10, 6, X.cream, 0.5);
+    front.stamp(lamp, X.ink);
+  };
+  const bicycle = () => {
+    for (const cx of [163, 182]) front.line(Array.from({ length: 33 }, (_, i): Pt => [cx + 5 * Math.cos(i / 5), 100 + 5 * Math.sin(i / 5)]), 1, X.ink);
+    front.line([[163, 100], [171, 100], [169, 92], [163, 100]], 1, X.blue);
+    front.line([[169, 92], [179, 92], [171, 100]], 1, X.blue);
+    front.line([[179, 92], [182, 100]], 1, X.blue);
+    front.box(167, 90, 4, 1, X.brown); front.box(178, 90, 3, 1, X.ink);
+  };
+
+  skyAndSun();
+  cloudLitFromBelow(42, 15, 3, [[0, 4], [6, 6], [13, 7], [20, 5], [26, 3]]);
+  cloudLitFromBelow(151, 27, 2, [[0, 3], [6, 5], [12, 6], [18, 4]]);
+  cloudLitFromBelow(188, 46, 4, [[0, 4], [7, 6], [15, 8], [23, 6], [30, 4]]);
+  birds();
+  townWithLitWindows();
+  shop();
+  streetInLamplight();
+  vendingMachine();
+  streetLamp();
+  bicycle();
+
+  const walk = t * 0.8, s = 0.8;
+  const carX = ((t * 300 + 1500) % 2600) - 400;
+  return (
+    <Svg>
+      <pixel.Pixels canvas={back} />
+      {/* one colour per Pixelate: a fill meeting another colour would leave mixed blocks */}
+      {([[X.red, 8, "g22-sign-shadow"], [X.cream, 0, "g22-sign"]] as const).map(([c, d, id]) => (
+        <pixel.Pixelate key={id} id={id}>
+          <text x={432 + d} y={300 + d} textAnchor="middle" dominantBaseline="central" fontSize={104} fontWeight={900} fill={c}>MINI MART</text>
+        </pixel.Pixelate>
+      ))}
+      <pixel.Pixelate id="g22-walker" outline={X.ink}>
+        <Person x={((STRIDE * s * walk + 300) % 2300) - 200} y={828} s={s} pose="walk" phase={walk} T={t} shadow={false}
+          look={{ hair: "ponytail", top: X.coral, pants: X.navy, hairColor: X.ink }} />
+      </pixel.Pixelate>
+      <pixel.Pixels canvas={front} />
+      <pixel.Pixelate id="g22-car" outline={X.ink}>
+        <Car T={t} x={carX} y={1022} s={0.62} color={X.sky} time="dusk" distance={(t * 300) / 0.62} id="g22-car-body" />
+      </pixel.Pixelate>
+    </Svg>
+  );
+};
+
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -732,6 +889,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Recipe: sleepless in a storm (8 parts)",
     draw: (T) => <SleeplessStorm T={T} strikes={[6.2, 9.5]} tears={[7, 8.75]} from={4} />,
+  },
+  {
+    name: "Style pack: pixel art",
+    draw: (T) => <PixelCorner T={T} />,
   },
 ];
 
