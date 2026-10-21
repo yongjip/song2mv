@@ -73,10 +73,29 @@ song2mv render <work>/mv.json --still <time> --aspect both          # PNGs you c
 Look at the stills yourself. This plain lyric video is the floor: captions in time, sections coloured by energy,
 choruses big. Show it to the user early — sometimes it is all they need.
 
-## 3. Scene design
+## 3. Concept, then the song map
 
-A music video is not the lyrics on a background. Write a **song map** first, `<work>/map.md`, and agree on it with
-the user before coding:
+Every song gets its own look. One kit or template applied to every song makes every video look alike, so the look is
+decided before you touch the kit.
+
+**Propose two or three concepts and let the user pick one.** They must differ in more than colour: a different art
+style and a different central image. For each, write:
+
+- **Idea:** one line, the image that carries the song, taken from its lyrics and mood.
+- **Art style:** what fits this song, not what is quickest to build. Some options:
+  - flat illustration (the kit's own style);
+  - paper cut-out with drop shadows, or ink lines on paper, or chalk on a blackboard;
+  - pixel art, or a retro VHS / photocopy look;
+  - collage, or watercolour washes;
+  - an isometric miniature;
+  - kinetic typography only, or neon signs on brick.
+- **Palette and texture.**
+- **Main character or motif,** and how it changes over the song.
+- **First chorus:** how it hits, the song's biggest moment.
+
+Make each concept concrete enough to picture: render one rough still per concept and show them side by side.
+
+**Then the song map** for the chosen concept, `<work>/map.md`. Agree on it with the user before coding:
 
 - Per section (from `mv.json` sections; `<work>/music.json` has the loudness curve and likely boundaries): bars,
   energy (rising / peak / falling), what the lyrics say, **one visual idea**, colour.
@@ -88,6 +107,15 @@ the user before coding:
   (2 bars, 1 bar, 3 bars …), not every bar.
 - **Text**: which lines become big type in the scene (`Slam`, `BigLine`), which stay as bottom captions.
 
+**The kit is optional.** Use its pieces where they fit the concept. If the concept is drawn in another style, draw
+its pieces in that style yourself; you can still reuse the kit's timing and motion code:
+- `useSong()` and `grid`;
+- `Drift`, `liveLine`, and the easing and `rng` helpers in `math`;
+- how `effects.tsx` times its particles.
+
+Before rendering the whole song, test a frame: if it could sit in the kit's gallery unchanged, it is not this song's
+video yet.
+
 Ask yourself honestly: would a stranger watch this past the first chorus? If the answer is "it is correct", it is
 not done — make it funnier, stranger, more specific to this song.
 
@@ -98,7 +126,13 @@ song2mv render <work>/mv.json --template <work>/video --still 1      # first use
 ```
 
 Write the song's scenes in `<work>/video/src/scenes/` and export them from `src/scenes/index.ts` (`Scene` and
-`linesDrawnByScene`). Build them from the kit in `src/kit/` and draw only what is this song's own.
+`linesDrawnByScene`). Draw them in the chosen concept's style, and take what fits from the kit in `src/kit/`.
+
+**The frame comes from the song config.** Around your scenes the template draws a background, the title and the
+captions in `theme`'s colours and font; in 9:16 its starry sky fills the screen above and below the stage. Left at
+the defaults, they put the kit's neon night around every concept, and the title is the file name. Set `title` and
+`theme` (`bg`, `stars`, the text colours, `font`) in `song.json` to fit the concept, then run
+`song2mv sync <work>/song.json --from build`.
 
 ### The scene kit
 
@@ -132,8 +166,8 @@ Putting a scene together:
   - a car's `distance` is the distance moved divided by s;
   - put bursts, cuts and pans on `grid.bar(k)` and word times.
 - **Rain:** fade it with `strength`, not with an opacity group around it.
-- **Drawing your own:** the kit is the obvious part; the song's own character and objects are yours to draw. Match
-  its style:
+- **Drawing next to the kit:** when the concept uses the kit's flat style, the song's own character and objects
+  must match it:
   - flat shapes, no black outlines (an edge is a darker tone of the fill);
   - one tone step of shade, a lighter rim on the lit side, glow around lights;
   - far things lighter and hazier.
