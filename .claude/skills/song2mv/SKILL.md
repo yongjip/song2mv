@@ -98,7 +98,47 @@ song2mv render <work>/mv.json --template <work>/video --still 1      # first use
 ```
 
 Write the song's scenes in `<work>/video/src/scenes/` and export them from `src/scenes/index.ts` (`Scene` and
-`linesDrawnByScene`). Use the kit in `src/kit/`. Rules that held up:
+`linesDrawnByScene`). Build them from the kit in `src/kit/` and draw only what is this song's own.
+
+### The scene kit
+
+Look at it before you design anything:
+
+```bash
+cd <work>/video && npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 12 scenes
+npx remotion still src/index.ts Kit-Gallery scene.png --frame=4                        # one at full size (1–12)
+```
+
+`src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T` and comes in one flat
+illustrated style; its doc comment in `src/kit/` lists what each prop does.
+
+| family | pieces | for |
+|---|---|---|
+| sky and light | `SkyGradient` (dawn, day, dusk, night; `to` + `k` blend; `stars`), `Sun`, `Moon`, `Clouds` (`time`, `light`), `Rays`, `BeatGlow`, `Flash`, `Bokeh`, `Dust`, `Snow`, `Drift` (camera) | time of day, mood, the beat in light |
+| places | `City` (night, `dusk`, `day`; `shift` pans by depth), `Street` (pavement, road, lamps), `Room` (`view` through the window), `Ground` (ridges, town, trees), `Sea` (`light` path, `beach`), `GridFloor` | where it happens |
+| people | `Person` (14 poses, `walk`/`run` by `phase`; `look`: outfit, hair, skin, colours; `prop` + `personHand()`), `Crowd` (`handsUp`, `jump`, `idle`, `lights`), `MiniPerson` | the protagonist, the audience |
+| objects | `Phone` (`messages`, `typing`, `call`), `Clock` (`spin`, `ticks` on the beat, alarm `ring`), `Heart` (`beat`, `crack`), `Car` (`distance` turns the wheels), `Plane` (`trail`), `Lantern`/`Lanterns` | what the lyrics are about |
+| effects | `Rain` (`strength`, splashes on `ground`), `Fireworks` (`bursts` at times), `Confetti` | weather and the big moments |
+| text | `Slam`, `Quiet`, `BigLine`, `Captions` | lines in the scene |
+
+Putting a scene together:
+
+- **Order:** draw back to front inside `<Svg>`: sky, far places, near places, people, then effects in front. Give
+  every instance an `id` of its own when two of a kind share the stage (gradients are looked up by id).
+- **One light:** choose the scene's key light and pass it everywhere it is asked for: the same `time` for sky,
+  clouds, city and vehicles; `light` on `Clouds` and `Sea`.
+- **Motion from data:**
+  - a walk covers `STRIDE × s` per `phase` cycle, so move x by that and the feet don't slide;
+  - a car's `distance` is the distance moved divided by s;
+  - put bursts, cuts and pans on `grid.bar(k)` and word times.
+- **Rain:** fade it with `strength`, not with an opacity group around it.
+- **Drawing your own:** the kit is the obvious part; the song's own character and objects are yours to draw. Match
+  its style:
+  - flat shapes, no black outlines (an edge is a darker tone of the fill);
+  - one tone step of shade, a lighter rim on the lit side, glow around lights;
+  - far things lighter and hazier.
+
+Rules that held up:
 
 1. **Pure function of song time `T`.** Never the frame number or state; any `--from` must render identically.
 2. **Text pops once, then holds still** while it is read. No wobble, bob or beat-shake on letters. The beat moves

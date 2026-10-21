@@ -207,9 +207,18 @@ embers, mid sections with a floor grid rolling on the beat, hot sections with ra
 huge in the middle, lit word by word. Colours come from `theme` in the song config.
 
 The real music video is your own scenes. With `--template DIR`, DIR gets its own copy of the template; write scenes in
-`DIR/src/scenes/` with the kit in `DIR/src/kit/` (`useSong()`, beat-grid helpers, backgrounds, `Slam`, `BigLine`,
-karaoke `Captions`). Rules that held up: a scene is a pure function of song time `T`; text pops once and then holds
-still while it is read; lay out on the 1920×1080 stage.
+`DIR/src/scenes/` with the kit in `DIR/src/kit/`. Besides `useSong()`, beat-grid helpers, `Slam`, `BigLine` and
+karaoke `Captions`, the kit holds:
+
+- **people:** a posable person, a crowd;
+- **places:** a city, a street, a room, hills, the sea;
+- **sky:** sky by time of day, sun, moon and clouds;
+- **objects:** a phone with a chat, a clock, a heart, a car, a plane, lanterns;
+- **effects:** rain, fireworks, confetti.
+
+Run `npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR to see them. Rules that held up: a scene is a
+pure function of song time `T`; text pops once and then holds still while it is read; lay out on the 1920×1080
+stage.
 
 Remotion is **not MIT**: it is free for individuals and companies with up to 3 employees; larger companies need a
 company license ([remotion.dev/license](https://www.remotion.dev/license)). Only `render` uses it.

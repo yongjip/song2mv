@@ -35,6 +35,17 @@ First release (0.1.0).
   - **9:16 layout:** the title, the stage and the lyrics sit inside x 120–960, y 269–1248, clear of the app buttons
     and caption overlay on Reels, Shorts and TikTok. Before, the lyrics sat at y 1300–1460, under them.
   - **`check` in 9:16:** it measures the top 56 % of the frame, above the lyrics.
+- A scene kit in the render template, for drawing a song's own scenes. Every piece is a pure function of song time,
+  in one flat illustrated style:
+  - **people:** a posable side-view `Person` with walk and run cycles, three outfits, three hair styles and four skin
+    tones; a backlit `Crowd` that moves with the beat;
+  - **places:** `City` by night, dusk and day, `Street`, `Room`, `Ground`, `Sea`;
+  - **sky and light:** `SkyGradient` for dawn, day, dusk and night, `Sun`, `Moon`, `Clouds`;
+  - **objects:** `Phone` with chat and call screens, `Clock`, `Heart`, `Car`, `Plane`, `Lantern`;
+  - **effects:** `Rain`, `Fireworks`, `Confetti`.
+
+  The `Kit-Gallery` composition shows them in 12 scenes: `npx remotion still src/index.ts Kit-Gallery gallery.png
+  --frame=0`. The skill explains how to combine them.
 - Work folders and caches belong to one audio file, by content: another song in the same folder is refused, a
   changed file is transcribed again, and whisper runs are reused only for the same model, language and settings.
 - A sung line is never dropped: a line with no room between its neighbours is squeezed in (inside the song),
