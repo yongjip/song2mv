@@ -158,11 +158,13 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
         stop[s["id"]] = math.ceil(round(((hits[-1] if hits else nxt["start"]) - t0) * 10, 6)) - 1
 
     per = []
+    span = {}  # line id → (i0, i1): it is measured on the frame changes diff[i0:i1], frames i0 … i1
     for r in lines:
         i0, i1 = idx(r["start"]), min(len(diff), idx(r["end"]), stop.get(r["sec"], len(diff)))
         if i1 - i0 < 3:
             continue
         per.append((r, float(diff[i0:i1].mean()), float(cover[i0:i1].mean())))
+        span[r["id"]] = (i0, i1)
     if not per:
         raise Song2mvError(f"no sung line lies inside song time {t0:g}–{t_end:.1f} s, so there is nothing to measure",
                            hint="--from is the song time of the video's first frame (the --from it was rendered with)")
@@ -178,15 +180,65 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     def failing(rows):
         return [(x["id"], x["value"]) for x in rows][:12]
 
+    song_t = lambda i: round(t0 + i / 10, 2)  # noqa: E731
+    cut_set = set(cut_idx)
+
+    def under_goal(series, i0, i1, goal):
+        """The longest part of series[i0:i1] whose every second (all of it, when shorter) is under the goal, or else
+        its lowest second, without the frames at its ends that reach the goal: (first index, end index, mean)."""
+        n = min(10, i1 - i0)
+        c = np.cumsum(np.r_[0.0, series[i0:i1]])
+        means = (c[n:] - c[:-n]) / n
+        a = b = int(np.argmin(means))  # first and last one-second window of the stretch
+        start = None
+        for k, m in enumerate([*means, np.inf]):
+            if m < goal and start is None:
+                start = k
+            elif m >= goal and start is not None:
+                if k - 1 - start > b - a:
+                    a, b = start, k - 1
+                start = None
+        lo, hi = i0 + a, i0 + b + n
+        while hi - lo > 1 and series[lo] >= goal:
+            lo += 1
+        while hi - lo > 1 and series[hi - 1] >= goal:
+            hi -= 1
+        return lo, hi, float(series[lo:hi].mean())
+
+    def where(x, name):
+        """Where a failing line failed: its measured stretch, the cuts in it, and the part or moment behind the number."""
+        i0, i1 = span[x["id"]]
+        cuts = [i for i in cut_idx if i0 < i <= i1]
+        x.update({"from": song_t(i0), "to": song_t(i1), "cuts": [song_t(i) for i in cuts]})
+        (bound, goal), = x["goal"].items()
+        said = [f"{song_t(i0):.1f}–{song_t(i1):.1f} s: {x['value']} (goal {'≥' if bound == 'min' else '≤'} {goal})"]
+        if name == "motion.max":
+            k = i0 + int(np.argmax(diff[i0:i1]))
+            rest = [diff[j] for j in range(i0, i1) if j + 1 not in cut_set]
+            x["peak"] = {"t": song_t(k + 1), "value": round(float(diff[k]), 2)}
+            x["without_cuts"] = round(float(np.mean(rest)) if rest else 0.0, 2)
+            said.append(f"biggest change at {song_t(k + 1):.1f} s ({diff[k]:.1f}{', a cut' if k + 1 in cut_set else ''})")
+        else:
+            series, word, digits = (diff, "still", 2) if name == "motion.min" else (cover, "empty", 3)
+            a, b, v = under_goal(series, i0, i1, goal)
+            x["stretch"] = {"from": song_t(a), "to": song_t(b), "value": round(v, digits)}
+            said.append(f"{word} throughout" if (a, b) == (i0, i1) else f"{word} {song_t(a):.1f}–{song_t(b):.1f} s ({v:.{digits}f})")
+        said.append("cuts at " + ", ".join(f"{song_t(i):.1f}" for i in cuts) if cuts else "no cut")
+        if name == "motion.max" and cuts:
+            said.append(f"{x['without_cuts']} without the cuts")
+        x["msg"] = "; ".join(said)
+        return x
+
     # motion · coverage
     g, gc = goals["motion"], goals["coverage"]
     floor = lambda r: g["quiet_min"] if r["kind"] in g["quiet_kinds"] or r["id"] in g["quiet_allow"] else g["min_per_line"]  # noqa: E731
-    low = [{"id": r["id"], "value": round(m, 2), "goal": {"min": floor(r)}} for r, m, c in per if m < floor(r)]
-    high = [{"id": r["id"], "value": round(m, 2), "goal": {"max": g["max_per_line"]}}
+    low = [where({"id": r["id"], "value": round(m, 2), "goal": {"min": floor(r)}}, "motion.min") for r, m, c in per if m < floor(r)]
+    high = [where({"id": r["id"], "value": round(m, 2), "goal": {"max": g["max_per_line"]}}, "motion.max")
             for r, m, c in per if r["kind"] in g["max_kinds"] and m > g["max_per_line"]]
     check("motion.min", not low, len(low), {"max": 0}, f"{len(low)} still lines {failing(low)}", lines=low)
     check("motion.max", not high, len(high), {"max": 0}, f"{len(high)} frantic lines {failing(high)}", lines=high)
-    empty = [{"id": r["id"], "value": round(c, 3), "goal": {"min": gc["min_per_line"]}} for r, m, c in per if c < gc["min_per_line"]]
+    empty = [where({"id": r["id"], "value": round(c, 3), "goal": {"min": gc["min_per_line"]}}, "coverage.min")
+             for r, m, c in per if c < gc["min_per_line"]]
     med = float(np.median([c for _, _, c in per]))
     check("coverage.min", not empty, len(empty), {"max": 0}, f"{len(empty)} empty-screen lines {failing(empty)}", lines=empty)
     check("coverage.median", med >= gc["median_min"], round(med, 3), {"min": gc["median_min"]},
@@ -273,13 +325,17 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
             print(f"  ! {w}")
         if not quiet:
             print(f"{'id':8s} {'move':>5s} {'cover':>6s}  text")
-            flagged = {x["id"] for x in low} | {x["id"] for x in empty}
+            flagged = {x["id"] for x in low + high + empty}
             for r, m, c in per:
                 print(f"{r['id']:8s} {m:5.2f} {c:6.3f}  {r['text'][:28]}{' ◀' if r['id'] in flagged else ''}")
             print(f"cuts at: {[round(t, 1) for t in cut_t]}\n")
         for k, r in results.items():
             if not quiet or not r["ok"]:
                 print(("PASS " if r["ok"] else "FAIL ") + k + " — " + r["msg"])
+                for x in r.get("lines", [])[:12]:
+                    print(f"     {x['id']:8s} {x['msg']}")
+                if len(r.get("lines", [])) > 12:
+                    print(f"     … and {len(r['lines']) - 12} more (--json lists every line)")
         if not quiet:
             for k, why in skipped.items():
                 print(f"SKIP {k} — {why}")

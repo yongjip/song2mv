@@ -48,8 +48,53 @@ def test_check_flags_a_still_line(tmp_path):
     assert still["value"] == 1 and still["goal"] == {"max": 0}
     assert [x["id"] for x in still["lines"]] == ["ch1-01"] and still["lines"][0]["goal"] == {"min": 0.6}
     assert abs(still["lines"][0]["value"] - moving["ch1-01"]) < 0.01
+    # and where: the stretch measured, the cuts in it, the part under the goal
+    line = still["lines"][0]
+    assert (line["from"], line["to"], line["cuts"]) == (7.0, 10.0, [])
+    assert line["stretch"] == {"from": 7.0, "to": 10.0, "value": 0.0} and line["msg"].endswith("still throughout; no cut")
     assert res["results"]["coverage.median"]["goal"] == {"min": 0.08}
     assert set(res["skipped"]) >= {"variation.repeats", "text.min_font"}
+
+
+@pytest.mark.parametrize("name, tail, goals", [
+    ("motion.min", "tpad=stop_mode=clone:stop_duration=5", {"motion": {"min_per_line": 3.0}}),
+    ("coverage.min", "tpad=stop_mode=add:stop_duration=5:color=black", {"coverage": {"min_per_line": 0.5}}),
+])
+def test_a_failing_line_says_which_part_of_it_misses_the_goal(tmp_path, name, tail, goals):
+    # 0–3 s a moving test pattern, then 5 s of its last frame (2.9 s) held, or of black. The line is 1–7 s: the part
+    # that misses the goal is the held one, not the whole line.
+    from song2mv.check.score import score
+
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10:duration=3",
+                    "-vf", tail, str(mp4)], check=True)
+    song = write(tmp_path, "mv.json", {"duration": 8.0, "sections": [{"id": "v1", "kind": "mid", "start": 0.0, "end": 8.0}],
+                                       "lines": [{"id": "v1-01", "section": "v1", "text": "la", "start": 1.0, "end": 7.0}]})
+    res = score(str(mp4), str(song), str(write(tmp_path, "goals.json", goals)), quiet=True)
+    (line,) = res["results"][name]["lines"]
+    assert (line["from"], line["to"]) == (1.0, 7.0)
+    assert line["stretch"] == {"from": 2.9 if name == "motion.min" else 3.0, "to": 7.0, "value": 0.0}
+    assert line["cuts"] == ([3.0] if name == "coverage.min" else [])
+    assert f"{line['stretch']['from']:.1f}–7.0 s" in line["msg"]
+
+
+def test_a_frantic_line_says_where_its_motion_comes_from(tmp_path, capsys):
+    # A dim, gently moving shot cut with a white flash on 2.0–2.5 and 3.0–3.5 s: four cuts make the line frantic, the
+    # shot alone is calm. The line names the cuts, its biggest change, and its motion without the cuts.
+    from song2mv.check.score import score
+
+    mp4 = tmp_path / "v.mp4"
+    flash = "+".join(f"between(t,{a},{a + 0.5 - 1e-3})" for a in (2.0, 3.0))
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10:duration=6",
+                    "-vf", f"lutyuv=y=val/5,drawbox=c=white:t=fill:enable='{flash}'", str(mp4)], check=True)
+    res = score(str(mp4), str(write(tmp_path, "mv.json", SONG)), quiet=True)
+    (line,) = res["results"]["motion.max"]["lines"]
+    assert line["id"] == "v1-01" and line["value"] > 9.0 and (line["from"], line["to"]) == (1.0, 4.0)
+    assert line["cuts"] == [2.0, 2.5, 3.0, 3.5] and line["peak"]["t"] in line["cuts"] and line["peak"]["value"] > 50
+    assert line["without_cuts"] < 2.0
+    assert line["msg"] == (f"1.0–4.0 s: {line['value']} (goal ≤ 9.0); biggest change at {line['peak']['t']:.1f} s "
+                           f"({line['peak']['value']:.1f}, a cut); cuts at 2.0, 2.5, 3.0, 3.5; {line['without_cuts']} without the cuts")
+    assert f"     v1-01    {line['msg']}" in capsys.readouterr().out  # the report prints it under the FAIL
 
 
 def test_without_to_the_stretch_ends_with_the_video(tmp_path):

@@ -27,7 +27,12 @@ an error.
 
 `check` results: `value` is the measured number and `goal` is `{"min": x}` or `{"max": x}`. Per-line checks
 (`motion.min`, `motion.max`, `coverage.min`) count the failing lines in `value` (goal `{"max": 0}`) and list them in
-`lines` as `{id, value, goal}`. `variation.repeats` lists every repeated line pair in `pairs` as `[pair, correlation]`,
+`lines` as `{id, value, goal, from, to, cuts, msg}`, each with where it failed: `from` and `to` are the stretch
+measured for the line and `cuts` the cuts in it (song times), and `msg` says it in words. A still (`motion.min`) or
+empty (`coverage.min`) line adds `stretch` `{from, to, value}`: its longest part whose every second is under the goal
+(or else its lowest second), without the frames at its ends that reach the goal, and the mean over it. A frantic line
+(`motion.max`) adds `peak` `{t, value}`, its biggest frame change and the song time of the frame it shows on, and
+`without_cuts`, its motion with the frame changes of its cuts left out. `variation.repeats` lists every repeated line pair in `pairs` as `[pair, correlation]`,
 worst first; its `value` is their mean, or the worst pair with a line in a hot section when that is higher. A check in
 `skipped` neither passed nor failed and is not counted in `total`.
 
