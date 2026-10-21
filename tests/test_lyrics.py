@@ -51,6 +51,26 @@ def test_section_kind_override(tmp_path):
     assert next(r for r in lines if r["section"] == "br")["kind"] == "hot"
 
 
+def test_a_calm_section_as_loud_as_the_mid_sections_becomes_mid():
+    from song2mv.timing.build_lyrics import loud_calm
+
+    def song():
+        spans = [("intro", "(instrumental)", "calm", 0, 8), ("in", "Intro", "calm", 8, 16), ("v1", "Verse 1", "mid", 16, 32),
+                 ("ch1", "Chorus", "hot", 32, 48), ("br", "Bridge", "calm", 48, 56), ("ou", "Outro", "calm", 56, 64)]
+        return {"sections": [{"id": i, "name": n, "kind": k, "start": a, "end": b} for i, n, k, a, b in spans],
+                "lines": [{"id": f"{i}-01", "section": i, "kind": k} for i, _, k, _, _ in spans[1:]]}
+    level = {"intro": -9.0, "in": -14.0, "v1": -10.0, "ch1": -7.0, "br": -11.5, "ou": -12.5}  # dB per 0.5 s
+    loudness = [level[s["id"]] for s in song()["sections"] for _ in range(2 * (s["end"] - s["start"]))]
+    lyrics = song()
+    msgs = loud_calm(lyrics, loudness, {})
+    assert [s["kind"] for s in lyrics["sections"]] == ["calm", "calm", "mid", "hot", "mid", "calm"]
+    assert {r["section"]: r["kind"] for r in lyrics["lines"]}["br"] == "mid"
+    assert msgs == ["br [Bridge] is about as loud as the mid sections (median -11.5 dB, theirs -10.0 dB): kind mid, "
+                    "not calm; set section_kinds to keep it calm"]
+    kept = song()  # a kind set in section_kinds stays, by id or by name
+    assert loud_calm(kept, loudness, {"Bridge": "calm"}) == [] and kept["sections"][4]["kind"] == "calm"
+
+
 def test_estimate_never_drops_a_line_without_room():
     # a line written after one it is sung before gets ~no room between its neighbours; it must still be placed
     from song2mv.timing.build_lyrics import estimate

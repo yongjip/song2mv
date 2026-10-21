@@ -157,7 +157,7 @@ See [`examples/song.example.json`](https://github.com/yongjip/song2mv/blob/main/
 | `title`, `subtitle` | file name, `""` | the title goes into the LRC and the video; the subtitle is drawn under it in 9:16 |
 | `language` | `null` | whisper language code (`"en"`, `"ko"`, `"ja"` …). Set it — auto-detection hears only the first 30 s |
 | `keep_parenthesized_in` | `[]` | sections, by their name in the lyric sheet (`"Chorus"`, `"Verse 1"`), where a line written entirely in `( )` is sung, not a stage direction. `"*"` = everywhere |
-| `section_ids`, `section_kinds` | `{}` | override the short id (`"Verse 1"` → `v1`) or kind (`calm` / `mid` / `hot`) of a section |
+| `section_ids`, `section_kinds` | `{}` | override the short id (`"Verse 1"` → `v1`) or kind (`calm` / `mid` / `hot`) of a section. Without one, the kind comes from the section's name, and a section named calm (intro, bridge, outro …) that is about as loud as the mid sections is `mid` |
 | `bpm` | `"auto"` | a number forces the tempo |
 | `downbeat_mod4` | `null` | force which beat index (mod 4) starts a bar |
 | `snap_per_beat` | `4` | snap word times to 1/4 beat (16th notes, swung where `grid.json` has `swing`); `3` = a triplet grid (8th-note triplets, for a shuffle or swung 8ths), `2` = 8th notes, `0` = off. On the beat map when `grid.json` has one; without it, never inside an `off_grid` stretch. Words pinned in `manual` are never snapped |

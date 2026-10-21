@@ -41,7 +41,8 @@ line matched: chants, ad-libs, changed lines, a repeat the sheet has once, or a 
 the runs heard (`<work>/asr/run*.json` has every word), and put the stretches you add into the user's ear check. Read
 the progress log and the JSON:
 
-- **Section parsing** (`── [Chorus] → ch1 (hot)`): are the kinds right? Fix with `section_kinds` in `song.json`.
+- **Section parsing** (`── [Chorus] → ch1 (hot)`): are the kinds right? A section named calm (a bridge, an outro)
+  that is about as loud as the verses becomes `mid`, and `warnings` says so. Fix with `section_kinds` in `song.json`.
   Lines in `( )` were skipped as stage directions unless their section is in `keep_parenthesized_in`.
 - **`◀ no run found this line` / `◀ only run [k]` / `◀ runs disagree`**: weak spots. More runs help
   (`--runs 5`, finished runs are reused). A bigger model (`--model medium`) helps more but is slower.

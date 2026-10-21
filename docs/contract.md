@@ -112,10 +112,11 @@ it again. One made before song2mv measured swing has no `swing`, swung or not, a
 
 **`lyrics.json`** — `title`, `duration`, `grid`, `sections` (as in `mv.json`) and `lines`: each with `id`
 (`<section>-<nn>`, e.g. `v1-03`; a section that appears once keeps a bare id, `ch-01`), `section`, `section_name`,
-`kind` (`calm` / `mid` / `hot`), `text`, `start`, `end`, `source` (`asr` / `reprompt` / `manual` / `estimated`),
-`runs_used`, `coverage` and `words: [{w, t}]`. Word times never go backwards and `end` is after the line's last
-word; a line pinned in `manual` keeps its word times unsnapped. Lines may overlap: a backing vocal can start while
-another line is still sung.
+`kind` (`calm` / `mid` / `hot`: from the section's name, or `mid` for a section named calm that `music.json` measures
+about as loud as the mid sections; `section_kinds` in the config overrides both), `text`, `start`, `end`, `source`
+(`asr` / `reprompt` / `manual` / `estimated`), `runs_used`, `coverage` and `words: [{w, t}]`. Word times never go
+backwards and `end` is after the line's last word; a line pinned in `manual` keeps its word times unsnapped. Lines
+may overlap: a backing vocal can start while another line is still sung.
 
 **`mv.json`** — the render template's input: `title`, `subtitle`, `audio` (file name), `audio_path` (absolute),
 `duration`, `grid` (`bpm`, `beat`, `phi`, `downbeat_mod4`, `bar0`, `off_grid` and, when it is a list, `beats` from

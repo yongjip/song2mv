@@ -10,7 +10,8 @@ Steps (outputs go to the work folder):
           mv.json        the song config the render template reads
           song.lrc       line-timed LRC; song.words.lrc adds word timestamps
           song.srt       line-timed subtitles for video editors
-          music.json     loudness curve and likely section boundaries (cached by the audio's content)
+          music.json     loudness curve and likely section boundaries (cached by the audio's content); a section named
+                         calm that is about as loud as the mid sections becomes mid
 
 `start` redoes that step and everything after it, even where results exist ("asr" re-transcribes).
 Edit "manual", "bpm" or "downbeat_mod4" in song.json and run again: only the cheap steps rerun. A pin in "manual" only
@@ -250,13 +251,24 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
         warn(msg)
 
     print("[build] gaps, manual values, snapping")
-    from .build_lyrics import build
+    from .build_lyrics import build, loud_calm
     from .reprompt import fill_gaps
     from .to_lrc import to_lrc
     from .to_srt import to_srt
     merged = fill_gaps(merged, cfg, float(cfg.get("end") or duration), P("reprompt.json"), key=key)
     guessed = {r["id"] for r in merged if r.get("source") == "asr" and holes(r["wt"])}
     lyrics, mv = build(merged, grid, cfg, duration)
+    try:
+        music = json.load(open(P("music.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        music = None
+    if not music or music.get("audio_sha256") != sha or music.get("schema_version") != SCHEMA_VERSION:
+        print("[music] loudness curve and section boundaries (for scene design)")
+        from .analyze_music import analyze
+        music = stamp({**analyze(cfg["audio"]), "audio_sha256": sha})
+        write_json(music, P("music.json"))
+    for msg in loud_calm(lyrics, music["loudness_db_per_half_second"], cfg.get("section_kinds") or {}):
+        warn(msg)
     not_on_sheet = off_sheet(runs, heard, lyrics["lines"])
     for x in not_on_sheet:
         words = x["words"] if len(x["words"]) <= 60 else x["words"][:59] + "…"
@@ -272,14 +284,6 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
     to_lrc(lyrics["lines"], P("song.lrc"), meta=meta)
     to_lrc(lyrics["lines"], P("song.words.lrc"), words=True, meta=meta)
     to_srt(lyrics["lines"], P("song.srt"))
-    try:
-        old_music = json.load(open(P("music.json"), encoding="utf-8"))
-    except (OSError, ValueError):
-        old_music = None
-    if not old_music or old_music.get("audio_sha256") != sha or old_music.get("schema_version") != SCHEMA_VERSION:
-        print("[music] loudness curve and section boundaries (for scene design)")
-        from .analyze_music import analyze
-        write_json(stamp({**analyze(cfg["audio"]), "audio_sha256": sha}), P("music.json"))
     write_json(stamp({"audio": os.path.abspath(cfg["audio"]), "audio_sha256": sha, "lyrics_from": lyrics_from}), P(STATE))
     secs = time.time() - t_all
     print(f"\ndone in {secs:.0f} s → {work}")

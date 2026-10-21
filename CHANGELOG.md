@@ -300,6 +300,14 @@ First release (0.1.0).
   rap song it lists the intro chant that two runs hear and no line holds, and the second copy of the doubled couplet
   in both hooks. On JamendoLyrics, whose lyric files hold every annotated word, it lists 24 stretches in 17 of 79
   songs: ad-libs and vocalisations the files leave out, and lines the runs heard where the merge did not place them.
+- A section named calm (intro, bridge, outro …) that `music.json` measures about as loud as the mid sections — a
+  median loudness less than 2 dB under theirs — is `mid`, with a warning (`br [Bridge] is about as loud as the mid
+  sections (median -10.3 dB, theirs -9.4 dB): kind mid, not calm`). On AI-made songs a bridge or outro is often as
+  loud as the verses: of three Suno songs with section names, all three bridges and outros were, and a calm section
+  is spared the cut-gap and cut-rhythm checks and held to a lower motion floor, so a still, boring stretch passed
+  `check`. The intro of the new user's song, 3.9 dB quieter, stays calm. Kinds set in `section_kinds` and the
+  instrumental section before the first sung line are kept; JamendoLyrics has no section names, so its kinds do not
+  change. `music.json` is now measured before `lyrics.json` and `mv.json` are written.
 - Words before a line's first timed word start no earlier than a 16th note after the last word of the line before.
   Spread 0.3 s apart, they could start under that line's last words, which then never lit up: the captions switch to
   the newer line. On JamendoLyrics 69 words move, 45 of them closer to where they are sung; words within 0.3 s go from
