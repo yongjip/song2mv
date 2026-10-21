@@ -9,7 +9,7 @@ Install (not on PyPI yet): `uv tool install --python 3.13 'song2mv[sync] @ git+h
 
 ## Commands
 
-- `song2mv sync AUDIO [--lyrics FILE] --language CODE [--json]` — beat grid, word-timed lyrics, song.lrc,
+- `song2mv sync AUDIO [--lyrics FILE] --language CODE [--title TEXT] [--json]` — beat grid, word-timed lyrics, song.lrc,
   song.words.lrc, song.srt, mv.json and music.json (loudness, section boundaries) in a work folder. Takes minutes (several whisper runs); run it in the
   background. The --json result lists `outputs` and `check_by_ear` (lines to verify by ear).
 - `song2mv beats AUDIO [--bpm auto|N] [--json]` — tempo and beat grid only.
