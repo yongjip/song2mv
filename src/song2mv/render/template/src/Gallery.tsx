@@ -849,6 +849,71 @@ const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
   );
 };
 
+/**
+ * The pixel pack's type: big two-tone letters with a drop shadow and one block of outline, and a dialog box that
+ * letters a line as it is sung, on a 16:9 night street (8 stage px a block); the same in Korean on a tall panel
+ * (4 stage px a block), where Hangul takes 16 blocks to the em.
+ */
+const PixelType: React.FC<{ T: number }> = ({ T }) => {
+  const t = pixel.step(T);
+  const { Canvas, colors: X } = pixel;
+  const said = (id: string, text: string, t0: number, step: number): Line => {
+    const words = text.split(" ").map((w, i) => ({ w, t: t0 + i * step }));
+    return { id, section: "g24", text, start: t0, end: t0 + words.length * step, words };
+  };
+  const sky = (c: pixel.Canvas, x0: number, w: number, bands: [number, string][], bottom: number) =>
+    bands.forEach(([y0, color], i) => {
+      c.box(x0, y0, w, (bands[i + 1]?.[0] ?? bottom) - y0, color);
+      if (i) c.dither(x0, y0 - 2, w, 2, color);
+    });
+  const town = (c: pixel.Canvas, blocks: [number, number, number][], base: number, seed: number) => {
+    const random = rng(seed);
+    for (const [x, w, top] of blocks) {
+      c.box(x, top, w, base - top, mix(X.dusk, X.ink, 0.45));
+      for (let y = top + 3; y < base - 3; y += 4)
+        for (let wx = x + 2; wx < x + w - 1; wx += 3) if (random() < 0.35) c.box(wx, y, 1, 2, X.gold);
+    }
+  };
+
+  const street = new Canvas();
+  sky(street, 0, 160, [[0, X.navy], [30, X.dusk], [56, X.plum], [76, X.rose]], 92);
+  [[9, 8], [31, 20], [57, 5], [94, 14], [118, 4], [149, 11], [70, 26]].forEach(([x, y], i) => {
+    street.set(x, y, X.cream);
+    if ((Math.floor(t * 2) + i) % 3 === 0) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) street.set(x + dx, y + dy, X.stone);
+  });
+  town(street, [[0, 14, 62], [14, 10, 70], [24, 18, 56], [42, 12, 66], [54, 20, 50], [74, 11, 68], [85, 16, 58], [101, 10, 72], [111, 22, 54], [133, 12, 64], [145, 15, 60]], 92, 24);
+  street.box(0, 92, 160, 8, mix(X.grey, X.plum, 0.3));
+  street.box(0, 92, 160, 1, shade(mix(X.grey, X.plum, 0.3), 0.75));
+  street.box(0, 100, 160, 1, X.stone);
+  street.box(0, 101, 160, 34, mix(X.ink, X.dusk, 0.35));
+  const frame = WALKER[Math.floor(t * 4) % 4];
+  street.stamp(pixel.sprite(frame, {
+    H: shade(X.brown, 0.72), h: X.brown, r: X.red, s: mix(X.cream, X.tan, 0.45), S: mix(X.tan, X.coral, 0.4),
+    b: X.rose, e: X.ink, t: X.coral, T: shade(X.coral, 0.8), p: mix(X.navy, X.blue, 0.45), P: X.navy, w: X.white, W: X.stone,
+  }), X.ink, Math.round(4 + ((t * 11) % 140)), 99 - frame.length);
+
+  // Korean, written as escapes: "One more round!" and "Press it once more to start, tonight is ours"
+  const title = "\ud55c \ud310 \ub354!";
+  const lyric = "\ud55c \ubc88 \ub354 \ub20c\ub7ec \uc2dc\uc791\ud574 \uc624\ub298 \ubc24\uc740 \uc6b0\ub9ac \uac70\uc57c";
+  const roofs = new Canvas();
+  sky(roofs, 320, 160, [[0, X.navy], [60, X.dusk], [110, X.plum], [150, X.rose], [180, X.coral], [204, X.orange]], 236);
+  roofs.disc(420, 214, 22, 22, X.gold);
+  for (let y = 216; y < 236; y += 4) roofs.box(398, y, 45, 1 + Math.floor((y - 216) / 6), X.orange);
+  town(roofs, [[320, 22, 196], [342, 14, 210], [356, 26, 188], [382, 16, 204], [398, 30, 222], [428, 18, 200], [446, 34, 192]], 270, 25);
+  roofs.stamp(pixel.sprite(CAT[Math.floor(t * 0.8) % 2], { o: X.orange, O: shade(X.orange, 0.78), c: X.cream, n: X.rose, e: X.ink }), X.ink, 360, 179);
+
+  return (
+    <Svg>
+      <pixel.Pixels canvas={street} />
+      <pixel.BigText T={T} t={8.4} text="GET READY" x={80} y={22} scale={3} width={152} color={X.white} lower={X.gold} shadow={mix(X.ink, X.navy, 0.5)} />
+      <pixel.Dialog T={T} x={6} y={106} width={148} lines={[said("g24-en", "Press start, the night is ours to run", 8.4, 0.3)]} />
+      <pixel.Pixels canvas={roofs} px={4} />
+      <pixel.BigText text={title} x={400} y={44} scale={2} width={150} px={4} color={X.cream} lower={X.gold} shadow={shade(X.orange, 0.55)} />
+      <pixel.Dialog T={T} x={324} y={222} width={152} px={4} lines={[said("g24-ko", lyric, 8.6, 0.25)]} />
+    </Svg>
+  );
+};
+
 const ComicKitchen: React.FC<{ T: number }> = ({ T }) => {
   const { Page, Panel, Ink, Flat, Edge, Brush, brushPath, Dots, Balloon, Caption, Sfx, colors: K } = comic;
   const POP = 9.3;
@@ -1525,6 +1590,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Style pack: comic page",
     draw: (T) => <ComicKitchen T={T} />,
+  },
+  {
+    name: "Style pack: pixel type, big and in a dialog box",
+    draw: (T) => <PixelType T={T} />,
   },
 ];
 

@@ -188,8 +188,8 @@ scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` pu
 Look at it before you design anything (in `<work>/video`):
 
 ```bash
-npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 23 scenes
-npx remotion still src/index.ts Kit-Gallery scene.png --frame=4     # one at full size (1–23)
+npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 24 scenes
+npx remotion still src/index.ts Kit-Gallery scene.png --frame=4     # one at full size (1–24)
 ```
 
 `src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc
@@ -197,7 +197,7 @@ comment in `src/kit/` lists what each prop does. Scenes 1–12 are the kit's pie
 Scene 13 is the paper style pack. Scenes 14–20 are helpers that fit any style, their colours and shapes being props
 (most of those tiles draw the helper again, flat on paper), and a person in bed: one world filmed as shots (14), hits
 (15), flames (16), a storm (17), tears (18), lying awake in bed (19), falling cash (20). Scene 21 is a recipe that
-combines them. Scene 22 is the pixel style pack, scene 23 the comic style pack.
+combines them. Scene 22 is the pixel style pack, scene 23 the comic style pack, scene 24 the pixel pack's type.
 
 | family | pieces | for |
 |---|---|---|
@@ -236,10 +236,22 @@ by whole numbers; never `scale()` a sprite or a layer, or blocks of two sizes me
   the zoom rounds to a whole number and the frame to whole pixels, kept on the stage, so a close-up is 2× or 3× with
   one pixel size. A shot that changes the zoom cuts (blocks change size in one jump), so give each zoom a beat or
   more; a glide or drift at one zoom pans by whole pixels;
-- `pixel.Pixelate id`: anything inside turns into blocks on the same grid, `outline` rings them one block wide: big
-  type in any font, or any kit drawing. Pop or slide what is inside, not a group around it, so the blocks stay put.
-  One colour per Pixelate gives clean blocks (the shadow in one, the face in another). Korean type smears under about
-  18 blocks to the em, so lyrics stay crisp type. Pass the size it is drawn at on screen as `stageScale`: the
+- `pixel.BigText`: big type on the grid, `x` its centre and `y` its top in blocks of a `px` grid as in `Pixels`: the
+  5×7 font at `scale` blocks a bit, two-tone with `lower`, a `shadow` one bit down, one block of `outline` round all
+  of it with no specks in the letters; `width` wraps it (and steps the scale down while a word alone is wider), `T`
+  with `t` pops it in once. Not `text` + `stamp`: `stamp` rings every gap, so a text with a shadow gets ink specks
+  between the letters and their shadow. Text the 5×7 font lacks, such as Korean, comes from a font at 16 blocks to
+  the em per scale (Hangul 14 blocks tall): it reads from scale 1, with a shadow from scale 2;
+- `pixel.Dialog`: a game dialog box that letters the line being sung word by word (sung words lit, the rest dim),
+  wrapped to its `width` and set once per line, so no word moves; a line longer than `rows` turns the page. Put the
+  lines it shows in `linesDrawnByScene`. Its 5×7 letters are 7 blocks tall (`px` 6 or more keeps them over 36 px);
+  when a line has letters the font lacks, every line comes from the font in rows of 19 blocks: in 16:9 draw the box
+  at `px` 4, in a 9:16 frame at `px` 6 it fits;
+- `pixel.Pixelate id`: anything inside turns into blocks on the same grid, `outline` rings them one block wide: any
+  kit drawing, or type in a font of your own. Pop or slide what is inside, not a group around it, so the blocks stay
+  put. One colour per Pixelate gives clean blocks. The ring leaves each block's diagonal corner open, so a shadow
+  Pixelate under an outlined one shows through there in specks: for type with a shadow use `BigText`. Korean type
+  smears under about 18 blocks to the em here. Pass the size it is drawn at on screen as `stageScale`: the
   camera's zoom under `pixel.cameraAt` (`stageScale={camera.zoom}`), times 0.76 in the 9:16 band; otherwise blocks
   flicker, vanish or come out a pixel short;
 - `pixel.colors`, and `pixel.step(T)` for the held 8 steps a second of sprite animation.
