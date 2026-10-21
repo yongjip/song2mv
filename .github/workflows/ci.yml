@@ -22,7 +22,7 @@ jobs:
           - {os: macos-latest, python: "3.12"}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python }}
@@ -37,7 +37,7 @@ jobs:
   package:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
       - name: plant what must never ship (a template install, renders, bytecode)
         run: |
@@ -58,7 +58,7 @@ jobs:
     # the built wheel installed the way users install it: core only, then with the sync extra
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.13"
@@ -92,7 +92,7 @@ jobs:
       run:
         working-directory: src/song2mv/render/template
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -117,7 +117,7 @@ jobs:
     # song2mv render on Windows, where npx is npx.cmd: render.mjs must start Remotion without a shell
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
