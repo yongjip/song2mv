@@ -1,8 +1,8 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
-  Car, City, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
-  Rays, Room, Sea, SkyGradient, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, shade, SKINS, STRIDE,
+  Camera, Car, City, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
+  Rays, Room, Sea, Shot, SkyGradient, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, shade, SKINS, STRIDE,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -211,6 +211,57 @@ const PaperRoom: React.FC<{ T: number }> = ({ T }) => {
   );
 };
 
+
+/** A label in a corner of a tile, outside any camera */
+const Label: React.FC<{ x: number; y: number; text: string; size?: number }> = ({ x, y, text, size = 30 }) => (
+  <div style={{ position: "absolute", left: x, top: y, padding: "6px 14px", borderRadius: 8, background: "rgba(4,5,11,0.62)", color: "#fff", fontSize: size, fontWeight: 700 }}>
+    {text}
+  </div>
+);
+
+/**
+ * One world, a street at night, filmed by one list of shots and seen at four moments: each panel is the frame at
+ * that moment. The world is drawn once (in `world`); only the camera changes. The cuts would sit on bars and word
+ * times in a song: here the bars are 2 s long.
+ */
+const CameraShots: React.FC = () => {
+  const shots: Shot[] = [
+    { t: 0, x: 960, y: 540, to: { zoom: 1.08 } },
+    { t: 2, x: 895, y: 760, zoom: 3.4, to: { x: 910 } },
+    { t: 4, x: 1340, y: 420, zoom: 1.85, rotate: -9 },
+    { t: 6, x: 980, y: 760, zoom: 1.6, glide: 0.6 },
+  ];
+  const hits = [7];
+  const world = (t: number, k: number) => (
+    <Svg>
+      <SkyGradient time="night" stars={1} T={t} id={`g14-${k}-sky`} />
+      <Moon T={t} color="#ffd36b" x={1500} y={230} r={70} />
+      <City T={t} y={950} signs id={`g14-${k}-city`} />
+      <Street T={t} y={950} speed={0} id={`g14-${k}-street`} />
+      <Car T={t} x={1290} y={1068} s={0.55} lights distance={0} id={`g14-${k}-car`} />
+      <Person x={900} y={985} s={1.15} pose="phone" T={t} look={{ hair: "ponytail", top: "#e0a12f", hairColor: "#1a1210" }} />
+    </Svg>
+  );
+  const moments: [number, string][] = [
+    [1, "bar 1 · wide, pushing in"],
+    [3.2, "bar 2 · cut to a close-up"],
+    [5, "on a word · rolled, on the skyline"],
+    [7.08, "bar 4 · glided back, punch on a hit"],
+  ];
+  return (
+    <AbsoluteFill style={{ background: "#04050b" }}>
+      {moments.map(([t, label], k) => (
+        <div key={k} style={{ position: "absolute", left: (k % 2) * 964, top: Math.floor(k / 2) * 544, width: 956, height: 536, overflow: "hidden" }}>
+          <div style={{ position: "absolute", width: 1920, height: 1080, transform: "scale(0.4979)", transformOrigin: "0 0" }}>
+            <Camera T={t} shots={shots} hits={hits} punch={0.08}>{world(t, k)}</Camera>
+          </div>
+          <Label x={14} y={12} text={`${k + 1}. ${label}`} size={22} />
+        </div>
+      ))}
+    </AbsoluteFill>
+  );
+};
+
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -384,6 +435,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
     name: "Style pack: paper cut-out",
     draw: (T) => <PaperRoom T={T} />,
   },
+  {
+    name: "Camera: one world, four shots",
+    draw: () => <CameraShots />,
+  },
 ];
 
 const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNode }> = ({ x, y, k, children }) => (
@@ -391,6 +446,9 @@ const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNod
     {children}
   </div>
 );
+
+/** The overview's grid: 4 × 4 tiles, 5 × 5 once there are more than 16 */
+const COLS = TILES.length > 16 ? 5 : 4;
 
 export const KitGallery: React.FC<{ T: number }> = ({ T }) => {
   const frame = useCurrentFrame();
@@ -403,10 +461,10 @@ export const KitGallery: React.FC<{ T: number }> = ({ T }) => {
           <Tile x={0} y={0} k={1}>{one.draw(T)}</Tile>
         ) : (
           TILES.map((t, i) => {
-            const x = (i % 4) * 480, y = Math.floor(i / 4) * 270;
+            const x = (i % COLS) * (1920 / COLS), y = Math.floor(i / COLS) * (1080 / COLS);
             return (
               <React.Fragment key={i}>
-                <Tile x={x} y={y} k={1 / 4}>{t.draw(T)}</Tile>
+                <Tile x={x} y={y} k={1 / COLS}>{t.draw(T)}</Tile>
                 <div style={{ position: "absolute", left: x + 8, top: y + 6, color: "#fff", fontSize: 16, fontWeight: 700, textShadow: "0 1px 4px #000" }}>{i + 1}. {t.name}</div>
               </React.Fragment>
             );
