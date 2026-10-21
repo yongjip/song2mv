@@ -246,22 +246,23 @@ const CLOUD_TONES: Record<TimeOfDay, { color: string; belly: string; rim: string
  * one, a scalloped middle band and a shadowed underside in `belly`, and a thin lighter rim on the side towards
  * the light. Day: white and grey-blue (the defaults); dusk and night: pass `color` and `belly` from the sky, or
  * `time`. `light` is where the light comes from (the sun or moon on the stage): from below (a low sun) the
- * underside lights up and the tops darken; without it the light comes from above.
+ * underside lights up and the tops darken; without it the light comes from above. `size` scales every cloud (2: twice
+ * as wide and tall), for a heavy overcast deck with more of them.
  */
 export const Clouds: React.FC<{
   T: number; n?: number; y0?: number; y1?: number; speed?: number; color?: string; belly?: string; seed?: number; opacity?: number;
-  rim?: string; light?: { x: number; y: number }; time?: TimeOfDay; id?: string;
-}> = ({ T, n = 7, y0 = 120, y1 = 420, speed = 14, color, belly, seed = 7, opacity = 1, rim, light, time, id }) => {
+  rim?: string; light?: { x: number; y: number }; time?: TimeOfDay; id?: string; size?: number;
+}> = ({ T, n = 7, y0 = 120, y1 = 420, speed = 14, color, belly, seed = 7, opacity = 1, rim, light, time, id, size = 1 }) => {
   const tones = CLOUD_TONES[time ?? "day"];
   const lit = color ?? tones.color;
   const dark = belly ?? tones.belly;
   const rimC = rim ?? (color && !time ? mix(lit, "#ffffff", 0.36) : tones.rim);
   const uid = id ?? `clouds-${seed}-${(lit + dark).replace(/[^a-z0-9]/gi, "")}`;
   const r = rng(seed);
-  const M = 320, span = 1920 + 2 * M;
+  const M = 320 * Math.max(1, size), span = 1920 + 2 * M;
   const clouds = Array.from({ length: n }, (_, i) => {
     const depth = 0.35 + r() * 0.65;
-    const w = (220 + r() * 380) * (0.38 + 0.62 * depth);
+    const w = (220 + r() * 380) * (0.38 + 0.62 * depth) * size;
     // spread along the band (one cloud per slot), so they overlap less than at random
     const x0 = ((i + 0.15 + 0.7 * r()) / n) * span;
     return { x0, y: y0 + (y1 - y0) * (1 - depth) + (r() - 0.5) * 90, depth, shape: cumulus(r, w, 0.78 + 0.22 * depth) };

@@ -1,8 +1,8 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
-  Camera, Car, City, Flames, Hit, HitKind, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
-  Rays, Room, Sea, Shot, SkyGradient, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, shade, SKINS, STRIDE,
+  Camera, Car, City, Flames, Flash, Hit, HitKind, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
+  Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, shade, SKINS, STRIDE,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -347,6 +347,42 @@ const Fire: React.FC<{ T: number }> = ({ T }) => {
   );
 };
 
+/**
+ * A thunderstorm over a town in the hills, in rain: Storm (the kit's Clouds, lit from inside by each strike) and the
+ * kit's Flash for the white frame. Beside it, on paper, the same Lightning as a flat zigzag bolt from paper clouds.
+ */
+const Thunder: React.FC<{ T: number }> = ({ T }) => {
+  const strikes: Strike[] = [{ t: 7.1, x: 300 }, { t: 9.53, x: 720 }];
+  const tp = paper.step(T);
+  const bolt: Strike[] = [{ t: tp - 0.02, x: 1600, y: 330, to: [1560, 870] }];
+  return (
+    <>
+      <div style={{ position: "absolute", left: 0, top: 0, width: 1280, height: 1080, overflow: "hidden" }}>
+        <Svg>
+          <SkyGradient time="night" id="g17-sky" />
+          <Storm T={T} strikes={strikes} ground={880} id="g17-storm" />
+          <Ground T={T} y={900} glow="#8fa0ff" color="#0d0f20" far="#2a3058" id="g17-ground" />
+          <Rain T={T} strength={0.8} angle={12} ground={1040} id="g17-rain" />
+        </Svg>
+        <Flash T={T} flashes={strikeFlashes(strikes, 0.12)} />
+      </div>
+      <Svg>
+        <paper.Stack id="g17">
+          <Cut d={rect(1280, -20, 660, 1120, 400)} fill={PC.navy} />
+          <Cut d="" fill="none" lift={6}>
+            <Storm T={tp} strikes={bolt} y={-60} n={0} sky={PC.navy} belly={PC.navy} id="g17-paper"
+              bolt={{ look: "zigzag", glow: 0, color: PC.mustard, core: PC.white }} />
+          </Cut>
+          {[[1600, 345, 240, 50], [1470, 300, 120, 70], [1600, 260, 150, 95], [1740, 310, 110, 62]].map(([cx, cy, rx, ry], i) => (
+            <Cut key={i} d={ellipse(cx, cy, rx, ry, 410 + i)} fill={i ? PC.white : shade(PC.white, 0.8)} lift={7 + i} />
+          ))}
+          <Cut d={poly([[1280, 900], [1420, 860], [1560, 880], [1700, 850], [1960, 880], [1960, 1100], [1280, 1100]], 420)} fill={PC.green} lift={6} />
+        </paper.Stack>
+      </Svg>
+    </>
+  );
+};
+
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -531,6 +567,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Flames: a campfire, and flat on paper",
     draw: (T) => <Fire T={T} />,
+  },
+  {
+    name: "Storm and lightning, and flat on paper",
+    draw: (T) => <Thunder T={T} />,
   },
 ];
 
