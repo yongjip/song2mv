@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
-  Camera, Car, City, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
+  Camera, Car, City, Hit, HitKind, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Song, SongContext, Street, Sun, Svg, makeSongCtx, mix, paper, personHand, shade, SKINS, STRIDE,
 } from "./kit";
 import sample from "./sample-song.json";
@@ -232,6 +232,7 @@ const CameraShots: React.FC = () => {
     { t: 6, x: 980, y: 760, zoom: 1.6, glide: 0.6 },
   ];
   const hits = [7];
+  const hand = personHand("phone", 1.15);
   const world = (t: number, k: number) => (
     <Svg>
       <SkyGradient time="night" stars={1} T={t} id={`g14-${k}-sky`} />
@@ -240,13 +241,14 @@ const CameraShots: React.FC = () => {
       <Street T={t} y={950} speed={0} id={`g14-${k}-street`} />
       <Car T={t} x={1290} y={1068} s={0.55} lights distance={0} id={`g14-${k}-car`} />
       <Person x={900} y={985} s={1.15} pose="phone" T={t} look={{ hair: "ponytail", top: "#e0a12f", hairColor: "#1a1210" }} />
+      <Hit T={t} t={hits} x={900 + hand[0]} y={985 + hand[1]} size={80} id={`g14-${k}-hit`} color="#ff5fd2" accent="#3fe6ff" />
     </Svg>
   );
   const moments: [number, string][] = [
     [1, "bar 1 · wide, pushing in"],
     [3.2, "bar 2 · cut to a close-up"],
     [5, "on a word · rolled, on the skyline"],
-    [7.08, "bar 4 · glided back, punch on a hit"],
+    [7.08, "bar 4 · glided back, a hit: punch and burst"],
   ];
   return (
     <AbsoluteFill style={{ background: "#04050b" }}>
@@ -259,6 +261,30 @@ const CameraShots: React.FC = () => {
         </div>
       ))}
     </AbsoluteFill>
+  );
+};
+
+/**
+ * The three kinds of Hit, each caught a moment after its hit: neon on the night sky (top) and flat on paper (bottom:
+ * paper colours, no glow, square line ends, other sparkle shapes): one prop set restyles it.
+ */
+const Hits: React.FC<{ T: number }> = ({ T }) => {
+  // the hit times: each kind a moment after its hit at the gallery's T (9.55 s)
+  const kinds: [HitKind, number][] = [["burst", 9.42], ["sparkle", 9.13], ["ring", 9.33]];
+  return (
+    <Svg>
+      <SkyGradient time="night" stars={1} T={T} id="g15-sky" />
+      <rect x={0} y={540} width={1920} height={540} fill={PC.cream} />
+      {kinds.map(([kind, t], i) => (
+        <React.Fragment key={kind}>
+          <Hit T={T} t={t} x={320 + i * 640} y={280} size={170} kind={kind} id={`g15-n${i}`} seed={3 + i}
+            color={["#ff3355", "#ffd36b", "#3fe6ff"][i]} accent={["#ffd36b", "#ff5fd2", "#ff5fd2"][i]} />
+          <Hit T={T} t={t} x={320 + i * 640} y={810} size={170} kind={kind} id={`g15-f${i}`} seed={3 + i} glow={0} cap="butt"
+            shape={["diamond", "star", "dot"][i] as "diamond" | "star" | "dot"} core={PC.white}
+            color={[PC.red, PC.mustard, PC.teal][i]} accent={[PC.navy, PC.coral, PC.orange][i]} />
+        </React.Fragment>
+      ))}
+    </Svg>
   );
 };
 
@@ -438,6 +464,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Camera: one world, four shots",
     draw: () => <CameraShots />,
+  },
+  {
+    name: "Hit: burst, sparkle, ring (neon and flat)",
+    draw: (T) => <Hits T={T} />,
   },
 ];
 

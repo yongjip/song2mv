@@ -15,5 +15,6 @@ export * from "./symbols";
 export * from "./vehicles";
 export * from "./effects";
 export * from "./camera";
+export * from "./hit";
 // Style packs: drawing pieces that put any object in one art style, one namespace each (paper.Cut, paper.rect …)
 export * as paper from "./styles/paper";
