@@ -212,11 +212,13 @@ its own copy of the template: write the scenes in `DIR/src/scenes/`, reuse and c
 kit in `DIR/src/kit/`, and draw the rest. Besides `useSong()`, beat-grid helpers, `Slam`, `BigLine` and karaoke
 `Captions`, the kit holds:
 
-- **people:** a posable person, a crowd;
-- **places:** a city, a street, a room, hills, the sea;
+- **people:** a posable person (standing, walking, running, lying), a crowd;
+- **places:** a city, a street, a room, a bed, hills, the sea;
 - **sky:** sky by time of day, sun, moon and clouds;
 - **objects:** a phone with a chat, a clock, a heart, a car, a plane, lanterns;
-- **effects:** rain, fireworks, confetti;
+- **camera:** one world filmed as shots that cut on bars and words, with a punch on hits;
+- **effects:** rain, fireworks, confetti, hits (burst, sparkle, ring), flames, lightning and storms, tears, falling cash.
+  Their colours and shapes are props, so they fit any art style;
 - **style packs** (`kit/styles/`): drawing pieces that put any object in one art style. `paper` cuts outlines by hand
   and stacks them with shadows and grain. New assets and packs are welcome
   ([CONTRIBUTING.md](https://github.com/yongjip/song2mv/blob/main/CONTRIBUTING.md)).

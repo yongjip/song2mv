@@ -61,6 +61,23 @@ First release (0.1.0).
 
   Gallery tile 13 draws a room of everyday things with it. Packs live in `src/kit/styles/`, one namespace each, so
   that pixel, ink or watercolour packs can follow.
+- Seven more scene-kit pieces, the first batch picked by a study of what 90 songs' videos call for (11 trial songs, 79
+  JamendoLyrics songs): the kit covered 40 % of it, and the most-missed things that judges wanted as helpers came
+  first. Each has a gallery tile (14–20):
+  - `Camera`: one world drawn once and filmed as shots. A shot cuts in at a song time (a bar, a word), looks at a
+    point with a zoom and a roll, may drift until the next cut or glide in; hits punch the zoom in. `cameraAt()`
+    gives the same camera as numbers and as SVG or CSS transforms. Both concept demos had built their own.
+  - `Hit`: a burst, a sparkle or a ring at a point and time.
+  - `Flames`: a fire with wavering tongues in three layers, licks and embers, from a campfire to a candle.
+  - `Storm` and `Lightning`: a storm deck made of the kit's `Clouds` hung upside down, lit from inside around each
+    strike; forked or flat zigzag bolts that flicker like the real thing; `strikeFlashes()` for the kit's `Flash`.
+    `Clouds` gets an optional `size`.
+  - `Tears`: well up at an eye, run down the cheek leaving a wet trail, hang and fall.
+  - A `lie` pose for `Person`, and a `Bed` (also `Room`'s `bed` and `sleeper`) with the sleeper under the blanket.
+  - `Cash`: banknotes tumbling down, with no currency, letters or numbers on them.
+
+  `Hit`, `Flames`, `Lightning`, `Storm`, `Tears` and `Cash` take their colours and shapes as props, so they fit any
+  art style; their tiles draw each again flat on paper. The gallery overview now holds 20 tiles.
 - Adding to the kit by pull request. `CONTRIBUTING.md` says how to add an asset or a style pack: original drawings,
   MIT, no media files, the kit's rules, a gallery tile and a still. The pull request template asks for them, and CI
   renders every gallery tile and keeps the PNGs for 14 days as the run's `kit-gallery` artifact. Once a video is
