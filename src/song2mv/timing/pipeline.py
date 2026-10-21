@@ -117,17 +117,18 @@ def update_config(path: str, lyrics: str | None = None, language: str | None = N
     return changed
 
 
-def check_by_ear(lines: list[dict], n_runs: int) -> list[str]:
+def check_by_ear(lines: list[dict], n_runs: int, guessed: set[str] | frozenset[str] = frozenset()) -> list[str]:
     """Line ids most likely to be wrong: re-heard or estimated lines, lines only one of several whisper runs placed —
-    one run alone can put a line seconds off (12.7 s once on the test song) — and lines out of the lyric sheet's order
-    (lib.in_order), where a repeated line was placed on another copy of its words. Lines pinned in "manual" are not
-    listed."""
+    one run alone can put a line seconds off (12.7 s once on the test song) — lines out of the lyric sheet's order
+    (lib.in_order), where a repeated line was placed on another copy of its words, and the whisper lines in `guessed`,
+    with a word no run timed between words far apart (align.holes). Lines pinned in "manual" are not listed."""
     def one_run(r):
         return n_runs > 1 and r.get("source") == "asr" and len(r.get("runs_used") or []) < 2
     starts = [r.get("start") for r in lines]
     order = in_order(starts)
     return [r["id"] for i, r in enumerate(lines) if r.get("source") in ("reprompt", "estimated") or one_run(r)
-            or (starts[i] is not None and i not in order and r.get("source") != "manual")]
+            or (starts[i] is not None and i not in order and r.get("source") != "manual")
+            or (r["id"] in guessed and r.get("source") == "asr")]
 
 
 def run(config_path: str, work: str | None = None, start: str | None = None) -> dict:
@@ -180,7 +181,7 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
     runs = [json.load(open(p, encoding="utf-8")) for p in paths]
 
     print("[align] lyric sheet ↔ each run, merged per word")
-    from .align import merge_runs, report
+    from .align import holes, merge_runs, report
     merged = merge_runs(lines, runs)
     write_json({"lines": merged}, P("merged.json"))
     report(merged, len(runs))
@@ -208,6 +209,7 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
     from .to_lrc import to_lrc
     from .to_srt import to_srt
     merged = fill_gaps(merged, cfg, float(cfg.get("end") or duration), P("reprompt.json"), key=key)
+    guessed = {r["id"] for r in merged if r.get("source") == "asr" and holes(r["wt"])}
     lyrics, mv = build(merged, grid, cfg, duration)
     write_json(stamp(lyrics), P("lyrics.json"))
     write_json(stamp(mv), P("mv.json"))
@@ -241,7 +243,7 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
         "bpm": grid["bpm"],
         "lines": len(lyrics["lines"]),
         "line_sources": sources,
-        "check_by_ear": check_by_ear(lyrics["lines"], len(runs)),
+        "check_by_ear": check_by_ear(lyrics["lines"], len(runs), guessed),
         "dropped": [r["id"] for r in lines if r["id"] not in {x["id"] for x in lyrics["lines"]}],
         "language": cfg.get("language") or (runs[0].get("language") if runs else None),
         "warnings": list(lib.WARNINGS),

@@ -116,6 +116,11 @@ First release (0.1.0).
   that still fits between the placed and pinned lines around it; only the lines a pin contradicts, and lines no
   hearing timed, are heard again, and pins bound those windows. Nothing changes without pins. `reprompt.json` records
   the lines each hearing was for and the lines it timed; a file written before this is read as before.
+- `check_by_ear` also lists a line with a word no run timed between words more than 1 s apart per word. Such a word
+  is spread evenly between the words around it, and that gap is a held note or a wrong time on one side: on a test
+  song one run timed a line's last word 1.6 s late from a single matched letter, and the word before it, which no
+  run heard, was spread into the gap. The `sync` log says `◀ no run timed "…", N s between the words around it`. On
+  the JamendoLyrics benchmark the list grows by 10 lines, to 331, and in 6 of them that word is more than 1 s off.
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.

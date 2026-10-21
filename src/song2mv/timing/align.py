@@ -12,7 +12,9 @@ Then, for each line:
   3. each word takes the median time over the remaining runs.
 Last, lines are kept in the sheet's order (keep_order): a line that starts before the lines above it, or after the
 lines below it, is merged again from the runs that placed it between them, if any did.
-Lines no run could place keep `wt` all None; reprompt.py listens to those gaps again.
+Lines no run could place keep `wt` all None; reprompt.py listens to those gaps again. A word no run timed inside a
+placed line is None too, and build_lyrics.py spreads it between the words around it; where those are far apart, that
+is a guess (holes), and check_by_ear lists the line.
 
 Usage: python -m song2mv.timing.align work/lyrics.txt work/asr/run1.json work/asr/run2.json ... --out work/merged.json
 """
@@ -28,6 +30,7 @@ MIN_COVERAGE = 0.5
 MAX_SPREAD = 1.0
 FIRST_WORD = 1.0  # a line's first whisper word is cut to this many median word durations of its run (0: not cut)
 MAX_MEDIAN = 0.7  # faster-whisper caps the median word duration at 0.7 s when it shortens words itself
+HOLE = 1.0  # words no run timed, between timed words more than this many seconds apart per word, are a guess
 
 
 def trim_first_words(lines: list[dict], words: list[dict]) -> list[dict]:
@@ -119,6 +122,15 @@ def merge_runs(lines: list[dict], runs: list[dict]) -> list[dict]:
     return keep_order(lines, out, cands)
 
 
+def holes(wt: list[float | None]) -> list[tuple[int, int]]:
+    """(a, b) for each pair of timed words a < b of a line with words no run timed between them and more than HOLE s
+    apart per word. build_lyrics spreads those words evenly between a and b; on the JamendoLyrics benchmark 2–8 % of
+    such words were then more than 1 s off, but half of them where a and b were more than 1 s apart per word (a held
+    note, or a wrong time on one side). Words before a line's first timed word or after its last are not counted."""
+    known = [(k, t) for k, t in enumerate(wt) if t is not None]
+    return [(ka, kb) for (ka, ta), (kb, tb) in zip(known, known[1:]) if kb - ka > 1 and tb - ta > HOLE * (kb - ka)]
+
+
 def report(merged: list[dict], n_runs: int) -> None:
     cur = None
     for r in merged:
@@ -134,6 +146,9 @@ def report(merged: list[dict], n_runs: int) -> None:
             flag = f"  ◀ back in lyric order (was at {r['reordered']:.2f})"
         elif len(r["runs_used"]) < max(2, n_runs // 2 + 1) and n_runs > 1:
             flag = f"  ◀ only run {r['runs_used']}"
+        elif hs := holes(r["wt"]):
+            a, b = hs[0]
+            flag = f"  ◀ no run timed \"{' '.join(r['words'][a + 1:b])}\", {r['wt'][b] - r['wt'][a]:.1f} s between the words around it"
         elif r["spread"] and r["spread"] > 0.4:
             flag = f"  ◀ runs disagree by {r['spread']} s"
         print(f"  {r['id']:7s} {s}  cov {' '.join(f'{c:.1f}' for c in r['coverage'])}  {r['text'][:40]}{flag}")

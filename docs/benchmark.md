@@ -300,6 +300,15 @@ run (250 lines, 38 % of them more than 0.3 s off), so its precision fell; it mis
 off as before (72, from 143). What it cannot see is a first word that every run times the same wrong way, early or
 sung long: 364 lines start more than 0.3 s off while the rest of the line is on time, and 34 of them are listed.
 
+`check_by_ear` now also lists a line with a word no run timed between words more than 1 s apart per word. `sync`
+spreads such a word evenly between the timed words around it. Closer together than that, it is a fair guess: 2–8 %
+of those words end up more than 1 s off. Further apart, half of them do (11 of 21): the gap is a held note, or one of
+the words around it is wrong. On these runs that adds 10 lines (321 → 331, in 7 songs); in 8 of them the guessed
+word is more than 0.3 s off, in 6 more than 1 s. No word time changes, and on the same runs the table's recall for
+lines that start more than 1 s off goes from 59.7 to 61.9 %, at the same precision. Listing every line with a word no run timed would have added 495
+lines, 8 % of them with that word more than 1 s off, and a word more than 0.5 s from every run's nearest word with
+the same letters fires on 42 % of whisper lines, mostly because whisper spells the word differently.
+
 ## What the numbers point to
 
 In order of how many wrong lines each one concerns (they overlap):

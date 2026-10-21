@@ -126,6 +126,8 @@ Why it works the way it does:
   is wrong; the lines you did not pin stay where they were.
 - **One run is not enough.** A line only one of the runs placed can be seconds off, so it goes on `check_by_ear`
   too.
+- **A word no run heard is a guess.** It is spread between the words around it, and where those are more than 1 s
+  apart per word, half such words were more than 1 s off on the benchmark; that line goes on `check_by_ear`.
 
 To hear whether the grid and timing are right, mix a click track over a stretch — a high click on the first beat
 of each bar, a low click on the other beats and, with `--words`, a soft tick on every lyric word:
