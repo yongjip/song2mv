@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import math
 import os
 import re
 import subprocess
@@ -60,21 +61,22 @@ def probe_size(mp4: str) -> tuple[int, int]:
 
 
 def decode_gray(mp4: str, W: int, H: int) -> np.ndarray:
-    p = subprocess.Popen(["ffmpeg", "-v", "error", "-i", mp4, "-vf", f"fps=10,scale={W}:{H},format=gray", "-f", "rawvideo", "-"],
-                         stdout=subprocess.PIPE, bufsize=10**8)
-    assert p.stdout
-    buf = p.stdout.read()
-    n = len(buf) // (W * H)
-    return np.frombuffer(buf[: n * W * H], np.uint8).reshape(n, H, W).astype(np.int16)
+    r = subprocess.run(["ffmpeg", "-v", "error", "-i", mp4, "-vf", f"fps=10,scale={W}:{H},format=gray", "-f", "rawvideo", "-"],
+                       capture_output=True)
+    n = len(r.stdout) // (W * H)
+    if n < 2:
+        detail = (r.stderr.decode(errors="replace").strip().splitlines() or ["no frames"])[-1]
+        raise Song2mvError(f"{mp4} has no frames to measure: {detail}")
+    return np.frombuffer(r.stdout[: n * W * H], np.uint8).reshape(n, H, W).astype(np.int16)
 
 
 def lint_text(pattern: str, min_px: int) -> tuple[int, list[int], list[str]]:
-    """Font sizes in scene sources: (files matched, sizes found, offenders under min_px)."""
+    """`fontSize` values in scene sources: (files matched, sizes found, offenders under min_px)."""
     files = glob.glob(pattern, recursive=True)
     sizes, offenders = [], []
     for f in files:
         src = open(f, encoding="utf-8").read()
-        for m in re.finditer(r"(?:size=\{|size: |fontSize: )(\d+)(?![\d.])", src):
+        for m in re.finditer(r"\bfontSize\s*[:=]\s*\{?\s*[\"']?(\d+)(?![\d.])", src):
             sizes.append(int(m.group(1)))
             if int(m.group(1)) < min_px:
                 offenders.append(f"{f}:{src[: m.start()].count(chr(10)) + 1} {m.group(1)}px")
@@ -100,7 +102,7 @@ def load_goals(path: str | None) -> dict:
 
 
 def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0.0, t1: float | None = None,
-          src_glob: str | None = None, quiet: bool = False) -> dict:
+          src_glob: str | None = None, quiet: bool = False, report: bool = True) -> dict:
     if t0 < 0 or (t1 is not None and t1 <= t0):
         raise Song2mvError(f"--from must be zero or more and --to after it (got --from {t0:g}, --to {t1})")
     goals = load_goals(goals_path)
@@ -113,8 +115,6 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     W, H = (180, 320) if portrait else (320, 180)
     body_frac = goals["frame"]["body_frac_9x16" if portrait else "body_frac_16x9"]
     F = decode_gray(mp4, W, H)
-    if len(F) < 2:
-        raise Song2mvError(f"{mp4} has no frames to measure")
     # the measured stretch, in song time: from the video's first frame to its last (or --to, if earlier)
     video_end = t0 + len(F) / 10
     if t1 is not None and t1 > video_end + 0.5:
@@ -127,9 +127,33 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     cover = (body > 40).mean(axis=(1, 2))
     idx = lambda t: int(round((t - t0) * 10))  # noqa: E731
 
+    # cuts: a cut is a frame whose correlation with the previous one collapses
+    small = body[:, ::2, ::2].astype(np.float32)
+    small -= small.mean(axis=(1, 2), keepdims=True)
+    num = (small[1:] * small[:-1]).sum(axis=(1, 2))
+    den = np.sqrt((small[1:] ** 2).sum(axis=(1, 2)) * (small[:-1] ** 2).sum(axis=(1, 2))) + 1e-6
+    corr = num / den
+    # pair k is frames (k, k+1); the cut is at k+1. Thresholds: real cuts < 0.6, within-scene 5th percentile 0.70
+    raw = [k + 1 for k in range(len(diff)) if corr[k] < 0.62 and diff[k] > 2.5]
+    cut_idx: list[int] = []
+    for i in raw:  # cuts within 0.3 s count once
+        if not cut_idx or i - cut_idx[-1] > 3:
+            cut_idx.append(i)
+    cut_t = [t0 + i / 10 for i in cut_idx]
+
+    # A line sung into the next section is measured up to that section's start, or up to the last cut in the beat
+    # before it: a scene hits the downbeat it hears, which can lead mv.json's bar line, and the 10 fps frames show a
+    # cut up to 0.05 s early.
+    beat = song.get("grid", {}).get("beat", 0.5)
+    ordered = sorted(secs, key=lambda s: s["start"])
+    stop = {}  # section id → the first frame change (index into diff) that belongs to the next section
+    for s, nxt in zip(ordered, ordered[1:]):
+        hits = [t for t in cut_t if nxt["start"] - beat <= t <= nxt["start"]]
+        stop[s["id"]] = math.ceil(round(((hits[-1] if hits else nxt["start"]) - t0) * 10, 6)) - 1
+
     per = []
     for r in lines:
-        i0, i1 = idx(r["start"]), min(len(diff), idx(r["end"]))
+        i0, i1 = idx(r["start"]), min(len(diff), idx(r["end"]), stop.get(r["sec"], len(diff)))
         if i1 - i0 < 3:
             continue
         per.append((r, float(diff[i0:i1].mean()), float(cover[i0:i1].mean())))
@@ -193,20 +217,8 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     else:
         skipped["variation.repeats"] = "no repeated section (ch1 and ch2 …) has lines in both copies in this stretch"
 
-    # cuts: a cut is a frame whose correlation with the previous one collapses
+    # cuts: uneven inside cv_kinds sections, and never too far apart
     gk = goals["cuts"]
-    small = body[:, ::2, ::2].astype(np.float32)
-    small -= small.mean(axis=(1, 2), keepdims=True)
-    num = (small[1:] * small[:-1]).sum(axis=(1, 2))
-    den = np.sqrt((small[1:] ** 2).sum(axis=(1, 2)) * (small[:-1] ** 2).sum(axis=(1, 2))) + 1e-6
-    corr = num / den
-    # pair k is frames (k, k+1); the cut is at k+1. Thresholds: real cuts < 0.6, within-scene 5th percentile 0.70
-    raw = [k + 1 for k in range(len(diff)) if corr[k] < 0.62 and diff[k] > 2.5]
-    cut_idx: list[int] = []
-    for i in raw:  # cuts within 0.3 s count once
-        if not cut_idx or i - cut_idx[-1] > 3:
-            cut_idx.append(i)
-    cut_t = [t0 + i / 10 for i in cut_idx]
     for s in secs:
         if s["kind"] not in gk["cv_kinds"] or s["end"] <= t0 or s["start"] >= t_end:
             continue
@@ -242,22 +254,23 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
             check("text.min_font", not off, min(sizes) if sizes else None, {"min": gt["min_font_px"]},
                   f"{len(off)} sizes under {gt['min_font_px']}px {off[:10]}", offenders=off)
 
-    for w in warnings:
-        print(f"  ! {w}")
-    if not quiet:
-        print(f"{'id':8s} {'move':>5s} {'cover':>6s}  text")
-        flagged = {x["id"] for x in low} | {x["id"] for x in empty}
-        for r, m, c in per:
-            print(f"{r['id']:8s} {m:5.2f} {c:6.3f}  {r['text'][:28]}{' ◀' if r['id'] in flagged else ''}")
-        print(f"cuts at: {[round(t, 1) for t in cut_t]}\n")
-    for k, r in results.items():
-        if not quiet or not r["ok"]:
-            print(("PASS " if r["ok"] else "FAIL ") + k + " — " + r["msg"])
-    if not quiet:
-        for k, why in skipped.items():
-            print(f"SKIP {k} — {why}")
     passed = sum(r["ok"] for r in results.values())
-    print(f"\n{passed}/{len(results)} passed (song time {t0:g}–{t_end:.1f} s)")
+    if report:
+        for w in warnings:
+            print(f"  ! {w}")
+        if not quiet:
+            print(f"{'id':8s} {'move':>5s} {'cover':>6s}  text")
+            flagged = {x["id"] for x in low} | {x["id"] for x in empty}
+            for r, m, c in per:
+                print(f"{r['id']:8s} {m:5.2f} {c:6.3f}  {r['text'][:28]}{' ◀' if r['id'] in flagged else ''}")
+            print(f"cuts at: {[round(t, 1) for t in cut_t]}\n")
+        for k, r in results.items():
+            if not quiet or not r["ok"]:
+                print(("PASS " if r["ok"] else "FAIL ") + k + " — " + r["msg"])
+        if not quiet:
+            for k, why in skipped.items():
+                print(f"SKIP {k} — {why}")
+        print(f"\n{passed}/{len(results)} passed (song time {t0:g}–{t_end:.1f} s)")
     return stamp({
         "command": "check",
         "video": os.path.abspath(mp4),

@@ -232,7 +232,8 @@ song2mv check <work>/renders/<name>-16x9-A-B.mp4 --song <work>/mv.json --from A 
 ```
 
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
-work folder's name, or `--name`). Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`
+work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
+contact sheets outside `src/scenes/`. Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`
 did not run on this stretch; they did not pass. If a FAIL is the ruler's fault (a deliberately still, quiet
 intro line), copy the goals file, add the line id to `motion.quiet_allow`, pass `--goals` and tell the user why —
 don't quietly bend the goals.
@@ -258,7 +259,9 @@ same world and timing filmed for a tall frame: the camera centred in the safe bo
 
 Keep text inside x 120–960, y 269–1248: that box is clear of the app buttons and caption overlay on Reels, Shorts
 and TikTok. The template's title, stage and lyrics already sit in it; a `VerticalScene` keeps its own text there
-and puts only picture below it. Check stills.
+and puts only picture below it. Check stills. `check` measures the top 56 % of a short, above the captions, also with
+a `VerticalScene`; a large still overlay there (a HUD, a dialogue box) hides cuts from it, so cut between shots that
+look different.
 
 ## 7. Deliver
 
