@@ -1,7 +1,8 @@
-"""`song2mv render` without Node: inputs are checked before anything is installed; install marker, outputs,
-progress lines."""
+"""`song2mv render` without Node: inputs are checked before anything is installed; install marker, the install
+template copies share, outputs, progress lines."""
 import json
 import os
+import shutil
 import sys
 
 import pytest
@@ -44,13 +45,16 @@ def test_times_outside_the_song_are_refused(tmp_path, capsys, no_install, args, 
     assert code == 2 and says in res["error"]["message"]
 
 
-def test_npm_runs_until_an_install_finished(tmp_path, monkeypatch):
+@pytest.fixture
+def npm(tmp_path, monkeypatch):
+    """npm ci that only makes node_modules; returns the folders it ran in"""
     monkeypatch.setenv("SONG2MV_CACHE", str(tmp_path / "cache"))
     monkeypatch.setattr(runner, "_require", lambda tool: tool)
     calls = []
 
     def fake_npm(cmd, cwd, stdout):
-        calls.append(cmd[1])
+        assert cmd[1] == "ci"
+        calls.append(cwd)
         os.makedirs(os.path.join(cwd, "node_modules"), exist_ok=True)
 
         class Done:
@@ -58,13 +62,48 @@ def test_npm_runs_until_an_install_finished(tmp_path, monkeypatch):
         return Done()
 
     monkeypatch.setattr(runner.subprocess, "run", fake_npm)
+    return calls
+
+
+def test_npm_runs_until_an_install_finished(npm):
     tpl = runner.prepare_template(None)
-    assert calls == ["ci"] and os.path.exists(os.path.join(tpl, "render.mjs"))
+    assert npm == [tpl] and os.path.exists(os.path.join(tpl, "render.mjs"))
     runner.prepare_template(None)
-    assert calls == ["ci"]  # installed: not again
+    assert npm == [tpl]  # installed: not again
     os.remove(os.path.join(tpl, "node_modules", runner.INSTALLED))  # as after an interrupted install
     runner.prepare_template(None)
-    assert calls == ["ci", "ci"]
+    assert npm == [tpl, tpl]
+
+
+def test_template_copies_share_the_cached_install(tmp_path, npm):
+    one = runner.prepare_template(str(tmp_path / "one" / "video"))
+    two = runner.prepare_template(str(tmp_path / "two" / "video"))
+    shared = runner.prepare_template(None)
+    assert npm == [shared]  # one install, in the cache
+    for copy in (one, two):
+        modules = os.path.join(copy, "node_modules")
+        assert os.path.islink(modules) and os.path.samefile(modules, os.path.join(shared, "node_modules"))
+    assert runner.prepare_template(one) == one and npm == [shared]
+
+
+def test_a_copy_whose_lock_file_differs_installs_its_own(tmp_path, npm):
+    copy = runner.prepare_template(str(tmp_path / "video"))
+    shared = runner.prepare_template(None)
+    with open(os.path.join(copy, "package-lock.json"), "a", encoding="utf-8") as f:
+        f.write("\n")  # a package added, or a copy made by another song2mv
+    runner.prepare_template(copy)
+    assert npm == [shared, copy] and not os.path.islink(os.path.join(copy, "node_modules"))
+    assert os.path.exists(os.path.join(shared, "node_modules", runner.INSTALLED))  # the shared install stays
+    runner.prepare_template(copy)
+    assert npm == [shared, copy]  # its own install counts as installed
+
+
+def test_a_copy_linked_to_a_deleted_cache_links_again(tmp_path, npm):
+    copy = runner.prepare_template(str(tmp_path / "video"))
+    shutil.rmtree(tmp_path / "cache")
+    runner.prepare_template(copy)
+    shared = runner.prepare_template(None)
+    assert npm == [shared, shared] and os.path.samefile(os.path.join(copy, "node_modules"), os.path.join(shared, "node_modules"))
 
 
 def fake_render(tmp_path, monkeypatch, use_manifest):

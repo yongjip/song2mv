@@ -32,7 +32,7 @@ export const LyricVideo: React.FC<MvProps> = ({ song, from, to, hold }) => {
         <Sky T={T} tint={tint} opacity={span(T, 0, 1.2)} />
         <BeatGlow T={T} color={glow} strength={strength} />
         <Scene T={T} />
-        <Vignette />
+        {song.vignette !== false && <Vignette />}
         <Captions T={T} hide={hide} />
         <Flash T={T} flashes={flashes} />
         {!toEnd && <AbsoluteFill style={{ background: "#000", opacity: 1 - fade(frame) }} />}

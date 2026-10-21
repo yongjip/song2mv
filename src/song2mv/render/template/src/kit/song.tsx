@@ -48,8 +48,10 @@ export type Song = {
     whisper?: string[];
   };
   theme?: ThemeInput;
-  /** white flashes [song time, strength 0–1]; default: one at the start of every hot section */
+  /** white flashes [song time, strength 0–1]; default: one at the start of every hot section; [] for none */
   flashes?: [number, number][];
+  /** false: no dark vignette over the scenes */
+  vignette?: boolean;
 };
 export type MvProps = { song: Song; from: number; to: number | null; hold: number };
 

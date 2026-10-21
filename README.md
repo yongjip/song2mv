@@ -159,6 +159,8 @@ See [`examples/song.example.json`](https://github.com/yongjip/song2mv/blob/main/
 | `manual` | `{}` | `{"ch1-01": [98.5, 99.2]}` — word start times that override everything. A single number pins the first word. Re-heard lines around a pin keep their times while they fit between the pins |
 | `end` | `null` | song end used after the last line; `null` = file length |
 | `theme` | `{}` | copied into `mv.json` for the template (colours, font) |
+| `vignette` | `true` | copied into `mv.json`: `false` takes the template's dark vignette off the scenes |
+| `flashes` | one at the start of each hot section | copied into `mv.json`: the template's white flashes, `[[song time, strength 0–1], …]`; `[]` = none |
 
 Line ids are `<section>-<nn>`: `in-01`, `v1-03`, `pc2-01`, `ch1-05`, `br-02`, `ou-01`. A section name that appears
 more than once without a number (`[Chorus]` twice) is numbered by occurrence (`ch1`, `ch2`); one that appears once

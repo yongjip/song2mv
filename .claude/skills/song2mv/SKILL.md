@@ -96,7 +96,15 @@ style and a different central image. For each, write:
 - **Main character or motif,** and how it changes over the song.
 - **First chorus:** how it hits, the song's biggest moment.
 
-Make each concept concrete enough to picture: render one rough still per concept and show them side by side.
+Make each concept concrete enough to picture: render one rough still per concept and show them side by side. Copy
+the template now (step 4's first command), draw each concept as a component of `T` in
+`<work>/video/src/scenes/concepts/`, export it from `src/scenes/concepts/index.ts` under the concept's name, and render
+them all at one moment, such as the first chorus' downbeat. Each is drawn alone, without the template's sky, captions
+or vignette:
+
+```bash
+cd <work>/video && npx remotion still src/index.ts Concepts concepts.png --props="{\"T\": <first chorus start>, \"song\": $(cat ../mv.json)}"
+```
 
 **Then the song map** for the chosen concept, `<work>/map.md`. Agree on it with the user before coding:
 
@@ -144,10 +152,12 @@ Write the song's scenes in `<work>/video/src/scenes/` and export them from `src/
 `linesDrawnByScene`). Draw them in the chosen concept's style, and take what fits from the kit in `src/kit/`.
 
 **The frame comes from the song config.** Around your scenes the template draws a background, the title and the
-captions in `theme`'s colours and font; in 9:16 its starry sky fills the screen above and below the stage. Left at
-the defaults, they put the kit's neon night around every concept, and the title is the file name. Set `title` and
-`theme` (`bg`, `stars`, the text colours, `font`) in `song.json` to fit the concept, then run
-`song2mv sync <work>/song.json --from build`.
+captions in `theme`'s colours and font; in 9:16 its starry sky fills the screen above and below the stage. Over the
+scenes it lays a dark vignette, and a white flash at the start of each hot section, placed on the one-tempo grid.
+Left at the defaults, they put the kit's neon night around every concept, and the title is the file name. Set `title`
+and `theme` (`bg`, `stars`, the text colours, `font`) in `song.json` to fit the concept; `"vignette": false` keeps the
+scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` puts the flashes on the song's real hits
+(`[]` when the scenes flash themselves). Then run `song2mv sync <work>/song.json --from build`.
 
 ### The scene kit
 

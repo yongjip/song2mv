@@ -52,6 +52,12 @@ First release (0.1.0).
     else is printed, ffmpeg's messages included.
 - `song2mv render` (experimental): Remotion lyric-video template, 16:9 and 9:16, `--hold` for hook cuts,
   `--template DIR` for your own scenes. `outputs` names exactly the files written.
+- `render --template DIR` shares the cached Remotion install: while DIR's `package-lock.json` matches the bundled
+  one, `DIR/node_modules` is a link to the install in `~/.cache/song2mv/template-<version>/`. Each song's copy used to
+  run its own `npm ci` and download its own headless Chrome (455 MB, plus a 130–180 MB bundle cache); a new copy now
+  takes under 1 MB and renders right away. Remotion keeps one bundle cache there, so switching between copies costs
+  about a second of bundling. A copy whose lock file differs (made by another version, or with packages added)
+  installs its own, as before, and a copy that already has its own `node_modules` keeps it (delete it to share).
 - The template's lyrics are easier to read.
   - **Unsung words:** they are drawn at 50 % white with a tight dark shadow. At 32 % they had 2.7:1 contrast against
     the background, below WCAG's 3:1 for large text; now they have 5.3:1.
@@ -78,6 +84,16 @@ First release (0.1.0).
   the captions of lines the scenes don't draw, the flashes and the fade-out (no template sky, beat glow, title or
   vignette). The band put the template's starry sky and title around every concept, and a scene that drew its own
   lyrics left the bottom 45 % of the screen empty. Without a `VerticalScene` the short renders as before.
+- `song.json` sets the two effects the template's frame lays over every scene: `"vignette": false` turns off the dark
+  vignette, and `"flashes": [[song time, strength 0–1], …]` replaces the white flash at the start of each hot section
+  (`[]` for none). `sync` copies both into `mv.json`; without them `mv.json` is as before. Neither could be changed
+  without editing the template copy: a concept with lit corners came out darkened, and on a song whose tempo drifts
+  the flash, placed on the one-tempo grid, came 0.35 s before the chorus downbeat.
+- A `Concepts` composition in the template draws every component exported from `src/scenes/concepts/index.ts` side
+  by side at song time `T` (a prop, default 30), each labelled with its export name: the rough still per concept that
+  the skill asks for before a concept is picked, in one command (in the skill's step 3). Nothing rendered concepts
+  before, so both demo runs exported each one as `Scene` in turn, rendered a still of each and stacked them by hand.
+  The template ships an empty `index.ts` there.
 - A style pack for paper cut-out, `paper` in the scene kit (`src/kit/styles/paper.tsx`). The kit's people, places
   and objects are flat illustration; a style pack is a few drawing pieces that put any object in another art style:
   - outlines cut by hand: `rect`, `ellipse`, `poly` and `strip`, seeded so that a cut stays the same from frame to

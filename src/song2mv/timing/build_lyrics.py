@@ -4,7 +4,7 @@ not in the stretches grid.json lists under off_grid, where the grid does not fit
 line pinned in "manual"), line ends. Writes
 
   lyrics.json — every line and word with its time, where the time came from, and how the runs agreed
-  mv.json     — the song config the Remotion template reads (lyrics + grid + sections + theme)
+  mv.json     — the song config the Remotion template reads (lyrics + grid + sections + theme, vignette, flashes)
 
 Times come from, in order of trust:
   manual    — the config's "manual" values (word start times, seconds)
@@ -201,6 +201,24 @@ def onset_report(lines: list[dict], audio: str) -> None:
         print(f"    {r['id']:7s} [{r['source']}] " + "  ".join(f"{w['w']}@{w['t']:.2f}→{near(w['t'])}" for w in r["words"]))
 
 
+def frame_options(cfg: dict) -> dict:
+    """The config's "vignette" (false = none) and "flashes" ([[song time, strength 0–1], …], [] = none) for the
+    template's frame around the scenes. Keys the config leaves out stay out of mv.json: the template's defaults."""
+    out = {}
+    vignette, flashes = cfg.get("vignette"), cfg.get("flashes")
+    if vignette is not None:
+        if not isinstance(vignette, bool):
+            raise Song2mvError(f"vignette must be true or false, got {vignette!r}")
+        out["vignette"] = vignette
+    if flashes is not None:
+        pair = lambda p: isinstance(p, list) and len(p) == 2 and all(isinstance(x, (int, float)) for x in p)  # noqa: E731
+        if not isinstance(flashes, list) or not all(pair(p) for p in flashes):
+            raise Song2mvError(f"flashes must be a list of [song time, strength] pairs, got {flashes!r}",
+                               hint='for example "flashes": [[33.6, 0.55], [81.9, 0.8]]; [] turns them off')
+        out["flashes"] = flashes
+    return out
+
+
 def build(merged: list[dict], grid: dict, cfg: dict, duration: float) -> tuple[dict, dict]:
     end_song = float(cfg.get("end") or duration)
     apply_manual(merged, cfg.get("manual") or {})
@@ -218,6 +236,7 @@ def build(merged: list[dict], grid: dict, cfg: dict, duration: float) -> tuple[d
         "lines": [{k: r[k] for k in ("id", "section", "text", "start", "end", "words")} for r in lines],
         "captions": {"hide": [], "from_word": {}, "whisper": []},
         "theme": cfg.get("theme") or {},
+        **frame_options(cfg),
     }
     src = {}
     for r in lines:
