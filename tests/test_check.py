@@ -116,6 +116,23 @@ def test_cut_frames_that_count_as_one_cut_are_still_left_out_of_the_motion_betwe
     assert line["without_cuts"] < 2.0
 
 
+def test_a_cut_on_a_lines_first_word_opens_its_shot_and_is_not_motion_inside_it(tmp_path):
+    # A dim shot cuts to a bright one at 2.0 s, the frame after the line's first word (1.93 s): the line is measured
+    # from the cut on, as the shot it opens, and is not frantic from that one cut.
+    from song2mv.check.score import score
+
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y",
+                    "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10:duration=2,lutyuv=y=val/5",
+                    "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10:duration=4,negate",
+                    "-filter_complex", "[0:v][1:v]concat=n=2:v=1[v]", "-map", "[v]", str(mp4)], check=True)
+    song = write(tmp_path, "mv.json", {"duration": 6.0, "sections": [{"id": "v1", "kind": "mid", "start": 0.0, "end": 6.0}],
+                                       "lines": [{"id": "v1-01", "section": "v1", "text": "la", "start": 1.93, "end": 4.0}]})
+    res = score(str(mp4), str(song), quiet=True)
+    (row,) = res["per_line"]
+    assert row["motion"] < 9.0 and not res["results"]["motion.max"]["lines"]
+
+
 def test_without_to_the_stretch_ends_with_the_video(tmp_path):
     # the video covers 12 s of a 60 s song: the 48 s after it are not "a stretch without a cut"
     from song2mv.check.score import score

@@ -157,10 +157,13 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
         hits = [t for t in cut_t if nxt["start"] - beat <= t <= nxt["start"]]
         stop[s["id"]] = math.ceil(round(((hits[-1] if hits else nxt["start"]) - t0) * 10, 6)) - 1
 
+    raw_cuts = set(raw)  # also the cut-like frames the 0.3 s merge folds into one cut
     per = []
     span = {}  # line id → (i0, i1): it is measured on the frame changes diff[i0:i1], frames i0 … i1
     for r in lines:
         i0, i1 = idx(r["start"]), min(len(diff), idx(r["end"]), stop.get(r["sec"], len(diff)))
+        if i0 + 1 in raw_cuts:  # a cut on the line's first word opens its shot
+            i0 += 1
         if i1 - i0 < 3:
             continue
         per.append((r, float(diff[i0:i1].mean()), float(cover[i0:i1].mean())))
@@ -181,7 +184,6 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
         return [(x["id"], x["value"]) for x in rows][:12]
 
     song_t = lambda i: round(t0 + i / 10, 2)  # noqa: E731
-    raw_cuts = set(raw)  # also the cut-like frames the 0.3 s merge folds into one cut
 
     def under_goal(series, i0, i1, goal):
         """The longest part of series[i0:i1] whose every second (all of it, when shorter) is under the goal, or else
