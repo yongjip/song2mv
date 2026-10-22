@@ -158,12 +158,16 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
         stop[s["id"]] = math.ceil(round(((hits[-1] if hits else nxt["start"]) - t0) * 10, 6)) - 1
 
     raw_cuts = set(raw)  # also the cut-like frames the 0.3 s merge folds into one cut
+    starts = sorted(r["start"] for r in load_lines(song))
     per = []
     span = {}  # line id → (i0, i1): it is measured on the frame changes diff[i0:i1], frames i0 … i1
     for r in lines:
         i0, i1 = idx(r["start"]), min(len(diff), idx(r["end"]), stop.get(r["sec"], len(diff)))
         if i0 + 1 in raw_cuts:  # a cut on the line's first word opens its shot
             i0 += 1
+        nxt = next((t for t in starts if t > r["start"]), None)
+        if nxt is not None:  # a cut from just before the next line's first word on is the next line's
+            i1 = min([i1] + [c - 1 for c in raw_cuts if i0 < c <= i1 and t0 + c / 10 >= nxt - 0.2])
         if i1 - i0 < 3:
             continue
         per.append((r, float(diff[i0:i1].mean()), float(cover[i0:i1].mean())))
@@ -300,12 +304,22 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     gaps, longest = [], 0.0
     edges = [t0] + cut_t + [t_end]
     for s0, e0 in zip(edges, edges[1:]):
-        kinds = {s["kind"] for s in secs if s["start"] < e0 and s["end"] > s0}
-        if kinds <= set(gk["gap_exempt_kinds"]):
-            continue
-        longest = max(longest, e0 - s0)
-        if e0 - s0 > gk["max_gap_sec"]:
-            gaps.append((round(s0, 1), round(e0, 1)))
+        # only the parts of the stretch outside exempt sections count, each on its own
+        parts: list[list[float]] = []
+        for s in ordered:
+            lo, hi = max(s0, s["start"]), min(e0, s["end"])
+            if hi <= lo:
+                continue
+            if s["kind"] in gk["gap_exempt_kinds"]:
+                parts.append([])
+            elif parts and parts[-1]:
+                parts[-1][1] = hi
+            else:
+                parts.append([lo, hi])
+        for lo, hi in (p for p in parts if p):
+            longest = max(longest, hi - lo)
+            if hi - lo > gk["max_gap_sec"]:
+                gaps.append((round(lo, 1), round(hi, 1)))
     check("cuts.max_gap", not gaps, round(longest, 1), {"max": gk["max_gap_sec"]},
           f"{len(gaps)} stretches over {gk['max_gap_sec']} s without a cut {gaps[:10]}", gaps=gaps)
 

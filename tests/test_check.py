@@ -133,6 +133,38 @@ def test_a_cut_on_a_lines_first_word_opens_its_shot_and_is_not_motion_inside_it(
     assert row["motion"] < 9.0 and not res["results"]["motion.max"]["lines"]
 
 
+def test_a_cut_just_before_the_next_lines_first_word_is_that_lines_lead_in(tmp_path):
+    # A dim shot cuts to a bright one at 2.0 s, 0.08 s before the next line's first word: the line before it is
+    # measured up to the cut and is not frantic from the next line's lead-in.
+    from song2mv.check.score import score
+
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y",
+                    "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10:duration=2,lutyuv=y=val/5",
+                    "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10:duration=4,negate",
+                    "-filter_complex", "[0:v][1:v]concat=n=2:v=1[v]", "-map", "[v]", str(mp4)], check=True)
+    song = write(tmp_path, "mv.json", {"duration": 6.0, "sections": [{"id": "v1", "kind": "mid", "start": 0.0, "end": 6.0}],
+                                       "lines": [{"id": "v1-01", "section": "v1", "text": "la", "start": 1.0, "end": 2.0},
+                                                 {"id": "v1-02", "section": "v1", "text": "la", "start": 2.08, "end": 4.0}]})
+    res = score(str(mp4), str(song), quiet=True)
+    motion = {r["id"]: r["motion"] for r in res["per_line"]}
+    assert motion["v1-01"] < 9.0 and not res["results"]["motion.max"]["lines"]
+
+
+def test_a_stretch_without_a_cut_counts_only_outside_exempt_sections(tmp_path):
+    # 12 s of one moving shot: 4 s of it in a mid section, 8 s in a calm one, which may hold a shot for long.
+    from song2mv.check.score import score
+
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10:duration=12",
+                    str(mp4)], check=True)
+    sections = [{"id": "v1", "kind": "mid", "start": 0.0, "end": 4.0}, {"id": "ou", "kind": "calm", "start": 4.0, "end": 12.0}]
+    song = write(tmp_path, "mv.json", {"duration": 12.0, "sections": sections,
+                                       "lines": [{"id": "v1-01", "section": "v1", "text": "la", "start": 1.0, "end": 3.5}]})
+    gap = score(str(mp4), str(song), quiet=True)["results"]["cuts.max_gap"]
+    assert gap["ok"] and gap["value"] == 4.0
+
+
 def test_without_to_the_stretch_ends_with_the_video(tmp_path):
     # the video covers 12 s of a 60 s song: the 48 s after it are not "a stretch without a cut"
     from song2mv.check.score import score
