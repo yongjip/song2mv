@@ -240,6 +240,39 @@ First release (0.1.0).
   plant, a bicycle parked by the shop window and a car, all character-map sprites. Its camera cuts in to 2× on the cat
   at 10.5 s, to 3× on the girl walking into the sunset at 13 s, and back out at 14.25 s (render the tile with
   `--props '{"T": 13}'` to see the close-up).
+- Type for the pixel pack. A new user's pixel video needed big outlined letters and its lyrics in pixel type, and the
+  pack had neither, so the agent wrote both (3 of its 35.5 minutes). Its first big letters, `text` with a shadow put
+  on with `stamp`, had ink specks inside: `stamp` rings every gap, and a shadow one bit down and right leaves small
+  gaps between the letters and their shadow. Now:
+  - `BigText`: the 5×7 font at a whole-number `scale`, two-tone with `lower`, a drop `shadow` one bit down and one
+    block of `outline` round all of it. A gap the shadow nearly fills takes the shadow's colour and a one-block slit
+    the outline's, so no speck is left. `width` wraps it, stepping the scale down while a word alone is wider, and
+    `t` pops it in once.
+  - `Dialog`: a game dialog box that letters the line being sung, sung words lit and the rest dim, wrapped and set
+    once per line, so no word moves; a line longer than its `rows` turns the page when the singing reaches the next
+    one.
+  - Both letter text the 5×7 font lacks, such as Korean, from a font (`font`, else the theme's font stack) at 16
+    blocks to the em per scale, weight 500, each glyph drawn at the quarter-block shift that leaves the fewest
+    half-covered blocks, so its strokes land on whole blocks. Measured with Pretendard, the stack's first font: tried
+    at 10 to 20 blocks and weights 500 to 800, bold strokes merge (a doubled consonant became one blob at 12 and 14),
+    and at weight 500 a syllable with two final consonants still clumped at 14 and read at 16; without the shift,
+    strokes fell between blocks and came out doubled or missing. At 16 blocks Apple SD Gothic Neo, a stock Mac's
+    fallback, reads but rougher (thinner strokes, short bars cut to one-block stubs; weight 600 merges them instead),
+    and Noto Sans KR, the same Hangul as Noto Sans CJK KR, reads cleanly at its regular weight. The guide says so,
+    and to import a font file and pass it as `font` for the same letters everywhere.
+  - Under `BigText`'s shadow a gap one bit tall between two strokes takes the outline's colour where it is two bits
+    wide or more, so dense Hangul does not turn into stripes of face and shadow (a narrower gap keeps the shadow's,
+    or it would be an ink speck); a bright shadow still leaves its colour inside syllables with two final
+    consonants, so the guide asks for a dark one.
+  - The 5×7 font covers all of ASCII (`` $ @ [ ] { } \ | ^ ` ~ `` are new). Before choosing a face, `BigText` and
+    `Dialog` spell look-alikes plainly (`Ø` as O, `«` as `"`) and drop symbols the font lacks (music notes, emoji),
+    so a `~` or a music note in one line keeps the 5×7 look; only letters it lacks, such as Korean, set every line
+    in `font` (a two-row `Dialog` then grows from 25 to 44 blocks tall).
+
+  Gallery tile 24 shows both on a 16:9 night street and on a tall panel in Korean.
+- `pixel.Pixelate` takes a `shadow`: a copy of the blocks one block down in that colour, inside the outline. A second
+  `Pixelate` under an outlined one, offset sideways as a shadow, showed through each open diagonal corner of the
+  outline as a speck.
 - A style pack for comic pages, `comic` in the scene kit (`src/kit/styles/comic.tsx`):
   - `Page`, the paper (1920×1080, or 1080×1920 with `w` and `h`), and `Panel`, a box on it that films the scene with
     its own camera (the kit's `shots`, `hits` and punch) and pops or slides in at `t`; `layout` splits a page into
