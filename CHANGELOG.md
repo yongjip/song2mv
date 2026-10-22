@@ -105,6 +105,13 @@ First release (0.1.0).
   the audio to WAV and encodes the AAC with Remotion's ffmpeg, which trims it: on a click track and on a demo song the
   sound is within a sample of the source, and the frames are unchanged. A template copy made before this still renders
   43 ms late; copy its new `render.mjs` or a new `--template` folder.
+- The template's captions now give way to a line the scene draws as soon as that line starts after the caption
+  line's last word. Before, they gave way only when the caption line ended, so a scene-drawn chorus line that came in
+  on a pickup, before the last verse line ended, put two lyric lines on screen at the chorus hit. A chant drawn over
+  the middle of a captioned line still leaves the caption up.
+- An interrupted `render.mjs` left its temporary folder, which holds a link to the song, behind. It now removes it on
+  Ctrl-C, when Remotion fails, and when Remotion stops without writing a file (on Ctrl-C it exits 0). In that last
+  case it now says which file was not written, where before it printed the path as if the file had been written.
 - On Windows, `song2mv render` failed at its first Remotion call: the template's `render.mjs` ran `npx`, which is
   `npx.cmd` there and cannot be started without a shell. It now runs Remotion's CLI with the node that runs it, and
   a new CI job renders a still of the sample song on Windows. Run in a folder without an install, `render.mjs` says

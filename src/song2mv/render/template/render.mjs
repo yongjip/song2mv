@@ -65,6 +65,13 @@ const base = opt("name", path.basename(path.dirname(songPath)) || "song");
 
 // ── audio: find it, then expose it through a temporary public folder ──
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "song2mv-"));
+const cleanup = () => fs.rmSync(tmp, { recursive: true, force: true });
+for (const [sig, code] of [["SIGINT", 130], ["SIGTERM", 143], ["SIGHUP", 129]]) {
+  process.on(sig, () => {
+    cleanup();
+    process.exit(code);
+  });
+}
 const candidates = [
   opt("audio"),
   song.audio && path.join(HERE, "public", song.audio),
@@ -97,46 +104,53 @@ fs.writeFileSync(propsFile, JSON.stringify({ song, from, to, hold, ...(draft ? {
 const logLevel = process.env.SONG2MV_REMOTION_LOG || (process.stderr.isTTY ? "info" : "warn");
 const run = (args) => {
   const r = spawnSync(process.execPath, [cli, ...args], { cwd: HERE, stdio: "inherit" });
-  if (r.status !== 0) process.exit(r.status ?? 1);
+  if (r.status !== 0) {
+    cleanup();
+    process.exit(r.status ?? 1);
+  }
 };
 const remotion = (args) => run([...args, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`]);
 
 fs.mkdirSync(outDir, { recursive: true });
 const wrote = (file) => (opt("manifest") ? fs.appendFileSync(opt("manifest"), file + "\n") : console.log(file));
+const place = (made, file) => {
+  if (!fs.existsSync(made)) {
+    cleanup();
+    console.error(`Remotion stopped without writing ${path.basename(file)}`);
+    process.exit(1);
+  }
+  fs.copyFileSync(made, file);
+  fs.rmSync(made, { force: true });
+  wrote(file);
+};
 const range = from > 0 || to !== null ? `-${from}-${to ?? "end"}` : "";
 if (flag("studio")) {
   remotion(["studio"]);
 } else if (opt("composition")) {
-  const file = path.join(outDir, `${base}-${opt("composition")}.png`);
-  remotion(["still", opt("composition"), file, "--frame=0"]);
-  wrote(file);
+  const made = path.join(tmp, "still.png");
+  remotion(["still", opt("composition"), made, "--frame=0"]);
+  place(made, path.join(outDir, `${base}-${opt("composition")}.png`));
 } else if (opt("still") !== undefined) {
   const t = Number(opt("still"));
   const frame = Math.max(0, Math.round((t - from) * FPS));
   for (const id of aspects) {
-    const file = path.join(outDir, `${base}-${id.slice(6)}-${t}s.png`);
-    remotion(["still", id, file, `--frame=${frame}`]);
-    wrote(file);
+    const made = path.join(tmp, "still.png");
+    remotion(["still", id, made, `--frame=${frame}`]);
+    place(made, path.join(outDir, `${base}-${id.slice(6)}-${t}s.png`));
   }
 } else {
   for (const id of aspects) {
-    const file = path.join(outDir, `${base}-${id.slice(6)}${range}${draft ? "-draft" : ""}.mp4`);
-    if (song.audio) {
-      const video = path.join(tmp, "video.mp4");
-      const wav = path.join(tmp, "audio.wav");
-      remotion(["render", id, video, `--separate-audio-to=${wav}`]);
-      if (fs.existsSync(wav)) {
-        run(["ffmpeg", "-y", "-v", "error", "-i", video, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy",
-          "-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart", file]);
-      } else {
-        fs.copyFileSync(video, file);
-      }
-      fs.rmSync(video, { force: true });
-      fs.rmSync(wav, { force: true });
-    } else {
-      remotion(["render", id, file]);
+    const made = path.join(tmp, "video.mp4");
+    const wav = path.join(tmp, "audio.wav");
+    remotion(["render", id, made, ...(song.audio ? [`--separate-audio-to=${wav}`] : [])]);
+    if (fs.existsSync(made) && fs.existsSync(wav)) {
+      const muxed = path.join(tmp, "muxed.mp4");
+      run(["ffmpeg", "-y", "-v", "error", "-i", made, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+        "-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart", muxed]);
+      fs.renameSync(muxed, made);
     }
-    wrote(file);
+    fs.rmSync(wav, { force: true });
+    place(made, path.join(outDir, `${base}-${id.slice(6)}${range}${draft ? "-draft" : ""}.mp4`));
   }
 }
-fs.rmSync(tmp, { recursive: true, force: true });
+cleanup();
