@@ -61,9 +61,6 @@ export const Quiet: React.FC<{ T: number; t: number; text: string; x: number; y:
  * empty screen between two lines is harder to follow than a line held a moment longer. */
 const HOLD_GAP = 0.5;
 
-/** Words not sung yet keep a tight dark shadow, so they stay readable over rays, glows and grid lines */
-const UNSUNG_SHADOW = "0 0.04em 0.12em rgba(0,0,0,0.85)";
-
 /**
  * The line being sung at T among `lines`: the one that started last (backing vocals can overlap). A line is up
  * from `lead` s before its first word to 0.05 s after its end, or until the next line of `all` (every line of the
@@ -130,7 +127,7 @@ export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?:
             {i > 0 && " " /* a real space: the only place a long line may wrap */}
             <span style={{
               color: sung ? theme.bigText : theme.unsung,
-              textShadow: sung ? `0 0 28px ${theme.bigGlow}, 0 0 90px ${theme.bigGlow}` : UNSUNG_SHADOW,
+              textShadow: sung ? `0 0 28px ${theme.bigGlow}, 0 0 90px ${theme.bigGlow}` : theme.unsungShadow,
             }}>
               {w.w}
             </span>
@@ -174,7 +171,7 @@ export const Captions: React.FC<{ T: number; hide?: Set<string>; size?: number; 
               {i > 0 && " " /* a real space: the only place a long line may wrap */}
               <span style={{
                 color: sung ? theme.sung : theme.unsung,
-                textShadow: sung ? `0 0 18px ${theme.sungGlow}` : UNSUNG_SHADOW,
+                textShadow: sung ? `0 0 18px ${theme.sungGlow}` : theme.unsungShadow,
               }}>
                 {w.w}
               </span>
