@@ -222,7 +222,7 @@ paper cut-out:
 by whole numbers; never `scale()` a sprite or a layer, or blocks of two sizes meet and edges go soft.
 - `new pixel.Canvas()`: a picture in big pixels, drawn with `box`, `disc`, `poly`, `line` (1 px wide it is pixel
   perfect: no doubled pixel where it turns), `dither` (a tone of a colour) and `text` (a 5×7 font: Latin letters,
-  digits, punctuation); positions round to whole pixels;
+  digits and the rest of ASCII); positions round to whole pixels;
 - `pixel.sprite(rows, palette)`: a character from a character map, a string per row and a character per pixel
   (`"..HHhh.."` with `{ H: hair, h: shine }`; others stay clear). `canvas.stamp(sprite, outline, x, y)` puts it on
   with a clean 1-pixel outline (inside corners filled, so the ring turns them on a diagonal). Draw people, animals
@@ -240,18 +240,26 @@ by whole numbers; never `scale()` a sprite or a layer, or blocks of two sizes me
   5×7 font at `scale` blocks a bit, two-tone with `lower`, a `shadow` one bit down, one block of `outline` round all
   of it with no specks in the letters; `width` wraps it (and steps the scale down while a word alone is wider), `T`
   with `t` pops it in once. Not `text` + `stamp`: `stamp` rings every gap, so a text with a shadow gets ink specks
-  between the letters and their shadow. Text the 5×7 font lacks, such as Korean, comes from a font at 16 blocks to
-  the em per scale (Hangul 14 blocks tall): it reads from scale 1, with a shadow from scale 2;
+  between the letters and their shadow. Text the 5×7 font lacks, such as Korean, comes from `font` (default: the
+  theme's) at 16 blocks to the em per scale (Hangul 14 blocks tall): it reads from scale 1, and with a shadow from
+  scale 2 if the shadow is dark under a light face; a bright shadow leaves its colour inside syllables with two final
+  consonants at any scale. The 16 blocks were measured with Pretendard, the theme's first font; Apple SD Gothic Neo,
+  where a Mac without it falls back, reads rougher (thin strokes, short bars as one-block stubs), and Noto Sans CJK
+  KR (Linux) reads cleanly. For the same letters on every machine, import an OFL Korean font file from `src/`, load
+  it before the first frame and pass its family as `font`;
 - `pixel.Dialog`: a game dialog box that letters the line being sung word by word (sung words lit, the rest dim),
   wrapped to its `width` and set once per line, so no word moves; a line longer than `rows` turns the page. Put the
-  lines it shows in `linesDrawnByScene`. Its 5×7 letters are 7 blocks tall (`px` 6 or more keeps them over 36 px);
-  when a line has letters the font lacks, every line comes from the font in rows of 19 blocks: in 16:9 draw the box
-  at `px` 4, in a 9:16 frame at `px` 6 it fits;
+  lines it shows in `linesDrawnByScene`. Its 5×7 letters are 7 blocks tall: `px` 6 keeps them over 36 px in 16:9
+  and in a `VerticalScene`, but the short shows a `Scene` in its band at 0.76, so there use `px` 7 or more (8, the
+  default, to be safe). The 5×7 font has all of ASCII and drops symbols it lacks (music notes, emoji); when a line
+  has letters it lacks, such as Korean, every line comes from the font in rows of 19 blocks, Hangul 14 tall: draw
+  the box at `px` 4 in 16:9 (Hangul stays over 36 px in the band too), at `px` 6 in a 9:16 frame;
 - `pixel.Pixelate id`: anything inside turns into blocks on the same grid, `outline` rings them one block wide: any
   kit drawing, or type in a font of your own. Pop or slide what is inside, not a group around it, so the blocks stay
-  put. One colour per Pixelate gives clean blocks. The ring leaves each block's diagonal corner open, so a shadow
-  Pixelate under an outlined one shows through there in specks: for type with a shadow use `BigText`. Korean type
-  smears under about 18 blocks to the em here. Pass the size it is drawn at on screen as `stageScale`: the
+  put. One colour per Pixelate gives clean blocks. `shadow` adds a drop shadow one block down in that colour, inside
+  the outline (a dark one keeps diagonal edges clean). Not a second Pixelate under an outlined one: the ring leaves
+  each block's diagonal corner open, so a shadow offset sideways shows through there in specks. Korean type smears
+  under about 18 blocks to the em here. Pass the size it is drawn at on screen as `stageScale`: the
   camera's zoom under `pixel.cameraAt` (`stageScale={camera.zoom}`), times 0.76 in the 9:16 band; otherwise blocks
   flicker, vanish or come out a pixel short;
 - `pixel.colors`, and `pixel.step(T)` for the held 8 steps a second of sprite animation.

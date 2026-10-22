@@ -175,10 +175,15 @@ export const Pixels: React.FC<{ canvas: Canvas; px?: number; x?: number; y?: num
   return <g shapeRendering="crispEdges" opacity={opacity}>{rects}</g>;
 };
 
-export const Pixelate: React.FC<{ id: string; block?: number; stageScale?: number; outline?: string; children: React.ReactNode }> = ({
-  id, block = 8, stageScale = 1, outline, children,
-}) => {
+/**
+ * Anything inside as blocks `block` stage px wide on the stage grid (`stageScale`: the size it is drawn at on screen),
+ * with a `shadow` one block below them and `outline` one block wide round both
+ */
+export const Pixelate: React.FC<{
+  id: string; block?: number; stageScale?: number; outline?: string; shadow?: string; children: React.ReactNode;
+}> = ({ id, block = 8, stageScale = 1, outline, shadow, children }) => {
   const b = 2 * Math.max(1, Math.round(block / 2)), px = 1 / Math.max(0.1, stageScale), r = b / 2 - px;
+  const body = shadow ? "body" : "blocks";
   return (
     <g>
       <defs>
@@ -199,14 +204,18 @@ export const Pixelate: React.FC<{ id: string; block?: number; stageScale?: numbe
           <feOffset in="pair" dy={px} result="below" />
           <feMerge result="hard"><feMergeNode in="pair" /><feMergeNode in="below" /></feMerge>
           <feMorphology in="hard" operator="dilate" radius={r} result="blocks" />
+          {shadow && <feOffset in="blocks" dy={b} result="dropped" />}
+          {shadow && <feFlood floodColor={shadow} result="shade" />}
+          {shadow && <feComposite in="shade" in2="dropped" operator="in" result="cast" />}
+          {shadow && <feMerge result="body"><feMergeNode in="cast" /><feMergeNode in="blocks" /></feMerge>}
           {/* across and down apart, not as a square: a square ring doubles every diagonal step */}
-          {outline && <feMorphology in="blocks" operator="dilate" radius={`${b} 0`} result="wide" />}
-          {outline && <feMorphology in="blocks" operator="dilate" radius={`0 ${b}`} result="tall" />}
+          {outline && <feMorphology in={body} operator="dilate" radius={`${b} 0`} result="wide" />}
+          {outline && <feMorphology in={body} operator="dilate" radius={`0 ${b}`} result="tall" />}
           {outline && <feFlood floodColor={outline} result="ink" />}
           {outline && <feComposite in="ink" in2="wide" operator="in" result="ring1" />}
           {outline && <feComposite in="ink" in2="tall" operator="in" result="ring2" />}
-          {outline && <feMerge result="ringed"><feMergeNode in="ring1" /><feMergeNode in="ring2" /><feMergeNode in="blocks" /></feMerge>}
-          <feOffset in={outline ? "ringed" : "blocks"} dx={r} dy={r} />
+          {outline && <feMerge result="ringed"><feMergeNode in="ring1" /><feMergeNode in="ring2" /><feMergeNode in={body} /></feMerge>}
+          <feOffset in={outline ? "ringed" : body} dx={r} dy={r} />
         </filter>
       </defs>
       <g filter={`url(#${id})`}>{children}</g>
@@ -310,6 +319,17 @@ export const font: Record<string, string[]> = {
   "<": F("00010", "00100", "01000", "10000", "01000", "00100", "00010"),
   ">": F("01000", "00100", "00010", "00001", "00010", "00100", "01000"),
   _: F("00000", "00000", "00000", "00000", "00000", "00000", "11111"),
+  $: F("00100", "01111", "10100", "01110", "00101", "11110", "00100"),
+  "@": F("01110", "10001", "10111", "10101", "10111", "10000", "01110"),
+  "[": F("01110", "01000", "01000", "01000", "01000", "01000", "01110"),
+  "]": F("01110", "00010", "00010", "00010", "00010", "00010", "01110"),
+  "{": F("00010", "00100", "00100", "01000", "00100", "00100", "00010"),
+  "}": F("01000", "00100", "00100", "00010", "00100", "00100", "01000"),
+  "\\": F("10000", "01000", "01000", "00100", "00010", "00010", "00001"),
+  "|": F("00100", "00100", "00100", "00100", "00100", "00100", "00100"),
+  "^": F("00100", "01010", "10001", "00000", "00000", "00000", "00000"),
+  "`": F("01000", "00100", "00010", "00000", "00000", "00000", "00000"),
+  "~": F("00000", "00000", "01000", "10101", "00010", "00000", "00000"),
   " ": F("00000", "00000", "00000", "00000", "00000", "00000", "00000"),
 };
 
@@ -319,11 +339,20 @@ type Glyph = { bits: Pt[]; adv: number };
 /** A typeface in bits: glyphs, the space between words, letter height, row pitch and what it does to a text first */
 type Face = { glyph: (ch: string) => Glyph; space: number; cap: number; height: number; row: number; spell: (s: string) => string };
 
-/** The 5×7 font's spelling: capitals, accents dropped, curly quotes, dashes and ellipses made plain */
+const LOOKALIKES: Record<string, string> = {
+  "\u00d8": "O", "\u00c6": "AE", "\u0152": "OE", "\u0141": "L", "\u0110": "D", "\u00d0": "D", "\u00de": "TH",
+  "\u00a1": "!", "\u00bf": "?", "\u00d7": "X", "\u00ab": '"', "\u00bb": '"', "\u00b4": "'", "`": "'",
+};
+
+/**
+ * The 5×7 font's spelling: capitals, accents dropped, curly quotes, dashes and ellipses made plain, and symbols it
+ * lacks (music notes, emoji) dropped, so only letters it lacks call for another face
+ */
 const plain = (s: string) =>
   s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase()
     .replace(/[\u2018\u2019\u201a\u2032]/g, "'").replace(/[\u201c\u201d\u201e\u2033]/g, '"')
-    .replace(/[\u2010-\u2015\u2212]/g, "-").replace(/\u2026/g, "...");
+    .replace(/[\u2010-\u2015\u2212]/g, "-").replace(/\u2026/g, "...")
+    .replace(/./gsu, (ch) => LOOKALIKES[ch] ?? (font[ch] !== undefined || /[\s\p{L}\p{N}]/u.test(ch) ? ch : ""));
 
 const inFont = (s: string) => [...plain(s)].every((ch) => font[ch] !== undefined || /\s/.test(ch));
 
@@ -388,7 +417,10 @@ const faceFor = (texts: string[], family: string) => (texts.every(inFont) ? FIVE
 
 type Setting = { rows: { bits: Pt[]; word: number }[][]; widest: number };
 
-/** Words in rows no wider than `width` bits (a longer word gets a row of its own), each row centred on x 0 */
+/**
+ * Words in rows no wider than `width` bits (a longer word gets a row of its own, one with nothing to draw takes no
+ * space), each row centred on x 0
+ */
 function setWords(words: string[], face: Face, width: number): Setting {
   const shaped = words.map((w) => {
     const bits: Pt[] = [];
@@ -403,18 +435,19 @@ function setWords(words: string[], face: Face, width: number): Setting {
   const rows: number[][] = [];
   let used = 0;
   shaped.forEach((s, i) => {
-    const row = rows[rows.length - 1];
-    if (row && used + face.space + s.w <= width) { row.push(i); used += face.space + s.w; } else { rows.push([i]); used = s.w; }
+    const row = rows[rows.length - 1], next = used && s.w ? used + face.space + s.w : used + s.w;
+    if (row && (!used || !s.w || next <= width)) { row.push(i); used = next; } else { rows.push([i]); used = s.w; }
   });
   let widest = 0;
   return {
     rows: rows.map((row) => {
-      const w = row.reduce((a, i) => a + shaped[i].w, 0) + face.space * (row.length - 1);
+      const shown = row.filter((i) => shaped[i].w);
+      const w = shown.reduce((a, i) => a + shaped[i].w, 0) + face.space * Math.max(0, shown.length - 1);
       widest = Math.max(widest, w);
       let x = -Math.floor(w / 2);
       return row.map((i) => {
         const placed = { bits: shaped[i].bits.map(([bx, by]): Pt => [x + bx, by]), word: i };
-        x += shaped[i].w + face.space;
+        if (shaped[i].w) x += shaped[i].w + face.space;
         return placed;
       });
     }),
@@ -494,7 +527,12 @@ function lettering(text: string, x: number, y: number, o: Lettering): { canvas: 
     for (const { bits } of row)
       for (const [bx, by] of bits) letters.box(x + bx * s, y + (r * face.row + by) * s, s, s, lower && by >= split ? lower : color);
   });
-  if (shadow) for (const key of letters.cells.keys()) { const [cx, cy] = xy(key); shape.set(cx, cy + s, shadow); }
+  const slit = (cx: number, cy: number) =>
+    letters.get(cx, cy) !== undefined && letters.get(cx, cy + s) === undefined && letters.get(cx, cy + 2 * s) !== undefined;
+  for (const key of shadow ? letters.cells.keys() : []) {
+    const [cx, cy] = xy(key);
+    shape.set(cx, cy + s, slit(cx, cy) && (slit(cx - s, cy) || slit(cx + s, cy)) ? outline : shadow!);
+  }
   for (const [key, c] of letters.cells) shape.cells.set(key, c);
   for (const [hx, hy] of pinholes(shape, Math.max(2, s))) shape.set(hx, hy, shadow ?? outline);
   const canvas = new Canvas();
