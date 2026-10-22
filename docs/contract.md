@@ -121,7 +121,8 @@ it again. One made before song2mv measured swing has no `swing`, swung or not, a
 (`<section>-<nn>`, e.g. `v1-03`; a section that appears once keeps a bare id, `ch-01`), `section`, `section_name`,
 `kind` (`calm` / `mid` / `hot`: from the section's name, or `mid` for a section named calm that `music.json` measures
 about as loud as the mid sections; `section_kinds` in the config overrides both), `text`, `start`, `end`, `source`
-(`asr` / `reprompt` / `manual` / `estimated`), `runs_used`, `coverage` and `words: [{w, t}]`. Word times never go
+(`asr` / `reprompt` / `manual` / `estimated`), `runs_used`, `coverage` and `words: [{w, t}]`, the line's tokens with a
+letter or a digit (a `/` or `–` between them stays in `text` only). Word times never go
 backwards and `end` is after the line's last word; a line pinned in `manual` keeps its word times unsnapped. Lines
 may overlap: a backing vocal can start while another line is still sung.
 
@@ -134,9 +135,9 @@ config sets them. Also what `check` reads.
 **`music.json`** — `duration`, `loudness_db_per_half_second` (mean loudness per 0.5 s, 0 dB = the loudest moment),
 `boundaries` (`[{t, novelty}]`, likely section changes; empty for very short songs), `audio_sha256`.
 
-**`song.lrc`** — `[mm:ss.xx]line`; an empty timestamp clears the screen before gaps over 4 s.
-**`song.words.lrc`** — enhanced LRC with `<mm:ss.xx>` word stamps. **`song.srt`** — one cue per line (lines that
-start within 0.3 s of each other share a cue, one text line each); cues never overlap.
+**`song.lrc`** — `[mm:ss.xx]line`, the line's `words`; an empty timestamp clears the screen before gaps over 4 s.
+**`song.words.lrc`** — enhanced LRC with `<mm:ss.xx>` word stamps. **`song.srt`** — one cue per line, its `words`
+(lines that start within 0.3 s of each other share a cue, one text line each); cues never overlap.
 
 `song.json` (the config) and the working files (`lyrics.txt`, `asr/runN.json`, `merged.json`, `reprompt.json`,
 `state.json`) are inputs and working state, not part of the contract.

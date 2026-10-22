@@ -404,6 +404,10 @@ First release (0.1.0).
   English when common English words make up a tenth of it, with cardinals and ordinals (21st). Other languages keep
   their digits, and so do codes such as B2B or MP3. A line whose first word is a number now also gets the first-word
   rule.
+- A token without a letter or a digit is not a word. A "/" between two phrases of a line got a time of its own and
+  showed up in the captions, `song.words.lrc`, `song.lrc` and `song.srt`. It stays in the line's `text` in
+  `lyrics.json` and `mv.json`, where a scene can split on it, but not in `words`; `song.lrc` and `song.srt` show a
+  line's words, as the captions do. A `manual` pin for such a line counts the words without it.
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.

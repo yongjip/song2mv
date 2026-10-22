@@ -147,7 +147,8 @@ def parse_lyrics(path: str, cfg: dict) -> list[dict]:
 def lyric_lines(text: str, cfg: dict) -> list[dict]:
     """Lyric sheet → lines. `[Section]` lines name the section; blank lines are ignored; a line that is
     entirely in parentheses is treated as a stage direction like "(Crowd Chant)" and skipped, unless its
-    section is listed in keep_parenthesized_in (Suno also writes sung ad-libs that way).
+    section is listed in keep_parenthesized_in (Suno also writes sung ad-libs that way). A line's words are its
+    tokens with a letter or a digit: a "/" or "–" between them stays in its text but is not sung, so it gets no time.
 
     Line ids are "<section id>-<nn>", e.g. v1-03, ch2-01. A section name that repeats without a number
     ("Chorus" twice) is numbered by occurrence; a name that appears once keeps the bare short id ("br")."""
@@ -183,8 +184,8 @@ def lyric_lines(text: str, cfg: dict) -> list[dict]:
             continue
         if re.fullmatch(r"\(.+\)", r) and sec_name not in keep and "*" not in keep:
             continue
-        words = r.split()
-        if not any(norm(w) for w in words):
+        words = [w for w in r.split() if norm(w)]
+        if not words:
             continue
         counts[sec] += 1
         lines.append({
