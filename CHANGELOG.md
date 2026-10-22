@@ -199,6 +199,17 @@ First release (0.1.0).
   sets the zoom; the labels show it). Before the first full render the skill now asks for one crop sheet per character
   and per big-type moment: a whole frame on a sheet hides rough lines, seams, gaps and clipped text, and in the two demo
   runs the owner found three of them after delivery. Without `crop` the sheet is unchanged.
+- `song2mv sheet`: a contact sheet of a rendered video. It tiles the video's own frames on a PNG, captions, title and
+  strips included, each labelled with its song time and, with `--song`, the line sung then (or the section between
+  lines). `--every S` takes a frame from the middle of every S seconds, `--times` the song times listed, and `--cuts` a
+  frame 0.3 s into each shot of a saved `check --json` result, whose `from` and `song` it reuses; `--crop` and `--cols`
+  work as in `Contact`. Each tile is the frame on screen at its time, and a sheet taller than about 2400 px continues
+  on more pages. `Contact` draws the bare scene, so in four trial runs on one day every agent wrote its own script for
+  the video, with labels from Pillow (Homebrew's ffmpeg has no `drawtext`); `-vf fps=1/3.5` labelled every frame
+  1.75 s early, and a scene-only sheet could not show one run's worst defect, two lyric lines on screen at once at
+  the chorus hit. The labels are a built-in bitmap font drawn with numpy and zlib writes the PNG, so the command needs
+  only ffmpeg and numpy. The skill's step 5 makes a sheet after every `check`, at its cuts, and one of every full
+  render.
 - A style pack for paper cut-out, `paper` in the scene kit (`src/kit/styles/paper.tsx`). The kit's people, places
   and objects are flat illustration; a style pack is a few drawing pieces that put any object in another art style:
   - outlines cut by hand: `rect`, `ellipse`, `poly` and `strip`, seeded so that a cut stays the same from frame to

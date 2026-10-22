@@ -19,6 +19,7 @@ Claude Code or Codex — or a person — can use just the part they need.
 | `song2mv beats` | audio → tempo and beat grid only (no lyrics, no speech recognition) | alpha |
 | `song2mv click` | a stretch of the song with clicks on the beat grid and ticks on the lyric words, to check the timing by ear | alpha |
 | `song2mv check` | measures a rendered video per sung line: frozen picture, empty screen, repeated chorus, cut rhythm | experimental |
+| `song2mv sheet` | a contact sheet of a rendered video: frames at song times (or one per shot), labelled with the time and line | alpha |
 | `song2mv render` | renders `mv.json` as a 16:9 and/or 9:16 lyric video with a [Remotion](https://www.remotion.dev) template | experimental |
 
 ## Install
@@ -46,7 +47,7 @@ Install only what you use — the parts differ a lot in size:
 
 | you run | install | adds roughly |
 | --- | --- | --- |
-| `check` | `song2mv` | numpy (35 MB) |
+| `check`, `sheet` | `song2mv` | numpy (35 MB) |
 | `beats`, `click` | `song2mv[beats]` | librosa, scipy, numba (300 MB) |
 | `sync` | `song2mv[sync]` | beats + faster-whisper (130 MB) + a whisper model on first run (small: 460 MB) |
 | `render` | Node 18+ | Remotion and a headless Chrome on first render (570 MB) |
@@ -57,6 +58,7 @@ Install only what you use — the parts differ a lot in size:
 song2mv sync song.mp3 --lyrics lyrics.txt --language en --title "My Song"   # → song2mv-work/song/
 song2mv render song2mv-work/song/mv.json --from 60 --to 75 --aspect both
 song2mv check song2mv-work/song/renders/song-16x9-60-75.mp4 --song song2mv-work/song/mv.json --from 60 --to 75
+song2mv sheet song2mv-work/song/renders/song-16x9-60-75.mp4 --song song2mv-work/song/mv.json --from 60 --every 1
 ```
 
 The work folder is relative to where you run it: run it outside your code repositories, or pass `--out`. If the
@@ -217,6 +219,25 @@ its motion without the cuts.
 
 The default [goals](https://github.com/yongjip/song2mv/blob/main/src/song2mv/check/goals.json) are a starting point
 measured on one video; your own goals file only needs the values you change. Passing is necessary, not proof of fun.
+
+## `song2mv sheet`
+
+```bash
+song2mv sheet video.mp4 --song mv.json --every 3                  # a frame from the middle of every 3 s
+song2mv sheet video.mp4 --song mv.json --from 92 --times 93.1,97.6   # frames at these song times
+song2mv check video.mp4 --song mv.json --json > check.json
+song2mv sheet video.mp4 --cuts check.json                         # a frame 0.3 s into each shot
+song2mv sheet video.mp4 --every 2 --crop 700,380,312,400 --cols 3 # one region, zoomed
+```
+
+A contact sheet of the video as rendered, captions, title and strips included: a way to review a video without
+watching it. Each tile is the frame on screen at its song time, labelled with that time and, with `--song`, the id of
+the line sung then (or of the section between lines). `--from` is the song time of the video's first frame, as for
+`check`; `--cuts` reads the start and the cuts of a saved `check --json` result and also takes its `--from` and
+`--song`. `--crop X,Y,W,H` shows one region of each frame, in the video's pixels, scaled to the tile width (`--cols`
+sets the zoom; the label shows it). The sheet is a PNG 1920 px wide, `video-sheet.png` next to `video.mp4` unless
+`--out` names it; frames that do not fit on one page, about 2400 px tall, continue on `video-sheet-2.png` and so on.
+The labels come from a built-in bitmap font, so it needs nothing but ffmpeg and numpy: no `drawtext`, no image library.
 
 ## `song2mv render` (experimental)
 

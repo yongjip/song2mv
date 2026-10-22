@@ -1,7 +1,8 @@
 # AGENTS.md
 
 This repository ships `song2mv`: song in, beat-synced lyric timing (LRC, SRT, word-timed JSON) and a code-drawn
-music video out. It is a command-line tool built for coding agents. Five commands: `sync`, `beats`, `click`, `check`, `render`.
+music video out. It is a command-line tool built for coding agents. Six commands: `sync`, `beats`, `click`, `check`,
+`sheet`, `render`.
 The full music-video loop, scene design included, is the skill `.claude/skills/song2mv/SKILL.md`. An installed song2mv
 carries the skill and this file in its package folder `song2mv/guide/`; `song2mv --help` prints the skill's path.
 
@@ -41,7 +42,9 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    license before they rely on it.
 6. **Check after every render.** `song2mv check VIDEO --song WORK/mv.json --from A --to B --json`. Fix FAILs and
    say which numbers moved. The default goals are a starting point; if one is wrong for this song, copy the goals
-   file, change it and tell the user why. Passing is necessary, not proof of fun — send a clip and ask what is
+   file, change it and tell the user why. Then look at the video: save that result and run
+   `song2mv sheet VIDEO --cuts CHECK_JSON` for a PNG with a frame of every shot as rendered, captions included, each
+   labelled with its song time and line. Passing is necessary, not proof of fun — send a clip and ask what is
    boring. The user's answer outranks the numbers.
 7. **Every command takes `--json`.** Progress goes to stderr, stdout carries one object with `schema_version` and
    `ok`. Exit code 2 is an error: read `error.message` and do what `error.hint` says. Exit code 1 only means `check`
@@ -49,7 +52,7 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
 
 ## Changing this repository
 
-1. Keep the public grammar small: five commands. Before adding a command, flag, config key or output file, apply
+1. Keep the public grammar small: six commands. Before adding a command, flag, config key or output file, apply
    the admission test in `docs/product-scope.md` and prefer extending an existing one.
 2. Every `--json` result and every output file in `docs/contract.md` is stamped by `song2mv.contract.stamp`. An
    incompatible change bumps `SCHEMA_VERSION`, updates `docs/contract.md` and gets a `CHANGELOG.md` entry.
