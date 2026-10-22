@@ -209,8 +209,10 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
             raise Song2mvError(f"lyrics file not found: {cfg['lyrics']}")
         if os.path.abspath(cfg["lyrics"]) != os.path.abspath(P("lyrics.txt")):
             src = open(cfg["lyrics"], encoding="utf-8-sig").read()
-            if os.path.exists(P("lyrics.txt")) and open(P("lyrics.txt"), encoding="utf-8-sig").read() != src:
-                warn(f"lyrics.txt in the work folder differed from {cfg['lyrics']} and was replaced — edit that file instead")
+            if (os.path.exists(P("lyrics.txt")) and open(P("lyrics.txt"), encoding="utf-8-sig").read() != src
+                    and (state or {}).get("lyrics_sha256") != file_sha256(P("lyrics.txt"))):
+                warn(f"lyrics.txt in the work folder was edited since the last run and was replaced by {cfg['lyrics']} "
+                     "— edit that file instead")
             shutil.copyfile(cfg["lyrics"], P("lyrics.txt"))
     else:
         lyrics_from = "tag"
@@ -309,7 +311,8 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
     to_lrc(lyrics["lines"], P("song.lrc"), meta=meta)
     to_lrc(lyrics["lines"], P("song.words.lrc"), words=True, meta=meta)
     to_srt(lyrics["lines"], P("song.srt"))
-    write_json(stamp({"audio": os.path.abspath(cfg["audio"]), "audio_sha256": sha, "lyrics_from": lyrics_from}), P(STATE))
+    write_json(stamp({"audio": os.path.abspath(cfg["audio"]), "audio_sha256": sha, "lyrics_from": lyrics_from,
+                      "lyrics_sha256": file_sha256(P("lyrics.txt"))}), P(STATE))
     secs = time.time() - t_all
     print(f"\ndone in {secs:.0f} s → {work}")
     for f in OUTPUTS:
