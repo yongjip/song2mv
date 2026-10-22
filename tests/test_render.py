@@ -143,7 +143,15 @@ def test_per_frame_progress_becomes_a_line_per_quarter(capsys):
     err = capsys.readouterr().err.splitlines()
     assert code == 0
     assert err == ["  rendered 0/8 frames", "  rendered 2/8 frames", "  rendered 4/8 frames", "  rendered 6/8 frames",
-                   "  rendered 8/8 frames", "a warning worth seeing"]
+                   "  rendered 8/8 frames", "  encoded 8/8 frames", "a warning worth seeing"]
+
+
+def test_a_slow_encode_still_prints_a_line_every_heartbeat(capsys, monkeypatch):
+    monkeypatch.setattr(runner, "HEARTBEAT", 0.0)
+    child = "\n".join(f"Encoded {k}/100" for k in (40, 41, 42))
+    runner._run_filtered([sys.executable, "-c", f"print({child!r})"], ".")
+    assert capsys.readouterr().err.splitlines() == ["  encoded 40/100 frames", "  encoded 41/100 frames",
+                                                   "  encoded 42/100 frames"]
 
 
 def capture_render(tmp_path, monkeypatch, render_mjs):

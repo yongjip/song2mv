@@ -31,8 +31,9 @@ from ..errors import Song2mvError
 BUNDLED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "template")
 INSTALLED = ".song2mv-installed"  # written into node_modules once npm finished
 NOT_COPIED = shutil.ignore_patterns("node_modules", "out", "__pycache__")
-RENDERED = re.compile(r"Rendered (\d+)/(\d+)")
-PROGRESS = re.compile(r"(Bundling \d+%|Getting composition|Encoded \d+/\d+|Stitching|Downloading .*\d+%)")
+RENDERED = re.compile(r"(Rendered|Encoded) (\d+)/(\d+)")
+PROGRESS = re.compile(r"(Bundling \d+%|Getting composition|Stitching|Downloading .*\d+%)")
+HEARTBEAT = 30.0  # seconds: a slow render or encode still says where it is
 
 
 def cache_root() -> str:
@@ -116,23 +117,26 @@ def _audio_found(mv: dict, mv_json: str, tpl: str, audio: str | None) -> bool:
 
 def _run_filtered(args: list[str], cwd: str) -> int:
     """Run the Remotion render with its output on stderr (with --json, stdout carries only the JSON result).
-    Without a terminal, Remotion prints a line per frame — thousands per song — so those become a line per 25%."""
+    Without a terminal, Remotion prints a line per frame — thousands per song — so rendering and encoding each become
+    a line per 25%, and one at least every HEARTBEAT seconds."""
     if sys.stderr.isatty():
         return subprocess.run(args, cwd=cwd, stdout=sys.stderr).returncode
     p = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
     assert p.stdout
-    shown = -1
+    shown: dict[str, int] = {}
+    last = time.monotonic()
     for raw in p.stdout:
         line = raw.rstrip()
         m = RENDERED.match(line)
         if m:
-            done, total = int(m.group(1)), max(1, int(m.group(2)))
+            what, done, total = m.group(1).lower(), int(m.group(2)), max(1, int(m.group(3)))
             quarter = 4 * done // total
-            if quarter > shown:
-                shown = quarter
-                print(f"  rendered {done}/{total} frames", file=sys.stderr)
+            if quarter > shown.get(what, -1) or time.monotonic() - last >= HEARTBEAT:
+                shown[what] = max(quarter, shown.get(what, -1))
+                last = time.monotonic()
+                print(f"  {what} {done}/{total} frames", file=sys.stderr)
             if done >= total:
-                shown = -1  # the next aspect starts over
+                shown[what] = -1  # the next aspect starts over
             continue
         if line and not PROGRESS.match(line):
             print(line, file=sys.stderr)
