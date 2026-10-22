@@ -352,6 +352,8 @@ song2mv check <work>/renders/<name>-16x9-A-B-draft.mp4 --song <work>/mv.json --f
 A draft is the video at 10 fps, the rate `check` measures at: it renders in well under half the time (30 s of a demo
 song: 8 s instead of 19 s), and `check` gives it the same results as the full render. When the stretch passes, render
 it once without `--draft` and check that too; the user only ever sees full renders, since a draft looks choppy.
+Before that full render, look at a few frames at full size (`--still T` renders one): a contact sheet's small tiles
+hid a scene drawn twice, a band across the picture that cost one trial its final render.
 Run one render, still or sync at a time: each uses every core, and two renders in one template copy have hung.
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
 work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
