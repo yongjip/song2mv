@@ -51,8 +51,8 @@ def test_runs_that_disagree_on_a_line_put_it_on_check_by_ear(capsys):
     def run(*words):
         return {"words": [{"t": t, "s": s, "e": round(s + 0.2, 2), "p": 0.9} for t, s in words]}
     rest = [("im", 133.3), ("in", 133.8), ("now", 134.0), ("shake", 134.4), ("my", 134.6), ("hand", 134.8)]
-    # one run times "one" at 132.5, the other two hear "1" (no letters to match) and start the line at "im"
-    first = merge_runs(sheet, [run(("one", 132.5), *rest), run(("1", 132.5), *rest), run(("1", 132.5), *rest)])[0]
+    # one run times "one" at 132.5, the other two hear "huh" (no letters to match) and start the line at "im"
+    first = merge_runs(sheet, [run(("one", 132.5), *rest), run(("huh", 132.5), *rest), run(("huh", 132.5), *rest)])[0]
     assert first["spread"] == 0.82 and doubt(first) == "runs disagree by 0.82 s"
     # two runs time "shake" 1.2 s apart: the median of two is their middle, where neither heard it
     late = [(w, t + 1.2 if w == "shake" else t) for w, t in rest]
