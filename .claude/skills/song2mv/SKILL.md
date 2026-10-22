@@ -44,6 +44,8 @@ the progress log and the JSON:
 - **Section parsing** (`── [Chorus] → ch1 (hot)`): are the kinds right? A section named calm (a bridge, an outro)
   that is about as loud as the verses becomes `mid`, and `warnings` says so. Fix with `section_kinds` in `song.json`.
   Lines in `( )` were skipped as stage directions unless their section is in `keep_parenthesized_in`.
+  A sheet without `[Section]` lines gets sections proposed from its repeated lines, listed in `warnings` and written to
+  `<work>/lyrics.sections.txt`: if one is wrong, edit that file and sync again with `--lyrics` pointing to it.
 - **`◀ no run found this line` / `◀ only run [k]` / `◀ runs disagree`**: weak spots. More runs help
   (`--runs 5`, finished runs are reused). A bigger model (`--model medium`) helps more but is slower.
   `◀ back in lyric order (was at T)`: the merged runs had put the line on another copy of its words, so it was

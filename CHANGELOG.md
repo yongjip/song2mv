@@ -390,6 +390,20 @@ First release (0.1.0).
   `check`. The intro of the new user's song, 3.9 dB quieter, stays calm. Kinds set in `section_kinds` and the
   instrumental section before the first sung line are kept; JamendoLyrics has no section names, so its kinds do not
   change. `music.json` is now measured before `lyrics.json` and `mv.json` are written.
+- Sections for a lyric sheet without `[Section]` lines. Such a sheet (a music platform's export, many lyric sites)
+  made the whole song one `mid` section: no hot chorus or chorus flashes in the default look, nothing for
+  `variation.repeats` to compare, `cuts.rhythm` judging the song as one verse, and in two trials agents spent 4–6
+  minutes writing the headers by hand. `sync` now proposes sections from the lines that repeat and uses them: the block
+  of lines sung most often again (word for word or nearly, one line in a copy may differ) is the chorus; lines only
+  some copies have before (after) the ones all have are a pre-chorus (post-chorus); the lines between copies are
+  verses; a short stretch after two choruses, right before another, is the bridge; a short stretch after the last
+  chorus is the outro. `warnings` lists the sections and how to change them, and the sheet with them goes to
+  `lyrics.sections.txt` in the work folder, to edit and pass with `--lyrics` (an edited one is kept). On six sheets with
+  section names, stripped of them, the proposal marks 88 of the 102 chorus lines and 2 other lines as chorus, starts 32
+  of the 34 sections it proposes within a line of a named section's start (of 54 such starts), and gives 360 of the 416
+  lines the kind their names give (235 as one section). A sheet without repeats is still one section, now with a
+  warning; a sheet with `[Section]` lines gives byte-identical files. JamendoLyrics has no section lines: 69 of its 79
+  songs now get sections, and every word time, line source and `check_by_ear` list stays the same.
 - Words before a line's first timed word start no earlier than a 16th note after the last word of the line before.
   Spread 0.3 s apart, they could start under that line's last words, which then never lit up: the captions switch to
   the newer line. On JamendoLyrics 69 words move, 45 of them closer to where they are sung; words within 0.3 s go from

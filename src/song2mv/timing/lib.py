@@ -146,10 +146,41 @@ def parse_lyrics(path: str, cfg: dict) -> list[dict]:
 def lyric_lines(text: str, cfg: dict) -> list[dict]:
     """Lyric sheet → lines. `[Section]` lines name the section; blank lines are ignored; a line that is
     entirely in parentheses is treated as a stage direction like "(Crowd Chant)" and skipped, unless its
-    section is listed in keep_parenthesized_in (Suno also writes sung ad-libs that way).
+    section is listed in keep_parenthesized_in (Suno also writes sung ad-libs that way). A sheet without
+    `[Section]` lines gets the ones with_sections proposes.
 
     Line ids are "<section id>-<nn>", e.g. v1-03, ch2-01. A section name that repeats without a number
     ("Chorus" twice) is numbered by occurrence; a name that appears once keeps the bare short id ("br")."""
+    return _lines(with_sections(text, cfg) or text, cfg)
+
+
+def has_sections(text: str) -> bool:
+    return any(re.fullmatch(r"\[(.+)\]", r.strip()) for r in text.splitlines())
+
+
+def with_sections(text: str, cfg: dict) -> str | None:
+    """A lyric sheet without `[Section]` lines, with the ones sections.propose finds in its repeated lines, each before
+    its section's first line. None when the sheet has some, or when no block of lines repeats."""
+    if has_sections(text):
+        return None
+    from .sections import propose
+    at: list[int] = []
+    found = propose([norm(r["text"]) for r in _lines(text, cfg, at)])
+    if not found:
+        return None
+    heads = {at[i]: name for name, i in found}
+    out: list[str] = []
+    for k, r in enumerate(text.splitlines()):
+        if k in heads:
+            if out and out[-1].strip():
+                out.append("")
+            out.append(f"[{heads[k]}]")
+        out.append(r)
+    return "\n".join(out) + "\n"
+
+
+def _lines(text: str, cfg: dict, at: list[int] | None = None) -> list[dict]:
+    """lyric_lines without proposing sections. `at` gets each line's index among the text's lines."""
     raw = [r.strip() for r in text.splitlines()]
     names = [m.group(1) for r in raw if (m := re.fullmatch(r"\[(.+)\]", r))]
     totals = Counter(b for b, n in map(_section_base, names) if n is None)
@@ -159,7 +190,7 @@ def lyric_lines(text: str, cfg: dict) -> list[dict]:
 
     lines, used, occ, counts = [], set(), Counter(), Counter()
     sec, sec_name = "s", ""
-    for r in raw:
+    for k, r in enumerate(raw):
         if not r:
             continue
         m = re.fullmatch(r"\[(.+)\]", r)
@@ -186,6 +217,8 @@ def lyric_lines(text: str, cfg: dict) -> list[dict]:
         if not any(norm(w) for w in words):
             continue
         counts[sec] += 1
+        if at is not None:
+            at.append(k)
         lines.append({
             "id": f"{sec}-{counts[sec]:02d}", "section": sec, "section_name": sec_name,
             "kind": section_kind(sec, sec_name, kinds_over), "text": r, "words": words,
