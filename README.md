@@ -223,14 +223,15 @@ measured on one video; your own goals file only needs the values you change. Pas
 ```bash
 song2mv render mv.json                                        # whole song, 16:9, plain lyric video
 song2mv render mv.json --from 95 --to 111 --aspect 9x16 --hold 2.5   # a hook cut whose first frame shows the payoff
-song2mv render mv.json --from 95 --to 111 --draft             # 10 fps, for the render → check loop
+song2mv render mv.json --from 95 --to 111 --draft             # 10 fps at half size, for the render → check loop
 song2mv render mv.json --still 98.5 --aspect both            # PNG frames to look at
 song2mv render mv.json --template video/                     # your own copy of the template, for your own scenes
 ```
 
-`--draft` renders the same frames at 10 fps, the rate `check` measures at, and names the file `…-draft.mp4`. On 30 s
-of the two demo songs it rendered in 6–10 s instead of 14–25 s, and `check` gave each draft the same results as its
-full render. Iterate on drafts and render the finished video once without it.
+`--draft` renders the same frames at 10 fps, the rate `check` measures at, and at half size (960×540), and names the
+file `…-draft.mp4`. On 30 s of a paper-cut scene it rendered in 15 s, against 55–70 s at full size and about 2.5 min
+for the finished video, and `check` gave drafts the same passes, fails and cuts as full-size renders. Iterate on drafts
+and render the finished video once without it.
 
 Out of the box you get a plain lyric video that follows the song's structure: calm sections with a low moon and
 embers, mid sections with a floor grid rolling on the beat, hot sections with rays on the beat and the line itself
