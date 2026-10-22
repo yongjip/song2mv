@@ -147,8 +147,9 @@ and any kit changes into it.
   protagonist is more watchable than a slideshow of effects.
 - **Hit points**: the first beat of each chorus, drops, the last word. These get the biggest moment (cut, flash,
   slam). Use `grid.bar(k)` and line/word times — never hand-typed seconds.
-- **Contrast**: chorus 2 must not look like chorus 1 (the check measures it). Verses cut on an uneven rhythm
-  (2 bars, 1 bar, 3 bars …), not every bar.
+- **Contrast**: chorus 2 must not look like chorus 1 (the check measures it). The same words in the same place
+  look alike to it even over another sky: move or restyle chorus 2's big type and boxes too. Verses cut on an uneven
+  rhythm (2 bars, 1 bar, 3 bars …), not every bar.
 - **Text**: which lines become big type in the scene (`Slam`, `BigLine`), which stay as bottom captions.
 
 **Then get the pieces, in this order:**
@@ -383,7 +384,8 @@ page. No number catches two lyric lines on screen at once, a caption over big ty
 Make one of every full render too (`--every 3 --song <work>/mv.json`).
 
 - **Held shots** measure still; a slow drift (the shot's `to`) keeps one alive. On one pixel street a 4–6 pixel drift
-  over a 2–3 s close-up measured 2–5; a 14-pixel drift measured up to 16 (frantic).
+  over a 2–3 s close-up measured 2–5; a 14-pixel drift measured up to 16 (frantic). A small thing moving across a
+  wide shot measures still too (a car crossing a street measured 0.14): frame it closer or pan with it.
 - **Shot variety.** `check` does not see a shot coming back: one video cut back to the same wide street shot about
   30 times. The `--cuts` sheet has a frame of every shot. A shot that continues across neighbouring tiles is one shot;
   reframe a framing that returns after other shots.
@@ -391,7 +393,8 @@ Make one of every full render too (`--every 3 --song <work>/mv.json`).
   that holds two cuts reads frantic, and even spacing fails `cuts.rhythm`; cut every 2–3 lines, unevenly, and keep
   the fast cutting for hot sections. Big type that changes on every line counts as a cut, and so does a large
   transform such as a flip; a reframe of a flat or dark set may not, so change the set or its palette between
-  shots. Cut a 16th before a line's first word or on it, not just after it.
+  shots. Cut a 16th before a line's first word or on it, not just after it: `check` counts that cut as the
+  line's own, not as motion in the line before.
 
 **Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip of the full render and ask
 what is boring. Their answer outranks the check.

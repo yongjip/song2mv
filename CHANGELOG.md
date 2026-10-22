@@ -109,6 +109,12 @@ First release (0.1.0).
   line's last word. Before, they gave way only when the caption line ended, so a scene-drawn chorus line that came in
   on a pickup, before the last verse line ended, put two lyric lines on screen at the chorus hit. A chant drawn over
   the middle of a captioned line still leaves the caption up.
+- `check` also measured the next line's lead-in as motion in the line before it: a cut a 16th before the next line's
+  first word, as the guide advises, fell in the last frames of the line before, or in its middle when a short line
+  is measured over its 1.5 s minimum, and made it frantic. A line's measure now ends before a cut from 0.2 s before
+  the next line's first word on. A line whose only motion was that cut can now measure still, as it looks.
+- `cuts.max_gap` counted a stretch without a cut in full when it ran on into a calm section, where long shots are
+  allowed; now only its part outside such sections counts.
 - `check` measured a cut on a line's first word as motion inside the line: at 10 fps a cut 0.1 s after the word
   falls in the line's first frame change, and on a 1.4 s line that one cut alone read as frantic. That frame change
   now opens the line's shot and is left out of its motion.
