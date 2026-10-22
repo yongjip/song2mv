@@ -414,6 +414,20 @@ First release (0.1.0).
   Spread 0.3 s apart, they could start under that line's last words, which then never lit up: the captions switch to
   the newer line. On JamendoLyrics 69 words move, 45 of them closer to where they are sung; words within 0.3 s go from
   88.92 to 88.93 %.
+- Numbers whisper writes in digits match the lyric sheet's letters. Whisper writes the numbers it hears as digits
+  ("29" for "twenty nine", digits and a counter for a Korean time the sheet spells out), and `sync` matches letters,
+  so those words got no time of their own and their lines looked weak: on a Korean song whose title, a time, is sung
+  13 times, every line with it had a coverage around 0.5, and a line all three runs heard alike was listed under
+  `check_by_ear` as placed by one run. Before matching, the digits of the sheet and of the runs are spelled out in the
+  sheet's language: Korean when most of its words are in Hangul, with native numerals before the counters that take
+  them (hours, ages, things, people, times, ordinals) and Sino-Korean otherwise (minutes, days, months, years, money);
+  English when common English words make up a tenth of it, with cardinals and ordinals (21st). Other languages keep
+  their digits, and so do codes such as B2B or MP3. A line whose first word is a number now also gets the first-word
+  rule.
+- A token without a letter or a digit is not a word. A "/" between two phrases of a line got a time of its own and
+  showed up in the captions, `song.words.lrc`, `song.lrc` and `song.srt`. It stays in the line's `text` in
+  `lyrics.json` and `mv.json`, where a scene can split on it, but not in `words`; `song.lrc` and `song.srt` show a
+  line's words, as the captions do. A `manual` pin for such a line counts the words without it.
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.

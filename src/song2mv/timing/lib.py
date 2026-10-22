@@ -14,6 +14,7 @@ import subprocess
 from collections import Counter
 
 from ..errors import Song2mvError
+from .numbers import sheet_language, spoken
 
 # Warnings worth acting on (printed as they happen and returned in the --json result of the command).
 WARNINGS: list[str] = []
@@ -146,7 +147,8 @@ def parse_lyrics(path: str, cfg: dict) -> list[dict]:
 def lyric_lines(text: str, cfg: dict) -> list[dict]:
     """Lyric sheet → lines. `[Section]` lines name the section; blank lines are ignored; a line that is
     entirely in parentheses is treated as a stage direction like "(Crowd Chant)" and skipped, unless its
-    section is listed in keep_parenthesized_in (Suno also writes sung ad-libs that way).
+    section is listed in keep_parenthesized_in (Suno also writes sung ad-libs that way). A line's words are its
+    tokens with a letter or a digit: a "/" or "–" between them stays in its text but is not sung, so it gets no time.
 
     Line ids are "<section id>-<nn>", e.g. v1-03, ch2-01. A section name that repeats without a number
     ("Chorus" twice) is numbered by occurrence; a name that appears once keeps the bare short id ("br")."""
@@ -182,8 +184,8 @@ def lyric_lines(text: str, cfg: dict) -> list[dict]:
             continue
         if re.fullmatch(r"\(.+\)", r) and sec_name not in keep and "*" not in keep:
             continue
-        words = r.split()
-        if not any(norm(w) for w in words):
+        words = [w for w in r.split() if norm(w)]
+        if not words:
             continue
         counts[sec] += 1
         lines.append({
@@ -315,18 +317,20 @@ def align(lines: list[dict], asr_words: list[dict], only: set[int] | None = None
     of that stretch is kept, difflib's on a tie: the global one takes over where difflib put a repeated chorus on its
     other copy and lost the lines in between, and nothing changes where difflib was fine. Recognised words are spread
     evenly over their characters. Single-character matches are dropped — with a whole song of text they are mostly
-    coincidence. `only` restricts the lyric side to some lines (used when re-listening to one gap)."""
+    coincidence. Numbers in digits, on either side, are spelled out in the sheet's language first (numbers.spoken).
+    `only` restricts the lyric side to some lines (used when re-listening to one gap)."""
+    language = sheet_language([norm(w) for ln in lines for w in ln["words"]])
     L, idx = [], []
     for li, ln in enumerate(lines):
         if only is not None and li not in only:
             continue
         for wi, w in enumerate(ln["words"]):
-            for ch in norm(w):
+            for ch in norm(spoken(w, language)):
                 L.append(ch)
                 idx.append((li, wi))
     R, Rt, Rw = [], [], []
     for k, w in enumerate(asr_words):
-        cs = norm(w["t"])
+        cs = norm(spoken(w["t"], language))
         for q, ch in enumerate(cs):
             R.append(ch)
             Rt.append(w["s"] + (w["e"] - w["s"]) * (q + 0.5) / len(cs))

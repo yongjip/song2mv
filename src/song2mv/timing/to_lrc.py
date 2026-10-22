@@ -1,5 +1,6 @@
-"""Write an LRC file from lyrics.json (or mv.json): one `[mm:ss.xx]line` per lyric line. Before a gap
-of more than 4 s an empty timestamp clears the screen during the instrumental (some players drop it).
+"""Write an LRC file from lyrics.json (or mv.json): one `[mm:ss.xx]line` per lyric line, its sung words (a "/" or
+"–" between them in the lyric sheet is left out, as in the video's captions). Before a gap of more than 4 s an empty
+timestamp clears the screen during the instrumental (some players drop it).
 --words also writes word timestamps in the enhanced-LRC form `[mm:ss.xx]<mm:ss.xx>word <mm:ss.xx>word`.
 
 Usage: python -m song2mv.timing.to_lrc work/lyrics.json work/song.lrc [--words]
@@ -22,7 +23,7 @@ def to_lrc(lines: list[dict], out: str, words=False, meta: dict | None = None) -
     lrc = [f"[{k}:{v}]" for k, v in (meta or {}).items() if v]
     sung_until = 0.0  # a line that started earlier can still be sung (backing vocals)
     for i, r in enumerate(rows):
-        body = " ".join(ts(w["t"], True) + w["w"] for w in r["words"]) if words else r["text"]
+        body = " ".join(ts(w["t"], True) + w["w"] if words else w["w"] for w in r["words"])
         lrc.append(ts(r["start"]) + body)
         sung_until = max(sung_until, r["end"])
         nxt = rows[i + 1]["start"] if i + 1 < len(rows) else None

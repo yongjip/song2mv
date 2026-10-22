@@ -6,6 +6,8 @@ import pytest
 from song2mv.errors import Song2mvError
 from song2mv.timing.extract_lyrics import lyrics_tag
 from song2mv.timing.lib import DEFAULT_CONFIG, lyric_lines, parse_lyrics
+from song2mv.timing.to_lrc import to_lrc
+from song2mv.timing.to_srt import to_srt
 
 SHEET = """[Intro]
 (Crowd chant)
@@ -44,6 +46,20 @@ def test_parenthesized_lines_are_stage_directions_unless_kept(tmp_path):
     assert "(sing it loud)" not in [r["text"] for r in parse(tmp_path)]
     kept = parse(tmp_path, keep_parenthesized_in=["Chorus"])
     assert "(sing it loud)" in [r["text"] for r in kept]
+
+
+def test_tokens_without_letters_stay_in_the_text_but_are_not_words(tmp_path):
+    lines = lyric_lines("[Verse]\nred light / green light\n- - -\nhold on – let go\n", {})
+    assert [(r["text"], r["words"]) for r in lines] == [("red light / green light", ["red", "light", "green", "light"]),
+                                                        ("hold on – let go", ["hold", "on", "let", "go"])]
+    timed = [{"start": 10.0, "end": 12.0, "text": "red light / green light",
+              "words": [{"w": w, "t": 10.0 + 0.4 * k} for k, w in enumerate(lines[0]["words"])]}]
+    to_lrc(timed, str(tmp_path / "song.lrc"))
+    to_lrc(timed, str(tmp_path / "song.words.lrc"), words=True)
+    to_srt(timed, str(tmp_path / "song.srt"))
+    assert "[00:10.00]red light green light\n" in (tmp_path / "song.lrc").read_text(encoding="utf-8")
+    assert "<00:10.40>light <00:10.80>green" in (tmp_path / "song.words.lrc").read_text(encoding="utf-8")
+    assert "\nred light green light\n" in (tmp_path / "song.srt").read_text(encoding="utf-8")
 
 
 def test_section_kind_override(tmp_path):
