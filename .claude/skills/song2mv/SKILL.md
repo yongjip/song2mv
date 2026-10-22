@@ -332,6 +332,16 @@ did not run on this stretch; they did not pass. If a FAIL is the ruler's fault (
 intro line), copy the goals file, add the line id to `motion.quiet_allow`, pass `--goals` and tell the user why —
 don't quietly bend the goals.
 
+Each failing line says where: the stretch measured, the cuts in it, and the part under the goal (a still or empty
+line) or the biggest change and the motion without the cuts (a frantic line). Change that moment, not the whole scene.
+In a pixel scene a whole-pixel camera step (`pixel.cameraAt`) can count as a cut, in the list and in that motion.
+
+- **Held shots** measure still; a slow drift (the shot's `to`) keeps one alive. On one pixel street a 4–6 pixel drift
+  over a 2–3 s close-up measured 2–5; a 14-pixel drift measured up to 16 (frantic).
+- **Shot variety.** `check` does not see a shot coming back: one video cut back to the same wide street shot about
+  30 times. Make a contact sheet with `times` at each of `check`'s `cuts` plus 0.3 s. A shot that continues across
+  neighbouring tiles is one shot; reframe a framing that returns after other shots.
+
 **Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip of the full render and ask
 what is boring. Their answer outranks the check.
 

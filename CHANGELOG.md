@@ -89,6 +89,17 @@ First release (0.1.0).
   77 % on the demo songs, and one stretch failed `cuts.max_gap` as a draft only. On a full render, cuts can now be
   reported 0.1 s later, and a check right at its goal can flip (that stretch's longest gap without a cut went from
   6.0 to 6.1 s, goal ≤ 6).
+- `check` says where a line failed. In the first new-user benchmark a pixel video took three more draft/check loops
+  between "too still" and "frantic": the check named the line and its number, and the agent guessed which moment drove
+  it (a camera drift, then two cuts on the hazard lights). Each failing line in `motion.min`, `motion.max` and
+  `coverage.min` now has the stretch measured (`from`, `to`), the cuts in it and a `msg`; a still or empty line adds
+  its part under the goal (`stretch`), a frantic line its biggest frame change (`peak`) and its motion without the
+  cuts (`without_cuts`, which also leaves out the cut frames that `cuts` lists as one cut). The report prints them
+  under the FAIL and also marks frantic lines in the table. With the benchmark's hazard-light cuts put back, the line
+  reads `87.5–89.8 s: 9.18 (goal ≤ 9.0); biggest change at 87.6 s (44.6, a cut); cuts at 87.6, 88.9; 6.23 without the
+  cuts`. Every other field is unchanged on that video's four versions. The skill's step 5 adds that in pixel scenes a
+  whole-pixel camera step can count as a cut, how a held shot stays alive (a slow drift), and a contact sheet of every
+  cut to find shots that come back: the benchmark cut back to one wide street shot about 30 times.
 - On Windows, `song2mv render` failed at its first Remotion call: the template's `render.mjs` ran `npx`, which is
   `npx.cmd` there and cannot be started without a shell. It now runs Remotion's CLI with the node that runs it, and
   a new CI job renders a still of the sample song on Windows. Run in a folder without an install, `render.mjs` says

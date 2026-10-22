@@ -201,7 +201,9 @@ song2mv check video.mp4 --song mv.json [--from 92 --to 102] [--goals my-goals.js
 
 `--from` is the song time of the video's first frame; the measured stretch ends with the video unless `--to` ends it
 earlier. Checks that cannot run on a stretch (no repeated section in it, too few cuts) are listed as skipped, not
-passed. It works on any mp4 that follows the song's timing, not only on song2mv renders.
+passed. It works on any mp4 that follows the song's timing, not only on song2mv renders. A failing line says where:
+the stretch measured, the cuts in it, and its still or empty part, or for a frantic line its biggest frame change and
+its motion without the cuts.
 
 The default [goals](https://github.com/yongjip/song2mv/blob/main/src/song2mv/check/goals.json) are a starting point
 measured on one video; your own goals file only needs the values you change. Passing is necessary, not proof of fun.
