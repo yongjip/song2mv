@@ -29,7 +29,7 @@ def _options() -> dict:
     return {"": parser._option_string_actions} | {name: p._option_string_actions for name, p in sub.choices.items()}
 
 
-@pytest.mark.parametrize("command", ["", "sync", "beats", "click", "check", "render"])
+@pytest.mark.parametrize("command", ["", "sync", "beats", "click", "check", "sheet", "render"])
 def test_help_points_agents_to_the_guide(command, capsys):
     with pytest.raises(SystemExit):
         main([command, "--help"] if command else ["--help"])

@@ -328,7 +328,8 @@ Rules that held up:
 Typecheck (`npx tsc --noEmit` in `<work>/video`), then look at stills of the new section before rendering video. A
 contact sheet draws the scene at many song times in one render, each frame labelled with its time: write its props
 into `<work>/video/sheet.json`, such as `{"times": [33.1, 34.6, 36.2, 37.7]}` (`"cols"`: frames per row;
-`"vertical": true`: the 9:16 frame), and run this in `<work>/video`:
+`"vertical": true`: the 9:16 frame), and run this in `<work>/video`. It draws the bare scene, for scene work; once
+there is a video, `song2mv sheet` shows it as rendered (step 5):
 
 ```bash
 node render.mjs ../mv.json --composition Contact --props sheet.json
@@ -350,7 +351,8 @@ Iterate on drafts:
 
 ```bash
 song2mv render <work>/mv.json --template <work>/video --from A --to B --draft
-song2mv check <work>/renders/<name>-16x9-A-B-draft.mp4 --song <work>/mv.json --from A --to B --src "<work>/video/src/scenes/**/*.tsx" --json
+song2mv check <work>/renders/<name>-16x9-A-B-draft.mp4 --song <work>/mv.json --from A --to B --src "<work>/video/src/scenes/**/*.tsx" --json > <work>/check.json
+song2mv sheet <work>/renders/<name>-16x9-A-B-draft.mp4 --cuts <work>/check.json
 ```
 
 A draft is the video at 10 fps, the rate `check` measures at: it renders in well under half the time (30 s of a demo
@@ -370,11 +372,19 @@ Each failing line says where: the stretch measured, the cuts in it, and the part
 line) or the biggest change and the motion without the cuts (a frantic line). Change that moment, not the whole scene.
 In a pixel scene a whole-pixel camera step (`pixel.cameraAt`) can count as a cut, in the list and in that motion.
 
+**Look at what you rendered.** `song2mv sheet` tiles the video's own frames into a PNG, captions, title and strips
+included, each labelled with its song time and the line sung then (or the section between lines). With `--cuts` it
+takes a frame 0.3 s into each shot from the saved check result, whose `--from` and `--song` it reuses; `--every S`
+takes one from the middle of every S seconds, `--times` the song times you list, and `--crop X,Y,W,H` zooms into one
+region as `Contact`'s `crop` does. A long sheet goes on more pages, all listed in `outputs` (`--json`): look at every
+page. No number catches two lyric lines on screen at once, a caption over big type or a cut-off title; a sheet does.
+Make one of every full render too (`--every 3 --song <work>/mv.json`).
+
 - **Held shots** measure still; a slow drift (the shot's `to`) keeps one alive. On one pixel street a 4–6 pixel drift
   over a 2–3 s close-up measured 2–5; a 14-pixel drift measured up to 16 (frantic).
 - **Shot variety.** `check` does not see a shot coming back: one video cut back to the same wide street shot about
-  30 times. Make a contact sheet with `times` at each of `check`'s `cuts` plus 0.3 s. A shot that continues across
-  neighbouring tiles is one shot; reframe a framing that returns after other shots.
+  30 times. The `--cuts` sheet has a frame of every shot. A shot that continues across neighbouring tiles is one shot;
+  reframe a framing that returns after other shots.
 - **Dense lines** (a line every 1.5 s or less, as in rap): don't cut on every line of a mid section. A short line
   that holds two cuts reads frantic, and even spacing fails `cuts.rhythm`; cut every 2–3 lines, unevenly, and keep
   the fast cutting for hot sections. Big type that changes on every line counts as a cut, and so does a large
