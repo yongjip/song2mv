@@ -109,6 +109,16 @@ First release (0.1.0).
   line's last word. Before, they gave way only when the caption line ended, so a scene-drawn chorus line that came in
   on a pickup, before the last verse line ended, put two lyric lines on screen at the chorus hit. A chant drawn over
   the middle of a captioned line still leaves the caption up.
+- `check` measured a cut on a line's first word as motion inside the line: at 10 fps a cut 0.1 s after the word
+  falls in the line's first frame change, and on a 1.4 s line that one cut alone read as frantic. That frame change
+  now opens the line's shot and is left out of its motion.
+- `sync` warned that `lyrics.txt` in the work folder "differed … and was replaced" whenever `song.json` pointed at
+  another sheet, which reads like an error after an edit made on purpose. It now warns only when the work folder's
+  copy was edited by hand since the last run (`state.json` keeps its hash).
+- `theme.unsungShadow`: the shadow of words not sung yet, which was always dark. `"none"` suits a light background.
+- The guide adds how to cut dense songs (a line every 1.5 s or less): not on every line of a mid section, big type
+  that changes per line and large transforms count as cuts, and a reframe of a flat or dark set may not. It also says
+  to run one render, still or sync at a time, and how `verticalView` takes a background that reaches above the stage.
 - An interrupted `render.mjs` left its temporary folder, which holds a link to the song, behind. It now removes it on
   Ctrl-C, when Remotion fails, and when Remotion stops without writing a file (on Ctrl-C it exits 0). In that last
   case it now says which file was not written, where before it printed the path as if the file had been written.

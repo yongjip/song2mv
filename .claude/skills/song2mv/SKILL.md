@@ -185,7 +185,8 @@ Write the song's scenes in `<work>/video/src/scenes/` and export them from `src/
 captions in `theme`'s colours and font; in 9:16 its starry sky fills the screen above and below the stage. Over the
 scenes it lays a dark vignette, and a white flash at the start of each hot section, placed on the one-tempo grid.
 Left at the defaults, they put the kit's neon night around every concept, and the title is the file name. Set `title`
-and `theme` (`bg`, `stars`, the text colours, `font`) in `song.json` to fit the concept; `"vignette": false` keeps the
+and `theme` (`bg`, `stars`, the text colours, `font`; `unsungShadow: "none"` on a light `bg`) in `song.json` to fit
+the concept; `"vignette": false` keeps the
 scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` puts the flashes on the song's real hits
 (`[]` when the scenes flash themselves). Then run `song2mv sync <work>/song.json --from build`.
 
@@ -351,6 +352,7 @@ song2mv check <work>/renders/<name>-16x9-A-B-draft.mp4 --song <work>/mv.json --f
 A draft is the video at 10 fps, the rate `check` measures at: it renders in well under half the time (30 s of a demo
 song: 8 s instead of 19 s), and `check` gives it the same results as the full render. When the stretch passes, render
 it once without `--draft` and check that too; the user only ever sees full renders, since a draft looks choppy.
+Run one render, still or sync at a time: each uses every core, and two renders in one template copy have hung.
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
 work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
 contact sheets outside `src/scenes/`. Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`
@@ -367,6 +369,11 @@ In a pixel scene a whole-pixel camera step (`pixel.cameraAt`) can count as a cut
 - **Shot variety.** `check` does not see a shot coming back: one video cut back to the same wide street shot about
   30 times. Make a contact sheet with `times` at each of `check`'s `cuts` plus 0.3 s. A shot that continues across
   neighbouring tiles is one shot; reframe a framing that returns after other shots.
+- **Dense lines** (a line every 1.5 s or less, as in rap): don't cut on every line of a mid section. A short line
+  that holds two cuts reads frantic, and even spacing fails `cuts.rhythm`; cut every 2–3 lines, unevenly, and keep
+  the fast cutting for hot sections. Big type that changes on every line counts as a cut, and so does a large
+  transform such as a flip; a reframe of a flat or dark set may not, so change the set or its palette between
+  shots. Cut a 16th before a line's first word or on it, not just after it.
 
 **Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip of the full render and ask
 what is boring. Their answer outranks the check.
@@ -407,7 +414,9 @@ Where things go (`VERTICAL` in the kit has the numbers):
   body, zoom out until the subject fits above y 1080.
 - **Below y 1248** the apps cover the frame: picture only. The view keeps the frame on the stage's sides and top but
   runs on past its bottom (the kit's places end at y 1080), so draw the ground on down there, or a foreground such
-  as a crowd.
+  as a crowd. The view also stops at the stage's top edge, so a subject near it lands above (540, 675); a scene
+  whose background reaches above the stage passes the area it fills as `world`
+  (`verticalView(cam, { world: [0, -900, 1920, Infinity] })`).
 
 A contact sheet with `"vertical": true` draws the safe box and the captions' top as dashed lines (a crop sheet
 leaves them out): check them there before rendering the short. `check` measures the top 56 % of a short, above the
