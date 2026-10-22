@@ -215,30 +215,32 @@ def off_sheet(runs: list[dict], heard: list[set[int]], lines: list[dict]) -> lis
 def sung_differently(merged: list[dict]) -> list[dict]:
     """Repeated lines sung differently in one place: two or more runs hear a line alike (the letters of what each heard
     from the line's first matched word to its last within AGREE of each other, as a difflib ratio) and not as the sheet
-    has it (below SUNG), while they hear another line with the same text as written (AGREE or more). Suno changes a
-    repeat ("Back it, back it up" where its tag says "Beep, beep" again), and neither the off-sheet stretches nor a
-    second sheet see it: the line's last words match, so it is placed where it is sung. Whisper also mishears a line
-    the same way in every run, and without the same line heard right elsewhere that is far more common than a changed
-    line: on the JamendoLyrics benchmark, whose lyric files hold what is sung, 44 lines heard alike and below SUNG,
-    10 with a copy heard as written. Lines whose runs heard a number are left out: whisper writes "ten" as 10.
-    [{id, heard, runs, as_written}], `heard` as the first of those runs wrote it, `as_written` the other line."""
+    has it (below SUNG), while two or more runs hear another line with the same text as written (AGREE or more). Suno
+    changes a repeat ("Back it, back it up" where its tag says "Beep, beep" again), and neither the off-sheet stretches
+    nor a second sheet see it: the line's last words match, so it is placed where it is sung. Whisper also mishears a
+    line the same way in every run, and without the same line heard right elsewhere that is far more common than a
+    changed line: on the JamendoLyrics benchmark, whose lyric files hold what is sung, 44 lines are heard alike and
+    below SUNG, and 8 have a copy two runs heard as written (10 if one run is enough); all of them are misheard. So
+    what the runs heard is for the user's ear to confirm. Lines whose runs heard a number are left out: whisper writes
+    "ten" as 10. [{id, heard, runs, as_written}], `heard` as the first of those runs wrote it, `as_written` the other
+    line."""
     seen = {}
     for r in merged:
         heard = [h for h in r.get("heard") or [] if norm(h)]
         if r.get("source") == "asr" and heard and not any(c.isdigit() for h in heard for c in norm(h)):
             seen[r["id"]] = [norm(h) for h in heard]
 
-    def best(r):
-        return max(_ratio(norm(r["text"]), h) for h in seen[r["id"]])
+    def as_written(r):
+        return [_ratio(norm(r["text"]), h) for h in seen[r["id"]]]
     out = []
     for r in merged:
         letters = seen.get(r["id"]) or []
         if len(letters) < 2 or not all(_ratio(a, b) >= AGREE for i, a in enumerate(letters) for b in letters[i + 1:]):
             continue
-        if best(r) >= SUNG:
+        if max(as_written(r)) >= SUNG:
             continue
         twin = next((o for o in merged if o is not r and o["id"] in seen and norm(o["text"]) == norm(r["text"])
-                     and best(o) >= AGREE), None)
+                     and sum(x >= AGREE for x in as_written(o)) >= 2), None)
         if twin:
             out.append({"id": r["id"], "heard": next(h for h in r["heard"] if norm(h)), "runs": r["runs_used"],
                         "as_written": twin["id"]})

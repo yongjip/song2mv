@@ -124,6 +124,11 @@ def test_a_repeat_the_runs_hear_alike_but_not_as_written_is_reported():
     assert [x["id"] for x in sung_differently(lone)] == ["hk1-03"]
     two = merge_runs(hook, [{"words": sung((60.0, sung_as))}, {"words": sung((60.0, sung_as.replace("back it back it up", "honk honk")))}])
     assert sung_differently(two) == []  # the runs heard that line differently from each other
+    # one run alone heard the other copy as written: two runs missed it, or misheard it as well
+    missed = merge_runs(hook, [{"words": sung((60.0, sung_as))}] + [{"words": sung((61.6, sung_as.split(" ", 4)[4]))}] * 2)
+    first = sung_as.replace("beep beep im parallel", "deep sleep im paralyzed", 1)
+    once = merge_runs(hook, [{"words": sung((60.0, sung_as))}] + [{"words": sung((60.0, first))}] * 2)
+    assert sung_differently(missed) == sung_differently(once) == []
 
 
 def test_where_the_sheet_and_the_tag_differ_and_which_one_the_runs_support():

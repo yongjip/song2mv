@@ -304,15 +304,16 @@ First release (0.1.0).
   empty: a whisper line with three words inside 0.1 s (the runs heard only "Brooklyn" of "Beep, beep, Brooklyn"), one
   whose runs start it more than 0.7 s apart (one run timed "One", two heard "1"; the line started 0.35 s late), one
   with a word more than 0.5 s from every run's time for it (two runs that disagree, merged to their middle), and a
-  repeat the runs hear alike and not as written while they hear another copy of it as written, with a warning that
-  says what they heard (`hk1-07 "Beep, beep, I'm parallel" is heard as "Back it up, I'm parallel" (runs 1, 2, 3), and
-  hk1-05, the same line, as written`: Suno sang that repeat differently from its own lyrics tag). The log says
-  `◀ hk2-08 stacked: …`, `◀ runs disagree by …` and `◀ no run times "…" near …`. On the JamendoLyrics benchmark the
-  list grows from 354 to 427 lines, its recall for lines that start more than 1 s off from 68.6 to 75.4 % and more
-  than 0.3 s off from 33.4 to 38.7 %, and its precision by line start falls from 50.0 to 48.0 % (> 0.3 s); 56 of the
-  65 lines added for timing have a word more than 0.3 s off. The changed-repeat warning names 10 lines in 9 of the 79
-  songs, all whisper mishearing one copy of a line the same way in every run; without the other copy as a check it
-  would name 44. No word time changes.
+  repeat the runs hear alike and not as written while two or more of them hear another copy of it as written, with a
+  warning that says what they heard (`hk1-07 "Beep, beep, I'm parallel" is heard as "Back it up, I'm parallel"
+  (runs 1, 2, 3), and hk1-05, the same line, as written`: Suno sang that repeat differently from its own lyrics tag).
+  The log says `◀ hk2-08 stacked: …`, `◀ runs disagree by …` and `◀ no run times "…" near …`. On the JamendoLyrics
+  benchmark the list grows from 354 to 425 lines, its recall for lines that start more than 1 s off from 68.6 to
+  75.4 % and more than 0.3 s off from 33.4 to 38.7 %, and its precision by line start falls from 50.0 to 48.2 %
+  (> 0.3 s); 56 of the 65 lines added for timing have a word more than 0.3 s off. The changed-repeat warning names 8
+  lines in 7 of the 79 songs, all whisper mishearing one copy of a line the same way in every run, and none on 12
+  Korean Suno songs; with one run enough for the other copy it would name 10 and 3, and without the other copy as a
+  check 44 and 20. No word time changes.
 - A section named calm (intro, bridge, outro …) that `music.json` measures about as loud as the mid sections — a
   median loudness less than 2 dB under theirs — is `mid`, with a warning (`br [Bridge] is about as loud as the mid
   sections (median -10.3 dB, theirs -9.4 dB): kind mid, not calm`). On AI-made songs a bridge or outro is often as
