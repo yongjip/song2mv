@@ -313,7 +313,8 @@ First release (0.1.0).
   (> 0.3 s); 56 of the 65 lines added for timing have a word more than 0.3 s off. The changed-repeat warning names 8
   lines in 7 of the 79 songs, all whisper mishearing one copy of a line the same way in every run, and none on 12
   Korean Suno songs; with one run enough for the other copy it would name 10 and 3, and without the other copy as a
-  check 44 and 20. No word time changes.
+  check 44 and 20. So the guide has the agent ask the user, with both versions, before the sheet changes. No word
+  time changes.
 - A section named calm (intro, bridge, outro …) that `music.json` measures about as loud as the mid sections — a
   median loudness less than 2 dB under theirs — is `mid`, with a warning (`br [Bridge] is about as loud as the mid
   sections (median -10.3 dB, theirs -9.4 dB): kind mid, not calm`). On AI-made songs a bridge or outro is often as

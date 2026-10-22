@@ -66,9 +66,10 @@ the progress log and the JSON:
   of a repeat the sheet has once; look for an `off_sheet` stretch or a tag warning next to it), with three words at
   almost one time (`◀ … stacked: …`), with runs that disagree by more than 0.7 s (`◀ runs disagree by …`) or on a
   word (`◀ no run times "…" near …`), or heard alike by the runs but not as written while another copy of it is
-  (a warning `… is heard as "…"`: Suno changed that repeat, or whisper misheard it; sync with the line as heard and
-  put it into the user's ear check). Most likely wrong. A warning "heard N times" names the other times a re-heard line
-  was heard: make the click track cover them all.
+  (a warning `… is heard as "…"`: Suno changed that repeat, or whisper misheard it the same way in every run, which
+  is what every such warning on the JamendoLyrics benchmark was; put the line into the user's ear check with both
+  versions, as written and as heard, and change the sheet only after the user confirms). Most likely wrong. A warning
+  "heard N times" names the other times a re-heard line was heard: make the click track cover them all.
 
 Then make the ear check cheap for the user:
 
