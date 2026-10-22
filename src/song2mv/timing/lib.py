@@ -130,12 +130,22 @@ def _section_base(name: str) -> tuple[str, str | None]:
     return base, (m.group(2) if m else None)
 
 
+def _section_short(base: str) -> str | None:
+    """The id stem of a section name: the name's own, or that of the longest known name it ends or starts with
+    ("final-chorus" and "chorus-reprise" → ch, "last-pre-chorus" → pc)."""
+    parts = base.split("-")
+    for name in ["-".join(parts[i:]) for i in range(len(parts))] + ["-".join(parts[:i]) for i in range(len(parts), 0, -1)]:
+        if name in SECTION_IDS:
+            return SECTION_IDS[name]
+    return None
+
+
 def section_kind(sec_id: str, name: str, overrides: dict) -> str:
     if sec_id in overrides:
         return overrides[sec_id]
     if name in overrides:
         return overrides[name]
-    short = re.sub(r"\d+$", "", sec_id)
+    short = re.sub(r"\d*b*$", "", sec_id)  # ch2, and chb or ch1b for a name that came twice
     return "hot" if short in HOT else "calm" if short in CALM else "mid"
 
 
@@ -202,7 +212,7 @@ def _lines(text: str, cfg: dict, at: list[int] | None = None) -> list[dict]:
             if sec_name in ids_over:
                 sid = ids_over[sec_name]
             else:
-                short = ids_over.get(base) or SECTION_IDS.get(base) or (re.sub(r"[^a-z0-9]", "", base)[:3] or "s")
+                short = ids_over.get(base) or _section_short(base) or (re.sub(r"[^a-z0-9]", "", base)[:3] or "s")
                 if num is not None:
                     sid = short + num
                 else:

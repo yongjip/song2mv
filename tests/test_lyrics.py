@@ -42,6 +42,12 @@ def test_section_ids_and_kinds(tmp_path):
     assert kinds == {"in": "calm", "v1": "mid", "ch1": "hot", "ch2": "hot", "br": "calm"}
 
 
+def test_a_section_name_around_a_known_one_takes_its_id_and_kind():
+    sheet = "[Chorus]\na\n[Chorus]\nb\n[Final Pre-Chorus]\nc\n[Final Chorus]\nd\n[Chorus Reprise]\ne\n[Coda]\nf\n"
+    assert [(r["id"], r["kind"]) for r in lyric_lines(sheet, {})] == [
+        ("ch1-01", "hot"), ("ch2-01", "hot"), ("pc-01", "mid"), ("ch-01", "hot"), ("chb-01", "hot"), ("cod-01", "mid")]
+
+
 def test_parenthesized_lines_are_stage_directions_unless_kept(tmp_path):
     assert "(sing it loud)" not in [r["text"] for r in parse(tmp_path)]
     kept = parse(tmp_path, keep_parenthesized_in=["Chorus"])

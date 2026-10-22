@@ -122,6 +122,9 @@ First release (0.1.0).
 - Without a terminal, `song2mv render` showed Remotion's rendering progress but not its encoding, so a final render
   could print nothing for minutes while it encoded, long enough for an agent's stall rule to kill a healthy render.
   Encoding now prints a line per 25% too, and each prints its latest count at least every 30 s.
+- A section header such as `[Final Chorus]` or `[Chorus Reprise]` took the first three letters of its name as its
+  id (`fin`, a mid section). A name that ends or starts with a known one now takes that one's id and kind (`ch`,
+  hot), and a name that comes twice (`chb`) keeps its kind.
 - An interrupted `render.mjs` left its temporary folder, which holds a link to the song, behind. It now removes it on
   Ctrl-C, when Remotion fails, and when Remotion stops without writing a file (on Ctrl-C it exits 0). In that last
   case it now says which file was not written, where before it printed the path as if the file had been written.
