@@ -127,3 +127,22 @@ def test_a_pixel_short_changes_zoom_when_its_16x9_version_does(tmp_path):
     assert [(T, wide) for T, wide, _ in runs["glide"]] == [(T, 2 if T < 2 else 1) for T, _, _ in runs["glide"]]
     assert all(wide == tall for _, wide, tall in runs["glide"]), runs["glide"]
     assert {(wide, tall) for _, wide, tall in runs["drift"]} == {(1, 1)}, runs["drift"]
+
+
+CAPTION_PROBE = """
+import { captionLine } from "%s";
+const L = (id: string, ts: number[], end: number) => ({ id, text: id, words: ts.map((t, i) => ({ w: "w" + i, t })), end });
+const lines = [L("v1-16", [48.6, 49.4, 50.0, 50.6], 51.08), L("ch1-01", [50.775, 51.0, 51.4], 52.5),
+  L("v2-01", [60.0, 60.5, 61.0, 61.5], 62.0), L("chant", [60.6], 60.9)] as any;
+const at = (T: number) => captionLine(lines, T, new Set(["ch1-01", "chant"]))?.id ?? null;
+console.log(JSON.stringify({ verse: at(50.5), pickup: at(50.7), chant: at(60.7), after: at(61.6) }));
+"""
+
+
+def test_a_caption_gives_way_to_a_scene_drawn_pickup_but_not_to_a_chant_over_it(tmp_path):
+    probe = tmp_path / "probe.ts"
+    probe.write_text(CAPTION_PROBE % os.path.join(BUNDLED, "src", "kit", "text"), encoding="utf-8")
+    subprocess.run([os.path.join(BUNDLED, "node_modules", ".bin", "esbuild"), str(probe), "--bundle", "--platform=node",
+                    "--format=esm", "--log-level=error", f"--outfile={tmp_path / 'probe.mjs'}"], check=True)
+    seen = json.loads(subprocess.run(["node", str(tmp_path / "probe.mjs")], check=True, capture_output=True, text=True).stdout)
+    assert seen == {"verse": "v1-16", "pickup": None, "chant": "v2-01", "after": "v2-01"}

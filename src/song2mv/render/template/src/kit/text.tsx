@@ -84,6 +84,17 @@ export function liveLine(lines: Line[], T: number, lead = 0.12, all: Line[] = li
   return best;
 }
 
+/**
+ * The line <Captions> shows at T: the live line among those not in `skip`, unless a line in `skip` (one the scene
+ * draws) has started since that line's last word, as a pickup into a scene-drawn chorus does.
+ */
+export function captionLine(lines: Line[], T: number, skip: Set<string>): Line | undefined {
+  const line = liveLine(lines.filter((l) => !skip.has(l.id)), T, 0.12, lines);
+  if (!line) return undefined;
+  const last = line.words[line.words.length - 1].t;
+  return lines.some((l) => skip.has(l.id) && l.words[0].t > last && T >= l.words[0].t - 0.12) ? undefined : line;
+}
+
 /** Rough rendered width in em: Hangul / CJK full width, Latin about half, spaces a third */
 const emWidth = (s: string) =>
   [...s].reduce((a, ch) => a + (/\s/.test(ch) ? 0.3 : /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch) ? 1 : 0.62), 0);
@@ -139,7 +150,7 @@ export const Captions: React.FC<{ T: number; hide?: Set<string>; size?: number; 
 }) => {
   const { song, theme } = useSong();
   const skip = new Set([...(song.captions?.hide ?? []), ...(hide ?? [])]);
-  const line = liveLine(song.lines.filter((l) => !skip.has(l.id)), T, 0.12, song.lines);
+  const line = captionLine(song.lines, T, skip);
   if (!line) return null;
   const from = song.captions?.from_word?.[line.id] ?? 0;
   const words = line.words.slice(from);
