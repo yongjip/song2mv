@@ -8,7 +8,7 @@ import wave
 import numpy as np
 import pytest
 
-from song2mv.check.score import decode_gray
+from song2mv.check.score import decode_gray, probe_size
 from song2mv.render.runner import BUNDLED
 
 pytestmark = pytest.mark.skipif(
@@ -25,7 +25,7 @@ def test_check_measures_a_draft_on_as_many_frames_as_its_full_render(tmp_path, t
                         "--out", str(tmp_path), "--manifest", str(manifest), *extra],
                        cwd=BUNDLED, check=True, capture_output=True)
     full, draft = manifest.read_text(encoding="utf-8").split()
-    assert draft.endswith("-draft.mp4")
+    assert draft.endswith("-draft.mp4") and probe_size(draft) == (960, 540)
     assert len(decode_gray(draft, 64, 36)) == len(decode_gray(full, 64, 36)) == -(-round(float(to) * 30) // 3)
 
 

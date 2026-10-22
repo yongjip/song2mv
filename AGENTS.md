@@ -31,12 +31,12 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    they still fit between the pins, so pin only what is wrong.
 4. **Subtitles only?** Stop after `sync` and hand over `song.srt` (video editors) or `song.lrc` / `song.words.lrc`.
 5. **Video.** `song2mv render WORK/mv.json --still T --aspect both` writes PNGs you can look at; render short stretches
-   as drafts (`--from A --to B --draft`, 10 fps) while working, and the finished video once without it. For the user's
-   own scenes use `--template DIR` and write them in `DIR/src/scenes/`: a scene is a pure function of song time `T`;
-   text pops once and then holds still; lay out on the 1920×1080 stage. Start from a concept: propose two or three, in
-   different art styles, as stills side by side, and pick one. The scene kit in `DIR/src/kit/` (people, places, sky,
-   objects, effects; style packs such as `paper` that put any object in another art style) is optional: reuse what fits
-   the concept, change it in DIR, draw the rest. See it with
+   as drafts (`--from A --to B --draft`, 10 fps at half size) while working, and the finished video once without it. For
+   the user's own scenes use `--template DIR` and write them in `DIR/src/scenes/`: a scene is a pure function of song
+   time `T`; text pops once and then holds still; lay out on the 1920×1080 stage. Start from a concept: propose two or
+   three, in different art styles, as stills side by side, and pick one. The scene kit in `DIR/src/kit/` (people,
+   places, sky, objects, effects; style packs such as `paper` that put any object in another art style) is optional:
+   reuse what fits the concept, change it in DIR, draw the rest. See it with
    `npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR. When the video is done, offer the user
    anything generic you drew as a pull request (`CONTRIBUTING.md`). Remotion is not MIT — tell company users about its
    license before they rely on it.

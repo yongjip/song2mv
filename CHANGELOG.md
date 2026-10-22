@@ -129,6 +129,17 @@ First release (0.1.0).
 - A section header such as `[Final Chorus]` or `[Chorus Reprise]` took the first three letters of its name as its
   id (`fin`, a mid section). A name that ends or starts with a known one now takes that one's id and kind (`ch`,
   hot), and a name that comes twice (`chb`) keeps its kind.
+- `render --draft` also renders at half size (960×540, or 540×960) with a faster x264 setting (`veryfast`, CRF 23):
+  `check` measures at 320×180. A full-size draft of a 4-minute paper-cut song took 6–7 minutes and came to 391 MB. On
+  30–90 s stretches of four trial songs and a pixel benchmark, paper-cut drafts rendered 3.0–4.7× faster (30 s:
+  14–15 s instead of 54–69 s; 90 s: 36 s instead of 137 s) into files 6–7× smaller; scenes that already rendered 30 s
+  in under 10 s gained less (1.0–1.8×). `check` gave every draft the same passes, fails, skips and cuts as at full
+  size; per-line motion moved by 0.08 on average and 0.29 at most over 137 lines, except on one line that opens on a
+  cut whose second frame sits on the cut threshold (correlation 0.631 against 0.619, a cut below 0.62): 1.1. Smaller
+  drafts were no faster, and the paper pack's grain read as motion in them: at a quarter size motion rose by 0.39 on
+  average, 50 lines moved by over 0.5 and a 90 s stretch lost a cut. Pixel scenes (`pixel.cameraAt`, `Pixelate`)
+  stayed within 0.17 even at a quarter size. A template copy made before this renders drafts at full size; copy its
+  new `render.mjs`.
 - An interrupted `render.mjs` left its temporary folder, which holds a link to the song, behind. It now removes it on
   Ctrl-C, when Remotion fails, and when Remotion stops without writing a file (on Ctrl-C it exits 0). In that last
   case it now says which file was not written, where before it printed the path as if the file had been written.

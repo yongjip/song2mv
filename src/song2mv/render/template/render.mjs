@@ -14,7 +14,8 @@
  *
  * Options: --audio FILE (else: public/<audio>, the mv.json's audio_path, or next to mv.json; none → silent)
  *          --from S  --to S  --hold S  --aspect 16x9|9x16|both  --out DIR (default out/)  --name BASE
- *          --draft (10 fps, the rate `song2mv check` measures at, written as BASE-…-draft.mp4; --still ignores it)
+ *          --draft (10 fps, the rate `song2mv check` measures at, at half size: 960×540 or 540×960, written as
+ *          BASE-…-draft.mp4; --still ignores it)
  *          --composition ID --props FILE (a PNG of the composition's first frame, its props {song, from, to, hold}
  *          and the JSON object in FILE, such as {"T": 33.1} for Concepts or {"times": [12, 33.1]} for Contact)
  *          --manifest FILE (append the path of every file written, one per line; else they are printed)
@@ -32,6 +33,8 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FPS = 30; // src/kit/song.tsx
 const DRAFT_FPS = 10;
+// check measures at 320×180; below half size the paper pack's grain reads as motion
+const DRAFT_VIDEO = ["--scale=0.5", "--crf=23", "--x264-preset=veryfast"];
 const argv = process.argv.slice(2);
 if (!argv.length || argv[0].startsWith("-")) {
   console.error(fs.readFileSync(fileURLToPath(import.meta.url), "utf8").split("*/")[0]);
@@ -142,7 +145,7 @@ if (flag("studio")) {
   for (const id of aspects) {
     const made = path.join(tmp, "video.mp4");
     const wav = path.join(tmp, "audio.wav");
-    remotion(["render", id, made, ...(song.audio ? [`--separate-audio-to=${wav}`] : [])]);
+    remotion(["render", id, made, ...(draft ? DRAFT_VIDEO : []), ...(song.audio ? [`--separate-audio-to=${wav}`] : [])]);
     if (fs.existsSync(made) && fs.existsSync(wav)) {
       const muxed = path.join(tmp, "muxed.mp4");
       run(["ffmpeg", "-y", "-v", "error", "-i", made, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy",

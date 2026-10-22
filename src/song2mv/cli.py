@@ -286,8 +286,8 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--aspect", default="16x9", choices=["16x9", "9x16", "both"])
     r.add_argument("--hold", type=float, help="freeze the first HOLD seconds on the picture at from+hold (hook cuts)")
     r.add_argument("--still", type=float, help="write a PNG (one per aspect) at this song time instead of a video")
-    r.add_argument("--draft", action="store_true", help="a video at 10 fps, the rate check measures at, for the render-check "
-                   "loop (NAME-…-draft.mp4); render the final video without it")
+    r.add_argument("--draft", action="store_true", help="a video at 10 fps, the rate check measures at, and half size, for "
+                   "the render-check loop (NAME-…-draft.mp4); render the final video without it")
     r.add_argument("--audio", help="audio file (default: the one in mv.json)")
     r.add_argument("--name", help="output file name prefix")
     r.add_argument("--json", action="store_true")
