@@ -367,13 +367,32 @@ top. That frame puts the template's look around every concept, and a scene that 
 bottom of the screen empty. To fill the phone screen instead, export a `VerticalScene` from `src/scenes/index.ts`:
 a component of `T` that draws the whole 1080×1920 frame. The template then adds only the captions of lines the
 scenes don't draw, the flashes and the fade-out; the background and any title are the scene's. It is usually the
-same world and timing filmed for a tall frame: the camera centred in the safe box, the picture out to every edge.
+same world and timing filmed for a tall frame, which `verticalView` in the kit does:
 
-Keep text inside x 120–960, y 269–1248: that box is clear of the app buttons and caption overlay on Reels, Shorts
-and TikTok. The template's title, stage and lyrics already sit in it; a `VerticalScene` keeps its own text there
-and puts only picture below it. Check stills. `check` measures the top 56 % of a short, above the captions, also with
-a `VerticalScene`; a large still overlay there (a HUD, a dialogue box) hides cuts from it, so cut between shots that
-look different.
+```tsx
+const cam = verticalView(cameraAt(T, shots, { hits }));   // a pixel scene: pixel.cameraAt(T, shots, { px, vertical: true })
+<Svg w={1080} h={1920}><g transform={cam.svg}>…the world, as drawn for 16:9…</g></Svg>
+```
+
+Where things go (`VERTICAL` in the kit has the numbers):
+
+- **Text** inside the safe box, x 120–960, y 269–1248, clear of the app buttons and caption overlay on Reels, Shorts
+  and TikTok. The template's captions take its bottom, y 1082–1240; a scene that draws its own lyrics puts them there
+  too, and a title or big type at the top of the box.
+- **The subject** in the picture area above the captions, y 269–1080. `verticalView` puts the view's point in its
+  middle (540, 675), as large as in the 16:9 frame; pass a larger zoom to come closer. A wide shot's point is
+  usually the middle of the stage, not its subject: give the tall frame's wide shots the subject's point
+  (`shots.map(s => (s.zoom ?? 1) > 1.5 ? s : { ...s, x: 900, y: 820 })`), or the subject drops under the captions.
+  A close-up shows more below its point than in 16:9, and that part sits under the captions: if it is the subject's
+  body, zoom out until the subject fits above y 1080.
+- **Below y 1248** the apps cover the frame: picture only. The view keeps the frame on the stage's sides and top but
+  runs on past its bottom (the kit's places end at y 1080), so draw the ground on down there, or a foreground such
+  as a crowd.
+
+A contact sheet with `"vertical": true` draws the safe box and the captions' top as dashed lines (a crop sheet
+leaves them out): check them there before rendering the short. `check` measures the top 56 % of a short, above the
+captions, also with a `VerticalScene`; a large still overlay there (a HUD, a dialogue box) hides cuts from it, so cut
+between shots that look different.
 
 ## 7. Deliver
 

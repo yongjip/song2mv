@@ -15,6 +15,8 @@ export * from "./symbols";
 export * from "./vehicles";
 export * from "./effects";
 export * from "./camera";
+// tallView stays inside: pixel scenes reach it through pixel.cameraAt, which first steadies their shots
+export { VERTICAL, verticalView } from "./vertical";
 export * from "./hit";
 export * from "./flames";
 export * from "./storm";

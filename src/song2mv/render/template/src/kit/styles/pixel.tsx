@@ -1,5 +1,6 @@
 import React from "react";
 import { cameraAt as kitCameraAt, CameraView, Shot } from "../camera";
+import { tallView } from "../vertical";
 
 type Pt = [number, number];
 const OFFSET = 4096, ROW_LENGTH = 16384;
@@ -216,10 +217,14 @@ export const Pixelate: React.FC<{ id: string; block?: number; stageScale?: numbe
  * number (1 at least) and the frame to whole pixels of the world, kept on the stage, so every block on screen is `px`
  * × zoom stage px, as if one small picture were scaled up. A shot that changes the zoom cuts on its time, glide or not,
  * since blocks can only change size in one jump; a glide or a drift at one zoom pans by whole pixels. A drift in zoom,
- * a punch or a roll does not show.
+ * a punch or a roll does not show. `vertical: true` films the same shots for a VerticalScene's 1080×1920 frame as
+ * verticalView does (`world` as there; `w` and `h` don't apply), so its zoom changes when the 16:9 version's does.
  */
 export function cameraAt(
-  T: number, shots: Shot[], o: { hits?: number[]; punch?: number; px?: number; w?: number; h?: number } = {},
+  T: number, shots: Shot[], o: {
+    hits?: number[]; punch?: number; px?: number; w?: number; h?: number;
+    vertical?: boolean; world?: [number, number, number, number];
+  } = {},
 ): CameraView {
   const { px = 8, w = 1920, h = 1080 } = o;
   const whole = (z = 1) => Math.max(1, Math.round(z));
@@ -229,6 +234,7 @@ export function cameraAt(
     glide: i > 0 && whole(list[i - 1].zoom) !== whole(s.zoom) ? 0 : s.glide,
   }));
   const view = kitCameraAt(T, steady, { w, h, punch: 0 });
+  if (o.vertical) return tallView(view, Math.max(1, Math.round(px)), o.world);
   const zoom = whole(view.zoom), cell = Math.max(1, Math.round(px)) * zoom;
   const snap = (v: number, size: number) => Math.min(0, Math.max(size - size * zoom, Math.round((size / 2 - v * zoom) / cell) * cell));
   const left = snap(view.x, w), top = snap(view.y, h);

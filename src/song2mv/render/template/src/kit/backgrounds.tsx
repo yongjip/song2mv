@@ -97,9 +97,9 @@ export const Blurs: React.FC = () => (
   </defs>
 );
 
-/** Full-stage SVG with the blur filters defined */
-export const Svg: React.FC<{ children: React.ReactNode; opacity?: number }> = ({ children, opacity = 1 }) => (
-  <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, opacity }}>
+/** Full-stage SVG with the blur filters defined; `w` × `h` is its size: 1080 × 1920 fills a VerticalScene's frame */
+export const Svg: React.FC<{ children: React.ReactNode; opacity?: number; w?: number; h?: number }> = ({ children, opacity = 1, w = 1920, h = 1080 }) => (
+  <svg width={w} height={h} style={{ position: "absolute", inset: 0, opacity }}>
     <Blurs />
     {children}
   </svg>

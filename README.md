@@ -261,7 +261,8 @@ The people, places and objects are drawn in one flat style. To see everything, r
 `npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR. Rules that held up: a scene is a pure
 function of song time `T`; text pops once and then holds still while it is read; lay out on the 1920×1080 stage. For
 9:16, a song can also export a `VerticalScene` that draws the whole 1080×1920 frame, instead of the stage shrunk into a
-band.
+band; the kit's `verticalView` films the 16:9 world for it, its subject above the captions and inside the apps' safe
+box.
 
 Remotion is **not MIT**: it is free for individuals and companies with up to 3 employees; larger companies need a
 company license ([remotion.dev/license](https://www.remotion.dev/license)). Only `render` uses it.
