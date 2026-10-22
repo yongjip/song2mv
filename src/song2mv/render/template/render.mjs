@@ -20,6 +20,7 @@
  *          --manifest FILE (append the path of every file written, one per line; else they are printed)
  *
  * The audio is never copied into this folder: a temporary public folder outside it holds a link to it.
+ * Remotion mixes the audio to WAV and its ffmpeg writes the AAC: Remotion's own AAC starts 2048 samples late.
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -94,10 +95,11 @@ fs.writeFileSync(propsFile, JSON.stringify({ song, from, to, hold, ...(draft ? {
 
 // Without a terminal (coding agents, CI) Remotion's per-frame progress lines are noise: keep warnings only.
 const logLevel = process.env.SONG2MV_REMOTION_LOG || (process.stderr.isTTY ? "info" : "warn");
-const remotion = (args) => {
-  const r = spawnSync(process.execPath, [cli, ...args, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`], { cwd: HERE, stdio: "inherit" });
+const run = (args) => {
+  const r = spawnSync(process.execPath, [cli, ...args], { cwd: HERE, stdio: "inherit" });
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
+const remotion = (args) => run([...args, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`]);
 
 fs.mkdirSync(outDir, { recursive: true });
 const wrote = (file) => (opt("manifest") ? fs.appendFileSync(opt("manifest"), file + "\n") : console.log(file));
@@ -119,7 +121,21 @@ if (flag("studio")) {
 } else {
   for (const id of aspects) {
     const file = path.join(outDir, `${base}-${id.slice(6)}${range}${draft ? "-draft" : ""}.mp4`);
-    remotion(["render", id, file]);
+    if (song.audio) {
+      const video = path.join(tmp, "video.mp4");
+      const wav = path.join(tmp, "audio.wav");
+      remotion(["render", id, video, `--separate-audio-to=${wav}`]);
+      if (fs.existsSync(wav)) {
+        run(["ffmpeg", "-y", "-v", "error", "-i", video, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+          "-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart", file]);
+      } else {
+        fs.copyFileSync(video, file);
+      }
+      fs.rmSync(video, { force: true });
+      fs.rmSync(wav, { force: true });
+    } else {
+      remotion(["render", id, file]);
+    }
     wrote(file);
   }
 }

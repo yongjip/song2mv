@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import subprocess
+import wave
 
 import numpy as np
 import pytest
@@ -26,6 +27,32 @@ def test_check_measures_a_draft_on_as_many_frames_as_its_full_render(tmp_path, t
     full, draft = manifest.read_text(encoding="utf-8").split()
     assert draft.endswith("-draft.mp4")
     assert len(decode_gray(draft, 64, 36)) == len(decode_gray(full, 64, 36)) == -(-round(float(to) * 30) // 3)
+
+
+def test_the_rendered_audio_starts_with_the_picture(tmp_path):
+    sr = 48000
+    x = np.zeros(3 * sr)
+    for t in (1.0, 1.5, 2.25):
+        i = round(t * sr)
+        x[i:i + 48] = 0.9 * np.hanning(48) * np.sin(2 * np.pi * 3000 * np.arange(48) / sr)
+    wav = tmp_path / "click.wav"
+    with wave.open(str(wav), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes((x * 32767).astype("<i2").tobytes())
+    manifest = tmp_path / "wrote.txt"
+    subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--audio", str(wav), "--from", "0",
+                    "--to", "3", "--out", str(tmp_path), "--manifest", str(manifest)],
+                   cwd=BUNDLED, check=True, capture_output=True)
+    mp4 = manifest.read_text(encoding="utf-8").split()[0]
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", mp4, "-ac", "1", "-ar", str(sr), "-f", "s16le", "-"],
+                         check=True, capture_output=True).stdout
+    y = np.frombuffer(raw, dtype="<i2").astype(float)
+    n = min(len(x), len(y))
+    c = np.fft.irfft(np.fft.rfft(y[:n], 2 * n) * np.conj(np.fft.rfft(x[:n], 2 * n)))
+    lag = int(np.argmax(c))
+    assert min(lag, 2 * n - lag) <= 2
 
 
 VERTICAL_SCENES = """

@@ -100,6 +100,11 @@ First release (0.1.0).
   cuts`. Every other field is unchanged on that video's four versions. The skill's step 5 adds that in pixel scenes a
   whole-pixel camera step can count as a cut, how a held shot stays alive (a slow drift), and a contact sheet of every
   cut to find shots that come back: the benchmark cut back to one wide street shot about 30 times.
+- Rendered videos played the song 43 ms after the picture: Remotion's AAC kept its encoder's 2048 samples of
+  priming at the start, so every hit and lit word came that much before its sound. `render.mjs` now has Remotion mix
+  the audio to WAV and encodes the AAC with Remotion's ffmpeg, which trims it: on a click track and on a demo song the
+  sound is within a sample of the source, and the frames are unchanged. A template copy made before this still renders
+  43 ms late; copy its new `render.mjs` or a new `--template` folder.
 - On Windows, `song2mv render` failed at its first Remotion call: the template's `render.mjs` ran `npx`, which is
   `npx.cmd` there and cannot be started without a shell. It now runs Remotion's CLI with the node that runs it, and
   a new CI job renders a still of the sample song on Windows. Run in a folder without an install, `render.mjs` says
