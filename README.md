@@ -246,6 +246,8 @@ song2mv render mv.json                                        # whole song, 16:9
 song2mv render mv.json --from 95 --to 111 --aspect 9x16 --hold 2.5   # a hook cut whose first frame shows the payoff
 song2mv render mv.json --from 95 --to 111 --draft             # 10 fps at half size, for the render → check loop
 song2mv render mv.json --still 98.5 --aspect both            # PNG frames to look at
+song2mv render mv.json --max-mb 200                          # the finished video, at most 200 MB (an upload limit)
+song2mv render mv.json --cover 3.2                           # a 1080×1080 cover from the frame at 3.2 s
 song2mv render mv.json --template video/                     # your own copy of the template, for your own scenes
 ```
 
@@ -253,6 +255,13 @@ song2mv render mv.json --template video/                     # your own copy of 
 file `…-draft.mp4`. On 30 s of a paper-cut scene it rendered in 15 s, against 55–70 s at full size and about 2.5 min
 for the finished video, and `check` gave drafts the same passes, fails and cuts as full-size renders. Iterate on drafts
 and render the finished video once without it.
+
+A finished video is capped at 8 Mbit/s, the rate YouTube asks for at 1080p30. Flat styles stay far below it; the paper
+pack's grain ran near 14 Mbit/s, and at the cap a 4-minute video is about 250 MB instead of 440. `--max-mb N` encodes a
+video that is still over N MB again, in two passes, to fit an upload limit, and keeps its sound. `--cover T` writes a
+square cover for album and playlist pages: the 16:9 frame at song time T, whole, over a blurred fill of itself.
+Next to them, `sync` already wrote `song.lrc` (line times, which most players and music platforms import),
+`song.words.lrc` (word times) and `song.srt` (subtitles).
 
 Out of the box you get a plain lyric video that follows the song's structure: calm sections with a low moon and
 embers, mid sections with a floor grid rolling on the beat, hot sections with rays on the beat and the line itself

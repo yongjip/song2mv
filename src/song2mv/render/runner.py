@@ -143,9 +143,24 @@ def _run_filtered(args: list[str], cwd: str) -> int:
     return p.wait()
 
 
+def _cover(still: str, png: str) -> None:
+    """A 1080×1080 cover: the frame, whole, over a darkened blur of itself filling the square."""
+    graph = ("[0:v]scale=1080:1080:force_original_aspect_ratio=increase,crop=1080:1080,boxblur=24:3,"
+             "eq=brightness=-0.06[bg];[0:v]scale=1080:1080:force_original_aspect_ratio=decrease[fg];"
+             "[bg][fg]overlay=(W-w)/2:(H-h)/2")
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise Song2mvError("--cover needs ffmpeg", hint="install ffmpeg (it is on PATH for sync and check too)")
+    r = subprocess.run([ffmpeg, "-y", "-v", "error", "-i", still, "-filter_complex", graph, "-frames:v", "1", png],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        raise Song2mvError(f"ffmpeg could not make the cover: {(r.stderr.strip().splitlines() or ['?'])[-1]}")
+
+
 def render(mv_json: str, out: str | None = None, template: str | None = None, start: float | None = None,
            end: float | None = None, aspect: str = "16x9", hold: float | None = None, still: float | None = None,
-           audio: str | None = None, name: str | None = None, draft: bool = False) -> dict:
+           audio: str | None = None, name: str | None = None, draft: bool = False, max_mb: float | None = None,
+           cover: float | None = None) -> dict:
     mv_json = os.path.abspath(mv_json)
     mv = load_mv(mv_json)  # before installing anything
     dur = float(mv["duration"])
@@ -154,8 +169,15 @@ def render(mv_json: str, out: str | None = None, template: str | None = None, st
         raise Song2mvError(f"--from {t0:g} is outside the song (0–{dur:.1f} s)")
     if end is not None and end <= t0:
         raise Song2mvError(f"--to ({end:g}) must be after --from ({t0:g})")
-    if still is not None and not t0 <= still <= (end if end is not None else dur):
-        raise Song2mvError(f"--still {still:g} is outside the rendered stretch ({t0:g}–{end if end is not None else dur:g} s)")
+    if still is not None and cover is not None:
+        raise Song2mvError("--still and --cover each write a picture: pass one of them")
+    for flag, t in (("--still", still), ("--cover", cover)):
+        if t is not None and not t0 <= t <= (end if end is not None else dur):
+            raise Song2mvError(f"{flag} {t:g} is outside the rendered stretch ({t0:g}–{end if end is not None else dur:g} s)")
+    if max_mb is not None and max_mb <= 0:
+        raise Song2mvError("--max-mb must be more than 0")
+    if cover is not None:
+        still, aspect = cover, "16x9"
     if hold is not None and hold < 0:
         raise Song2mvError("--hold must be zero or more seconds")
     node = _require("node")
@@ -176,7 +198,8 @@ def render(mv_json: str, out: str | None = None, template: str | None = None, st
     os.close(fd)
     args = [node, "render.mjs", mv_json, "--aspect", aspect, "--out", out, "--manifest", manifest]
     for flag, val in (("--from", start), ("--to", end), ("--hold", hold), ("--still", still),
-                      ("--audio", os.path.abspath(audio) if audio else None), ("--name", name)):
+                      ("--audio", os.path.abspath(audio) if audio else None), ("--name", name),
+                      ("--max-mb", max_mb if still is None and not draft else None)):
         if val is not None:
             args += [flag, str(val)]
     if draft:
@@ -192,6 +215,14 @@ def render(mv_json: str, out: str | None = None, template: str | None = None, st
         raise Song2mvError(f"the Remotion render failed (exit {code}) — see the output above")
     if not written:  # a template copied before --manifest existed: whatever is new or rewritten in the out folder
         written = [os.path.join(out, f) for f in sorted(os.listdir(out)) if before.get(f) != _stat(os.path.join(out, f))]
+    if cover is not None:
+        made = []
+        for f in written:
+            png = os.path.join(os.path.dirname(f), re.sub(r"-(16x9|9x16)-", "-cover-", os.path.basename(f), count=1))
+            _cover(f, png)
+            os.unlink(f)
+            made.append(png)
+        written = made
     for f in written:
         print(f"  {f}")
     return stamp({"command": "render", "template": tpl, "outputs": {os.path.basename(f): f for f in written},

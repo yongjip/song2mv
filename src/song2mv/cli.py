@@ -204,7 +204,8 @@ def cmd_render(a) -> dict:
     _existing_file(a.mv, "mv.json")
     _existing_file(a.audio, "audio file")
     from .render.runner import render
-    return render(a.mv, a.out, a.template, a.start, a.end, a.aspect, a.hold, a.still, a.audio, a.name, a.draft)
+    return render(a.mv, a.out, a.template, a.start, a.end, a.aspect, a.hold, a.still, a.audio, a.name, a.draft,
+                  a.max_mb, a.cover)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -288,6 +289,10 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--still", type=float, help="write a PNG (one per aspect) at this song time instead of a video")
     r.add_argument("--draft", action="store_true", help="a video at 10 fps, the rate check measures at, and half size, for "
                    "the render-check loop (NAME-…-draft.mp4); render the final video without it")
+    r.add_argument("--max-mb", type=float, help="a finished video over this many MB is encoded again, in two passes, "
+                   "to fit (an upload limit such as 200); the audio is kept")
+    r.add_argument("--cover", type=float, help="write a 1080×1080 cover PNG instead of a video: the 16:9 frame at this "
+                   "song time over a blurred fill of itself (NAME-cover-Ss.png)")
     r.add_argument("--audio", help="audio file (default: the one in mv.json)")
     r.add_argument("--name", help="output file name prefix")
     r.add_argument("--json", action="store_true")

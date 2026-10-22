@@ -449,6 +449,15 @@ between shots that look different.
 Full render(s), short(s), `song.srt` / `song.lrc`, a short list of what was hand-fixed (manual timing values, goals
 changed and why) and the spots nobody has heard yet, each with its clip. Nothing from the work folder gets committed.
 
+For uploading, ask where the user will post it:
+- a platform with a size limit gets `song2mv render <work>/mv.json --template <work>/video --max-mb N`, which encodes the
+  finished video again to fit and keeps its sound;
+- an album or playlist page gets a square cover from `--cover T` at a title or hook frame;
+- music platforms that show synced lyrics take `<work>/song.lrc` (`song.words.lrc` has word times).
+
+A finished render is already capped at 8 Mbit/s, about 60 MB a minute at most; pass `--max-mb` when the limit is
+lower than that.
+
 **Give back what other songs can use.** Look over what you drew for the video. Some pieces are generic, not tied to
 this song: an object, a pose, a place, a style pack. Offer those to the user as a pull request to song2mv, following
 `CONTRIBUTING.md` ("Adding an asset or a style pack"): original drawings, no media files, the kit's rules, a gallery

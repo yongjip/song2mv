@@ -7,6 +7,7 @@
  *   node render.mjs ../work/my-song/mv.json --from 95 --to 111 --aspect 9x16 --hold 2.5
  *   node render.mjs ../work/my-song/mv.json --from 95 --to 111 --draft   # 10 fps, for the render → check loop
  *   node render.mjs ../work/my-song/mv.json --still 98.5            # one PNG frame at song time 98.5 s
+ *   node render.mjs ../work/my-song/mv.json --max-mb 200             # whole song, at most 200 MB (an upload limit)
  *   node render.mjs ../work/my-song/mv.json --composition Concepts --props concepts.json   # a PNG of Concepts
  *   node render.mjs ../work/my-song/mv.json --studio                # Remotion Studio with this song
  *
@@ -16,12 +17,14 @@
  *          --from S  --to S  --hold S  --aspect 16x9|9x16|both  --out DIR (default out/)  --name BASE
  *          --draft (10 fps, the rate `song2mv check` measures at, at half size: 960×540 or 540×960, written as
  *          BASE-…-draft.mp4; --still ignores it)
+ *          --max-mb N (a finished video over N MB is encoded again, in two passes, to fit; the audio is kept)
  *          --composition ID --props FILE (a PNG of the composition's first frame, its props {song, from, to, hold}
  *          and the JSON object in FILE, such as {"T": 33.1} for Concepts or {"times": [12, 33.1]} for Contact)
  *          --manifest FILE (append the path of every file written, one per line; else they are printed)
  *
  * The audio is never copied into this folder: a temporary public folder outside it holds a link to it.
  * Remotion mixes the audio to WAV and its ffmpeg writes the AAC: Remotion's own AAC starts 2048 samples late.
+ * A finished video is capped at 8 Mbit/s (YouTube's figure for 1080p30): grain-heavy styles otherwise run near 14.
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -35,6 +38,7 @@ const FPS = 30; // src/kit/song.tsx
 const DRAFT_FPS = 10;
 // check measures at 320×180; below half size the paper pack's grain reads as motion
 const DRAFT_VIDEO = ["--scale=0.5", "--crf=23", "--x264-preset=veryfast"];
+const FINAL_VIDEO = ["--max-rate=8M", "--buffer-size=16M"];
 const argv = process.argv.slice(2);
 if (!argv.length || argv[0].startsWith("-")) {
   console.error(fs.readFileSync(fileURLToPath(import.meta.url), "utf8").split("*/")[0]);
@@ -113,6 +117,34 @@ const run = (args) => {
   }
 };
 const remotion = (args) => run([...args, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`]);
+const probe = (file, entries) =>
+  spawnSync(process.execPath, [cli, "ffprobe", "-v", "error", ...entries, "-of", "csv=p=0", file], { cwd: HERE, encoding: "utf8" })
+    .stdout.trim();
+const maxMb = opt("max-mb") !== undefined ? Number(opt("max-mb")) : null;
+const fit = (made, mb) => {
+  if (fs.statSync(made).size <= mb * 1e6) return;
+  const secs = Number(probe(made, ["-show_entries", "format=duration"]));
+  const audioKbps = Math.round(Number(probe(made, ["-select_streams", "a:0", "-show_entries", "stream=bit_rate"]) || 0) / 1000);
+  let videoKbps = Math.floor((mb * 8000 * 0.97) / secs) - audioKbps;
+  const fitted = path.join(tmp, "fitted.mp4");
+  for (let tries = 0; tries < 3; tries++) {  // two passes land within a few % on a song, further off on a few seconds
+    if (videoKbps < 100) break;
+    const x264 = ["-c:v", "libx264", "-preset", "medium", "-b:v", `${videoKbps}k`, "-passlogfile", path.join(tmp, "pass")];
+    run(["ffmpeg", "-y", "-v", "error", "-i", made, "-map", "0:v", ...x264, "-pass", "1", "-an", "-f", "null", "-"]);
+    run(["ffmpeg", "-y", "-v", "error", "-i", made, "-map", "0:v", "-map", "0:a?", ...x264, "-pass", "2", "-pix_fmt",
+      "yuv420p", "-c:a", "copy", "-movflags", "+faststart", fitted]);
+    const size = fs.statSync(fitted).size;
+    if (size <= mb * 1e6) {
+      fs.renameSync(fitted, made);
+      console.warn(`--max-mb ${mb}: encoded again at ${videoKbps} kbit/s to fit`);
+      return;
+    }
+    videoKbps = Math.floor((videoKbps - ((size - mb * 1e6) * 8) / secs / 1000) * 0.97);
+  }
+  cleanup();
+  console.error(`--max-mb ${mb}: ${Math.round(secs)} s of video do not fit in ${mb} MB`);
+  process.exit(1);
+};
 
 fs.mkdirSync(outDir, { recursive: true });
 const wrote = (file) => (opt("manifest") ? fs.appendFileSync(opt("manifest"), file + "\n") : console.log(file));
@@ -145,7 +177,7 @@ if (flag("studio")) {
   for (const id of aspects) {
     const made = path.join(tmp, "video.mp4");
     const wav = path.join(tmp, "audio.wav");
-    remotion(["render", id, made, ...(draft ? DRAFT_VIDEO : []), ...(song.audio ? [`--separate-audio-to=${wav}`] : [])]);
+    remotion(["render", id, made, ...(draft ? DRAFT_VIDEO : FINAL_VIDEO), ...(song.audio ? [`--separate-audio-to=${wav}`] : [])]);
     if (fs.existsSync(made) && fs.existsSync(wav)) {
       const muxed = path.join(tmp, "muxed.mp4");
       run(["ffmpeg", "-y", "-v", "error", "-i", made, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy",
@@ -153,6 +185,7 @@ if (flag("studio")) {
       fs.renameSync(muxed, made);
     }
     fs.rmSync(wav, { force: true });
+    if (maxMb && !draft && fs.existsSync(made)) fit(made, maxMb);
     place(made, path.join(outDir, `${base}-${id.slice(6)}${range}${draft ? "-draft" : ""}.mp4`));
   }
 }

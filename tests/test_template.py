@@ -55,6 +55,24 @@ def test_the_rendered_audio_starts_with_the_picture(tmp_path):
     assert min(lag, 2 * n - lag) <= 2
 
 
+def test_max_mb_encodes_a_finished_video_again_to_fit_and_keeps_its_sound(tmp_path):
+    sr = 48000
+    wav = tmp_path / "tone.wav"
+    with wave.open(str(wav), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes((0.3 * np.sin(2 * np.pi * 440 * np.arange(3 * sr) / sr) * 32767).astype("<i2").tobytes())
+    manifest = tmp_path / "wrote.txt"
+    r = subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--audio", str(wav), "--from", "0",
+                        "--to", "3", "--out", str(tmp_path), "--manifest", str(manifest), "--max-mb", "0.2"],
+                       cwd=BUNDLED, check=True, capture_output=True, text=True)
+    mp4 = manifest.read_text(encoding="utf-8").split()[0]
+    streams = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type", "-of", "csv=p=0", mp4],
+                             check=True, capture_output=True, text=True).stdout.replace(",", "").split()
+    assert "encoded again" in r.stderr and os.path.getsize(mp4) <= 200_000 and streams == ["video", "audio"]
+
+
 VERTICAL_SCENES = """
 import React from "react";
 import { Svg, Song, pixel, verticalView } from "../kit";

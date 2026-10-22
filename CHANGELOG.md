@@ -100,6 +100,14 @@ First release (0.1.0).
   cuts`. Every other field is unchanged on that video's four versions. The skill's step 5 adds that in pixel scenes a
   whole-pixel camera step can count as a cut, how a held shot stays alive (a slow drift), and a contact sheet of every
   cut to find shots that come back: the benchmark cut back to one wide street shot about 30 times.
+- A finished render is capped at 8 Mbit/s (x264 `-maxrate 8M -bufsize 16M` on Remotion's CRF 18), the rate YouTube asks
+  for at 1080p30. The paper pack's grain ran near 14 Mbit/s, so a 4-minute video came to 440 MB, over many upload
+  limits; at the cap it is about 250 MB, and at 2× it looks the same. Flat styles stay far below the cap and do not
+  change.
+- `song2mv render --max-mb N`: a finished video still over N MB is encoded again, in two passes, to fit (an upload
+  limit such as 200 MB), with its sound kept as it is. `--cover T` writes a 1080×1080 cover PNG instead of a video: the
+  16:9 frame at song time T, whole, over a darkened blur of itself filling the square (`NAME-cover-Ts.png`). Every
+  upload of today's videos needed both by hand.
 - Rendered videos played the song 43 ms after the picture: Remotion's AAC kept its encoder's 2048 samples of
   priming at the start, so every hit and lit word came that much before its sound. `render.mjs` now has Remotion mix
   the audio to WAV and encodes the AAC with Remotion's ffmpeg, which trims it: on a click track and on a demo song the
