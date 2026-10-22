@@ -5,7 +5,7 @@ import json
 import pytest
 
 from song2mv.timing import lib, transcribe
-from song2mv.timing.align import holes, merge_runs, report
+from song2mv.timing.align import doubt, holes, merge_runs, report
 from song2mv.timing.pipeline import check_by_ear
 from song2mv.timing.reprompt import fill_gaps, pick_hearings
 
@@ -41,7 +41,27 @@ def test_a_word_no_run_timed_between_words_far_apart_goes_on_check_by_ear(capsys
     lines = [{"id": "v1-01", "source": "asr", "runs_used": [1, 2, 3]},
              {"id": "v1-02", "source": "asr", "runs_used": [1, 2, 3]},
              {"id": "v1-03", "source": "manual", "runs_used": [1, 2, 3]}]  # pinned by hand already
-    assert check_by_ear(lines, 3, guessed={"v1-01", "v1-03"}) == ["v1-01"]
+    assert check_by_ear(lines, 3, doubtful={"v1-01", "v1-03"}) == ["v1-01"]
+
+
+def test_runs_that_disagree_on_a_line_put_it_on_check_by_ear(capsys):
+    sheet = [{"id": "br-04", "section": "br", "section_name": "Bridge", "kind": "mid", "text": "one im in now shake my hand",
+              "words": "one im in now shake my hand".split()}]
+
+    def run(*words):
+        return {"words": [{"t": t, "s": s, "e": round(s + 0.2, 2), "p": 0.9} for t, s in words]}
+    rest = [("im", 133.3), ("in", 133.8), ("now", 134.0), ("shake", 134.4), ("my", 134.6), ("hand", 134.8)]
+    # one run times "one" at 132.5, the other two hear "1" (no letters to match) and start the line at "im"
+    first = merge_runs(sheet, [run(("one", 132.5), *rest), run(("1", 132.5), *rest), run(("1", 132.5), *rest)])[0]
+    assert first["spread"] == 0.82 and doubt(first) == "runs disagree by 0.82 s"
+    # two runs time "shake" 1.2 s apart: the median of two is their middle, where neither heard it
+    late = [(w, t + 1.2 if w == "shake" else t) for w, t in rest]
+    middle = merge_runs(sheet, [run(("one", 132.5), *rest), run(("one", 132.5), *late)])[0]
+    assert middle["wt"][4] == 135.02 and doubt(middle) == 'no run times "shake" near 135.02: the nearest is 0.6 s away'
+    report([middle], 2)
+    assert '◀ no run times "shake" near 135.02' in capsys.readouterr().out
+    agree = merge_runs(sheet, [run(("one", 132.5), *rest)] * 3)[0]
+    assert doubt(agree) is None and agree["unsupported"] is None
 
 
 def gap(heard, monkeypatch):

@@ -14,8 +14,10 @@ Last, lines are kept in the sheet's order (keep_order): a line that starts befor
 lines below it, is merged again from the runs that placed it between them, if any did.
 Lines no run could place keep `wt` all None; reprompt.py listens to those gaps again. A word no run timed inside a
 placed line is None too, and build_lyrics.py spreads it between the words around it; where those are far apart, that
-is a guess (holes), and check_by_ear lists the line. Words that two runs agree on and no line matched are heard off the
-sheet (off_sheet), and where the sheet and the audio's lyrics tag differ, sheet_vs_tag says which one the runs support.
+is a guess (holes), and check_by_ear lists the line, as it does a line whose runs disagree on its start or on a
+word's time (doubt), and a line two runs hear alike but not as the sheet has it (sung_differently). Words that two
+runs agree on and no line matched are heard off the sheet (off_sheet), and where the sheet and the audio's lyrics tag
+differ, sheet_vs_tag says which one the runs support.
 
 Usage: python -m song2mv.timing.align work/lyrics.txt work/asr/run1.json work/asr/run2.json ... --out work/merged.json
 """
@@ -33,8 +35,12 @@ MAX_SPREAD = 1.0
 FIRST_WORD = 1.0  # a line's first whisper word is cut to this many median word durations of its run (0: not cut)
 MAX_MEDIAN = 0.7  # faster-whisper caps the median word duration at 0.7 s when it shortens words itself
 HOLE = 1.0  # words no run timed, between timed words more than this many seconds apart per word, are a guess
+DISAGREE = 0.7  # seconds between the earliest and the latest start the kept runs give a line
+UNSUPPORTED = 0.5  # seconds from a word's merged time to the nearest time a kept run gives that word
 OFF_SHEET = 1.5  # seconds of words that two runs agree on and no lyric line matched: reported as heard off the sheet
 JOIN = 1.0  # words a run heard closer together than this (seconds) are one stretch
+SUNG = 0.7  # below this difflib ratio between a line's letters and what the runs heard over it, they heard it differently
+AGREE = 0.9  # at or above it, two runs heard a line alike, or heard it as written
 
 
 def trim_first_words(lines: list[dict], words: list[dict]) -> list[dict]:
@@ -68,7 +74,7 @@ def _merge_line(ln: dict, cands: list[dict], cov: list[float]) -> dict:
     good = [c for c in cands if c["cov"] >= MIN_COVERAGE]
     if not good and cands:  # nothing convincing: keep the best partial match, flagged by its low coverage
         good = [max(cands, key=lambda c: c["cov"])]
-    rec: dict = dict(ln, coverage=cov, runs_used=[], spread=None, wt=[None] * n, source=None)
+    rec: dict = dict(ln, coverage=cov, runs_used=[], heard=[], spread=None, unsupported=None, wt=[None] * n, source=None)
     if good:
         if len(good) >= 3:
             ref = statistics.median_low([c["start"] for c in good])
@@ -77,7 +83,12 @@ def _merge_line(ln: dict, cands: list[dict], cov: list[float]) -> dict:
         kept = [c for c in good if abs(c["start"] - ref) <= MAX_SPREAD]
         rec["wt"] = [round(statistics.median(v), 3) if (v := [c["ts"][wi] for c in kept if c["ts"][wi] is not None]) else None
                      for wi in range(n)]
+        far = [(min(abs(t - c["ts"][wi]) for c in kept if c["ts"][wi] is not None), wi) for wi, t in enumerate(rec["wt"])
+               if t is not None]
+        worst = max(far, default=(0.0, 0))
+        rec["unsupported"] = [worst[1], round(worst[0], 3)] if worst[0] > 0.001 else None
         rec["runs_used"] = [c["run"] for c in kept]
+        rec["heard"] = [c["heard"] for c in kept]
         rec["spread"] = round(max(c["start"] for c in kept) - min(c["start"] for c in kept), 2)
         rec["source"] = "asr"
     return rec
@@ -113,10 +124,12 @@ def keep_order(lines: list[dict], merged: list[dict], cands: list[list[dict]]) -
 def merge_runs(lines: list[dict], runs: list[dict], heard: list[set[int]] | None = None) -> list[dict]:
     """The lyric lines with their merged word times. `heard` gets, per run, the indices of the words that matched a
     letter of the sheet."""
-    per_run = []
+    per_run, said = [], []
     for r in runs:
         matched: set[int] = set()
-        per_run.append(align(lines, trim_first_words(lines, r["words"]), heard=matched))
+        spans: dict[int, list[int]] = {}
+        per_run.append(align(lines, trim_first_words(lines, r["words"]), heard=matched, spans=spans))
+        said.append({li: " ".join(w["t"] for w in r["words"][a:b + 1]) for li, (a, b) in spans.items()})
         if heard is not None:
             heard.append(matched)
     out, cands = [], []
@@ -127,7 +140,8 @@ def merge_runs(lines: list[dict], runs: list[dict], heard: list[set[int]] | None
         for k, (first, c) in enumerate(per_run):
             ts = [first.get((li, wi)) for wi in range(n)]
             if any(t is not None for t in ts):
-                cs.append({"run": k + 1, "cov": c.get(li, 0.0), "ts": ts, "start": min(t for t in ts if t is not None)})
+                cs.append({"run": k + 1, "cov": c.get(li, 0.0), "ts": ts, "start": min(t for t in ts if t is not None),
+                           "heard": said[k].get(li, "")})
         cands.append(cs)
         out.append(_merge_line(ln, cs, cov))
     return keep_order(lines, out, cands)
@@ -196,6 +210,45 @@ def off_sheet(runs: list[dict], heard: list[set[int]], lines: list[dict]) -> lis
         out.append({"from": round(a, 2), "to": round(b, 2), "runs": [k + 1 for k in sorted(ks)], "words": " ".join(words[k]),
                     "after": max(before, key=lambda r: r["start"])["id"] if before else None})
     return out
+
+
+def sung_differently(merged: list[dict]) -> list[dict]:
+    """Repeated lines sung differently in one place: two or more runs hear a line alike (the letters of what each heard
+    from the line's first matched word to its last within AGREE of each other, as a difflib ratio) and not as the sheet
+    has it (below SUNG), while two or more runs hear another line with the same text as written (AGREE or more). Suno
+    changes a repeat ("Back it, back it up" where its tag says "Beep, beep" again), and neither the off-sheet stretches
+    nor a second sheet see it: the line's last words match, so it is placed where it is sung. Whisper also mishears a
+    line the same way in every run, and without the same line heard right elsewhere that is far more common than a
+    changed line: on the JamendoLyrics benchmark, whose lyric files hold what is sung, 44 lines are heard alike and
+    below SUNG, and 8 have a copy two runs heard as written (10 if one run is enough); all of them are misheard. So
+    what the runs heard is for the user's ear to confirm. Lines whose runs heard a number are left out: whisper writes
+    "ten" as 10. [{id, heard, runs, as_written}], `heard` as the first of those runs wrote it, `as_written` the other
+    line."""
+    seen = {}
+    for r in merged:
+        heard = [h for h in r.get("heard") or [] if norm(h)]
+        if r.get("source") == "asr" and heard and not any(c.isdigit() for h in heard for c in norm(h)):
+            seen[r["id"]] = [norm(h) for h in heard]
+
+    def as_written(r):
+        return [_ratio(norm(r["text"]), h) for h in seen[r["id"]]]
+    out = []
+    for r in merged:
+        letters = seen.get(r["id"]) or []
+        if len(letters) < 2 or not all(_ratio(a, b) >= AGREE for i, a in enumerate(letters) for b in letters[i + 1:]):
+            continue
+        if max(as_written(r)) >= SUNG:
+            continue
+        twin = next((o for o in merged if o is not r and o["id"] in seen and norm(o["text"]) == norm(r["text"])
+                     and sum(x >= AGREE for x in as_written(o)) >= 2), None)
+        if twin:
+            out.append({"id": r["id"], "heard": next(h for h in r["heard"] if norm(h)), "runs": r["runs_used"],
+                        "as_written": twin["id"]})
+    return out
+
+
+def _ratio(a: str, b: str) -> float:
+    return difflib.SequenceMatcher(None, a, b, autojunk=False).ratio()
 
 
 def _quote(lines: list[dict]) -> str:
@@ -272,6 +325,23 @@ def holes(wt: list[float | None]) -> list[tuple[int, int]]:
     return [(ka, kb) for (ka, ta), (kb, tb) in zip(known, known[1:]) if kb - ka > 1 and tb - ta > HOLE * (kb - ka)]
 
 
+def doubt(r: dict) -> str | None:
+    """Why the merge doubts a whisper line's word times, or None: a word no run timed between words far apart (holes);
+    a word whose merged time is more than UNSUPPORTED s from every kept run's time for it, where two runs disagree on
+    it and the median is their middle; or kept runs whose starts for the line disagree by more than DISAGREE s, such as
+    one run timing a first word the others missed. On the JamendoLyrics benchmark, 47 of the 54 lines the last two
+    add to check_by_ear have a word more than 0.3 s off; of all lines, 37 % have (docs/benchmark.md)."""
+    if hs := holes(r["wt"]):
+        a, b = hs[0]
+        return f"no run timed \"{' '.join(r['words'][a + 1:b])}\", {r['wt'][b] - r['wt'][a]:.1f} s between the words around it"
+    if r.get("unsupported") and r["unsupported"][1] > UNSUPPORTED:
+        k, d = r["unsupported"]
+        return f"no run times \"{r['words'][k]}\" near {r['wt'][k]:.2f}: the nearest is {d:.1f} s away"
+    if (r.get("spread") or 0) > DISAGREE:
+        return f"runs disagree by {r['spread']} s"
+    return None
+
+
 def report(merged: list[dict], n_runs: int) -> None:
     cur = None
     for r in merged:
@@ -287,9 +357,8 @@ def report(merged: list[dict], n_runs: int) -> None:
             flag = f"  ◀ back in lyric order (was at {r['reordered']:.2f})"
         elif len(r["runs_used"]) < max(2, n_runs // 2 + 1) and n_runs > 1:
             flag = f"  ◀ only run {r['runs_used']}"
-        elif hs := holes(r["wt"]):
-            a, b = hs[0]
-            flag = f"  ◀ no run timed \"{' '.join(r['words'][a + 1:b])}\", {r['wt'][b] - r['wt'][a]:.1f} s between the words around it"
+        elif why := doubt(r):
+            flag = f"  ◀ {why}"
         elif r["spread"] and r["spread"] > 0.4:
             flag = f"  ◀ runs disagree by {r['spread']} s"
         print(f"  {r['id']:7s} {s}  cov {' '.join(f'{c:.1f}' for c in r['coverage'])}  {r['text'][:40]}{flag}")

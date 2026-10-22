@@ -30,7 +30,8 @@ The numbers are for `69c4d29` unless they say otherwise; [Before and after](#bef
 - **`check_by_ear` lists 59 % of the lines that are more than 1 s off** (64 % before), and a third of the lines it
   lists really are (45 % before). Both fell because what it found best is gone: lines squeezed in after a misplaced
   chorus. The lines more than 1 s off that it misses halved, from 143 to 72. It now also lists lines out of the lyric
-  sheet's order; 4 are left.
+  sheet's order; 4 are left. With the later additions ([below](#stacked-words-runs-that-disagree-and-repeats-sung-differently))
+  it lists 425 lines and 75.4 % of the lines more than 1 s off.
 - **Compared with dedicated aligners**, song2mv's share of words within 0.3 s, averaged per song (87 %), falls
   between older systems (59–73 %) and the character-based models of the paper (89–94 %). Its average error per song
   (0.30 s) is now in the range of those models (0.18–0.35 s); before `69c4d29` it was 2.2 s.
@@ -355,6 +356,59 @@ the 24 lie over a line more than 1 s off. A stretch that holds at least half as 
 lines as words heard is left out: without that rule and with single words counted, the list had 51 stretches in 24
 songs. On the Suno song with the doubled couplet, `off_sheet` lists the intro chant that no line holds (two runs)
 and the second copy of the couplet in both hooks (three runs).
+
+### Stacked words, runs that disagree, and repeats sung differently
+
+A new user's run on a Suno rap song shipped with `check_by_ear` empty, yet three kinds of error were in the work
+folder. In both hooks' last line the runs heard only "Brooklyn" of "Beep, beep, Brooklyn", and the three words landed
+at one time. In the bridge, one run timed "One" and the other two heard "1" (no letters to match), so the runs'
+starts for that line were 0.74 s apart and the line started 0.35 s late; the log said `◀ runs disagree by 0.74 s`,
+but the list did not have it. And in both hooks a repeat was sung "Back it, back it up, I'm parallel" where the
+lyrics tag, the only sheet, says "Beep, beep, I'm parallel": all three runs heard it, but its last words match, so
+nothing looked off. `check_by_ear` now also lists
+
+- a whisper line with three words inside 0.1 s (`◀ hk2-08 stacked: "Beep, beep, Brooklyn," within 0.00 s at
+  121.98`). No one sings three words that fast. On these songs 29 lines have them, and the annotations put those
+  three words 0.15–4.2 s apart (median 0.44 s): in 25 of the 29 one of them is more than 0.3 s off, in 11 more than
+  1 s. Two words on one 16th note are common in fast singing (355 lines) and are not listed;
+- a whisper line whose kept runs' starts are more than 0.7 s apart (`◀ runs disagree by 0.74 s`; the log keeps
+  flagging from 0.4 s). From 0.7 s up, half of the lines this adds start more than 0.3 s off, as many as of the lines
+  the list already had; from 0.4 s it would add 132 lines, a third of them that far off;
+- a whisper line with a word more than 0.5 s from every kept run's time for it (`◀ no run times "…" near …`): two
+  runs disagree on that word, and the median of two is their middle, where neither heard it. All 13 lines this adds
+  have a word more than 0.3 s off, 7 more than 1 s; from 0.3 s it would add 36;
+- a line the runs hear alike (letters within a difflib ratio of 0.9 of each other) and not as written (below 0.7),
+  where two or more runs hear another line with the same text as written, with a warning that says what they heard:
+  `hk1-07 "Beep, beep, I'm parallel" is heard as "Back it up, I'm parallel" (runs 1, 2, 3), and hk1-05, the same
+  line, as written`. These lyric files hold what is sung, so every line it names here is whisper mishearing a line
+  the same way in every run: without the condition on the other copy, that is 44 lines in 21 songs; with it, 8 in 7.
+  With one run enough for the other copy it would be 10 in 9: in the two more, that run was the only one to place
+  the copy, or the other runs misheard the copy too. On 12 Korean Suno songs (lyric sheets from their makers) it
+  names none; with one run enough, 3, and without the condition, 20. What the runs heard is for the user to confirm
+  by ear before the sheet changes.
+
+Measured from the align step with the cached whisper runs, at `e51c861` and with the change. No word time changes;
+the list grows by 71 lines in 41 songs and loses none.
+
+| | before | after |
+|---|---:|---:|
+| `check_by_ear` lines | 354 | 425 |
+| recall: lines > 0.3 s / > 1 s off that are listed | 33.4 / 68.6 % | 38.7 / 75.4 % |
+| precision: listed lines that start > 0.3 s / > 1 s off | 50.0 / 33.9 % | 48.2 / 31.1 % |
+
+| added lines, by reason (one line can have two) | lines | start > 0.3 s off | a word > 0.3 s off | a word > 1 s off |
+|---|---:|---:|---:|---:|
+| three words inside 0.1 s | 16 | 3 | 14 | 4 |
+| runs' starts more than 0.7 s apart | 42 | 21 | 35 | 9 |
+| a word more than 0.5 s from every run | 13 | 4 | 13 | 7 |
+| heard alike, not as written, another copy as written by two runs | 6 | 2 | 3 | 1 |
+| all added | 71 | 28 | 59 | 18 |
+
+Of all 3,383 lines, 37 % have a word more than 0.3 s off and 8 % one more than 1 s off; of the 354 lines listed
+before, 77 % and 50 %. The new reasons are about a word inside the line more than its start, so precision by line
+start drops a little while 56 of the 65 lines added for timing have a word more than 0.3 s off. On the Suno song the
+list now holds both hooks' changed repeats, the stacked line and the bridge's three lines whose runs disagree (one of
+them the late "One"); with the new user's corrected sheet and pins it holds the two bridge lines nobody pinned.
 
 ## What the numbers point to
 

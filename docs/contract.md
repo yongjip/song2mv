@@ -19,7 +19,7 @@ an error.
 
 | command | fields |
 | --- | --- |
-| `sync` | `work`, `config`, `outputs`, `duration`, `bpm`, `lines`, `line_sources` (source → number of lines), `check_by_ear` (line ids to verify by ear: re-heard, estimated, placed by only one whisper run, out of the lyric sheet's order, with a word no run timed between words far apart, or spread over far more time than it is sung in), `off_sheet` (words the whisper runs hear that no lyric line has, see below), `dropped` (lyric lines missing from the output — should be empty), `language`, `warnings`, `seconds` |
+| `sync` | `work`, `config`, `outputs`, `duration`, `bpm`, `lines`, `line_sources` (source → number of lines), `check_by_ear` (line ids to verify by ear: re-heard, estimated, placed by only one whisper run, out of the lyric sheet's order, with a word no run timed between words far apart, spread over far more time than it is sung in, with three words at almost one time, with runs that disagree on its start or on a word's time, or heard alike by the runs but not as written where two or more of them hear another copy of it as written), `off_sheet` (words the whisper runs hear that no lyric line has, see below), `dropped` (lyric lines missing from the output — should be empty), `language`, `warnings`, `seconds` |
 | `beats` | `outputs`, `bpm`, `beat`, `phi`, `downbeat_mod4`, `bar0`, `bar`, `duration`, `off_grid` (as in `grid.json`), `warnings` |
 | `click` | `outputs` (the wav), `from`, `to`, `bpm`, `downbeat_mod4`, `ask_the_listener` (the question to put to the person listening) |
 | `check` | `video`, `song`, `goals`, `from`, `to` (the stretch measured, in song time), `passed`, `total`, `results` (check → `{ok, value, goal, msg}`, see below), `skipped` (check → why it could not run on this stretch), `per_line` (`{id, motion, coverage}`), `cuts` (song times), `warnings` |
@@ -119,10 +119,11 @@ it again. One made before song2mv measured swing has no `swing`, swung or not, a
 
 **`lyrics.json`** — `title`, `duration`, `grid`, `sections` (as in `mv.json`) and `lines`: each with `id`
 (`<section>-<nn>`, e.g. `v1-03`; a section that appears once keeps a bare id, `ch-01`), `section`, `section_name`,
-`kind` (`calm` / `mid` / `hot`), `text`, `start`, `end`, `source` (`asr` / `reprompt` / `manual` / `estimated`),
-`runs_used`, `coverage` and `words: [{w, t}]`. Word times never go backwards and `end` is after the line's last
-word; a line pinned in `manual` keeps its word times unsnapped. Lines may overlap: a backing vocal can start while
-another line is still sung.
+`kind` (`calm` / `mid` / `hot`: from the section's name, or `mid` for a section named calm that `music.json` measures
+about as loud as the mid sections; `section_kinds` in the config overrides both), `text`, `start`, `end`, `source`
+(`asr` / `reprompt` / `manual` / `estimated`), `runs_used`, `coverage` and `words: [{w, t}]`. Word times never go
+backwards and `end` is after the line's last word; a line pinned in `manual` keeps its word times unsnapped. Lines
+may overlap: a backing vocal can start while another line is still sung.
 
 **`mv.json`** — the render template's input: `title`, `subtitle`, `audio` (file name), `audio_path` (absolute),
 `duration`, `grid` (`bpm`, `beat`, `phi`, `downbeat_mod4`, `bar0`, `off_grid` and, when it is a list, `beats` from

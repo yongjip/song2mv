@@ -18,6 +18,7 @@ Usage: run through `song2mv sync` (step "build").
 from __future__ import annotations
 
 import os
+import statistics
 
 from ..errors import Song2mvError
 from .lib import warn
@@ -187,6 +188,36 @@ def sections(lines: list[dict], grid: dict, duration: float) -> list[dict]:
         a["end"] = b["start"]
     secs[-1]["end"] = round(duration, 3)
     return secs
+
+
+LOUD_CALM = 2.0  # dB: a section labelled calm that is less than this much quieter than the mid sections is mid
+
+
+def loud_calm(lyrics: dict, loudness: list[float], overrides: dict) -> list[str]:
+    """Kinds come from the sheet's section names, but on AI-made songs a bridge or an outro is often as loud as the
+    verses: on three Suno songs every bridge and outro was, and a calm section is held to looser checks (no cut-gap
+    or cut-rhythm check, a lower motion floor). A section whose kind came from a calm name and whose median loudness
+    (music.json, per 0.5 s) is less than LOUD_CALM dB under the median over the mid sections becomes mid, in
+    `lyrics` (its sections, which mv.json shares, and its lines). Kinds set in `section_kinds` and the instrumental
+    section before the first sung one are kept. Returns one message per section changed."""
+    def level(secs):
+        vals = [v for s in secs for k, v in enumerate(loudness) if s["start"] <= 0.5 * k < s["end"]]
+        return statistics.median(vals) if vals else None
+    sung = {r["section"] for r in lyrics["lines"]}
+    ref = level([s for s in lyrics["sections"] if s["kind"] == "mid"])
+    out = []
+    for s in lyrics["sections"]:
+        db = level([s])
+        if (s["kind"] != "calm" or s["id"] not in sung or s["id"] in overrides or s["name"] in overrides
+                or ref is None or db is None or db < ref - LOUD_CALM):
+            continue
+        s["kind"] = "mid"
+        for r in lyrics["lines"]:
+            if r["section"] == s["id"]:
+                r["kind"] = "mid"
+        out.append(f"{s['id']} [{s['name']}] is about as loud as the mid sections (median {db:.1f} dB, theirs "
+                   f"{ref:.1f} dB): kind mid, not calm; set section_kinds to keep it calm")
+    return out
 
 
 def onset_report(lines: list[dict], audio: str) -> None:

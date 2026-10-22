@@ -41,7 +41,8 @@ line matched: chants, ad-libs, changed lines, a repeat the sheet has once, or a 
 the runs heard (`<work>/asr/run*.json` has every word), and put the stretches you add into the user's ear check. Read
 the progress log and the JSON:
 
-- **Section parsing** (`── [Chorus] → ch1 (hot)`): are the kinds right? Fix with `section_kinds` in `song.json`.
+- **Section parsing** (`── [Chorus] → ch1 (hot)`): are the kinds right? A section named calm (a bridge, an outro)
+  that is about as loud as the verses becomes `mid`, and `warnings` says so. Fix with `section_kinds` in `song.json`.
   Lines in `( )` were skipped as stage directions unless their section is in `keep_parenthesized_in`.
 - **`◀ no run found this line` / `◀ only run [k]` / `◀ runs disagree`**: weak spots. More runs help
   (`--runs 5`, finished runs are reused). A bigger model (`--model medium`) helps more but is slower.
@@ -62,8 +63,13 @@ the progress log and the JSON:
   run, out of the lyric sheet's order (a repeated line on another copy of its words), with a word no run timed
   between words far apart (the log names the word: `◀ no run timed "…"`; the words around it may be off too), or
   spread over far more time than they are sung in (`◀ … spread out: …` in the log: usually split between two copies
-  of a repeat the sheet has once; look for an `off_sheet` stretch or a tag warning next to it). Most likely wrong. A
-  warning "heard N times" names the other times a re-heard line was heard: make the click track cover them all.
+  of a repeat the sheet has once; look for an `off_sheet` stretch or a tag warning next to it), with three words at
+  almost one time (`◀ … stacked: …`), with runs that disagree by more than 0.7 s (`◀ runs disagree by …`) or on a
+  word (`◀ no run times "…" near …`), or heard alike by the runs but not as written while another copy of it is
+  (a warning `… is heard as "…"`: Suno changed that repeat, or whisper misheard it the same way in every run, which
+  is what every such warning on the JamendoLyrics benchmark was; put the line into the user's ear check with both
+  versions, as written and as heard, and change the sheet only after the user confirms). Most likely wrong. A warning
+  "heard N times" names the other times a re-heard line was heard: make the click track cover them all.
 
 Then make the ear check cheap for the user:
 

@@ -136,6 +136,16 @@ Why it works the way it does:
   listed. A line spread over far more time than it is sung in now goes on `check_by_ear`, `off_sheet` lists
   stretches where the runs agree on words that no line has (chants, ad-libs, changed lines), and where the sheet and
   the audio's lyrics tag differ, `warnings` says which of the two the runs support.
+- **Both can be wrong in the same way.** Suno sang a repeated hook line as "Back it, back it up" where both say "Beep,
+  beep": the line's last words match, so nothing looked off. When the runs hear a line alike and not as written,
+  while two or more of them hear another copy of the same line as written, `warnings` names it and what they heard,
+  and it goes on `check_by_ear`. Whisper can mishear a line the same way in every run, too (all 8 lines it names on
+  the JamendoLyrics benchmark), so only an ear can tell which words are sung there.
+- **The runs can agree on a line and still be wrong about a word.** Three words of a line at almost one time (the runs
+  timed "Beep, beep" on "Brooklyn"), runs whose starts for a line are more than 0.7 s apart, and a word whose merged
+  time is more than 0.5 s from every run's time for it (two runs that disagree, merged to their middle) put a line on
+  `check_by_ear`: on the JamendoLyrics benchmark, 56 of the 65 lines these add have a word more than 0.3 s off (of
+  all lines, 37 % have).
 
 To hear whether the grid and timing are right, mix a click track over a stretch — a high click on the first beat
 of each bar, a low click on the other beats and, with `--words`, a soft tick on every lyric word:
@@ -157,7 +167,7 @@ See [`examples/song.example.json`](https://github.com/yongjip/song2mv/blob/main/
 | `title`, `subtitle` | file name, `""` | the title goes into the LRC and the video; the subtitle is drawn under it in 9:16 |
 | `language` | `null` | whisper language code (`"en"`, `"ko"`, `"ja"` …). Set it — auto-detection hears only the first 30 s |
 | `keep_parenthesized_in` | `[]` | sections, by their name in the lyric sheet (`"Chorus"`, `"Verse 1"`), where a line written entirely in `( )` is sung, not a stage direction. `"*"` = everywhere |
-| `section_ids`, `section_kinds` | `{}` | override the short id (`"Verse 1"` → `v1`) or kind (`calm` / `mid` / `hot`) of a section |
+| `section_ids`, `section_kinds` | `{}` | override the short id (`"Verse 1"` → `v1`) or kind (`calm` / `mid` / `hot`) of a section. Without one, the kind comes from the section's name, and a section named calm (intro, bridge, outro …) that is about as loud as the mid sections is `mid` |
 | `bpm` | `"auto"` | a number forces the tempo |
 | `downbeat_mod4` | `null` | force which beat index (mod 4) starts a bar |
 | `snap_per_beat` | `4` | snap word times to 1/4 beat (16th notes, swung where `grid.json` has `swing`); `3` = a triplet grid (8th-note triplets, for a shuffle or swung 8ths), `2` = 8th notes, `0` = off. On the beat map when `grid.json` has one; without it, never inside an `off_grid` stretch. Words pinned in `manual` are never snapped |
