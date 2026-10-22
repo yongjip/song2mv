@@ -630,8 +630,10 @@ for every song. No line was dropped, and no line hit one of song2mv's special ca
   song2mv is mostly used. Korean, song2mv's first language, is not in the set; [Before and after](#before-and-after)
   and section 2 say what the changes did on our Korean test song.
 - **Normalised lyric files.** The files have no punctuation, no capitals and no `[Section]` headers, so every line
-  id here is `s-NN`. Real lyric sheets have all three. song2mv normalises text before matching, so timing should
-  not change, but section-based behaviour (ids, section kinds, the template) was not exercised.
+  id here was `s-NN`; since `sync` proposes sections for a sheet without headers, 69 of the 79 songs get them from
+  their repeated lines (ids such as `v1-03` and `ch2-01`), which changes no word time. Real lyric sheets have all
+  three. song2mv normalises text before matching, so timing should not change, but section-based behaviour (section
+  kinds, the template) was not exercised.
 - **The dataset's line breaks.** Line metrics depend on where the dataset breaks lines, which is not always where a
   person writing a lyric sheet would. "A line's first word" means the first word of a dataset line.
 - **Annotation and grid limits.** People's word starts have their own error, which the dataset does not state.

@@ -87,7 +87,7 @@ song2mv sync DIR/song.json [--from grid] [--runs 5]   # rerun after editing song
 
 | step | output | what happens |
 | --- | --- | --- |
-| lyrics | `lyrics.txt` | the lyric sheet (`[Verse]`, `[Chorus]` … lines name sections) |
+| lyrics | `lyrics.txt` | the lyric sheet (`[Verse]`, `[Chorus]` … lines name sections; a sheet without them gets sections proposed from its repeated lines, in `lyrics.sections.txt`) |
 | asr | `asr/runN.json` | faster-whisper, **several runs** with word timestamps; finished runs are reused |
 | align | `merged.json` | each run aligned to the lyric sheet character by character, then merged per word |
 | grid | `grid.json` | tempo, first beat, which beat starts a bar, where the song leaves that grid, and its swing |

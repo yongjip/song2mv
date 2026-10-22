@@ -139,8 +139,10 @@ config sets them. Also what `check` reads.
 **`song.words.lrc`** — enhanced LRC with `<mm:ss.xx>` word stamps. **`song.srt`** — one cue per line, its `words`
 (lines that start within 0.3 s of each other share a cue, one text line each); cues never overlap.
 
-`song.json` (the config) and the working files (`lyrics.txt`, `asr/runN.json`, `merged.json`, `reprompt.json`,
-`state.json`) are inputs and working state, not part of the contract.
+`song.json` (the config) and the working files (`lyrics.txt`, `lyrics.sections.txt`, `asr/runN.json`, `merged.json`,
+`reprompt.json`, `state.json`) are inputs and working state, not part of the contract. `lyrics.sections.txt` is written
+for a lyric sheet without `[Section]` lines: the sheet with the sections `sync` proposed from its repeated lines and
+used, which `warnings` lists.
 
 ## Privacy
 
