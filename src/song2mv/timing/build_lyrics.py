@@ -17,6 +17,7 @@ Usage: run through `song2mv sync` (step "build").
 """
 from __future__ import annotations
 
+import math
 import os
 import statistics
 
@@ -172,6 +173,11 @@ def sections(lines: list[dict], grid: dict, duration: float) -> list[dict]:
     if not secs:
         return []
     late_start = secs[0]["start"] > 4.0 and secs[0]["kind"] != "calm"
+    last = max(r.get("end", r["start"]) for r in lines)
+    if beats:
+        tail = float(map_time(beats, down + 4 * math.ceil((float(map_number(beats, last)) - down) / 4 - 1e-6)))
+    else:
+        tail = bar0 + math.ceil((last - bar0) / (4 * P) - 1e-6) * 4 * P
     for s in secs:  # start the section on the bar line next to its first lyric (pickups, late entries)
         if beats:
             d = float(map_time(beats, down + 4 * round((float(map_number(beats, s["start"])) - down) / 4)))
@@ -182,6 +188,8 @@ def sections(lines: list[dict], grid: dict, duration: float) -> list[dict]:
             s["start"] = round(max(0.0, d), 3)
     if late_start:  # music before the first sung section gets a quiet section of its own
         secs.insert(0, {"id": "intro", "name": "(instrumental)", "kind": "calm", "start": 0.0})
+    if duration - tail > 4.0 and tail > secs[-1]["start"]:  # and so does music after the last sung line
+        secs.append({"id": "outro", "name": "(instrumental)", "kind": "calm", "start": round(tail, 3)})
     secs[0]["start"] = 0.0
     for a, b in zip(secs, secs[1:]):
         b["start"] = max(b["start"], round(a["start"] + P, 3))

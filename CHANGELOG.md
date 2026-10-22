@@ -122,6 +122,10 @@ First release (0.1.0).
 - Without a terminal, `song2mv render` showed Remotion's rendering progress but not its encoding, so a final render
   could print nothing for minutes while it encoded, long enough for an agent's stall rule to kill a healthy render.
   Encoding now prints a line per 25% too, and each prints its latest count at least every 30 s.
+- Music after the last sung line gets a quiet section of its own (`outro`, "(instrumental)", calm), as music before
+  the first one already did, when it lasts over 4 s from the bar line after the last line. Before, it belonged to
+  the last sung section: a song's 20 s instrumental ending counted as its last chorus, so the chorus look and
+  `check`'s cut gap ran on to the end.
 - A section header such as `[Final Chorus]` or `[Chorus Reprise]` took the first three letters of its name as its
   id (`fin`, a mid section). A name that ends or starts with a known one now takes that one's id and kind (`ch`,
   hot), and a name that comes twice (`chb`) keeps its kind.

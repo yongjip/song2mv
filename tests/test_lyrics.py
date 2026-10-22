@@ -209,3 +209,14 @@ def test_vignette_and_flashes_go_from_the_song_config_into_mv_json():
 def test_a_wrong_vignette_or_flashes_value_is_refused(cfg):
     with pytest.raises(Song2mvError, match=next(iter(cfg))):
         mv_for(**cfg)
+
+
+def test_music_after_the_last_sung_line_gets_a_quiet_section_of_its_own():
+    from song2mv.timing.build_lyrics import sections
+
+    lines = [{"section": "v1", "section_name": "Verse 1", "kind": "mid", "start": 0.0, "end": 20.3},
+             {"section": "ch1", "section_name": "Chorus", "kind": "hot", "start": 21.0, "end": 39.1}]
+    grid = {"beat": 0.5, "bar0": 0.0}
+    assert [(s["id"], s["kind"], s["start"], s["end"]) for s in sections(lines, grid, 60.0)] == [
+        ("v1", "mid", 0.0, 20.0), ("ch1", "hot", 20.0, 40.0), ("outro", "calm", 40.0, 60.0)]
+    assert [s["id"] for s in sections(lines, grid, 43.0)] == ["v1", "ch1"]
