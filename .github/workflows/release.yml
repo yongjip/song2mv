@@ -27,7 +27,13 @@ jobs:
           awk -v v="$v" '$0 ~ "^## "v" " {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md
           grep -q '[^[:space:]]' notes.md || { echo "the CHANGELOG.md section for $v is empty"; exit 1; }
       - name: ffmpeg
-        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+        timeout-minutes: 5
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -q
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -q ffmpeg
+          fi
+          ffmpeg -version
       - name: tests
         run: |
           uv venv && uv pip install -e '.[beats,dev]'
