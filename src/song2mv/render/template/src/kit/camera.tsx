@@ -78,8 +78,8 @@ function frameOf(shots: Shot[], i: number, T: number): Frame {
 /**
  * Where the camera is at T: the shot on screen, its drift, a glide from the previous shot, and the punch of the
  * latest hit. `hits` are song times (a kick, a slam, a word); `punch` is how far a hit zooms in (0.05 = 5 %);
- * `w` × `h` is the frame (1920 × 1080; 1080 × 1920 for a VerticalScene). Use it to place things by the camera, or
- * to film inside an <Svg> with <g transform={cameraAt(…).svg}>.
+ * `w` × `h` is the frame (1920 × 1080; 1080 × 1920 for a VerticalScene, or pass the 16:9 view to verticalView()).
+ * Use it to place things by the camera, or to film inside an <Svg> with <g transform={cameraAt(…).svg}>.
  */
 export function cameraAt(
   T: number, shots: Shot[], o: { hits?: number[]; punch?: number; w?: number; h?: number } = {},

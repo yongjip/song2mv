@@ -19,6 +19,7 @@ Claude Code or Codex — or a person — can use just the part they need.
 | `song2mv beats` | audio → tempo and beat grid only (no lyrics, no speech recognition) | alpha |
 | `song2mv click` | a stretch of the song with clicks on the beat grid and ticks on the lyric words, to check the timing by ear | alpha |
 | `song2mv check` | measures a rendered video per sung line: frozen picture, empty screen, repeated chorus, cut rhythm | experimental |
+| `song2mv sheet` | a contact sheet of a rendered video: frames at song times (or one per shot), labelled with the time and line | alpha |
 | `song2mv render` | renders `mv.json` as a 16:9 and/or 9:16 lyric video with a [Remotion](https://www.remotion.dev) template | experimental |
 
 ## Install
@@ -46,7 +47,7 @@ Install only what you use — the parts differ a lot in size:
 
 | you run | install | adds roughly |
 | --- | --- | --- |
-| `check` | `song2mv` | numpy (35 MB) |
+| `check`, `sheet` | `song2mv` | numpy (35 MB) |
 | `beats`, `click` | `song2mv[beats]` | librosa, scipy, numba (300 MB) |
 | `sync` | `song2mv[sync]` | beats + faster-whisper (130 MB) + a whisper model on first run (small: 460 MB) |
 | `render` | Node 18+ | Remotion and a headless Chrome on first render (570 MB) |
@@ -57,6 +58,7 @@ Install only what you use — the parts differ a lot in size:
 song2mv sync song.mp3 --lyrics lyrics.txt --language en --title "My Song"   # → song2mv-work/song/
 song2mv render song2mv-work/song/mv.json --from 60 --to 75 --aspect both
 song2mv check song2mv-work/song/renders/song-16x9-60-75.mp4 --song song2mv-work/song/mv.json --from 60 --to 75
+song2mv sheet song2mv-work/song/renders/song-16x9-60-75.mp4 --song song2mv-work/song/mv.json --from 60 --every 1
 ```
 
 The work folder is relative to where you run it: run it outside your code repositories, or pass `--out`. If the
@@ -87,7 +89,7 @@ song2mv sync DIR/song.json [--from grid] [--runs 5]   # rerun after editing song
 
 | step | output | what happens |
 | --- | --- | --- |
-| lyrics | `lyrics.txt` | the lyric sheet (`[Verse]`, `[Chorus]` … lines name sections) |
+| lyrics | `lyrics.txt` | the lyric sheet (`[Verse]`, `[Chorus]` … lines name sections; a sheet without them gets sections proposed from its repeated lines, in `lyrics.sections.txt`) |
 | asr | `asr/runN.json` | faster-whisper, **several runs** with word timestamps; finished runs are reused |
 | align | `merged.json` | each run aligned to the lyric sheet character by character, then merged per word |
 | grid | `grid.json` | tempo, first beat, which beat starts a bar, where the song leaves that grid, and its swing |
@@ -136,6 +138,16 @@ Why it works the way it does:
   listed. A line spread over far more time than it is sung in now goes on `check_by_ear`, `off_sheet` lists
   stretches where the runs agree on words that no line has (chants, ad-libs, changed lines), and where the sheet and
   the audio's lyrics tag differ, `warnings` says which of the two the runs support.
+- **Both can be wrong in the same way.** Suno sang a repeated hook line as "Back it, back it up" where both say "Beep,
+  beep": the line's last words match, so nothing looked off. When the runs hear a line alike and not as written,
+  while two or more of them hear another copy of the same line as written, `warnings` names it and what they heard,
+  and it goes on `check_by_ear`. Whisper can mishear a line the same way in every run, too (all 8 lines it names on
+  the JamendoLyrics benchmark), so only an ear can tell which words are sung there.
+- **The runs can agree on a line and still be wrong about a word.** Three words of a line at almost one time (the runs
+  timed "Beep, beep" on "Brooklyn"), runs whose starts for a line are more than 0.7 s apart, and a word whose merged
+  time is more than 0.5 s from every run's time for it (two runs that disagree, merged to their middle) put a line on
+  `check_by_ear`: on the JamendoLyrics benchmark, 56 of the 65 lines these add have a word more than 0.3 s off (of
+  all lines, 37 % have).
 
 To hear whether the grid and timing are right, mix a click track over a stretch — a high click on the first beat
 of each bar, a low click on the other beats and, with `--words`, a soft tick on every lyric word:
@@ -157,7 +169,7 @@ See [`examples/song.example.json`](https://github.com/yongjip/song2mv/blob/main/
 | `title`, `subtitle` | file name, `""` | the title goes into the LRC and the video; the subtitle is drawn under it in 9:16 |
 | `language` | `null` | whisper language code (`"en"`, `"ko"`, `"ja"` …). Set it — auto-detection hears only the first 30 s |
 | `keep_parenthesized_in` | `[]` | sections, by their name in the lyric sheet (`"Chorus"`, `"Verse 1"`), where a line written entirely in `( )` is sung, not a stage direction. `"*"` = everywhere |
-| `section_ids`, `section_kinds` | `{}` | override the short id (`"Verse 1"` → `v1`) or kind (`calm` / `mid` / `hot`) of a section |
+| `section_ids`, `section_kinds` | `{}` | override the short id (`"Verse 1"` → `v1`) or kind (`calm` / `mid` / `hot`) of a section. Without one, the kind comes from the section's name, and a section named calm (intro, bridge, outro …) that is about as loud as the mid sections is `mid` |
 | `bpm` | `"auto"` | a number forces the tempo |
 | `downbeat_mod4` | `null` | force which beat index (mod 4) starts a bar |
 | `snap_per_beat` | `4` | snap word times to 1/4 beat (16th notes, swung where `grid.json` has `swing`); `3` = a triplet grid (8th-note triplets, for a shuffle or swung 8ths), `2` = 8th notes, `0` = off. On the beat map when `grid.json` has one; without it, never inside an `off_grid` stretch. Words pinned in `manual` are never snapped |
@@ -201,24 +213,56 @@ song2mv check video.mp4 --song mv.json [--from 92 --to 102] [--goals my-goals.js
 
 `--from` is the song time of the video's first frame; the measured stretch ends with the video unless `--to` ends it
 earlier. Checks that cannot run on a stretch (no repeated section in it, too few cuts) are listed as skipped, not
-passed. It works on any mp4 that follows the song's timing, not only on song2mv renders.
+passed. It works on any mp4 that follows the song's timing, not only on song2mv renders. A failing line says where:
+the stretch measured, the cuts in it, and its still or empty part, or for a frantic line its biggest frame change and
+its motion without the cuts (without a cut: whether the whole frame changes, as under a camera drift over fine detail).
 
 The default [goals](https://github.com/yongjip/song2mv/blob/main/src/song2mv/check/goals.json) are a starting point
 measured on one video; your own goals file only needs the values you change. Passing is necessary, not proof of fun.
+
+## `song2mv sheet`
+
+```bash
+song2mv sheet video.mp4 --song mv.json --every 3                  # a frame from the middle of every 3 s
+song2mv sheet video.mp4 --song mv.json --from 92 --times 93.1,97.6   # frames at these song times
+song2mv check video.mp4 --song mv.json --json > check.json
+song2mv sheet video.mp4 --cuts check.json                         # a frame 0.3 s into each shot
+song2mv sheet video.mp4 --every 2 --crop 700,380,312,400 --cols 3 # one region, zoomed
+```
+
+A contact sheet of the video as rendered, captions, title and strips included: a way to review a video without
+watching it. Each tile is the frame on screen at its song time, labelled with that time and, with `--song`, the id of
+the line sung then (or of the section between lines). `--from` is the song time of the video's first frame, as for
+`check`; without it, a stretch keeps the start in the name `render` gave it (`song-9x16-49.72-72.2.mp4` starts at
+49.72). `--cuts` reads the start and the cuts of a saved `check --json` result and also takes its `--from` and
+`--song`. `--crop X,Y,W,H` shows one region of each frame, in the video's pixels, scaled to the tile width (`--cols`
+sets the zoom; the label shows it). The sheet is a PNG 1920 px wide, `video-sheet.png` next to `video.mp4` unless
+`--out` names it; frames that do not fit on one page, about 2400 px tall, continue on `video-sheet-2.png` and so on.
+The labels come from a built-in bitmap font, so it needs nothing but ffmpeg and numpy: no `drawtext`, no image library.
 
 ## `song2mv render` (experimental)
 
 ```bash
 song2mv render mv.json                                        # whole song, 16:9, plain lyric video
 song2mv render mv.json --from 95 --to 111 --aspect 9x16 --hold 2.5   # a hook cut whose first frame shows the payoff
-song2mv render mv.json --from 95 --to 111 --draft             # 10 fps, for the render → check loop
+song2mv render mv.json --from 95 --to 111 --draft             # 10 fps at half size, for the render → check loop
 song2mv render mv.json --still 98.5 --aspect both            # PNG frames to look at
+song2mv render mv.json --max-mb 200                          # the finished video, at most 200 MB (an upload limit)
+song2mv render mv.json --cover 3.2                           # a 1080×1080 cover from the frame at 3.2 s
 song2mv render mv.json --template video/                     # your own copy of the template, for your own scenes
 ```
 
-`--draft` renders the same frames at 10 fps, the rate `check` measures at, and names the file `…-draft.mp4`. On 30 s
-of the two demo songs it rendered in 6–10 s instead of 14–25 s, and `check` gave each draft the same results as its
-full render. Iterate on drafts and render the finished video once without it.
+`--draft` renders the same frames at 10 fps, the rate `check` measures at, and at half size (960×540), and names the
+file `…-draft.mp4`. On 30 s of a paper-cut scene it rendered in 15 s, against 55–70 s at full size and about 2.5 min
+for the finished video, and `check` gave drafts the same passes, fails and cuts as full-size renders. Iterate on drafts
+and render the finished video once without it.
+
+A finished video is capped at 8 Mbit/s, the rate YouTube asks for at 1080p30. Flat styles stay far below it; the paper
+pack's grain ran near 14 Mbit/s, and at the cap a 4-minute video is about 250 MB instead of 440. `--max-mb N` encodes a
+video that is still over N MB again, in two passes, to fit an upload limit, and keeps its sound. `--cover T` writes a
+square cover for album and playlist pages: the 16:9 frame at song time T, whole, over a blurred fill of itself.
+Next to them, `sync` already wrote `song.lrc` (line times, which most players and music platforms import),
+`song.words.lrc` (word times) and `song.srt` (subtitles).
 
 Out of the box you get a plain lyric video that follows the song's structure: calm sections with a low moon and
 embers, mid sections with a floor grid rolling on the beat, hot sections with rays on the beat and the line itself
@@ -239,8 +283,9 @@ kit in `DIR/src/kit/`, and draw the rest. Besides `useSong()`, beat-grid helpers
   Their colours and shapes are props, so they fit any art style;
 - **recipes:** new assets combined from these parts in a few lines, such as a sleepless night in a storm;
 - **style packs** (`kit/styles/`): drawing pieces that put any object in one art style. `paper` cuts outlines by hand
-  and stacks them with shadows and grain; `pixel` draws sprites on a canvas of big pixels and turns type or any kit
-  drawing into the same pixels; `comic` inks drawings over off-register colour and Ben-Day dots, characters in one
+  and stacks them with shadows and grain; `pixel` draws sprites on a canvas of big pixels, big outlined type (Korean
+  too) and a game dialog box that letters the line as it is sung, and turns any kit drawing into the same pixels;
+  `comic` inks drawings over off-register colour and Ben-Day dots, characters in one
   heavy outline with tapered inner lines, in panels that each film the scene with their own camera, with speech
   balloons and captions lettered as the line is sung. New assets and packs are welcome
   ([CONTRIBUTING.md](https://github.com/yongjip/song2mv/blob/main/CONTRIBUTING.md)).
@@ -249,7 +294,8 @@ The people, places and objects are drawn in one flat style. To see everything, r
 `npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR. Rules that held up: a scene is a pure
 function of song time `T`; text pops once and then holds still while it is read; lay out on the 1920×1080 stage. For
 9:16, a song can also export a `VerticalScene` that draws the whole 1080×1920 frame, instead of the stage shrunk into a
-band.
+band; the kit's `verticalView` films the 16:9 world for it, its subject above the captions and inside the apps' safe
+box.
 
 Remotion is **not MIT**: it is free for individuals and companies with up to 3 employees; larger companies need a
 company license ([remotion.dev/license](https://www.remotion.dev/license)). Only `render` uses it.

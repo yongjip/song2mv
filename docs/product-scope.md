@@ -8,7 +8,7 @@ fitting); the surface people and agents learn must stay small.
 
 | Surface | Count |
 | --- | ---: |
-| Top-level commands | **5** — `sync`, `beats`, `click`, `check`, `render` |
+| Top-level commands | **6** — `sync`, `beats`, `click`, `check`, `sheet`, `render` |
 | Output files of `sync` | 7 — `grid.json`, `lyrics.json`, `mv.json`, `song.lrc`, `song.words.lrc`, `song.srt`, `music.json` |
 | Extras | 2 — `beats`, `sync` (plus `dev` for contributors) |
 | MCP tools | 0 (planned: one per command) |
@@ -26,6 +26,22 @@ Both started as `python -m song2mv.timing.<module>` helpers.
    `sync`, for different stretches; the music analysis is cheap (seconds, cached by the audio's content), so
    `sync` writes it instead of a sixth command.
 3. **Cost.** One subcommand with four flags and one output file; no new dependency (the `beats` extra).
+
+### Why `sheet` became a command (0.1)
+
+1. **Workflow.** The skill reviews every render on contact sheets: one frame per shot after `check`, and the finished
+   video with its captions. The template's `Contact` draws the bare scenes, so in four trial runs on one day every
+   agent wrote its own script for the video (ffmpeg frame grabs, tiled, labelled), and they hit the same snags:
+   Homebrew's ffmpeg has no `drawtext`, so the labels needed Pillow, and `-vf fps=1/S` labelled every frame half a
+   step early. A scene-only sheet could not show one run's worst defect, two lyric lines on screen at once.
+2. **Why not an existing surface.** `Contact` renders the scenes in the browser, not the video, so it has no captions,
+   title or strips; a prop that drew the template's whole frame would still need Node and a bundle, and would show a
+   new render rather than the file that was encoded. `check` measures the video against goals: it needs sung
+   lines in the stretch, exits 1 when a goal fails and reads grey frames at 320×180, while a sheet needs a few colour
+   frames at chosen times; `--every`, `--cols` and `--crop` would mean nothing to its measurements.
+3. **Cost.** One subcommand with eight flags besides `--json` and one output file (a PNG, more pages when it is
+   long). No new dependency: ffmpeg grabs the frames, numpy tiles them, a bitmap font of about a hundred glyphs draws
+   the labels and zlib writes the PNG.
 
 ## Admission test
 

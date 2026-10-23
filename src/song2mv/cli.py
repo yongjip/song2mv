@@ -1,4 +1,4 @@
-"""song2mv command line: sync, beats, click, check, render.
+"""song2mv command line: sync, beats, click, check, sheet, render.
 
 Every command prints progress for people. With --json, progress goes to stderr and stdout carries exactly one
 JSON object (with schema_version) for scripts and coding agents — also when the command fails.
@@ -11,6 +11,7 @@ import argparse
 import contextlib
 import importlib.util
 import json
+import math
 import os
 import shutil
 import sys
@@ -73,6 +74,50 @@ def _runs(v: str) -> int:
     if not 1 <= n <= 20:
         raise argparse.ArgumentTypeError(f"{n} runs is outside 1–20")
     return n
+
+
+def _seconds(v: str) -> float:
+    """argparse type for --every: a positive number of seconds."""
+    try:
+        s = float(v)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{v}' is not a number") from None
+    if not 0 < s < math.inf:
+        raise argparse.ArgumentTypeError(f"{v} is not a positive number of seconds")
+    return s
+
+
+def _times(v: str) -> list[float]:
+    """argparse type for --times: song times separated by commas."""
+    try:
+        times = [float(t) for t in v.split(",") if t.strip()]
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{v}' is not a list of song times such as 12,33.1") from None
+    if not times or not all(math.isfinite(t) for t in times):
+        raise argparse.ArgumentTypeError(f"'{v}' is not a list of song times such as 12,33.1")
+    return times
+
+
+def _cols(v: str) -> int:
+    """argparse type for --cols: 1 to 12 frames per row."""
+    try:
+        n = int(v)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{v}' is not a whole number") from None
+    if not 1 <= n <= 12:
+        raise argparse.ArgumentTypeError(f"{n} frames per row is outside 1–12")
+    return n
+
+
+def _crop(v: str) -> tuple[int, int, int, int]:
+    """argparse type for --crop: x,y,w,h in the video's pixels."""
+    try:
+        x, y, w, h = (int(p) for p in v.split(","))
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{v}' is not x,y,w,h in whole pixels, such as 700,380,312,400") from None
+    if min(x, y) < 0 or min(w, h) < 1:
+        raise argparse.ArgumentTypeError(f"'{v}': x and y must be 0 or more, w and h 1 or more")
+    return x, y, w, h
 
 
 def _check_language(code: str | None) -> None:
@@ -146,11 +191,21 @@ def cmd_check(a) -> dict:
     return score(a.video, a.song, a.goals, a.start, a.end, a.src, a.quiet, report=not a.json)
 
 
+def cmd_sheet(a) -> dict:
+    _need_ffmpeg()
+    _existing_file(a.video, "video")
+    _existing_file(a.song, "mv.json")
+    _existing_file(a.cuts, "check result")
+    from .check.sheet import sheet
+    return sheet(a.video, a.song, a.every, a.times, a.cuts, a.start, a.cols, a.crop, a.out)
+
+
 def cmd_render(a) -> dict:
     _existing_file(a.mv, "mv.json")
     _existing_file(a.audio, "audio file")
     from .render.runner import render
-    return render(a.mv, a.out, a.template, a.start, a.end, a.aspect, a.hold, a.still, a.audio, a.name, a.draft)
+    return render(a.mv, a.out, a.template, a.start, a.end, a.aspect, a.hold, a.still, a.audio, a.name, a.draft,
+                  a.max_mb, a.cover)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -206,6 +261,24 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--json", action="store_true", help="print only the JSON result on stdout, no table")
     c.set_defaults(func=cmd_check)
 
+    h = sub.add_parser("sheet", help="a contact sheet of a rendered video: its frames at song times, labelled")
+    h.add_argument("video")
+    h.add_argument("--song", help="the mv.json the video was rendered from: each label then names the line sung (or the section)")
+    pick = h.add_mutually_exclusive_group(required=True)
+    pick.add_argument("--every", type=_seconds, metavar="S", help="a frame from the middle of every S seconds of the video")
+    pick.add_argument("--times", type=_times, metavar="T,T,…", help="frames at these song times, e.g. 12,33.1,47.5")
+    pick.add_argument("--cuts", metavar="CHECK_JSON", help="a frame 0.3 s into each shot: the start and the cuts of a "
+                      "saved `song2mv check --json` result, whose from and song are then the defaults")
+    h.add_argument("--from", dest="start", type=float, help="song time of the video's first frame (default: the start "
+                   "in a stretch's name as render writes it, NAME-ASPECT-FROM-TO.mp4, else 0)")
+    h.add_argument("--cols", type=_cols, help="frames per row (default 4, 6 for a 9:16 video)")
+    h.add_argument("--crop", type=_crop, metavar="X,Y,W,H", help="show only this region of each frame, in the video's "
+                   "pixels, scaled to the frame's width on the sheet (--cols sets the zoom; each label shows it)")
+    h.add_argument("--out", help="PNG file (default: VIDEO-sheet.png next to the video); frames that do not fit on one "
+                   "page go on OUT-2.png, OUT-3.png …")
+    h.add_argument("--json", action="store_true")
+    h.set_defaults(func=cmd_sheet)
+
     r = sub.add_parser("render", help="[experimental] render mv.json with the Remotion template (needs Node)")
     r.add_argument("mv", help="mv.json from `song2mv sync`")
     r.add_argument("--template", help="your own template folder (created on first use); write scenes in src/scenes")
@@ -215,8 +288,12 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--aspect", default="16x9", choices=["16x9", "9x16", "both"])
     r.add_argument("--hold", type=float, help="freeze the first HOLD seconds on the picture at from+hold (hook cuts)")
     r.add_argument("--still", type=float, help="write a PNG (one per aspect) at this song time instead of a video")
-    r.add_argument("--draft", action="store_true", help="a video at 10 fps, the rate check measures at, for the render-check "
-                   "loop (NAME-…-draft.mp4); render the final video without it")
+    r.add_argument("--draft", action="store_true", help="a video at 10 fps, the rate check measures at, and half size, for "
+                   "the render-check loop (NAME-…-draft.mp4); render the final video without it")
+    r.add_argument("--max-mb", type=float, help="a finished video over this many MB is encoded again, in two passes, "
+                   "to fit (an upload limit such as 200); the audio is kept")
+    r.add_argument("--cover", type=float, help="write a 1080×1080 cover PNG instead of a video: the 16:9 frame at this "
+                   "song time over a blurred fill of itself (NAME-cover-Ss.png)")
     r.add_argument("--audio", help="audio file (default: the one in mv.json)")
     r.add_argument("--name", help="output file name prefix")
     r.add_argument("--json", action="store_true")

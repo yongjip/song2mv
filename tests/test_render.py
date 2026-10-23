@@ -3,6 +3,7 @@ template copies share, outputs, progress lines."""
 import json
 import os
 import shutil
+import subprocess
 import sys
 
 import pytest
@@ -143,7 +144,15 @@ def test_per_frame_progress_becomes_a_line_per_quarter(capsys):
     err = capsys.readouterr().err.splitlines()
     assert code == 0
     assert err == ["  rendered 0/8 frames", "  rendered 2/8 frames", "  rendered 4/8 frames", "  rendered 6/8 frames",
-                   "  rendered 8/8 frames", "a warning worth seeing"]
+                   "  rendered 8/8 frames", "  encoded 8/8 frames", "a warning worth seeing"]
+
+
+def test_a_slow_encode_still_prints_a_line_every_heartbeat(capsys, monkeypatch):
+    monkeypatch.setattr(runner, "HEARTBEAT", 0.0)
+    child = "\n".join(f"Encoded {k}/100" for k in (40, 41, 42))
+    runner._run_filtered([sys.executable, "-c", f"print({child!r})"], ".")
+    assert capsys.readouterr().err.splitlines() == ["  encoded 40/100 frames", "  encoded 41/100 frames",
+                                                   "  encoded 42/100 frames"]
 
 
 def capture_render(tmp_path, monkeypatch, render_mjs):
@@ -172,3 +181,41 @@ def test_a_copy_made_before_drafts_says_it_rendered_at_the_full_rate(tmp_path, c
     mv, calls = capture_render(tmp_path, monkeypatch, "// a copy made by an older song2mv")
     code, res = run_json(capsys, ["render", str(mv), "--from", "1", "--to", "2", "--draft"])
     assert code == 0 and any("full frame rate" in w for w in res["warnings"])
+
+
+@pytest.mark.parametrize("args, passed", [(["--from", "1", "--to", "2"], True), (["--from", "1", "--to", "2", "--draft"], False),
+                                          (["--still", "1.5"], False)])
+def test_max_mb_reaches_the_template_for_finished_videos_only(tmp_path, capsys, monkeypatch, args, passed):
+    mv, calls = capture_render(tmp_path, monkeypatch, 'const draft = flag("draft");')
+    code, res = run_json(capsys, ["render", str(mv), "--max-mb", "200"] + args)
+    assert code == 0 and ("--max-mb" in calls[0]) is passed
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="needs ffmpeg")
+def test_cover_turns_the_16x9_frame_into_a_square_and_keeps_only_the_cover(tmp_path, monkeypatch):
+    tpl = tmp_path / "tpl"
+    tpl.mkdir()
+    monkeypatch.setattr(runner, "_require", lambda tool: tool)
+    monkeypatch.setattr(runner, "prepare_template", lambda template: str(tpl))
+    still = tmp_path / "renders" / "song-16x9-1.5s.png"
+
+    def run(args, cwd):
+        assert args[args.index("--still") + 1] == "1.5" and args[args.index("--aspect") + 1] == "16x9"
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=640x360", "-frames:v", "1",
+                        str(still)], check=True)
+        open(args[args.index("--manifest") + 1], "a", encoding="utf-8").write(f"{still}\n")
+        return 0
+    monkeypatch.setattr(runner, "_run_filtered", run)
+    mv = tmp_path / "mv.json"
+    mv.write_text(json.dumps(MV), encoding="utf-8")
+    res = runner.render(str(mv), aspect="9x16", cover=1.5)
+    ((name, png),) = res["outputs"].items()
+    size = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0", png],
+                          check=True, capture_output=True, text=True).stdout.strip()
+    assert name == "song-cover-1.5s.png" and size == "1080,1080" and not still.exists()
+
+
+def test_still_and_cover_together_are_refused(tmp_path, capsys, monkeypatch):
+    mv, calls = capture_render(tmp_path, monkeypatch, "")
+    code, res = run_json(capsys, ["render", str(mv), "--still", "1", "--cover", "1"])
+    assert code != 0 and not calls
