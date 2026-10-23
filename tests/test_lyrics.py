@@ -6,6 +6,8 @@ import pytest
 from song2mv.errors import Song2mvError
 from song2mv.timing.extract_lyrics import lyrics_tag
 from song2mv.timing.lib import DEFAULT_CONFIG, lyric_lines, parse_lyrics
+from song2mv.timing.to_lrc import to_lrc
+from song2mv.timing.to_srt import to_srt
 
 SHEET = """[Intro]
 (Crowd chant)
@@ -40,15 +42,55 @@ def test_section_ids_and_kinds(tmp_path):
     assert kinds == {"in": "calm", "v1": "mid", "ch1": "hot", "ch2": "hot", "br": "calm"}
 
 
+def test_a_section_name_around_a_known_one_takes_its_id_and_kind():
+    sheet = "[Chorus]\na\n[Chorus]\nb\n[Final Pre-Chorus]\nc\n[Final Chorus]\nd\n[Chorus Reprise]\ne\n[Coda]\nf\n"
+    assert [(r["id"], r["kind"]) for r in lyric_lines(sheet, {})] == [
+        ("ch1-01", "hot"), ("ch2-01", "hot"), ("pc-01", "mid"), ("ch-01", "hot"), ("chb-01", "hot"), ("cod-01", "mid")]
+
+
 def test_parenthesized_lines_are_stage_directions_unless_kept(tmp_path):
     assert "(sing it loud)" not in [r["text"] for r in parse(tmp_path)]
     kept = parse(tmp_path, keep_parenthesized_in=["Chorus"])
     assert "(sing it loud)" in [r["text"] for r in kept]
 
 
+def test_tokens_without_letters_stay_in_the_text_but_are_not_words(tmp_path):
+    lines = lyric_lines("[Verse]\nred light / green light\n- - -\nhold on – let go\n", {})
+    assert [(r["text"], r["words"]) for r in lines] == [("red light / green light", ["red", "light", "green", "light"]),
+                                                        ("hold on – let go", ["hold", "on", "let", "go"])]
+    timed = [{"start": 10.0, "end": 12.0, "text": "red light / green light",
+              "words": [{"w": w, "t": 10.0 + 0.4 * k} for k, w in enumerate(lines[0]["words"])]}]
+    to_lrc(timed, str(tmp_path / "song.lrc"))
+    to_lrc(timed, str(tmp_path / "song.words.lrc"), words=True)
+    to_srt(timed, str(tmp_path / "song.srt"))
+    assert "[00:10.00]red light green light\n" in (tmp_path / "song.lrc").read_text(encoding="utf-8")
+    assert "<00:10.40>light <00:10.80>green" in (tmp_path / "song.words.lrc").read_text(encoding="utf-8")
+    assert "\nred light green light\n" in (tmp_path / "song.srt").read_text(encoding="utf-8")
+
+
 def test_section_kind_override(tmp_path):
     lines = parse(tmp_path, section_kinds={"br": "hot"})
     assert next(r for r in lines if r["section"] == "br")["kind"] == "hot"
+
+
+def test_a_calm_section_as_loud_as_the_mid_sections_becomes_mid():
+    from song2mv.timing.build_lyrics import loud_calm
+
+    def song():
+        spans = [("intro", "(instrumental)", "calm", 0, 8), ("in", "Intro", "calm", 8, 16), ("v1", "Verse 1", "mid", 16, 32),
+                 ("ch1", "Chorus", "hot", 32, 48), ("br", "Bridge", "calm", 48, 56), ("ou", "Outro", "calm", 56, 64)]
+        return {"sections": [{"id": i, "name": n, "kind": k, "start": a, "end": b} for i, n, k, a, b in spans],
+                "lines": [{"id": f"{i}-01", "section": i, "kind": k} for i, _, k, _, _ in spans[1:]]}
+    level = {"intro": -9.0, "in": -14.0, "v1": -10.0, "ch1": -7.0, "br": -11.5, "ou": -12.5}  # dB per 0.5 s
+    loudness = [level[s["id"]] for s in song()["sections"] for _ in range(2 * (s["end"] - s["start"]))]
+    lyrics = song()
+    msgs = loud_calm(lyrics, loudness, {})
+    assert [s["kind"] for s in lyrics["sections"]] == ["calm", "calm", "mid", "hot", "mid", "calm"]
+    assert {r["section"]: r["kind"] for r in lyrics["lines"]}["br"] == "mid"
+    assert msgs == ["br [Bridge] is about as loud as the mid sections (median -11.5 dB, theirs -10.0 dB): kind mid, "
+                    "not calm; set section_kinds to keep it calm"]
+    kept = song()  # a kind set in section_kinds stays, by id or by name
+    assert loud_calm(kept, loudness, {"Bridge": "calm"}) == [] and kept["sections"][4]["kind"] == "calm"
 
 
 def test_estimate_never_drops_a_line_without_room():
@@ -109,6 +151,41 @@ def test_trailing_words_never_go_backwards():
     assert out[0]["end"] > t[-1]
 
 
+@pytest.mark.parametrize("swing", [None, [0.33, 0.83]])
+@pytest.mark.parametrize("stretch, times", [
+    ((41.5, 60.0), [41.483, 41.503]),
+    ((10.0, 41.55), [41.54, 41.55]),
+    ((41.49, 41.50), [41.483, 41.495, 41.503]),
+])
+def test_snapping_does_not_cross_off_grid_edges_or_move_their_unsnapped_words(swing, stretch, times):
+    from song2mv.timing.build_lyrics import finish
+
+    a, b = stretch
+    grid = {**GRID, "phi": 0.025, "swing": swing, "off_grid": [{"from": a, "to": b}]}
+    out = finish([line("v1-01", times)], grid, 4, 90.0)[0]
+    actual = [w["t"] for w in out["words"]]
+    assert actual == sorted(actual)
+    for before, after in zip(times, actual):
+        if a <= before < b:
+            assert after == round(before, 3)
+        else:
+            assert (before < a) == (after < a) and (before < b) == (after < b)
+
+
+@pytest.mark.parametrize("grid", [
+    {**GRID, "phi": 0.101},
+    {**GRID, "phi": 0.07, "swing": [0.33, 0.83]},
+    {**GRID, "phi": 0.101, "beats": [0.101, 0.601, 1.101, 1.601]},
+])
+def test_snapping_an_interpolated_first_word_never_makes_its_time_negative(grid):
+    from song2mv.timing.build_lyrics import finish
+
+    out = finish([line("in-01", [None, 0.2, 0.4])], grid, 4, 2.0)[0]
+    times = [w["t"] for w in out["words"]]
+    assert times[0] == out["start"] == 0.0
+    assert times == sorted(times)
+
+
 def test_words_before_a_lines_first_timed_word_wait_for_the_line_before():
     from song2mv.timing.build_lyrics import finish
 
@@ -167,3 +244,35 @@ def test_vignette_and_flashes_go_from_the_song_config_into_mv_json():
 def test_a_wrong_vignette_or_flashes_value_is_refused(cfg):
     with pytest.raises(Song2mvError, match=next(iter(cfg))):
         mv_for(**cfg)
+
+
+def test_music_after_the_last_sung_line_gets_a_quiet_section_of_its_own():
+    from song2mv.timing.build_lyrics import sections
+
+    lines = [{"section": "v1", "section_name": "Verse 1", "kind": "mid", "start": 0.0, "end": 20.3},
+             {"section": "ch1", "section_name": "Chorus", "kind": "hot", "start": 21.0, "end": 39.1}]
+    grid = {"beat": 0.5, "bar0": 0.0}
+    assert [(s["id"], s["kind"], s["start"], s["end"]) for s in sections(lines, grid, 60.0)] == [
+        ("v1", "mid", 0.0, 20.0), ("ch1", "hot", 20.0, 40.0), ("outro", "calm", 40.0, 60.0)]
+    assert [s["id"] for s in sections(lines, grid, 43.0)] == ["v1", "ch1"]
+
+
+def test_the_onset_report_shows_each_word_at_the_time_it_keeps(tmp_path, capsys):
+    # A pinned word at 0.90 s and a tone from 1.00 s: the report gives the word's own time, then the onset near it, so
+    # a pin it keeps does not read as moved. Lines the runs timed are left out.
+    import re
+
+    import numpy as np
+
+    pytest.importorskip("librosa")
+    sf = pytest.importorskip("soundfile")
+    from song2mv.timing.build_lyrics import onset_report
+
+    sr = 22050
+    t = np.arange(2 * sr) / sr
+    sf.write(tmp_path / "a.wav", np.where(t >= 1.0, 0.3 * np.sin(2 * np.pi * 220 * t), 0.0), sr)
+    onset_report([{"id": "hk1-07", "source": "manual", "words": [{"w": "Beep,", "t": 0.9}]},
+                  {"id": "v1-01", "source": "asr", "words": [{"w": "la", "t": 1.2}]}], str(tmp_path / "a.wav"))
+    out = capsys.readouterr().out
+    assert "each word at the time it keeps" in out and "v1-01" not in out and "→" not in out
+    assert re.search(r"hk1-07  \[manual\] Beep, 0\.90 \(onset (0\.9[5-9]|1\.0[0-4]), \+\d+ dB\)", out), out

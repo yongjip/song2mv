@@ -19,17 +19,26 @@ an error.
 
 | command | fields |
 | --- | --- |
-| `sync` | `work`, `config`, `outputs`, `duration`, `bpm`, `lines`, `line_sources` (source → number of lines), `check_by_ear` (line ids to verify by ear: re-heard, estimated, placed by only one whisper run, out of the lyric sheet's order, with a word no run timed between words far apart, or spread over far more time than it is sung in), `off_sheet` (words the whisper runs hear that no lyric line has, see below), `dropped` (lyric lines missing from the output — should be empty), `language`, `warnings`, `seconds` |
+| `sync` | `work`, `config`, `outputs`, `duration`, `bpm`, `lines`, `line_sources` (source → number of lines), `check_by_ear` (line ids to verify by ear: re-heard, estimated, placed by only one whisper run, out of the lyric sheet's order, with a word no run timed between words far apart, spread over far more time than it is sung in, with three words at almost one time, with runs that disagree on its start or on a word's time, or heard alike by the runs but not as written where two or more of them hear another copy of it as written), `off_sheet` (words the whisper runs hear that no lyric line has, see below), `dropped` (lyric lines missing from the output — should be empty), `language`, `warnings`, `seconds` |
 | `beats` | `outputs`, `bpm`, `beat`, `phi`, `downbeat_mod4`, `bar0`, `bar`, `duration`, `off_grid` (as in `grid.json`), `warnings` |
 | `click` | `outputs` (the wav), `from`, `to`, `bpm`, `downbeat_mod4`, `ask_the_listener` (the question to put to the person listening) |
 | `check` | `video`, `song`, `goals`, `from`, `to` (the stretch measured, in song time), `passed`, `total`, `results` (check → `{ok, value, goal, msg}`, see below), `skipped` (check → why it could not run on this stretch), `per_line` (`{id, motion, coverage}`), `cuts` (song times), `warnings` |
+| `sheet` | `video`, `song` (`null` without one), `from`, `to` (the song times of the video's first frame and its end), `times` (the song time of each frame on the sheet, in order), `outputs` (the sheet's pages, the first at `--out`), `warnings` |
 | `render` | `template`, `outputs`, `seconds`, `warnings` |
 
 `check` results: `value` is the measured number and `goal` is `{"min": x}` or `{"max": x}`. Per-line checks
 (`motion.min`, `motion.max`, `coverage.min`) count the failing lines in `value` (goal `{"max": 0}`) and list them in
-`lines` as `{id, value, goal}`. `variation.repeats` lists every repeated line pair in `pairs` as `[pair, correlation]`,
-worst first; its `value` is their mean, or the worst pair with a line in a hot section when that is higher. A check in
-`skipped` neither passed nor failed and is not counted in `total`.
+`lines` as `{id, value, goal, from, to, cuts, msg}`, each with where it failed: `from` and `to` are the stretch
+measured for the line and `cuts` the cuts in it (song times), and `msg` says it in words. A still (`motion.min`) or
+empty (`coverage.min`) line adds `stretch` `{from, to, value}`: its longest part whose every second is under the goal
+(or else its lowest second), without the frames at its ends that reach the goal, and the mean over it. A frantic line
+(`motion.max`) adds `peak` `{t, value}`, its biggest frame change and the song time of the frame it shows on, and
+`without_cuts`, its motion with every cut-like frame change left out, also those that `cuts` lists as one cut because
+they fall within 0.3 s of each other (`msg` calls the peak a cut when it is one of them). In a pixel scene a
+whole-pixel camera step can be one of them too. Without a cut, `msg` says when the change covers the whole frame,
+as a camera move over fine detail does. `variation.repeats` lists every repeated line pair in `pairs` as
+`[pair, correlation]`, worst first; its `value` is their mean, or the worst pair with a line in a hot section when
+that is higher. A check in `skipped` neither passed nor failed and is not counted in `total`.
 
 `off_sheet` lists the stretches of at least 1.5 s where two or more whisper runs agree on two or more words that no
 line of the lyric sheet matched: a chant or an ad-lib the sheet leaves out, a line sung differently, a repeat the
@@ -112,10 +121,12 @@ it again. One made before song2mv measured swing has no `swing`, swung or not, a
 
 **`lyrics.json`** — `title`, `duration`, `grid`, `sections` (as in `mv.json`) and `lines`: each with `id`
 (`<section>-<nn>`, e.g. `v1-03`; a section that appears once keeps a bare id, `ch-01`), `section`, `section_name`,
-`kind` (`calm` / `mid` / `hot`), `text`, `start`, `end`, `source` (`asr` / `reprompt` / `manual` / `estimated`),
-`runs_used`, `coverage` and `words: [{w, t}]`. Word times never go backwards and `end` is after the line's last
-word; a line pinned in `manual` keeps its word times unsnapped. Lines may overlap: a backing vocal can start while
-another line is still sung.
+`kind` (`calm` / `mid` / `hot`: from the section's name, or `mid` for a section named calm that `music.json` measures
+about as loud as the mid sections; `section_kinds` in the config overrides both), `text`, `start`, `end`, `source`
+(`asr` / `reprompt` / `manual` / `estimated`), `runs_used`, `coverage` and `words: [{w, t}]`, the line's tokens with a
+letter or a digit (a `/` or `–` between them stays in `text` only). Word times never go
+backwards and `end` is after the line's last word; a line pinned in `manual` keeps its word times unsnapped. Lines
+may overlap: a backing vocal can start while another line is still sung.
 
 **`mv.json`** — the render template's input: `title`, `subtitle`, `audio` (file name), `audio_path` (absolute),
 `duration`, `grid` (`bpm`, `beat`, `phi`, `downbeat_mod4`, `bar0`, `off_grid` and, when it is a list, `beats` from
@@ -126,12 +137,14 @@ config sets them. Also what `check` reads.
 **`music.json`** — `duration`, `loudness_db_per_half_second` (mean loudness per 0.5 s, 0 dB = the loudest moment),
 `boundaries` (`[{t, novelty}]`, likely section changes; empty for very short songs), `audio_sha256`.
 
-**`song.lrc`** — `[mm:ss.xx]line`; an empty timestamp clears the screen before gaps over 4 s.
-**`song.words.lrc`** — enhanced LRC with `<mm:ss.xx>` word stamps. **`song.srt`** — one cue per line (lines that
-start within 0.3 s of each other share a cue, one text line each); cues never overlap.
+**`song.lrc`** — `[mm:ss.xx]line`, the line's `words`; an empty timestamp clears the screen before gaps over 4 s.
+**`song.words.lrc`** — enhanced LRC with `<mm:ss.xx>` word stamps. **`song.srt`** — one cue per line, its `words`
+(lines that start within 0.3 s of each other share a cue, one text line each); cues never overlap.
 
-`song.json` (the config) and the working files (`lyrics.txt`, `asr/runN.json`, `merged.json`, `reprompt.json`,
-`state.json`) are inputs and working state, not part of the contract.
+`song.json` (the config) and the working files (`lyrics.txt`, `lyrics.sections.txt`, `asr/runN.json`, `merged.json`,
+`reprompt.json`, `state.json`) are inputs and working state, not part of the contract. `lyrics.sections.txt` is written
+for a lyric sheet without `[Section]` lines: the sheet with the sections `sync` proposed from its repeated lines and
+used, which `warnings` lists.
 
 ## Privacy
 

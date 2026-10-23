@@ -100,7 +100,10 @@ jobs:
           cache-dependency-path: src/song2mv/render/template/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npx tsc --noEmit
-      # every gallery tile as a PNG (element-00 shows them all), so a reviewer sees a pull request's drawings
+      - run: npm run test:assets
+      # every gallery tile as a PNG (element-00 shows them all), so a reviewer sees a pull request's drawings;
+      # tile 24 letters Korean from a font on the machine
+      - run: sudo apt-get update -q && sudo apt-get install -y -q fonts-noto-cjk
       - run: npx remotion render src/index.ts Kit-Gallery out/gallery --sequence --image-format=png
       - uses: actions/upload-artifact@v4
         with:

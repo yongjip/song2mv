@@ -3,6 +3,7 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
   Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Line, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, comic, makeSongCtx, mix, paper, personHand, pixel, rng, shade, SKINS, STRIDE,
+  PortraitBody, PortraitInteraction, portraitMotion, poster,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -849,6 +850,71 @@ const PixelCorner: React.FC<{ T: number }> = ({ T }) => {
   );
 };
 
+/**
+ * The pixel pack's type: big two-tone letters with a drop shadow and one block of outline, and a dialog box that
+ * letters a line as it is sung, on a 16:9 night street (8 stage px a block); the same in Korean on a tall panel
+ * (4 stage px a block), where Hangul takes 16 blocks to the em.
+ */
+const PixelType: React.FC<{ T: number }> = ({ T }) => {
+  const t = pixel.step(T);
+  const { Canvas, colors: X } = pixel;
+  const said = (id: string, text: string, t0: number, step: number): Line => {
+    const words = text.split(" ").map((w, i) => ({ w, t: t0 + i * step }));
+    return { id, section: "g24", text, start: t0, end: t0 + words.length * step, words };
+  };
+  const sky = (c: pixel.Canvas, x0: number, w: number, bands: [number, string][], bottom: number) =>
+    bands.forEach(([y0, color], i) => {
+      c.box(x0, y0, w, (bands[i + 1]?.[0] ?? bottom) - y0, color);
+      if (i) c.dither(x0, y0 - 2, w, 2, color);
+    });
+  const town = (c: pixel.Canvas, blocks: [number, number, number][], base: number, seed: number) => {
+    const random = rng(seed);
+    for (const [x, w, top] of blocks) {
+      c.box(x, top, w, base - top, mix(X.dusk, X.ink, 0.45));
+      for (let y = top + 3; y < base - 3; y += 4)
+        for (let wx = x + 2; wx < x + w - 1; wx += 3) if (random() < 0.35) c.box(wx, y, 1, 2, X.gold);
+    }
+  };
+
+  const street = new Canvas();
+  sky(street, 0, 160, [[0, X.navy], [30, X.dusk], [56, X.plum], [76, X.rose]], 92);
+  [[9, 8], [31, 20], [57, 5], [94, 14], [118, 4], [149, 11], [70, 26]].forEach(([x, y], i) => {
+    street.set(x, y, X.cream);
+    if ((Math.floor(t * 2) + i) % 3 === 0) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) street.set(x + dx, y + dy, X.stone);
+  });
+  town(street, [[0, 14, 62], [14, 10, 70], [24, 18, 56], [42, 12, 66], [54, 20, 50], [74, 11, 68], [85, 16, 58], [101, 10, 72], [111, 22, 54], [133, 12, 64], [145, 15, 60]], 92, 24);
+  street.box(0, 92, 160, 8, mix(X.grey, X.plum, 0.3));
+  street.box(0, 92, 160, 1, shade(mix(X.grey, X.plum, 0.3), 0.75));
+  street.box(0, 100, 160, 1, X.stone);
+  street.box(0, 101, 160, 34, mix(X.ink, X.dusk, 0.35));
+  const frame = WALKER[Math.floor(t * 4) % 4];
+  street.stamp(pixel.sprite(frame, {
+    H: shade(X.brown, 0.72), h: X.brown, r: X.red, s: mix(X.cream, X.tan, 0.45), S: mix(X.tan, X.coral, 0.4),
+    b: X.rose, e: X.ink, t: X.coral, T: shade(X.coral, 0.8), p: mix(X.navy, X.blue, 0.45), P: X.navy, w: X.white, W: X.stone,
+  }), X.ink, Math.round(4 + ((t * 11) % 140)), 99 - frame.length);
+
+  // Korean, written as escapes: "One more round!" and "Press it once more to start, tonight is ours"
+  const title = "\ud55c \ud310 \ub354!";
+  const lyric = "\ud55c \ubc88 \ub354 \ub20c\ub7ec \uc2dc\uc791\ud574 \uc624\ub298 \ubc24\uc740 \uc6b0\ub9ac \uac70\uc57c";
+  const roofs = new Canvas();
+  sky(roofs, 320, 160, [[0, X.navy], [60, X.dusk], [110, X.plum], [150, X.rose], [180, X.coral], [204, X.orange]], 236);
+  roofs.disc(420, 214, 22, 22, X.gold);
+  for (let y = 216; y < 236; y += 4) roofs.box(398, y, 45, 1 + Math.floor((y - 216) / 6), X.orange);
+  town(roofs, [[320, 22, 196], [342, 14, 210], [356, 26, 188], [382, 16, 204], [398, 30, 222], [428, 18, 200], [446, 34, 192]], 270, 25);
+  roofs.stamp(pixel.sprite(CAT[Math.floor(t * 0.8) % 2], { o: X.orange, O: shade(X.orange, 0.78), c: X.cream, n: X.rose, e: X.ink }), X.ink, 360, 179);
+
+  return (
+    <Svg>
+      <pixel.Pixels canvas={street} />
+      <pixel.BigText T={T} t={8.4} text="GET READY" x={80} y={22} scale={3} width={152} color={X.white} lower={X.gold} shadow={mix(X.ink, X.navy, 0.5)} />
+      <pixel.Dialog T={T} x={6} y={106} width={148} lines={[said("g24-en", "Press start, the night is ours to run", 8.4, 0.3)]} />
+      <pixel.Pixels canvas={roofs} px={4} />
+      <pixel.BigText text={title} x={400} y={44} scale={2} width={150} px={4} color={X.cream} lower={X.gold} shadow={shade(X.orange, 0.55)} />
+      <pixel.Dialog T={T} x={324} y={222} width={152} px={4} lines={[said("g24-ko", lyric, 8.6, 0.25)]} />
+    </Svg>
+  );
+};
+
 const ComicKitchen: React.FC<{ T: number }> = ({ T }) => {
   const { Page, Panel, Ink, Flat, Edge, Brush, brushPath, Dots, Balloon, Caption, Sfx, colors: K } = comic;
   const POP = 9.3;
@@ -1280,6 +1346,112 @@ const ComicKitchen: React.FC<{ T: number }> = ({ T }) => {
   );
 };
 
+/** A head in a few shapes for the portrait tiles below, where a song puts a portrait (PortraitCutout) */
+const SampleHead: React.FC<{ wide?: boolean; ear?: Pt }> = ({ wide = false, ear }) => {
+  const rx = wide ? 68 : 54;
+  return (
+    <>
+      <ellipse cy={-315} rx={rx} ry={85} fill="#eac09f" />
+      {ear && <ellipse cx={ear[0]} cy={ear[1]} rx={10} ry={15} fill="#eac09f" />}
+      <path d={`M${-rx} -320Q-80 -414 0 -415Q80 -413 ${rx} -320L40 -361Q0 -340 -40 -361Z`} fill="#302f35" />
+      <circle cx={-20} cy={-316} r={5} fill="#302f35" />
+      <circle cx={20} cy={-316} r={5} fill="#302f35" />
+      <path d="M-18 -286Q0 -271 18 -286" fill="none" stroke="#a46758" strokeWidth={5} strokeLinecap="round" />
+    </>
+  );
+};
+
+/**
+ * PortraitBody (kit/portrait-body.tsx) posed by portraitMotion (kit/portrait-motion.ts): walking on planted feet, on the
+ * phone, pointing, and holding a poster.Notebook by its lower corners; each head turns by the pose's headAngle.
+ */
+const PortraitPoses: React.FC<{ T: number }> = ({ T }) => (
+  <Svg>
+    <rect width={1920} height={1080} fill={poster.colors.shade} />
+    <path d="M100 944H1820" stroke={poster.colors.ink} strokeWidth={5} />
+    {([["walk", "angles", 250], ["phone", "phone", 670], ["point", "point", 1070], ["hold", "hold", 1630]] as const).map(([action, gesture, x], i) => {
+      const pose = portraitMotion(T % 4, action);
+      return (
+        <PortraitBody key={action} {...pose} x={x + (action === "walk" ? 1.65 * (pose.travel - 48) : 0)} y={940} s={1.65}
+          color={i % 2 ? "#245c88" : "#526b59"} gesture={gesture}
+          frontProp={gesture === "hold" ? <poster.Notebook x={0} y={-160} s={0.3} write={0.7} /> : undefined}>
+          <g transform={`rotate(${pose.headAngle} 0 -235)`}><SampleHead wide /></g>
+        </PortraitBody>
+      );
+    })}
+  </Svg>
+);
+
+/**
+ * The poster props (kit/styles/poster.tsx): a phone with chat bubbles, a notebook being written in, a hand going into a
+ * pocket, steam over a coffee cup, a glass, a lighter, an office block with a sign, a traffic light and a cloud.
+ */
+const PosterProps: React.FC<{ T: number }> = ({ T }) => (
+  <Svg>
+    <rect width={1920} height={1080} fill={poster.colors.shade} />
+    <path d="M60 962H1860" stroke={poster.colors.ink} strokeWidth={5} />
+    <poster.Phone x={250} y={480} s={0.8}>
+      <poster.Bubble x={-20} y={-130} w={245} h={120} tail={[-140, -10]} color={poster.colors.sky} />
+      <poster.Bubble x={20} y={80} w={245} h={120} tail={[140, 190]} color={poster.colors.yellow} />
+    </poster.Phone>
+    <poster.Notebook x={760} y={270} s={0.65} write={0.8} />
+    <poster.Pocket x={1080} y={250} w={280} h={213}>
+      <poster.SleevedHand x={0} y={215} s={9} length={130} color="#526b59" shape="grip" />
+    </poster.Pocket>
+    <poster.Smoke T={T} x={560} y={682} h={150} color={poster.colors.blue} />
+    <poster.CoffeeCup x={560} y={960} s={0.62} />
+    <poster.Glass x={790} y={834} s={0.42} />
+    <poster.Lighter x={990} y={775} s={0.5} color={poster.colors.blue} />
+    <poster.Building x={1420} y={960} w={320} h={600} sign="WORK" />
+    <poster.Light x={1770} y={700} s={0.5} lit="red" glow={0.5 + 0.5 * Math.sin(T * 3)} />
+    <poster.Cloud x={1700} y={150} s={0.55} />
+  </Svg>
+);
+
+/**
+ * PortraitInteraction (kit/portrait-interaction.tsx): a call and writing in a notebook, each with a narrow and a wide
+ * head whose profiles put the ear in other places; the hand, the phone and the pen follow the profile.
+ */
+const PortraitActions: React.FC<{ T: number }> = ({ T }) => {
+  const t = T % 6;
+  return (
+    <Svg>
+      <rect width={1920} height={1080} fill={poster.colors.shade} />
+      <path d="M100 944H1820" stroke={poster.colors.ink} strokeWidth={5} />
+      {(["phone", "phone", "write", "write"] as const).map((action, i) => {
+        const wide = i % 2 === 1, ear: Pt = wide ? [69, -312] : [54, -325];
+        return (
+          <PortraitInteraction key={i} action={action} time={t} progress={Math.max(0, Math.min(1, (t - 1) / 4))}
+            profile={{ neck: [0, -235], ear }} x={270 + 460 * i} y={940} s={1.65} look={{ color: wide ? "#245c88" : "#526b59" }}
+            renderHead={(angle) => <g transform={`rotate(${angle} 0 -235)`}><SampleHead wide={wide} ear={ear} /></g>} />
+        );
+      })}
+    </Svg>
+  );
+};
+
+/** PortraitInteraction's head-touch: at rest before it starts, reaching, at the temple at 0.55 s, and holding there */
+const PortraitHeadTouch: React.FC = () => (
+  <Svg>
+    <rect width={1920} height={1080} fill={poster.colors.shade} />
+    <path d="M100 944H1820" stroke={poster.colors.ink} strokeWidth={5} />
+    {[-0.2, 0.25, 0.55, 3].map((time, i) => {
+      const wide = i % 2 === 1;
+      const ear: Pt = wide ? [67.6, -314.5] : [51, -326.5], temple: Pt = wide ? [53, -353] : [40, -345];
+      return (
+        <g key={i}>
+          <PortraitInteraction action="head-touch" time={time} profile={{ neck: [0, -235], ear, temple }} x={270 + 460 * i} y={940}
+            s={1.65} look={{ color: wide ? "#245c88" : "#526b59" }}
+            renderHead={(angle) => <g transform={`rotate(${angle} 0 -235)`}><SampleHead wide={wide} /></g>} />
+          <text x={270 + 460 * i} y={1030} textAnchor="middle" fontSize={30} fill={poster.colors.ink}>
+            {["REST", "REACH", "CONTACT", "HOLD"][i]}
+          </text>
+        </g>
+      );
+    })}
+  </Svg>
+);
+
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -1526,6 +1698,26 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
     name: "Style pack: comic page",
     draw: (T) => <ComicKitchen T={T} />,
   },
+  {
+    name: "Style pack: pixel type, big and in a dialog box",
+    draw: (T) => <PixelType T={T} />,
+  },
+  {
+    name: "Portrait bodies: walking and three gestures",
+    draw: (T) => <PortraitPoses T={T} />,
+  },
+  {
+    name: "Style pack: poster props, office and street",
+    draw: (T) => <PosterProps T={T} />,
+  },
+  {
+    name: "Portrait interactions: a call and writing",
+    draw: (T) => <PortraitActions T={T} />,
+  },
+  {
+    name: "Portrait interactions: a hand at the temple",
+    draw: () => <PortraitHeadTouch />,
+  },
 ];
 
 const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNode }> = ({ x, y, k, children }) => (
@@ -1534,8 +1726,8 @@ const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNod
   </div>
 );
 
-/** The overview's grid: 4 × 4 tiles, 5 across once there are more than 16, the rows centred on the frame */
-const COLS = TILES.length > 16 ? 5 : 4;
+/** The overview's grid: 4 × 4 tiles, 5 across once there are more than 16 and 6 past 25, the rows centred on the frame */
+const COLS = TILES.length > 25 ? 6 : TILES.length > 16 ? 5 : 4;
 const TOP = (1080 - Math.ceil(TILES.length / COLS) * (1080 / COLS)) / 2;
 
 export const KitGallery: React.FC<{ T: number }> = ({ T }) => {
@@ -1553,7 +1745,7 @@ export const KitGallery: React.FC<{ T: number }> = ({ T }) => {
             return (
               <React.Fragment key={i}>
                 <Tile x={x} y={y} k={1 / COLS}>{t.draw(T)}</Tile>
-                <div style={{ position: "absolute", left: x + 8, top: y + 6, color: "#fff", fontSize: 16, fontWeight: 700, textShadow: "0 1px 4px #000" }}>{i + 1}. {t.name}</div>
+                <div style={{ position: "absolute", left: x + 8, top: y + 6, width: 1920 / COLS - 16, color: "#fff", fontSize: 16, fontWeight: 700, textShadow: "0 1px 4px #000" }}>{i + 1}. {t.name}</div>
               </React.Fragment>
             );
           })
