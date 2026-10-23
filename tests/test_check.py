@@ -179,6 +179,43 @@ def test_without_to_the_stretch_ends_with_the_video(tmp_path):
     assert gap["ok"] is True and gap["value"] <= 8.0 and gap["goal"] == {"max": 8.0}
 
 
+@pytest.mark.parametrize("offset, duration, limit", [(0.0, 4.0, "to"), (12.3, 4.05, "to"),
+                                                   (0.0, 6.0, "to"), (0.0, 6.05, "to"), (0.0, 4.0, "song")])
+def test_the_measured_range_matches_a_physically_trimmed_video(tmp_path, offset, duration, limit):
+    from song2mv.check.score import score
+
+    full = make_video(tmp_path)
+    trimmed = tmp_path / "trimmed.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(full), "-t", str(duration),
+                    "-c:v", "libx264", "-qp", "0", str(trimmed)], check=True)
+    song = write(tmp_path, "mv.json", {
+        "duration": offset + (duration if limit == "song" else 12.0),
+        "sections": [{"id": "v1", "kind": "mid", "start": offset, "end": offset + 12.0}],
+        "lines": [{"id": "v1-01", "section": "v1", "text": "la", "start": offset + 1.0, "end": offset + 3.5}],
+    })
+    kwargs = {"t0": offset, "t1": offset + duration if limit == "to" else None, "quiet": True, "report": False}
+    actual = score(str(full), str(song), **kwargs)
+    expected = score(str(trimmed), str(song), **kwargs)
+    assert actual["to"] == pytest.approx(offset + duration)
+    assert actual["cuts"] == ([offset + 6.0] if duration > 6.0 else [])
+    for key in ("results", "per_line", "cuts", "skipped", "ok"):
+        assert actual[key] == expected[key]
+
+
+def test_cuts_after_to_do_not_count_towards_the_sections_rhythm(tmp_path):
+    from song2mv.check.score import score
+
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
+                    "testsrc2=size=320x180:rate=10:duration=12",
+                    "-vf", "drawbox=c=white:t=fill:enable='gte(t,5)*lt(mod(t,2),1)'", str(mp4)], check=True)
+    song = write(tmp_path, "mv.json", {**SONG, "sections": [{"id": "v1", "kind": "mid", "start": 0.0, "end": 12.0}]})
+    actual = score(str(mp4), str(song), t1=4.0, quiet=True, report=False)
+    assert actual["cuts"] == []
+    assert "cuts.rhythm.v1" not in actual["results"]
+    assert actual["skipped"]["cuts.rhythm.v1"] == "0 cuts in this stretch of v1 (the rhythm needs 4)"
+
+
 def test_a_stretch_without_sung_lines_is_an_error(tmp_path, capsys):
     from song2mv.cli import main
 

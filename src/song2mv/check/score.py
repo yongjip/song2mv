@@ -127,6 +127,7 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     if t1 is not None and t1 > video_end + 0.5:
         warnings.append(f"--to {t1:g} is after the video's end (song time {video_end:.1f} s); measured up to there")
     t_end = min(video_end if t1 is None else t1, video_end, float(song["duration"]))
+    F = F[:max(0, math.ceil(round((t_end - t0) * 10, 6)))]
     lines = [r for r in load_lines(song) if r["start"] >= t0 and r["end"] <= t_end + 0.01]
 
     body = F[:, : int(H * body_frac), :]

@@ -123,6 +123,10 @@ First release (0.1.0).
   the next line's first word on. A line whose only motion was that cut can now measure still, as it looks.
 - `cuts.max_gap` counted a stretch without a cut in full when it ran on into a calm section, where long shots are
   allowed; now only its part outside such sections counts.
+- `check` measured the whole video, also past the end of the stretch it reports (`--to`, or the song's end in a
+  longer video): cuts after that end were listed under `cuts` and counted in their section's cut rhythm, and
+  `cuts.max_gap` ran on to the first of them (a 4 s stretch reported a 6 s gap). Frames after the end are now left
+  out: a video checked with `--to` gets the same results as the same video cut there.
 - `check` measured a cut on a line's first word as motion inside the line: at 10 fps a cut 0.1 s after the word
   falls in the line's first frame change, and on a 1.4 s line that one cut alone read as frantic. That frame change
   now opens the line's shot and is left out of its motion.
