@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, CalculateMetadataFunction } from "remotion";
-import { Song, SongContext, VERTICAL, VerticalCtx, makeSongCtx } from "./kit";
+import { Song, SongContext, VERTICAL, VerticalCtx, makeSongCtx, useFonts } from "./kit";
 import { BAND_CY, BAND_SCALE } from "./LyricShort";
 import { Scene, VerticalScene } from "./scenes";
 
@@ -44,6 +44,7 @@ function sheet({ times, cols, vertical, crop }: ContactProps) {
 export const contactSize: CalculateMetadataFunction<ContactProps> = ({ props }) => ({ width: 1920, height: sheet(props).height });
 
 export const ContactSheet: React.FC<ContactProps> = (props) => {
+  useFonts();
   const { song, times, vertical = false, crop } = props;
   const ctx = useMemo(() => makeSongCtx(song), [song]);
   const { perRow, w, h, cx, cy, cw, ch, k, frameW, frameH, rowH, label } = sheet(props);

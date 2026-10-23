@@ -12,6 +12,10 @@ LINES = [
 ]
 
 
+def line(start, end, text):
+    return {"start": start, "end": end, "text": text, "words": [{"w": w, "t": start} for w in text.split()]}
+
+
 def test_lrc_lines_and_gap_clear(tmp_path):
     out = tmp_path / "song.lrc"
     assert to_lrc(LINES, str(out), meta={"ti": "Song"}) == 3
@@ -48,9 +52,7 @@ def test_lrc_time_rounds_up_into_the_next_minute():
 
 def test_lrc_does_not_clear_the_screen_while_an_earlier_line_is_still_sung(tmp_path):
     out = tmp_path / "song.lrc"
-    lines = [{"start": 10.0, "end": 20.0, "text": "long line", "words": []},
-             {"start": 12.0, "end": 13.0, "text": "backing", "words": []},
-             {"start": 30.0, "end": 31.0, "text": "next", "words": []}]
+    lines = [line(10.0, 20.0, "long line"), line(12.0, 13.0, "backing"), line(30.0, 31.0, "next")]
     to_lrc(lines, str(out))
     rows = out.read_text(encoding="utf-8").splitlines()
     assert rows == ["[00:10.00]long line", "[00:12.00]backing", "[00:20.60]", "[00:30.00]next", "[00:31.60]"]
@@ -65,9 +67,7 @@ def srt_times(text):
 
 def test_srt_lines_that_start_together_share_a_cue_and_no_cue_overlaps(tmp_path):
     out = tmp_path / "song.srt"
-    lines = [{"start": 130.803, "end": 131.5, "text": "HEY!", "words": []},
-             {"start": 130.97, "end": 133.2, "text": "a line under it", "words": []},
-             {"start": 133.0, "end": 135.0, "text": "next", "words": []}]
+    lines = [line(130.803, 131.5, "HEY!"), line(130.97, 133.2, "a line under it"), line(133.0, 135.0, "next")]
     assert to_srt(lines, str(out)) == 2
     text = out.read_text(encoding="utf-8")
     assert "00:02:10,803 --> 00:02:13,000\nHEY!\na line under it\n" in text

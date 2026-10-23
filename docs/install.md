@@ -7,7 +7,7 @@ song2mv is **not on PyPI yet**. Until it is, install from GitHub with [uv](https
 ```sh
 uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"    # sync + beats + check
 uv tool install --python 3.13 "song2mv[beats] @ git+https://github.com/yongjip/song2mv"   # beats + click + check
-uv tool install "song2mv @ git+https://github.com/yongjip/song2mv"                        # check (and render)
+uv tool install "song2mv @ git+https://github.com/yongjip/song2mv"                        # check, sheet (and render)
 ```
 
 Try it without installing:
@@ -27,7 +27,7 @@ After the first PyPI release these become `uv tool install "song2mv[sync]"`, `pi
 
 | needed by | requirement |
 | --- | --- |
-| `sync`, `beats`, `click`, `check` | **ffmpeg** and **ffprobe** on PATH (`brew install ffmpeg`, `apt install ffmpeg`) |
+| `sync`, `beats`, `click`, `check`, `sheet` | **ffmpeg** and **ffprobe** on PATH (`brew install ffmpeg`, `apt install ffmpeg`) |
 | `render` | **Node 18+** with npm. The first render installs Remotion (~300 npm packages) and downloads a headless Chrome (~570 MB in all) |
 | Python | 3.10–3.14 (tested in CI). `sync` needs faster-whisper, whose ctranslate2 has no Python 3.15 wheels yet — use `--python 3.13`. `check`, `beats` and `render` also run on 3.15 |
 

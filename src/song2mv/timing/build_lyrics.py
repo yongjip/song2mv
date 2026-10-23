@@ -17,6 +17,7 @@ Usage: run through `song2mv sync` (step "build").
 """
 from __future__ import annotations
 
+import math
 import os
 import statistics
 
@@ -115,6 +116,13 @@ def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -
     else:
         off = off_grid(grid)
         snap = lambda t: round(t, 3) if not S or off(t) else round(phi + round((t - phi) / S) * S, 3)  # noqa: E731
+    on_grid = snap
+    edges = [] if beats else [s[k] for s in grid.get("off_grid") or [] for k in ("from", "to")]
+
+    def snap(t: float) -> float:
+        g = max(0.0, on_grid(t))
+        return round(max(0.0, t), 3) if any((t < e) != (g < e) for e in edges) else g
+
     starts = {i: min(_known(r)) for i, r in enumerate(lines) if _known(r)}
     out = []
     for i, r in enumerate(lines):
@@ -172,6 +180,11 @@ def sections(lines: list[dict], grid: dict, duration: float) -> list[dict]:
     if not secs:
         return []
     late_start = secs[0]["start"] > 4.0 and secs[0]["kind"] != "calm"
+    last = max(r.get("end", r["start"]) for r in lines)
+    if beats:
+        tail = float(map_time(beats, down + 4 * math.ceil((float(map_number(beats, last)) - down) / 4 - 1e-6)))
+    else:
+        tail = bar0 + math.ceil((last - bar0) / (4 * P) - 1e-6) * 4 * P
     for s in secs:  # start the section on the bar line next to its first lyric (pickups, late entries)
         if beats:
             d = float(map_time(beats, down + 4 * round((float(map_number(beats, s["start"])) - down) / 4)))
@@ -182,6 +195,8 @@ def sections(lines: list[dict], grid: dict, duration: float) -> list[dict]:
             s["start"] = round(max(0.0, d), 3)
     if late_start:  # music before the first sung section gets a quiet section of its own
         secs.insert(0, {"id": "intro", "name": "(instrumental)", "kind": "calm", "start": 0.0})
+    if duration - tail > 4.0 and tail > secs[-1]["start"]:  # and so does music after the last sung line
+        secs.append({"id": "outro", "name": "(instrumental)", "kind": "calm", "start": round(tail, 3)})
     secs[0]["start"] = 0.0
     for a, b in zip(secs, secs[1:]):
         b["start"] = max(b["start"], round(a["start"] + P, 3))
@@ -237,13 +252,14 @@ def onset_report(lines: list[dict], audio: str) -> None:
         idx = np.where((tt > c - w) & (tt < c + w))[0]
         idx = idx[idx + 4 < len(db)]
         if not len(idx):
-            return "-"
+            return "no onset"
         d = db[idx + 4] - db[idx]  # rise over the next 20 ms
         j = idx[int(np.argmax(d))]
-        return f"{tt[j]:.2f}(+{d.max():.0f}dB)"
-    print("  lines not timed by the runs — word@time → nearest vocal onset. Pin wrong ones in \"manual\":")
+        return f"onset {tt[j]:.2f}, +{d.max():.0f} dB"
+    print("  lines not timed by the runs: each word at the time it keeps, and the strongest vocal onset near it, to check "
+          "by ear. Pin wrong ones in \"manual\":")
     for r in check:
-        print(f"    {r['id']:7s} [{r['source']}] " + "  ".join(f"{w['w']}@{w['t']:.2f}→{near(w['t'])}" for w in r["words"]))
+        print(f"    {r['id']:7s} [{r['source']}] " + "  ".join(f"{w['w']} {w['t']:.2f} ({near(w['t'])})" for w in r["words"]))
 
 
 def frame_options(cfg: dict) -> dict:

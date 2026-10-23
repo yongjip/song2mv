@@ -22,8 +22,8 @@ jobs:
           - {os: macos-latest, python: "3.12"}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python }}
       - name: ffmpeg
@@ -37,8 +37,8 @@ jobs:
   package:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
       - name: plant what must never ship (a template install, renders, bytecode)
         run: |
           t=src/song2mv/render/template
@@ -53,13 +53,32 @@ jobs:
           unzip -l dist/*.whl | grep -q 'song2mv/guide/AGENTS.md'
           ! unzip -l dist/*.whl | grep -E 'node_modules|template/out/|__pycache__'
           ! tar tzf dist/*.tar.gz | grep -E 'node_modules|template/out/|__pycache__'
+      - name: checksum release archives
+        run: cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-dist-check
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  release-artifacts:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-dist-check
+          path: dist/
+      - name: verify the release archive handoff without publishing
+        run: cd dist && sha256sum --check SHA256SUMS
 
   wheel:
     # the built wheel installed the way users install it: core only, then with the sync extra
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
       - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
@@ -92,14 +111,15 @@ jobs:
       run:
         working-directory: src/song2mv/render/template
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: src/song2mv/render/template/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npx tsc --noEmit
+      - run: npm run test:assets
       # every gallery tile as a PNG (element-00 shows them all), so a reviewer sees a pull request's drawings;
       # tile 24 letters Korean from a font on the machine
       - run: sudo apt-get update -q && sudo apt-get install -y -q fonts-noto-cjk
@@ -110,7 +130,7 @@ jobs:
           path: src/song2mv/render/template/out/gallery/
           retention-days: 14
       # renders through render.mjs: a draft and its full render must give check as many frames
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
       - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
       - run: uv venv && uv pip install -e '.[dev]' && uv run --no-sync pytest -q tests/test_template.py
         working-directory: .
@@ -119,11 +139,11 @@ jobs:
     # song2mv render on Windows, where npx is npx.cmd: render.mjs must start Remotion without a shell
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm

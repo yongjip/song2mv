@@ -17,6 +17,9 @@ export function linesDrawnByScene(song: Song): Set<string> {
   return new Set(song.lines.filter((l) => hot.has(l.section)).map((l) => l.id));
 }
 
+/** No 9:16 scene of its own: the short shows LyricScene in its band */
+export const VerticalScene: React.FC<{ T: number }> | null = null;
+
 export const LyricScene: React.FC<{ T: number }> = ({ T }) => {
   const ctx = useSong();
   const { song, theme, grid } = ctx;

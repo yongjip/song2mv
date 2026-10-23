@@ -127,6 +127,7 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     if t1 is not None and t1 > video_end + 0.5:
         warnings.append(f"--to {t1:g} is after the video's end (song time {video_end:.1f} s); measured up to there")
     t_end = min(video_end if t1 is None else t1, video_end, float(song["duration"]))
+    F = F[:max(0, math.ceil(round((t_end - t0) * 10, 6)))]
     lines = [r for r in load_lines(song) if r["start"] >= t0 and r["end"] <= t_end + 0.01]
 
     body = F[:, : int(H * body_frac), :]
@@ -157,10 +158,17 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
         hits = [t for t in cut_t if nxt["start"] - beat <= t <= nxt["start"]]
         stop[s["id"]] = math.ceil(round(((hits[-1] if hits else nxt["start"]) - t0) * 10, 6)) - 1
 
+    raw_cuts = set(raw)  # also the cut-like frames the 0.3 s merge folds into one cut
+    starts = sorted(r["start"] for r in load_lines(song))
     per = []
     span = {}  # line id → (i0, i1): it is measured on the frame changes diff[i0:i1], frames i0 … i1
     for r in lines:
         i0, i1 = idx(r["start"]), min(len(diff), idx(r["end"]), stop.get(r["sec"], len(diff)))
+        if i0 + 1 in raw_cuts:  # a cut on the line's first word opens its shot
+            i0 += 1
+        nxt = next((t for t in starts if t > r["start"]), None)
+        if nxt is not None:  # a cut from just before the next line's first word on is the next line's
+            i1 = min([i1] + [c - 1 for c in raw_cuts if i0 < c <= i1 and t0 + c / 10 >= nxt - 0.2])
         if i1 - i0 < 3:
             continue
         per.append((r, float(diff[i0:i1].mean()), float(cover[i0:i1].mean())))
@@ -181,7 +189,6 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
         return [(x["id"], x["value"]) for x in rows][:12]
 
     song_t = lambda i: round(t0 + i / 10, 2)  # noqa: E731
-    raw_cuts = set(raw)  # also the cut-like frames the 0.3 s merge folds into one cut
 
     def under_goal(series, i0, i1, goal):
         """The longest part of series[i0:i1] whose every second (all of it, when shorter) is under the goal, or else
@@ -205,6 +212,13 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
             hi -= 1
         return lo, hi, float(series[lo:hi].mean())
 
+    def whole_frame(i0, i1):
+        """Whether a line's change covers the frame: in most frames, 70 % of a 4×8 grid's cells change by at least half
+        the mean (a camera move over fine detail, a flicker), not one part of it (a mover)"""
+        d = np.abs(np.diff(body[i0:i1 + 1], axis=0))
+        cells = np.stack([c.mean(axis=(1, 2)) for band in np.array_split(d, 4, axis=1) for c in np.array_split(band, 8, axis=2)], 1)
+        return float(np.median((cells >= cells.mean(axis=1, keepdims=True) / 2).mean(axis=1))) >= 0.7
+
     def where(x, name):
         """Where a failing line failed: its measured stretch, the cuts in it, and the part or moment behind the number."""
         i0, i1 = span[x["id"]]
@@ -226,6 +240,8 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
         said.append("cuts at " + ", ".join(f"{song_t(i):.1f}" for i in cuts) if cuts else "no cut")
         if name == "motion.max" and cuts:
             said.append(f"{x['without_cuts']} without the cuts")
+        elif name == "motion.max" and whole_frame(i0, i1):
+            said.append("the whole frame changes, as under a camera move over fine high-contrast detail")
         x["msg"] = "; ".join(said)
         return x
 
@@ -298,12 +314,22 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
     gaps, longest = [], 0.0
     edges = [t0] + cut_t + [t_end]
     for s0, e0 in zip(edges, edges[1:]):
-        kinds = {s["kind"] for s in secs if s["start"] < e0 and s["end"] > s0}
-        if kinds <= set(gk["gap_exempt_kinds"]):
-            continue
-        longest = max(longest, e0 - s0)
-        if e0 - s0 > gk["max_gap_sec"]:
-            gaps.append((round(s0, 1), round(e0, 1)))
+        # only the parts of the stretch outside exempt sections count, each on its own
+        parts: list[list[float]] = []
+        for s in ordered:
+            lo, hi = max(s0, s["start"]), min(e0, s["end"])
+            if hi <= lo:
+                continue
+            if s["kind"] in gk["gap_exempt_kinds"]:
+                parts.append([])
+            elif parts and parts[-1]:
+                parts[-1][1] = hi
+            else:
+                parts.append([lo, hi])
+        for lo, hi in (p for p in parts if p):
+            longest = max(longest, hi - lo)
+            if hi - lo > gk["max_gap_sec"]:
+                gaps.append((round(lo, 1), round(hi, 1)))
     check("cuts.max_gap", not gaps, round(longest, 1), {"max": gk["max_gap_sec"]},
           f"{len(gaps)} stretches over {gk['max_gap_sec']} s without a cut {gaps[:10]}", gaps=gaps)
 

@@ -43,7 +43,11 @@ the progress log and the JSON:
 
 - **Section parsing** (`── [Chorus] → ch1 (hot)`): are the kinds right? A section named calm (a bridge, an outro)
   that is about as loud as the verses becomes `mid`, and `warnings` says so. Fix with `section_kinds` in `song.json`.
-  Lines in `( )` were skipped as stage directions unless their section is in `keep_parenthesized_in`.
+  Lines in `( )` were skipped as stage directions unless their section is in `keep_parenthesized_in`. A `/` or `–`
+  between words stays in the line's `text`, where a scene can split on it, but is not a word: it has no time and is
+  left out of the captions, `song.lrc` and `song.srt`. A sheet without `[Section]` lines gets sections proposed from
+  its repeated lines, listed in `warnings` and written to `<work>/lyrics.sections.txt`: if one is wrong, edit that file
+  and sync again with `--lyrics` pointing to it.
 - **`◀ no run found this line` / `◀ only run [k]` / `◀ runs disagree`**: weak spots. More runs help
   (`--runs 5`, finished runs are reused). A bigger model (`--model medium`) helps more but is slower.
   `◀ back in lyric order (was at T)`: the merged runs had put the line on another copy of its words, so it was
@@ -115,7 +119,11 @@ different central image. For each, write:
   - an isometric miniature;
   - kinetic typography only, or neon signs on brick.
 - **Palette, texture and typeface.** The typeface is part of the look: rather than a system font, use an OFL font
-  file imported from `src/` (`song2mv render` ignores `public/`), and check stills on the machine that renders.
+  file imported from `src/` (`song2mv render` ignores `public/`) and loaded with the kit's `loadFont` at the top of a
+  module: `import lilita from "../fonts/LilitaOne-Regular.ttf"` and `export const DISPLAY = loadFont("Lilita One",
+  lilita)` give `fontFamily` its value, and every frame waits for the file. Name the family in `theme.font` to set the
+  captions in it. Not a `delayRender()` of your own at the top of a module: Remotion drops its handle, and the timer
+  left behind failed one full render and stalled the next.
 - **Main character or motif,** and how it changes over the song.
 - **First chorus:** how it hits, the song's biggest moment.
 
@@ -143,8 +151,9 @@ and any kit changes into it.
   protagonist is more watchable than a slideshow of effects.
 - **Hit points**: the first beat of each chorus, drops, the last word. These get the biggest moment (cut, flash,
   slam). Use `grid.bar(k)` and line/word times — never hand-typed seconds.
-- **Contrast**: chorus 2 must not look like chorus 1 (the check measures it). Verses cut on an uneven rhythm
-  (2 bars, 1 bar, 3 bars …), not every bar.
+- **Contrast**: chorus 2 must not look like chorus 1 (the check measures it). The same words in the same place
+  look alike to it even over another sky: move or restyle chorus 2's big type and boxes too. Verses cut on an uneven
+  rhythm (2 bars, 1 bar, 3 bars …), not every bar.
 - **Text**: which lines become big type in the scene (`Slam`, `BigLine`), which stay as bottom captions.
 
 **Then get the pieces, in this order:**
@@ -181,11 +190,38 @@ song2mv render <work>/mv.json --template <work>/video --still 1      # first use
 Write the song's scenes in `<work>/video/src/scenes/` and export them from `src/scenes/index.ts` (`Scene` and
 `linesDrawnByScene`). Draw them in the chosen concept's style, and take what fits from the kit in `src/kit/`.
 
+**Plan the cuts with the kit; don't write cut logic.** In five trial videos every agent wrote 750–1200 lines of scene
+code and rebuilt the same cut machinery, and one lost half an hour iterating cut plans against `check`. The kit has it:
+
+- `planShots(ctx, from, to, framings)` (`src/kit/plan.ts`) plans a stretch's cuts, which framing each takes, its drift
+  and the hits, by section kind: verses cut unevenly on bar lines and a 16th before a line's first word, never twice
+  in a short line, at least every 5.2 s; calm sections hold slow shots; hot sections cut on downbeats with a punch;
+  chorus 2 takes the framings in another order. It returns the kit camera's `shots` and `hits`; `pattern` sets your
+  own bar counts.
+- A `Board` (`src/kit/storyboard.tsx`) is a stretch that starts at a line id, a section id or a time: a `world` (SVG of
+  `T` on the stage), its `framings` (and `tall` ones for 9:16), and optionally `pattern`, `drift`, `hits`, an
+  `overlay` (text over the camera) and `big` (its lines as big type, low in the frame).
+  `<Storyboard T={T} boards={…} />` draws the board on at T (`wrap` holds the filmed world in a style pack's
+  `paper.Stack` or the like), the same with `vertical` is the `VerticalScene`, and `linesDrawnBy(song, boards)` gives
+  `linesDrawnByScene`. A board's start is a cut, planned with its section's other cuts: the rhythm counts it, and a
+  section with boards at its lines cuts inside as few lines as its rhythm allows, inside none under 2.5 s if it can.
+  Key boards to the lines that name something, every 2 lines or more and unevenly: in one outro three boards 2 lines
+  apart cut too evenly for `cuts.rhythm`. A board at a line opens on its first framing in every copy of the section.
+- A cut counts only when the picture changes: give a world framings that show different parts of it (the sky, the
+  ground, the subject up close), not one layout at two zooms. A large still overlay hides cuts from `check`.
+
+**The starter** (`src/scenes/Starter.tsx`) is a whole video built that way from kit worlds (a street, a room, a stage,
+fireworks, a beach, hills) that passes `check` on any song as it is. To start from it, put the line given in
+`src/scenes/index.ts` in place of the `LyricScene` one. Then make it this song's: edit its marked block (`SHOW`: what
+each section, copy or line shows and which lines are big type; `PALETTE`; `HERO`) and replace its worlds with the
+concept's. Its look is the kit's: a starting point, never the video.
+
 **The frame comes from the song config.** Around your scenes the template draws a background, the title and the
 captions in `theme`'s colours and font; in 9:16 its starry sky fills the screen above and below the stage. Over the
 scenes it lays a dark vignette, and a white flash at the start of each hot section, placed on the one-tempo grid.
 Left at the defaults, they put the kit's neon night around every concept, and the title is the file name. Set `title`
-and `theme` (`bg`, `stars`, the text colours, `font`) in `song.json` to fit the concept; `"vignette": false` keeps the
+and `theme` (`bg`, `stars`, the text colours, `font`; `unsungShadow: "none"` on a light `bg`) in `song.json` to fit
+the concept; `"vignette": false` keeps the
 scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` puts the flashes on the song's real hits
 (`[]` when the scenes flash themselves). Then run `song2mv sync <work>/song.json --from build`.
 
@@ -194,8 +230,8 @@ scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` pu
 Look at it before you design anything (in `<work>/video`):
 
 ```bash
-npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 24 scenes
-npx remotion still src/index.ts Kit-Gallery scene.png --frame=4     # one at full size (1–24)
+npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 28 scenes
+npx remotion still src/index.ts Kit-Gallery scene.png --frame=4     # one at full size (1–28)
 ```
 
 `src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc
@@ -204,19 +240,21 @@ Scene 13 is the paper style pack. Scenes 14–20 are helpers that fit any style,
 (most of those tiles draw the helper again, flat on paper), and a person in bed: one world filmed as shots (14), hits
 (15), flames (16), a storm (17), tears (18), lying awake in bed (19), falling cash (20). Scene 21 is a recipe that
 combines them. Scene 22 is the pixel style pack, scene 23 the comic style pack, scene 24 the pixel pack's type.
+Scenes 25–28 are a body for a head of your own, such as a portrait: walking and gestures (25), the poster props (26),
+a call and writing (27), a hand at the temple (28).
 
 | family | pieces | for |
 |---|---|---|
 | sky and light | `SkyGradient` (dawn, day, dusk, night; `to` + `k` blend; `stars`), `Sun`, `Moon`, `Clouds` (`time`, `light`, `size`), `Rays`, `BeatGlow`, `Flash`, `Bokeh`, `Dust`, `Snow` | time of day, mood, the beat in light |
-| camera | `Camera` (one world filmed as `shots`: each cuts in at a bar or word time and looks at `x`, `y` with `zoom` and `rotate`, may drift `to` the next cut or `glide` in; `hits` punch the zoom in), `cameraAt()` (the same camera as numbers and as SVG or CSS transforms), `Drift` (a slow zoom) | cutting on the music |
+| camera | `Camera` (one world filmed as `shots`: each cuts in at a bar or word time and looks at `x`, `y` with `zoom` and `rotate`, may drift `to` the next cut or `glide` in; `hits` punch the zoom in), `cameraAt()` (the same camera as numbers and as SVG or CSS transforms), `Drift` (a slow zoom), `planShots` and `Storyboard` (above) | cutting on the music |
 | places | `City` (night, `dusk`, `day`; `shift` pans by depth), `Street` (pavement, road, lamps), `Room` (`view` through the window; `bed` + `sleeper`), `Bed` (a sleeper between mattress and blanket, `cover`, `head`; `over` for what lies on the bedding), `Ground` (ridges, town, trees), `Sea` (`light` path, `beach`), `GridFloor` | where it happens |
-| people | `Person` (15 poses, `lie` on the back among them; `walk`/`run` by `phase`; `look`: outfit, hair, skin, colours; `prop` + `personHand()`; `personEye()` for tears or a glint), `Crowd` (`handsUp`, `jump`, `idle`, `lights`), `MiniPerson` | the protagonist, the audience |
+| people | `Person` (15 poses, `lie` on the back among them; `walk`/`run` by `phase`; `look`: outfit, hair, skin, colours; `prop` + `personHand()`; `personEye()` for tears or a glint), `Crowd` (`handsUp`, `jump`, `idle`, `lights`), `MiniPerson`; for a head of your own, such as a photo portrait: `PortraitCutout` (clips the head and neck out of a bust, so its shoulders don't double the body's), `PortraitBody` (from the front; arm angles, `feet`, `lean`; `gesture` `phone`, `point`, `smoke` or `hold` a `frontProp`), `portraitMotion()` (walk and run on planted feet, gestures that settle; turn the head by its `headAngle`), `PortraitInteraction` (a call, writing, a hand at the temple: hands, prop and contact worked out together from the head's `profile`; check them with the real portrait at the real camera size) | the protagonist, the audience |
 | objects | `Phone` (`messages`, `typing`, `call`), `Clock` (`spin`, `ticks` on the beat, alarm `ring`), `Heart` (`beat`, `crack`), `Car` (`distance` turns the wheels), `Plane` (`trail`), `Lantern`/`Lanterns` | what the lyrics are about |
 | effects | `Rain` (`strength`, splashes on `ground`), `Fireworks` (`bursts` at times), `Confetti`, `Hit` (`burst`, `sparkle` or `ring` at a point and time), `Flames` (a fire to a candle; `flat`, `wind`, `strength`) and `FlamesAlong` (an object's edge on fire), `Storm` (a storm deck of `Clouds` lit from inside by its `strikes`) and `Lightning` (`fork` or `zigzag` bolts; a strike's `to` aims it at a point), `strikeFlashes()` (for `Flash`), `Tears` (well up, run down a cheek, drip; `spot` dampens where they land), `Cash` (banknotes tumbling down) | weather, hits and the big moments |
 | text | `Slam`, `Quiet`, `BigLine`, `Captions` | lines in the scene |
 
-**Style packs** (`src/kit/styles/`, one namespace each: `import { paper, pixel, comic } from "../kit"`). `paper`, for
-paper cut-out:
+**Style packs** (`src/kit/styles/`, one namespace each: `import { paper, pixel, comic, poster } from "../kit"`).
+`paper`, for paper cut-out:
 - outlines cut by hand, each with its own seed: `paper.rect`, `paper.ellipse`, `paper.poly`, `paper.strip` (stems,
   cords, steam); join outlines to cut holes;
 - `paper.Cut`: one piece, placed with `x`, `y`, `rotate`, `s`; `lift` raises it off the paper under it and its
@@ -252,7 +290,7 @@ by whole numbers; never `scale()` a sprite or a layer, or blocks of two sizes me
   consonants at any scale. The 16 blocks were measured with Pretendard, the theme's first font; Apple SD Gothic Neo,
   where a Mac without it falls back, reads rougher (thin strokes, short bars as one-block stubs), and Noto Sans CJK
   KR (Linux) reads cleanly. For the same letters on every machine, import an OFL Korean font file from `src/`, load
-  it before the first frame and pass its family as `font`;
+  it with `loadFont` and pass what it returns as `font`;
 - `pixel.Dialog`: a game dialog box that letters the line being sung word by word (sung words lit, the rest dim),
   wrapped to its `width` and set once per line, so no word moves; a line longer than `rows` turns the page. Put the
   lines it shows in `linesDrawnByScene`. Its 5×7 letters are 7 blocks tall: `px` 6 keeps them over 36 px in 16:9
@@ -279,6 +317,12 @@ inside only the lines you place: `comic.Brush` (tapered: features, folds, an arm
 (a forearm over the body) goes in a later contour Ink; check the joints at 2×. The contour fills narrow gaps and sharp
 notches: give a small form (an ear) a lighter `line`, draw a hole (a mug handle's) as a filled shape in an `Edge`,
 round the dips between tufts of fur, and keep balloons, tails and trailing bubbles clear of the figure.
+
+`poster`, office and street props drawn flat as on a poster, in `poster.colors`: `poster.Phone` (its `children` on
+the screen, such as `poster.Bubble`s with a `tail`), `poster.Notebook` (`write` 0–1), `poster.CoffeeCup`,
+`poster.Glass` (`fill`), `poster.Lighter`, `poster.Smoke` (steam, or a `PortraitBody`'s cigarette from
+`portraitPropTip()` given the body's props), `poster.Building` (`sign`), `poster.Light` (`lit`), `poster.Cloud`, and
+`poster.SleevedHand` going into a `poster.Pocket`. Check a held prop at both ends of its move and in between.
 
 Putting a scene together:
 
@@ -323,7 +367,8 @@ Rules that held up:
 Typecheck (`npx tsc --noEmit` in `<work>/video`), then look at stills of the new section before rendering video. A
 contact sheet draws the scene at many song times in one render, each frame labelled with its time: write its props
 into `<work>/video/sheet.json`, such as `{"times": [33.1, 34.6, 36.2, 37.7]}` (`"cols"`: frames per row;
-`"vertical": true`: the 9:16 frame), and run this in `<work>/video`:
+`"vertical": true`: the 9:16 frame), and run this in `<work>/video`. It draws the bare scene, for scene work; once
+there is a video, `song2mv sheet` shows it as rendered (step 5):
 
 ```bash
 node render.mjs ../mv.json --composition Contact --props sheet.json
@@ -345,12 +390,18 @@ Iterate on drafts:
 
 ```bash
 song2mv render <work>/mv.json --template <work>/video --from A --to B --draft
-song2mv check <work>/renders/<name>-16x9-A-B-draft.mp4 --song <work>/mv.json --from A --to B --src "<work>/video/src/scenes/**/*.tsx" --json
+song2mv check <work>/renders/<name>-16x9-A-B-draft.mp4 --song <work>/mv.json --from A --to B --src "<work>/video/src/scenes/**/*.tsx" --json > <work>/check.json
+song2mv sheet <work>/renders/<name>-16x9-A-B-draft.mp4 --cuts <work>/check.json
 ```
 
-A draft is the video at 10 fps, the rate `check` measures at: it renders in well under half the time (30 s of a demo
-song: 8 s instead of 19 s), and `check` gives it the same results as the full render. When the stretch passes, render
-it once without `--draft` and check that too; the user only ever sees full renders, since a draft looks choppy.
+A draft is the video at 10 fps and half size (960×540), enough for `check`, which measures 10 frames a second at
+320×180: 30 s of a paper-cut scene renders in 15 s instead of 55–70 s at full size (and about 2.5 min as the finished
+video), and `check` gives it the same passes, fails and cuts as the full render, with per-line motion within 0.3 (a
+line that opens on a cut can differ by about 1). When the stretch passes, render it once without `--draft` and check
+that too; the user only ever sees full renders, since a draft looks choppy and soft.
+Before that full render, look at a few frames at full size (`--still T` renders one): a contact sheet's small tiles
+hid a scene drawn twice, a band across the picture that cost one trial its final render.
+Run one render, still or sync at a time: each uses every core, and two renders in one template copy have hung.
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
 work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
 contact sheets outside `src/scenes/`. Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`
@@ -362,11 +413,31 @@ Each failing line says where: the stretch measured, the cuts in it, and the part
 line) or the biggest change and the motion without the cuts (a frantic line). Change that moment, not the whole scene.
 In a pixel scene a whole-pixel camera step (`pixel.cameraAt`) can count as a cut, in the list and in that motion.
 
+**Look at what you rendered.** `song2mv sheet` tiles the video's own frames into a PNG, captions, title and strips
+included, each labelled with its song time and the line sung then (or the section between lines). With `--cuts` it
+takes a frame 0.3 s into each shot from the saved check result, whose `--from` and `--song` it reuses; `--every S`
+takes one from the middle of every S seconds, `--times` the song times you list, and `--crop X,Y,W,H` zooms into one
+region as `Contact`'s `crop` does. A long sheet goes on more pages, all listed in `outputs` (`--json`): look at every
+page. No number catches two lyric lines on screen at once, a caption over big type or a cut-off title; a sheet does.
+Make one of every full render too (`--every 3 --song <work>/mv.json`).
+
 - **Held shots** measure still; a slow drift (the shot's `to`) keeps one alive. On one pixel street a 4–6 pixel drift
-  over a 2–3 s close-up measured 2–5; a 14-pixel drift measured up to 16 (frantic).
+  over a 2–3 s close-up measured 2–5; a 14-pixel drift measured up to 16 (frantic). A small thing moving across a
+  wide shot measures still too (a car crossing a street measured 0.14): frame it closer or pan with it. Fine
+  high-contrast detail (window grids, railings, stripes, stair treads) measures as motion under any drift: over one
+  brownstone street the planner's drift alone measured 8–9 on most verse lines, and `check` says "the whole frame
+  changes" when such a line is frantic without a cut. Draw that detail coarser or lower in contrast, or calm the
+  drift: `drift: 0.5` on the street's boards (`planShots(…, { drift })`) took its verse lines from 5.4 to 3.6 on
+  average, none of them still.
 - **Shot variety.** `check` does not see a shot coming back: one video cut back to the same wide street shot about
-  30 times. Make a contact sheet with `times` at each of `check`'s `cuts` plus 0.3 s. A shot that continues across
-  neighbouring tiles is one shot; reframe a framing that returns after other shots.
+  30 times. The `--cuts` sheet has a frame of every shot. A shot that continues across neighbouring tiles is one shot;
+  reframe a framing that returns after other shots.
+- **Dense lines** (a line every 1.5 s or less, as in rap): don't cut on every line of a mid section. A short line
+  that holds two cuts reads frantic, and even spacing fails `cuts.rhythm`; cut every 2–3 lines, unevenly, and keep
+  the fast cutting for hot sections (`planShots` does all this). Big type that changes on every line counts as a cut,
+  and so does a large transform such as a flip; a reframe of a flat or dark set may not, so change the set or its
+  palette between shots. Cut a 16th before a line's first word or on it, not just after it: `check` counts that cut
+  as the line's own, not as motion in the line before.
 
 **Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip of the full render and ask
 what is boring. Their answer outranks the check.
@@ -403,11 +474,17 @@ Where things go (`VERTICAL` in the kit has the numbers):
   middle (540, 675), as large as in the 16:9 frame; pass a larger zoom to come closer. A wide shot's point is
   usually the middle of the stage, not its subject: give the tall frame's wide shots the subject's point
   (`shots.map(s => (s.zoom ?? 1) > 1.5 ? s : { ...s, x: 900, y: 820 })`), or the subject drops under the captions.
+  Write a board's `tall` framings with the starter's `tall()`, not `at()`, which keeps a framing on the 16:9 stage
+  and so moves a tall frame's subject off its middle.
   A close-up shows more below its point than in 16:9, and that part sits under the captions: if it is the subject's
   body, zoom out until the subject fits above y 1080.
 - **Below y 1248** the apps cover the frame: picture only. The view keeps the frame on the stage's sides and top but
   runs on past its bottom (the kit's places end at y 1080), so draw the ground on down there, or a foreground such
-  as a crowd.
+  as a crowd. How far it runs on depends on the zoom: the frame ends 1245 / zoom stage px below the view's point, so
+  a 2× close-up of a subject at y 760 shows only about 300 px below y 1080. Put the foreground just under y 1080, not
+  350–700 px down, where only wide shots reach. The view also stops at the stage's top edge, so a subject near it
+  lands above (540, 675); a scene whose background reaches above the stage passes the area it fills as `world`
+  (`verticalView(cam, { world: [0, -900, 1920, Infinity] })`).
 
 A contact sheet with `"vertical": true` draws the safe box and the captions' top as dashed lines (a crop sheet
 leaves them out): check them there before rendering the short. `check` measures the top 56 % of a short, above the
@@ -418,6 +495,15 @@ between shots that look different.
 
 Full render(s), short(s), `song.srt` / `song.lrc`, a short list of what was hand-fixed (manual timing values, goals
 changed and why) and the spots nobody has heard yet, each with its clip. Nothing from the work folder gets committed.
+
+For uploading, ask where the user will post it:
+- a platform with a size limit gets `song2mv render <work>/mv.json --template <work>/video --max-mb N`, which encodes the
+  finished video again to fit and keeps its sound;
+- an album or playlist page gets a square cover from `--cover T` at a title or hook frame;
+- music platforms that show synced lyrics take `<work>/song.lrc` (`song.words.lrc` has word times).
+
+A finished render is already capped at 8 Mbit/s, about 60 MB a minute at most; pass `--max-mb` when the limit is
+lower than that.
 
 **Give back what other songs can use.** Look over what you drew for the video. Some pieces are generic, not tied to
 this song: an object, a pose, a place, a style pack. Offer those to the user as a pull request to song2mv, following

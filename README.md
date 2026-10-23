@@ -19,6 +19,7 @@ Claude Code or Codex — or a person — can use just the part they need.
 | `song2mv beats` | audio → tempo and beat grid only (no lyrics, no speech recognition) | alpha |
 | `song2mv click` | a stretch of the song with clicks on the beat grid and ticks on the lyric words, to check the timing by ear | alpha |
 | `song2mv check` | measures a rendered video per sung line: frozen picture, empty screen, repeated chorus, cut rhythm | experimental |
+| `song2mv sheet` | a contact sheet of a rendered video: frames at song times (or one per shot), labelled with the time and line | alpha |
 | `song2mv render` | renders `mv.json` as a 16:9 and/or 9:16 lyric video with a [Remotion](https://www.remotion.dev) template | experimental |
 
 ## Install
@@ -46,7 +47,7 @@ Install only what you use — the parts differ a lot in size:
 
 | you run | install | adds roughly |
 | --- | --- | --- |
-| `check` | `song2mv` | numpy (35 MB) |
+| `check`, `sheet` | `song2mv` | numpy (35 MB) |
 | `beats`, `click` | `song2mv[beats]` | librosa, scipy, numba (300 MB) |
 | `sync` | `song2mv[sync]` | beats + faster-whisper (130 MB) + a whisper model on first run (small: 460 MB) |
 | `render` | Node 18+ | Remotion and a headless Chrome on first render (570 MB) |
@@ -57,6 +58,7 @@ Install only what you use — the parts differ a lot in size:
 song2mv sync song.mp3 --lyrics lyrics.txt --language en --title "My Song"   # → song2mv-work/song/
 song2mv render song2mv-work/song/mv.json --from 60 --to 75 --aspect both
 song2mv check song2mv-work/song/renders/song-16x9-60-75.mp4 --song song2mv-work/song/mv.json --from 60 --to 75
+song2mv sheet song2mv-work/song/renders/song-16x9-60-75.mp4 --song song2mv-work/song/mv.json --from 60 --every 1
 ```
 
 The work folder is relative to where you run it: run it outside your code repositories, or pass `--out`. If the
@@ -87,7 +89,7 @@ song2mv sync DIR/song.json [--from grid] [--runs 5]   # rerun after editing song
 
 | step | output | what happens |
 | --- | --- | --- |
-| lyrics | `lyrics.txt` | the lyric sheet (`[Verse]`, `[Chorus]` … lines name sections) |
+| lyrics | `lyrics.txt` | the lyric sheet (`[Verse]`, `[Chorus]` … lines name sections; a sheet without them gets sections proposed from its repeated lines, in `lyrics.sections.txt`) |
 | asr | `asr/runN.json` | faster-whisper, **several runs** with word timestamps; finished runs are reused |
 | align | `merged.json` | each run aligned to the lyric sheet character by character, then merged per word |
 | grid | `grid.json` | tempo, first beat, which beat starts a bar, where the song leaves that grid, and its swing |
@@ -213,24 +215,54 @@ song2mv check video.mp4 --song mv.json [--from 92 --to 102] [--goals my-goals.js
 earlier. Checks that cannot run on a stretch (no repeated section in it, too few cuts) are listed as skipped, not
 passed. It works on any mp4 that follows the song's timing, not only on song2mv renders. A failing line says where:
 the stretch measured, the cuts in it, and its still or empty part, or for a frantic line its biggest frame change and
-its motion without the cuts.
+its motion without the cuts (without a cut: whether the whole frame changes, as under a camera drift over fine detail).
 
 The default [goals](https://github.com/yongjip/song2mv/blob/main/src/song2mv/check/goals.json) are a starting point
 measured on one video; your own goals file only needs the values you change. Passing is necessary, not proof of fun.
+
+## `song2mv sheet`
+
+```bash
+song2mv sheet video.mp4 --song mv.json --every 3                  # a frame from the middle of every 3 s
+song2mv sheet video.mp4 --song mv.json --from 92 --times 93.1,97.6   # frames at these song times
+song2mv check video.mp4 --song mv.json --json > check.json
+song2mv sheet video.mp4 --cuts check.json                         # a frame 0.3 s into each shot
+song2mv sheet video.mp4 --every 2 --crop 700,380,312,400 --cols 3 # one region, zoomed
+```
+
+A contact sheet of the video as rendered, captions, title and strips included: a way to review a video without
+watching it. Each tile is the frame on screen at its song time, labelled with that time and, with `--song`, the id of
+the line sung then (or of the section between lines). `--from` is the song time of the video's first frame, as for
+`check`; without it, a stretch keeps the start in the name `render` gave it (`song-9x16-49.72-72.2.mp4` starts at
+49.72). `--cuts` reads the start and the cuts of a saved `check --json` result and also takes its `--from` and
+`--song`. `--crop X,Y,W,H` shows one region of each frame, in the video's pixels, scaled to the tile width (`--cols`
+sets the zoom; the label shows it). The sheet is a PNG 1920 px wide, `video-sheet.png` next to `video.mp4` unless
+`--out` names it; frames that do not fit on one page, about 2400 px tall, continue on `video-sheet-2.png` and so on.
+The labels come from a built-in bitmap font, so it needs nothing but ffmpeg and numpy: no `drawtext`, no image library.
 
 ## `song2mv render` (experimental)
 
 ```bash
 song2mv render mv.json                                        # whole song, 16:9, plain lyric video
 song2mv render mv.json --from 95 --to 111 --aspect 9x16 --hold 2.5   # a hook cut whose first frame shows the payoff
-song2mv render mv.json --from 95 --to 111 --draft             # 10 fps, for the render → check loop
+song2mv render mv.json --from 95 --to 111 --draft             # 10 fps at half size, for the render → check loop
 song2mv render mv.json --still 98.5 --aspect both            # PNG frames to look at
+song2mv render mv.json --max-mb 200                          # the finished video, at most 200 MB (an upload limit)
+song2mv render mv.json --cover 3.2                           # a 1080×1080 cover from the frame at 3.2 s
 song2mv render mv.json --template video/                     # your own copy of the template, for your own scenes
 ```
 
-`--draft` renders the same frames at 10 fps, the rate `check` measures at, and names the file `…-draft.mp4`. On 30 s
-of the two demo songs it rendered in 6–10 s instead of 14–25 s, and `check` gave each draft the same results as its
-full render. Iterate on drafts and render the finished video once without it.
+`--draft` renders the same frames at 10 fps, the rate `check` measures at, and at half size (960×540), and names the
+file `…-draft.mp4`. On 30 s of a paper-cut scene it rendered in 15 s, against 55–70 s at full size and about 2.5 min
+for the finished video, and `check` gave drafts the same passes, fails and cuts as full-size renders. Iterate on drafts
+and render the finished video once without it.
+
+A finished video is capped at 8 Mbit/s, the rate YouTube asks for at 1080p30. Flat styles stay far below it; the paper
+pack's grain ran near 14 Mbit/s, and at the cap a 4-minute video is about 250 MB instead of 440. `--max-mb N` encodes a
+video that is still over N MB again, in two passes, to fit an upload limit, and keeps its sound. `--cover T` writes a
+square cover for album and playlist pages: the 16:9 frame at song time T, whole, over a blurred fill of itself.
+Next to them, `sync` already wrote `song.lrc` (line times, which most players and music platforms import),
+`song.words.lrc` (word times) and `song.srt` (subtitles).
 
 Out of the box you get a plain lyric video that follows the song's structure: calm sections with a low moon and
 embers, mid sections with a floor grid rolling on the beat, hot sections with rays on the beat and the line itself

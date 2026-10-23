@@ -6,6 +6,12 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 
 First release (0.1.0).
 
+### Fixed
+- CI verifies the built wheel and source archive survive the same upload/download action handoff used by
+  releases, comparing SHA-256 checksums without publishing. Dependabot groups the two artifact actions.
+- Rendering selects a free port across both address families. With Remotion 4.0.537, an unrelated IPv6-only
+  Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
+
 ### Added
 - `song2mv sync`: audio + lyrics → beat grid, word-timed lyrics, `song.lrc`, `song.words.lrc`, `song.srt`, `mv.json`
   and `music.json` (loudness and likely section boundaries, for scene design). Several whisper runs merged per
@@ -43,7 +49,15 @@ First release (0.1.0).
   words within 0.1 s of the annotations rose from 52 % to 63 % (all 79: from 55.1 % to 55.5 %; within 0.3 s and 1 s
   unchanged). The other songs get byte-identical files. A `grid.json` made before this is reused as it is:
   `sync WORK/song.json --from grid` measures the swing.
-- Words pinned in `manual` keep the times you gave: they are no longer snapped to the beat grid.
+- Words pinned in `manual` keep the times you gave: they are no longer snapped to the beat grid. The sync log lists
+  each word of a line the runs did not time at the time it keeps, then the vocal onset near it
+  (`Beep, 66.26 (onset 66.52, +7 dB)`): its arrow (`Beep,@66.26→66.52`) read like a move, and one run opened
+  `lyrics.json` to see whether its pins had been kept.
+- Without a beat map, `sync` leaves the words in an `off_grid` stretch at whisper's times and snaps the words around
+  it to 16ths, so a word just outside the stretch could snap across its edge, past a neighbour that kept its time, and
+  come out of order with it; such a word now keeps whisper's time too. A first word placed at the song's start could
+  snap to the 16th before 0 s; snapped times now stop at 0. Neither happens on the songs at hand: on the 79
+  JamendoLyrics songs, both demo songs and 11 trial songs, 10 of them with stretches and no beat map, no word moves.
 - `warnings` says when the tempo pick is uncertain: when the lyric line gaps chose another tempo than the one the
   onsets fit best, it names both. When the grid fits almost none of the song and the music's own tempo there drifts,
   the warning no longer names a `--bpm` taken from it (on a drifting song it advised 80 BPM, two thirds of the real
@@ -100,6 +114,67 @@ First release (0.1.0).
   cuts`. Every other field is unchanged on that video's four versions. The skill's step 5 adds that in pixel scenes a
   whole-pixel camera step can count as a cut, how a held shot stays alive (a slow drift), and a contact sheet of every
   cut to find shots that come back: the benchmark cut back to one wide street shot about 30 times.
+- A finished render is capped at 8 Mbit/s (x264 `-maxrate 8M -bufsize 16M` on Remotion's CRF 18), the rate YouTube asks
+  for at 1080p30. The paper pack's grain ran near 14 Mbit/s, so a 4-minute video came to 440 MB, over many upload
+  limits; at the cap it is about 250 MB, and at 2× it looks the same. Flat styles stay far below the cap and do not
+  change.
+- `song2mv render --max-mb N`: a finished video still over N MB is encoded again, in two passes, to fit (an upload
+  limit such as 200 MB), with its sound kept as it is. `--cover T` writes a 1080×1080 cover PNG instead of a video: the
+  16:9 frame at song time T, whole, over a darkened blur of itself filling the square (`NAME-cover-Ts.png`). Every
+  upload of today's videos needed both by hand.
+- Rendered videos played the song 43 ms after the picture: Remotion's AAC kept its encoder's 2048 samples of
+  priming at the start, so every hit and lit word came that much before its sound. `render.mjs` now has Remotion mix
+  the audio to WAV and encodes the AAC with Remotion's ffmpeg, which trims it: on a click track and on a demo song the
+  sound is within a sample of the source, and the frames are unchanged. A template copy made before this still renders
+  43 ms late; copy its new `render.mjs` or a new `--template` folder.
+- The template's captions now give way to a line the scene draws as soon as that line starts after the caption
+  line's last word. Before, they gave way only when the caption line ended, so a scene-drawn chorus line that came in
+  on a pickup, before the last verse line ended, put two lyric lines on screen at the chorus hit. A chant drawn over
+  the middle of a captioned line still leaves the caption up.
+- `check` also measured the next line's lead-in as motion in the line before it: a cut a 16th before the next line's
+  first word, as the guide advises, fell in the last frames of the line before, or in its middle when a short line
+  is measured over its 1.5 s minimum, and made it frantic. A line's measure now ends before a cut from 0.2 s before
+  the next line's first word on. A line whose only motion was that cut can now measure still, as it looks.
+- `cuts.max_gap` counted a stretch without a cut in full when it ran on into a calm section, where long shots are
+  allowed; now only its part outside such sections counts.
+- `check` measured the whole video, also past the end of the stretch it reports (`--to`, or the song's end in a
+  longer video): cuts after that end were listed under `cuts` and counted in their section's cut rhythm, and
+  `cuts.max_gap` ran on to the first of them (a 4 s stretch reported a 6 s gap). Frames after the end are now left
+  out: a video checked with `--to` gets the same results as the same video cut there.
+- `check` measured a cut on a line's first word as motion inside the line: at 10 fps a cut 0.1 s after the word
+  falls in the line's first frame change, and on a 1.4 s line that one cut alone read as frantic. That frame change
+  now opens the line's shot and is left out of its motion.
+- `sync` warned that `lyrics.txt` in the work folder "differed … and was replaced" whenever `song.json` pointed at
+  another sheet, which reads like an error after an edit made on purpose. It now warns only when the work folder's
+  copy was edited by hand since the last run (`state.json` keeps its hash).
+- `theme.unsungShadow`: the shadow of words not sung yet, which was always dark. `"none"` suits a light background.
+- The guide adds how to cut dense songs (a line every 1.5 s or less): not on every line of a mid section, big type
+  that changes per line and large transforms count as cuts, and a reframe of a flat or dark set may not. It also says
+  to run one render, still or sync at a time, and how `verticalView` takes a background that reaches above the stage.
+- Without a terminal, `song2mv render` showed Remotion's rendering progress but not its encoding, so a final render
+  could print nothing for minutes while it encoded, long enough for an agent's stall rule to kill a healthy render.
+  Encoding now prints a line per 25% too, and each prints its latest count at least every 30 s.
+- Music after the last sung line gets a quiet section of its own (`outro`, "(instrumental)", calm), as music before
+  the first one already did, when it lasts over 4 s from the bar line after the last line. Before, it belonged to
+  the last sung section: a song's 20 s instrumental ending counted as its last chorus, so the chorus look and
+  `check`'s cut gap ran on to the end.
+- A section header such as `[Final Chorus]` or `[Chorus Reprise]` took the first three letters of its name as its
+  id (`fin`, a mid section). A name that ends or starts with a known one now takes that one's id and kind (`ch`,
+  hot), and a name that comes twice (`chb`) keeps its kind.
+- `render --draft` also renders at half size (960×540, or 540×960) with a faster x264 setting (`veryfast`, CRF 23):
+  `check` measures at 320×180. A full-size draft of a 4-minute paper-cut song took 6–7 minutes and came to 391 MB. On
+  30–90 s stretches of four trial songs and a pixel benchmark, paper-cut drafts rendered 3.0–4.7× faster (30 s:
+  14–15 s instead of 54–69 s; 90 s: 36 s instead of 137 s) into files 6–7× smaller; scenes that already rendered 30 s
+  in under 10 s gained less (1.0–1.8×). `check` gave every draft the same passes, fails, skips and cuts as at full
+  size; per-line motion moved by 0.08 on average and 0.29 at most over 137 lines, except on one line that opens on a
+  cut whose second frame sits on the cut threshold (correlation 0.631 against 0.619, a cut below 0.62): 1.1. Smaller
+  drafts were no faster, and the paper pack's grain read as motion in them: at a quarter size motion rose by 0.39 on
+  average, 50 lines moved by over 0.5 and a 90 s stretch lost a cut. Pixel scenes (`pixel.cameraAt`, `Pixelate`)
+  stayed within 0.17 even at a quarter size. A template copy made before this renders drafts at full size; copy its
+  new `render.mjs`.
+- An interrupted `render.mjs` left its temporary folder, which holds a link to the song, behind. It now removes it on
+  Ctrl-C, when Remotion fails, and when Remotion stops without writing a file (on Ctrl-C it exits 0). In that last
+  case it now says which file was not written, where before it printed the path as if the file had been written.
 - On Windows, `song2mv render` failed at its first Remotion call: the template's `render.mjs` ran `npx`, which is
   `npx.cmd` there and cannot be started without a shell. It now runs Remotion's CLI with the node that runs it, and
   a new CI job renders a still of the sample song on Windows. Run in a folder without an install, `render.mjs` says
@@ -156,6 +231,68 @@ First release (0.1.0).
   as the hand-tuned version did, except one close-up whose subject the hand-made tall canvas had cut off, now in the
   picture; `check` passes it 6/6 as before. The skill's step 6 says where text, the subject and the ground go. The
   default template renders as before.
+- Cut planning and storyboards in the scene kit, and a starter scene built on them. Writing scenes is the slowest part
+  of a video: 12.7 of 23 minutes of a new-user run, and in five trial videos every agent wrote 750–1200 lines of
+  scene code that rebuilt the same machinery (a cut list from an uneven bar pattern, a timeline of boards, big karaoke
+  lines, a 9:16 refilm), while one lost about 30 minutes iterating cut plans on a dense rap song against `check`.
+  - `planShots(ctx, from, to, framings)` (`src/kit/plan.ts`) plans a stretch's cuts, the framing each takes, its
+    drift and the hits, so they pass `check` by construction: cuts on bar lines or a 16th before a line's first word;
+    mid sections uneven (interval CV ≥ 0.42 where it can), no shot over 5.2 s, no cut inside a line under 1.8 s and
+    never two in a short one, dense lines cut every 2–3 lines; calm sections held with slow drifts; hot sections on
+    downbeats with a punch on each bar line; a drift on every shot; later copies of a section on the framings in
+    another order; no cut between framings too alike to show it. It follows a song's beat map and swing; `pattern`
+    sets bar counts of your own.
+  - Boards (`src/kit/storyboard.tsx`): a `Board` starts at a line id, a section id or a time and films a `world`
+    through its `framings` (and `tall` ones for 9:16), with optional `pattern`, `hits`, an `overlay` over the camera
+    and `big` lines drawn with `BigLine`, low in the frame, below what `check` measures. `<Storyboard>` draws the board
+    on at T, in 16:9 or, with `vertical`, as the `VerticalScene`; `linesDrawnBy` gives `linesDrawnByScene`. `BigLine`
+    takes `x` and `width`.
+  - The starter, `src/scenes/Starter.tsx`, not used by default: a whole video of kit worlds (hills, a street at dusk
+    and in the rain, a room, a stage, fireworks, a beach) with a hero, a board per section by its role and copy, cut
+    by the planner. An agent edits one marked block (what each part shows, the palette, the hero). Switching to it is
+    one line in `src/scenes/index.ts`, which now exports `VerticalScene` with the other two in that line. Out of the box
+    its drafts pass `check` on the sample song (6/6 in 16:9 and 9:16), both demo songs (9/9 and 9/9; 10/10 and 10/10)
+    and two trial songs, a dense Korean rap (12/12 and 12/12) and a slow one with 8-second lines (11/11 and 11/11).
+    Ported to the boards, one trial's 693-line scene became 615 lines and kept its `check` results (11/11 for the
+    song, 6/6 for the short).
+
+  The default scene, its stills and the gallery render as before.
+- Fixes from the third new-user run, the first through the starter: 42.6 minutes against 30.7 for the run before,
+  about 14 of them lost to what follows.
+  - **Fonts.** `loadFont(family, url)` in the kit loads a font file imported from `src/` and returns the family for
+    `fontFamily`; the compositions hold their first frame until every file has loaded (`useFonts`). The skill's
+    concept step and the starter show it. The run had written Remotion's own pattern, a `delayRender()` at the top of
+    a module, and Remotion's entry, which runs after the scenes' modules, drops such a handle: the font held no frame,
+    and the timer left behind cancelled every render longer than its timeout. Drafts, stills and the short passed; the
+    full render failed at frame 1493, and with a longer timeout and retries took 171 s, two batches of frames waiting
+    58 s each. With the kit's loader the same video rendered in one go, its frames matching the delivered ones (under
+    1 grey level apart on average).
+  - **Drift over fine detail.** `drift` on `planShots`, a `Board` and the starter's `SHOW` scales every shot's push,
+    pan and pull. Over the run's brownstone street, window grids, railings and stoop treads measured as motion under
+    the planner's drift alone, 8–9 on most verse lines against `motion.max`'s 9; `drift: 0.5` on that street's boards
+    took its verse lines from 5.4 to 3.6 on average (the highest from 8.9 to 6.5), with the same cuts and no line
+    still. `check` says "the whole frame changes, as under a camera move over fine high-contrast detail" for a frantic
+    line without a cut whose change covers most of the frame (70 % of a 4×8 grid in most frames): on the run's video,
+    lines with a big mover in them measure 0.53–0.59, those with the drift alone 0.72–1.0. The skill says it under
+    "Held shots".
+  - **Boards keyed to lines.** `Storyboard` plans each section once across its boards (`planBoards` in
+    `src/kit/plan.ts`): every board start is a cut of the plan, counted in the section's rhythm, and a section with
+    boards at its lines cuts inside as few of them as an interval CV of 0.37 allows (check wants 0.35), inside none
+    under 2.5 s if it can, since a board start cuts next to them; each board was planned alone, and its cuts inside
+    2.2 s lines made the run's busy verses frantic. With the run's three outro boards two lines apart,
+    `cuts.rhythm.ou` went from 0.32 to 0.43. Over its final boards, cuts inside the keyed sections' lines went from 13
+    to 4, inside lines under 2.5 s from 8 to none (`v1-06`: 8.25 → 6.22), the verses' rhythm from 0.43 and 0.50 to
+    0.39 and 0.43; one line got a cut its verse's rhythm needed (`v1-03`, 2.8 s, whose own motion of 8.25 then measured
+    10.1), and with `drift: 0.5` on the street's boards every check passes. On 33 synthetic keyed sections the old
+    planner missed `cuts.rhythm` in 10, this one in 4, all of them short outros keyed every 2 lines. A board keyed to a
+    line now opens on its first framing in every copy of the section: verse 2's boards opened on their second one, the
+    line's subject missing. The starter no longer adds a board every 8 lines in a section whose lines have boards of
+    their own, and the skill says to key boards every 2 lines or more, unevenly. `planShots` plans one stretch as
+    before.
+  - **9:16.** The starter's `tall()` writes a 9:16 framing without `at()`'s clamp to the 16:9 stage, which had moved
+    17 of the starter's own 28 tall framings off the points written (a wide shot written for x 800 looked at x 960, a
+    close-up written for y 860 at y 762); its worlds use it. The skill says how far a close-up reaches below y 1080: the frame ends
+    1245 / zoom stage px below the view's point, about 300 px for a 2× close-up of a subject at y 760.
 - `song.json` sets the two effects the template's frame lays over every scene: `"vignette": false` turns off the dark
   vignette, and `"flashes": [[song time, strength 0–1], …]` replaces the white flash at the start of each hot section
   (`[]` for none). `sync` copies both into `mv.json`; without them `mv.json` is as before. Neither could be changed
@@ -174,6 +311,18 @@ First release (0.1.0).
   sets the zoom; the labels show it). Before the first full render the skill now asks for one crop sheet per character
   and per big-type moment: a whole frame on a sheet hides rough lines, seams, gaps and clipped text, and in the two demo
   runs the owner found three of them after delivery. Without `crop` the sheet is unchanged.
+- `song2mv sheet`: a contact sheet of a rendered video. It tiles the video's own frames on a PNG, captions, title and
+  strips included, each labelled with its song time and, with `--song`, the line sung then (or the section between
+  lines). `--every S` takes a frame from the middle of every S seconds, `--times` the song times listed, and `--cuts` a
+  frame 0.3 s into each shot of a saved `check --json` result, whose `from` and `song` it reuses; `--crop` and `--cols`
+  work as in `Contact`. Each tile is the frame on screen at its time, and a sheet taller than about 2400 px continues
+  on more pages. `Contact` draws the bare scene, so in four trial runs on one day every agent wrote its own script for
+  the video, with labels from Pillow (Homebrew's ffmpeg has no `drawtext`); `-vf fps=1/3.5` labelled every frame
+  1.75 s early, and a scene-only sheet could not show one run's worst defect, two lyric lines on screen at once at
+  the chorus hit. The labels are a built-in bitmap font drawn with numpy and zlib writes the PNG, so the command needs
+  only ffmpeg and numpy. The skill's step 5 makes a sheet after every `check`, at its cuts, and one of every full
+  render. Without `--from`, a stretch keeps the start in the name `render` gave it (`song-9x16-49.72-72.2.mp4` starts
+  at 49.72): one run's short was labelled with video time until its agent found `--from`.
 - A style pack for paper cut-out, `paper` in the scene kit (`src/kit/styles/paper.tsx`). The kit's people, places
   and objects are flat illustration; a style pack is a few drawing pieces that put any object in another art style:
   - outlines cut by hand: `rect`, `ellipse`, `poly` and `strip`, seeded so that a cut stays the same from frame to
@@ -306,6 +455,31 @@ First release (0.1.0).
   Gallery tile 23 redraws its person and cat with them: one outline round each figure, an elbow whose crease starts
   on the arm's outline, fingers round the mug, tapered features, Ben-Day dots on all skin, and puffed fur and hair
   drawn as tufts, the fur's dips rounded so the outline keeps its weight in them.
+- A body for a head of your own, and props drawn flat like a poster, in the scene kit. A trial video put cut-out
+  photo portraits on drawn bodies among poster-style props, and built all of it in its own copy of the template; the
+  generic parts are here:
+  - `PortraitBody` (`src/kit/portrait-body.tsx`): a body seen from the front, with a shirt, rounded sleeves, cuffs,
+    hands, trousers and shoes outlined in darker tones of its colours, for a head given as `children`. The arms take
+    angles or a `gesture` (`phone`, `point`, `smoke`, or `hold` a `frontProp` by its lower corners); `feet`, `lean` and
+    `armSwing` pose the rest.
+  - `portraitMotion()` (`src/kit/portrait-motion.ts`): that pose over time, for walking and running on planted feet
+    (the body moves on by `travel`, so the foot on the ground stays put) and for gestures that settle instead of
+    repeating.
+  - `PortraitCutout` (`src/kit/portrait-cutout.tsx`): a portrait clipped to its head and neck in the image's own
+    coordinates and placed by its neckline: a whole bust on the body doubles the shoulders.
+  - `PortraitInteraction` (`src/kit/portrait-interaction.tsx`): a call (the phone's back to the camera, at the ear),
+    writing in a notebook held in the other hand (the ink follows the pen) and an open hand at the temple. The hand,
+    the prop, where they touch and what is drawn in front are worked out together from the head's `profile` (neck, ear,
+    temple), and a profile the arm cannot reach throws instead of stretching the arm.
+  - `poster` (`src/kit/styles/poster.tsx`): 12 props and their palette: `Phone`, `Bubble`, `Notebook`, `CoffeeCup`,
+    `Glass`, `Lighter`, `Smoke`, `Building`, `Light`, `Cloud`, `SleevedHand` and `Pocket`.
+  - Gallery tiles 25–28 show them; the overview now has 6 tiles across, each label inside its tile.
+    `npm run test:assets` in the template, which CI runs, checks the arms, where hands and props meet all through each
+    action, the planted feet, what is drawn in front, and every SVG path drawn: Chrome draws nothing for a malformed
+    path, and says nothing. It also breaks the drawings 21 ways on purpose (a phone off the ear, ink away from the pen,
+    a hand behind the head, …) and checks that each is caught.
+
+  The default scene, its stills and the other gallery tiles render as before.
 - Adding to the kit by pull request. `CONTRIBUTING.md` says how to add an asset or a style pack: original drawings,
   MIT, no media files, the kit's rules, a gallery tile and a still. The pull request template asks for them, and CI
   renders every gallery tile and keeps the PNGs for 14 days as the run's `kit-gallery` artifact. Once a video is
@@ -385,10 +559,38 @@ First release (0.1.0).
   `check`. The intro of the new user's song, 3.9 dB quieter, stays calm. Kinds set in `section_kinds` and the
   instrumental section before the first sung line are kept; JamendoLyrics has no section names, so its kinds do not
   change. `music.json` is now measured before `lyrics.json` and `mv.json` are written.
+- Sections for a lyric sheet without `[Section]` lines. Such a sheet (a music platform's export, many lyric sites)
+  made the whole song one `mid` section: no hot chorus or chorus flashes in the default look, nothing for
+  `variation.repeats` to compare, `cuts.rhythm` judging the song as one verse, and in two trials agents spent 4–6
+  minutes writing the headers by hand. `sync` now proposes sections from the lines that repeat and uses them: the block
+  of lines sung most often again (word for word or nearly, one line in a copy may differ) is the chorus; lines only
+  some copies have before (after) the ones all have are a pre-chorus (post-chorus); the lines between copies are
+  verses; a short stretch after two choruses, right before another, is the bridge; a short stretch after the last
+  chorus is the outro. `warnings` lists the sections and how to change them, and the sheet with them goes to
+  `lyrics.sections.txt` in the work folder, to edit and pass with `--lyrics` (an edited one is kept). On six sheets with
+  section names, stripped of them, the proposal marks 88 of the 102 chorus lines and 2 other lines as chorus, starts 32
+  of the 34 sections it proposes within a line of a named section's start (of 54 such starts), and gives 360 of the 416
+  lines the kind their names give (235 as one section). A sheet without repeats is still one section, now with a
+  warning; a sheet with `[Section]` lines gives byte-identical files. JamendoLyrics has no section lines: 69 of its 79
+  songs now get sections, and every word time, line source and `check_by_ear` list stays the same.
 - Words before a line's first timed word start no earlier than a 16th note after the last word of the line before.
   Spread 0.3 s apart, they could start under that line's last words, which then never lit up: the captions switch to
   the newer line. On JamendoLyrics 69 words move, 45 of them closer to where they are sung; words within 0.3 s go from
   88.92 to 88.93 %.
+- Numbers whisper writes in digits match the lyric sheet's letters. Whisper writes the numbers it hears as digits
+  ("29" for "twenty nine", digits and a counter for a Korean time the sheet spells out), and `sync` matches letters,
+  so those words got no time of their own and their lines looked weak: on a Korean song whose title, a time, is sung
+  13 times, every line with it had a coverage around 0.5, and a line all three runs heard alike was listed under
+  `check_by_ear` as placed by one run. Before matching, the digits of the sheet and of the runs are spelled out in the
+  sheet's language: Korean when most of its words are in Hangul, with native numerals before the counters that take
+  them (hours, ages, things, people, times, ordinals) and Sino-Korean otherwise (minutes, days, months, years, money);
+  English when common English words make up a tenth of it, with cardinals and ordinals (21st). Other languages keep
+  their digits, and so do codes such as B2B or MP3. A line whose first word is a number now also gets the first-word
+  rule.
+- A token without a letter or a digit is not a word. A "/" between two phrases of a line got a time of its own and
+  showed up in the captions, `song.words.lrc`, `song.lrc` and `song.srt`. It stays in the line's `text` in
+  `lyrics.json` and `mv.json`, where a scene can split on it, but not in `words`; `song.lrc` and `song.srt` show a
+  line's words, as the captions do. A `manual` pin for such a line counts the words without it.
 - `--json` on every command; `schema_version` 1 on every JSON output. Errors exit 2 and, with `--json`, print
   `{"ok": false, "error": {"message", "kind", "hint"}}`; exit 1 only means `check` found a failing check.
 - `AGENTS.md`, `CLAUDE.md`, `llms.txt` and the `song2mv` Claude Code skill.

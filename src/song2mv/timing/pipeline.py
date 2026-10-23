@@ -2,6 +2,7 @@
 
 Steps (outputs go to the work folder):
   lyrics  lyrics.txt     the lyric sheet (the config's "lyrics" file, or the audio's lyrics tag)
+          lyrics.sections.txt  for a sheet without [Section] lines: the sheet with the ones proposed from its repeats
   asr     asr/runN.json  whisper runs; finished runs are kept and reused
   align   merged.json    runs aligned to the lyric sheet and merged per word
   grid    grid.json      tempo, first beat, bar start, stretches where it does not fit and there a beat map, swing
@@ -30,11 +31,12 @@ from collections.abc import Sequence
 from ..contract import SCHEMA_VERSION, stamp
 from ..errors import Song2mvError
 from . import lib
-from .lib import asr_key, audio_duration, file_sha256, in_order, load_config, lyric_lines, parse_lyrics, warn, write_json
+from .lib import asr_key, audio_duration, file_sha256, has_sections, in_order, load_config, lyric_lines, warn, with_sections, write_json
 
 STEPS = ["lyrics", "asr", "align", "grid", "build"]
 OUTPUTS = ["grid.json", "lyrics.json", "mv.json", "song.lrc", "song.words.lrc", "song.srt", "music.json"]
 STATE = "state.json"  # which audio (by content) this work folder belongs to, and where its lyric sheet came from
+SECTIONS = "lyrics.sections.txt"  # the lyric sheet with the [Section] lines sync proposed for it
 
 
 def _state(work: str) -> dict | None:
@@ -104,6 +106,23 @@ def config_from_audio(audio: str, work: str, lyrics: str | None = None, language
     _apply(cfg, lyrics, language, title, overrides)
     write_json(cfg, path)
     return path
+
+
+def propose_sections(sheet: str, lines: list[dict], path: str) -> None:
+    """Write the lyric sheet with its proposed [Section] lines to `path`, unless a different one is there (edited by
+    hand), and say what was proposed and how to change it."""
+    if not os.path.exists(path):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(sheet)
+    elif open(path, encoding="utf-8-sig").read() != sheet:
+        warn(f"{path} differs from the sections proposed now and was kept: sync with --lyrics {path} to use it")
+    secs: dict[str, list] = {}
+    for r in lines:
+        secs.setdefault(r["section"], [r["section_name"], 0])[1] += 1
+    found = ", ".join(f"{name} {sid} ({n})" for sid, (name, n) in secs.items())
+    warn(f"the lyric sheet has no [Section] lines, so these were proposed from the lines that repeat (lines in each): "
+         f"{found}, written to {path}. To change them, edit that file and sync again with --lyrics {path}, or set "
+         'section_kinds in song.json (e.g. {"ch1": "mid"})')
 
 
 def update_config(path: str, lyrics: str | None = None, language: str | None = None, title: str | None = None,
@@ -209,8 +228,10 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
             raise Song2mvError(f"lyrics file not found: {cfg['lyrics']}")
         if os.path.abspath(cfg["lyrics"]) != os.path.abspath(P("lyrics.txt")):
             src = open(cfg["lyrics"], encoding="utf-8-sig").read()
-            if os.path.exists(P("lyrics.txt")) and open(P("lyrics.txt"), encoding="utf-8-sig").read() != src:
-                warn(f"lyrics.txt in the work folder differed from {cfg['lyrics']} and was replaced — edit that file instead")
+            if (os.path.exists(P("lyrics.txt")) and open(P("lyrics.txt"), encoding="utf-8-sig").read() != src
+                    and (state or {}).get("lyrics_sha256") != file_sha256(P("lyrics.txt"))):
+                warn(f"lyrics.txt in the work folder was edited since the last run and was replaced by {cfg['lyrics']} "
+                     "— edit that file instead")
             shutil.copyfile(cfg["lyrics"], P("lyrics.txt"))
     else:
         lyrics_from = "tag"
@@ -220,7 +241,14 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
                 warn("lyrics.txt was read again from the audio's lyrics tag; earlier edits to it are replaced")
             from .extract_lyrics import extract
             extract(cfg["audio"], P("lyrics.txt"))
-    lines = parse_lyrics(P("lyrics.txt"), cfg)
+    text = open(P("lyrics.txt"), encoding="utf-8-sig").read()
+    sheet = with_sections(text, cfg)
+    lines = lyric_lines(sheet or text, cfg)
+    if sheet:
+        propose_sections(sheet, lines, P(SECTIONS))
+    elif lines and not has_sections(text):
+        warn("the lyric sheet has no [Section] lines and no block of lines repeats, so the whole song is one mid "
+             "section: write [Verse], [Chorus] … lines into it (the look and check use them) and sync again")
     if not lines:
         raise Song2mvError(f"no sung lines in {P('lyrics.txt')}",
                            hint="one lyric line per text line; [Verse], [Chorus] … lines name sections")
@@ -309,7 +337,8 @@ def run(config_path: str, work: str | None = None, start: str | None = None) -> 
     to_lrc(lyrics["lines"], P("song.lrc"), meta=meta)
     to_lrc(lyrics["lines"], P("song.words.lrc"), words=True, meta=meta)
     to_srt(lyrics["lines"], P("song.srt"))
-    write_json(stamp({"audio": os.path.abspath(cfg["audio"]), "audio_sha256": sha, "lyrics_from": lyrics_from}), P(STATE))
+    write_json(stamp({"audio": os.path.abspath(cfg["audio"]), "audio_sha256": sha, "lyrics_from": lyrics_from,
+                      "lyrics_sha256": file_sha256(P("lyrics.txt"))}), P(STATE))
     secs = time.time() - t_all
     print(f"\ndone in {secs:.0f} s → {work}")
     for f in OUTPUTS:
