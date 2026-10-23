@@ -134,7 +134,7 @@ const WORLDS: Record<string, World> = {
           <City T={T} y={950} dusk shift={T * speed * 0.3} id="st-street-city" />
           <Street T={T} y={950} speed={speed} id="st-street-street" />
           <Below color="#121426" />
-          <Person x={1900 - ((T * 40) % 2600)} y={972} s={0.85} pose="walk" phase={(T * 40) / (STRIDE * 0.85)} T={T} flip look={{ outfit: "dress", top: "#2f8f6b", hair: "ponytail" }} id="st-street-a" />
+          <Person x={1900 - ((T * (speed + 20)) % 2600)} y={956} s={0.7} pose="walk" phase={(T * 20) / (STRIDE * 0.7)} T={T} flip look={{ outfit: "dress", top: "#2c5d5b", skin: "#b88a7a", hairColor: "#241a2c", shoes: "#1a1424", hair: "ponytail" }} id="st-street-a" />
           {hero(T, 820, 990, 1.15, "walk", { phase: walk % 1 })}
         </>
       );
