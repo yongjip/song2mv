@@ -269,7 +269,8 @@ def build_parser() -> argparse.ArgumentParser:
     pick.add_argument("--times", type=_times, metavar="T,T,…", help="frames at these song times, e.g. 12,33.1,47.5")
     pick.add_argument("--cuts", metavar="CHECK_JSON", help="a frame 0.3 s into each shot: the start and the cuts of a "
                       "saved `song2mv check --json` result, whose from and song are then the defaults")
-    h.add_argument("--from", dest="start", type=float, help="song time of the video's first frame (default 0)")
+    h.add_argument("--from", dest="start", type=float, help="song time of the video's first frame (default: the start "
+                   "in a stretch's name as render writes it, NAME-ASPECT-FROM-TO.mp4, else 0)")
     h.add_argument("--cols", type=_cols, help="frames per row (default 4, 6 for a 9:16 video)")
     h.add_argument("--crop", type=_crop, metavar="X,Y,W,H", help="show only this region of each frame, in the video's "
                    "pixels, scaled to the frame's width on the sheet (--cols sets the zoom; each label shows it)")

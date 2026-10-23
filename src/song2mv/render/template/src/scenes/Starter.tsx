@@ -21,12 +21,19 @@ const HERO: Partial<Look> = { outfit: "hoodie", hair: "short", top: "#e0a12f", p
 /** Colours the worlds share: the stage light, the moon and dust, the fireworks, the hills */
 const PALETTE = { light: "#ff3355", glow: "#ffd36b", sparks: ["#ff5fd2", "#3fe6ff", "#ffd36b"], land: "#141a3a" };
 
+// The typeface: an OFL font file in src/ rather than a system font. Load it here, use FONT as a fontFamily, and name
+// its family in song.json's theme.font to set the captions and big type in it:
+//   import face from "../fonts/YourFont.ttf";
+//   const FONT = loadFont("Your Font", face);
+
 /**
- * What each part of the song shows. A key is a line id ("v1-05": a new board from that line on), a section id ("ch2")
- * or a section's role (intro, verse, pre, chorus, post, bridge, outro); the most specific wins. `worlds` name worlds of
- * WORLDS below: copies of a section take them in turn (ch1 the first, ch2 the second …), and so does each 8 lines of a
- * long section. `big`: its lines are big type in the scene instead of bottom captions. `pattern`: bar counts between
- * cuts, instead of the section kind's rhythm.
+ * What each part of the song shows. A key is a line id ("v1-05": a new board from that line on, opening on its world's
+ * first framing), a section id ("ch2") or a section's role (intro, verse, pre, chorus, post, bridge, outro); the most
+ * specific wins. `worlds` name worlds of WORLDS below: copies of a section take them in turn (ch1 the first, ch2 the
+ * second …), and so does each 8 lines of a long section without line keys. Each line key is a cut: key the lines that
+ * name something, every 2 lines or more and unevenly. `big`: its lines are big type in the scene instead of bottom
+ * captions. `pattern`: bar counts between cuts, instead of the section kind's rhythm. `drift`: below 1 calms the camera
+ * over fine high-contrast detail.
  */
 const SHOW: Record<string, Show> = {
   intro: { worlds: ["hills"] },
@@ -40,7 +47,7 @@ const SHOW: Record<string, Show> = {
 
 // ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-type Show = { worlds: string[]; big?: boolean; pattern?: number[] };
+type Show = { worlds: string[]; big?: boolean; pattern?: number[]; drift?: number };
 /** A world: what it draws, and its framings in 16:9 and 9:16 */
 type World = { draw: (T: number, b: BoardSpan) => React.ReactNode; framings: Framing[]; tall?: Framing[] };
 
@@ -50,6 +57,11 @@ const at = (x: number, y: number, zoom = 1, rotate = 0): Framing => {
   const w = (960 * c + 540 * s) / zoom, h = (960 * s + 540 * c) / zoom;
   return { x: Math.min(1920 - w, Math.max(w, x)), y: Math.min(1080 - h, Math.max(h, y)), zoom, rotate };
 };
+/**
+ * A 9:16 framing: the stage point the tall frame puts in the middle of its picture (verticalView), at that zoom. Not
+ * kept on the 16:9 stage as `at` keeps one: verticalView keeps the tall frame on the stage's sides and top itself
+ */
+const tall = (x: number, y: number, zoom = 1, rotate = 0): Framing => ({ x, y, zoom, rotate });
 /** Ground under the stage's bottom edge, for the 9:16 frame */
 const Below: React.FC<{ color: string; y?: number }> = ({ color, y = 1070 }) => (
   <rect x={-400} y={y} width={2720} height={1600} fill={color} />
@@ -120,7 +132,7 @@ const WORLDS: Record<string, World> = {
       );
     },
     framings: [at(960, 540), at(800, 700, 2.4), at(1400, 330, 1.8, -3), at(1000, 600, 1.3)],
-    tall: [at(800, 600), at(800, 700, 2.2), at(1350, 420, 1.5, -3), at(900, 640, 1.2)],
+    tall: [tall(800, 600), tall(800, 700, 2.2), tall(1350, 420, 1.5, -3), tall(900, 640, 1.2)],
   },
   /** a city street at dusk, the hero walking with the crowd */
   street: {
@@ -140,7 +152,7 @@ const WORLDS: Record<string, World> = {
       );
     },
     framings: [at(960, 540), at(830, 740, 2.0), at(1450, 360, 1.7, 3), at(1100, 700, 1.4)],
-    tall: [at(900, 620), at(830, 760, 1.9), at(1400, 420, 1.5, 3), at(1000, 700, 1.3)],
+    tall: [tall(900, 620), tall(830, 760, 1.9), tall(1400, 420, 1.5, 3), tall(1000, 700, 1.3)],
   },
   /** the same street at night in the rain */
   rain: {
@@ -159,7 +171,7 @@ const WORLDS: Record<string, World> = {
       );
     },
     framings: [at(960, 540), at(1090, 750, 2.0), at(520, 330, 1.7, -3), at(800, 700, 1.4)],
-    tall: [at(1000, 620), at(1090, 760, 1.9), at(700, 420, 1.5, -3), at(1000, 700, 1.3)],
+    tall: [tall(1000, 620), tall(1090, 760, 1.9), tall(700, 420, 1.5, -3), tall(1000, 700, 1.3)],
   },
   /** a room at night, the city through the window, the hero on the phone */
   room: {
@@ -178,7 +190,7 @@ const WORLDS: Record<string, World> = {
       </>
     ),
     framings: [at(960, 540), at(450, 420, 2.0), at(1060, 640, 2.3), at(1400, 640, 1.6, 3)],
-    tall: [at(960, 600), at(450, 430, 1.8), at(1060, 660, 2.0), at(1300, 640, 1.4, 3)],
+    tall: [tall(960, 600), tall(450, 430, 1.8), tall(1060, 660, 2.0), tall(1300, 640, 1.4, 3)],
   },
   /** a concert: the hero sings on a stage over the crowd's raised hands */
   stage: {
@@ -194,7 +206,7 @@ const WORLDS: Record<string, World> = {
       </>
     ),
     framings: [at(960, 540), at(960, 420, 2.6), at(400, 900, 2.4, -4), at(960, 500, 1.7, 2)],
-    tall: [at(960, 420, 1.3), at(960, 400, 2.2), at(300, 720, 1.7, -4), at(960, 470, 1.6, 2)],
+    tall: [tall(960, 420, 1.3), tall(960, 400, 2.2), tall(300, 720, 1.7, -4), tall(960, 470, 1.6, 2)],
   },
   /** fireworks over the city on the bar lines, a crowd jumping, the hero's arms up */
   fireworks: {
@@ -210,7 +222,7 @@ const WORLDS: Record<string, World> = {
       </>
     ),
     framings: [at(960, 540), at(700, 280, 2.0, -3), at(1240, 600, 2.2), at(500, 880, 2.0, 2)],
-    tall: [at(1150, 560), at(800, 320, 1.8, -3), at(1240, 640, 2.0), at(600, 860, 1.8, 2)],
+    tall: [tall(1150, 560), tall(800, 320, 1.8, -3), tall(1240, 640, 2.0), tall(600, 860, 1.8, 2)],
   },
   /** a beach at sunset: the hero walks along the water; in a hot section the crowd dances and fireworks go up */
   beach: {
@@ -233,7 +245,7 @@ const WORLDS: Record<string, World> = {
       );
     },
     framings: [at(960, 540), at(760, 760, 2.1), at(860, 660, 1.5), at(1100, 860, 2.0, 3)],
-    tall: [at(860, 620), at(760, 760, 1.9), at(860, 660, 1.4), at(900, 820, 1.8, 3)],
+    tall: [tall(860, 620), tall(760, 760, 1.9), tall(860, 660, 1.4), tall(900, 820, 1.8, 3)],
   },
 };
 
@@ -246,10 +258,11 @@ const roleOf = (sec: Section) => ROLES[sec.id.replace(/\d*b*$/, "")] ?? BY_KIND[
 
 function board(at: string | number, show: Show, copy: number): Board {
   const w = WORLDS[show.worlds[copy % show.worlds.length]];
-  return { at, world: w.draw, framings: w.framings, tall: w.tall, pattern: show.pattern, big: show.big };
+  return { at, world: w.draw, framings: w.framings, tall: w.tall, pattern: show.pattern, drift: show.drift, big: show.big };
 }
 
-/** The boards for a song: one per section from SHOW, a new one every 8 lines of a long section, and one per line key */
+/** The boards for a song: one per section from SHOW, a new one every 8 lines of a long section without line keys, and
+ * one per line key */
 function boardsOf(song: Song): Board[] {
   const out: Board[] = [];
   const secs: Section[] = song.sections.length ? song.sections : [{ id: "", name: "", kind: "mid", start: 0, end: song.duration }];
@@ -258,7 +271,7 @@ function boardsOf(song: Song): Board[] {
     const copy = Number(/(\d+)$/.exec(sec.id)?.[1] ?? 1) - 1;
     const lines = song.lines.filter((l) => l.section === sec.id && l.words.length);
     out.push(board(sec.id || 0, show, copy));
-    lines.forEach((l, i) => i > 0 && i % 8 === 0 && out.push(board(l.id, show, copy + i / 8)));
+    if (!lines.some((l) => SHOW[l.id])) lines.forEach((l, i) => i > 0 && i % 8 === 0 && out.push(board(l.id, show, copy + i / 8)));
   }
   for (const [key, show] of Object.entries(SHOW)) if (song.lines.some((l) => l.id === key)) out.push(board(key, show, 0));
   return out;

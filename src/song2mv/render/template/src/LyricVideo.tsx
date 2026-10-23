@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Audio, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { BeatGlow, Captions, FPS, Flash, MvProps, Sky, SongContext, Vignette, flashesOf, makeSongCtx, sectionLook, span } from "./kit";
+import { BeatGlow, Captions, FPS, Flash, MvProps, Sky, SongContext, Vignette, flashesOf, makeSongCtx, sectionLook, span, useFonts } from "./kit";
 import { Scene, linesDrawnByScene } from "./scenes";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -15,6 +15,7 @@ const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
  * the first frame is not washed white.
  */
 export const LyricVideo: React.FC<MvProps> = ({ song, from, to, hold }) => {
+  useFonts();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const ctx = useMemo(() => makeSongCtx(song), [song]);

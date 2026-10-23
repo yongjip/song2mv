@@ -97,6 +97,32 @@ def test_a_frantic_line_says_where_its_motion_comes_from(tmp_path, capsys):
     assert f"     v1-01    {line['msg']}" in capsys.readouterr().out  # the report prints it under the FAIL
 
 
+@pytest.mark.parametrize("picture, whole", [("stripes", True), ("box", False)])
+def test_a_frantic_line_without_a_cut_says_when_the_whole_frame_changes(tmp_path, picture, whole):
+    # Fine stripes drifting half a pixel a frame change the whole frame, as a camera drift over fine detail does; a big
+    # box swinging over flat grey changes one part of it. Both are frantic without a cut; only the stripes say so.
+    import numpy as np
+
+    from song2mv.check.score import score
+
+    x = np.arange(320)
+    frames = np.empty((60, 180, 320), np.uint8)
+    for k in range(60):
+        if picture == "stripes":
+            frames[k] = 128 + 40 * np.sin(2 * np.pi * (x - 0.5 * k) / 6)
+        else:
+            left = 60 + 12 * abs(k % 20 - 10)
+            frames[k] = 60
+            frames[k, 10:150, left: left + 80] = 255
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "gray", "-s", "320x180", "-r", "10", "-i", "-",
+                    "-pix_fmt", "yuv420p", str(mp4)], input=frames.tobytes(), check=True)
+    res = score(str(mp4), str(write(tmp_path, "mv.json", SONG)), quiet=True)
+    (line,) = res["results"]["motion.max"]["lines"]
+    assert line["id"] == "v1-01" and line["cuts"] == [] and line["value"] > 9.0
+    assert line["msg"].endswith("no cut; the whole frame changes, as under a camera move over fine high-contrast detail") is whole
+
+
 @pytest.mark.parametrize("box, goals, cuts", [
     ("c=white:t=fill:enable='between(t,2.0,2.05)+between(t,3.0,3.05)'", {}, [2.0, 3.0]),
     ("x=0:y=0:w=iw/2:h=ih:c=gray:t=fill:enable='between(t,1.9,1.95)',drawbox=c=white:t=fill:enable='gte(t,2.0)'",

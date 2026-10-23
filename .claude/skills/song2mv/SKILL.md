@@ -119,7 +119,11 @@ different central image. For each, write:
   - an isometric miniature;
   - kinetic typography only, or neon signs on brick.
 - **Palette, texture and typeface.** The typeface is part of the look: rather than a system font, use an OFL font
-  file imported from `src/` (`song2mv render` ignores `public/`), and check stills on the machine that renders.
+  file imported from `src/` (`song2mv render` ignores `public/`) and loaded with the kit's `loadFont` at the top of a
+  module: `import lilita from "../fonts/LilitaOne-Regular.ttf"` and `export const DISPLAY = loadFont("Lilita One",
+  lilita)` give `fontFamily` its value, and every frame waits for the file. Name the family in `theme.font` to set the
+  captions in it. Not a `delayRender()` of your own at the top of a module: Remotion drops its handle, and the timer
+  left behind failed one full render and stalled the next.
 - **Main character or motif,** and how it changes over the song.
 - **First chorus:** how it hits, the song's biggest moment.
 
@@ -195,10 +199,14 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   chorus 2 takes the framings in another order. It returns the kit camera's `shots` and `hits`; `pattern` sets your
   own bar counts.
 - A `Board` (`src/kit/storyboard.tsx`) is a stretch that starts at a line id, a section id or a time: a `world` (SVG of
-  `T` on the stage), its `framings` (and `tall` ones for 9:16), and optionally `pattern`, `hits`, an `overlay` (text
-  over the camera) and `big` (its lines as big type, low in the frame). `<Storyboard T={T} boards={…} />` draws the
-  board on at T (`wrap` holds the filmed world in a style pack's `paper.Stack` or the like), the same with `vertical`
-  is the `VerticalScene`, and `linesDrawnBy(song, boards)` gives `linesDrawnByScene`.
+  `T` on the stage), its `framings` (and `tall` ones for 9:16), and optionally `pattern`, `drift`, `hits`, an
+  `overlay` (text over the camera) and `big` (its lines as big type, low in the frame).
+  `<Storyboard T={T} boards={…} />` draws the board on at T (`wrap` holds the filmed world in a style pack's
+  `paper.Stack` or the like), the same with `vertical` is the `VerticalScene`, and `linesDrawnBy(song, boards)` gives
+  `linesDrawnByScene`. A board's start is a cut, planned with its section's other cuts: the rhythm counts it, and a
+  section with boards at its lines cuts inside as few lines as its rhythm allows, inside none under 2.5 s if it can.
+  Key boards to the lines that name something, every 2 lines or more and unevenly: in one outro three boards 2 lines
+  apart cut too evenly for `cuts.rhythm`. A board at a line opens on its first framing in every copy of the section.
 - A cut counts only when the picture changes: give a world framings that show different parts of it (the sky, the
   ground, the subject up close), not one layout at two zooms. A large still overlay hides cuts from `check`.
 
@@ -280,7 +288,7 @@ by whole numbers; never `scale()` a sprite or a layer, or blocks of two sizes me
   consonants at any scale. The 16 blocks were measured with Pretendard, the theme's first font; Apple SD Gothic Neo,
   where a Mac without it falls back, reads rougher (thin strokes, short bars as one-block stubs), and Noto Sans CJK
   KR (Linux) reads cleanly. For the same letters on every machine, import an OFL Korean font file from `src/`, load
-  it before the first frame and pass its family as `font`;
+  it with `loadFont` and pass what it returns as `font`;
 - `pixel.Dialog`: a game dialog box that letters the line being sung word by word (sung words lit, the rest dim),
   wrapped to its `width` and set once per line, so no word moves; a line longer than `rows` turns the page. Put the
   lines it shows in `linesDrawnByScene`. Its 5×7 letters are 7 blocks tall: `px` 6 keeps them over 36 px in 16:9
@@ -407,7 +415,12 @@ Make one of every full render too (`--every 3 --song <work>/mv.json`).
 
 - **Held shots** measure still; a slow drift (the shot's `to`) keeps one alive. On one pixel street a 4–6 pixel drift
   over a 2–3 s close-up measured 2–5; a 14-pixel drift measured up to 16 (frantic). A small thing moving across a
-  wide shot measures still too (a car crossing a street measured 0.14): frame it closer or pan with it.
+  wide shot measures still too (a car crossing a street measured 0.14): frame it closer or pan with it. Fine
+  high-contrast detail (window grids, railings, stripes, stair treads) measures as motion under any drift: over one
+  brownstone street the planner's drift alone measured 8–9 on most verse lines, and `check` says "the whole frame
+  changes" when such a line is frantic without a cut. Draw that detail coarser or lower in contrast, or calm the
+  drift: `drift: 0.5` on the street's boards (`planShots(…, { drift })`) took its verse lines from 5.4 to 3.6 on
+  average, none of them still.
 - **Shot variety.** `check` does not see a shot coming back: one video cut back to the same wide street shot about
   30 times. The `--cuts` sheet has a frame of every shot. A shot that continues across neighbouring tiles is one shot;
   reframe a framing that returns after other shots.
@@ -453,12 +466,16 @@ Where things go (`VERTICAL` in the kit has the numbers):
   middle (540, 675), as large as in the 16:9 frame; pass a larger zoom to come closer. A wide shot's point is
   usually the middle of the stage, not its subject: give the tall frame's wide shots the subject's point
   (`shots.map(s => (s.zoom ?? 1) > 1.5 ? s : { ...s, x: 900, y: 820 })`), or the subject drops under the captions.
+  Write a board's `tall` framings with the starter's `tall()`, not `at()`, which keeps a framing on the 16:9 stage
+  and so moves a tall frame's subject off its middle.
   A close-up shows more below its point than in 16:9, and that part sits under the captions: if it is the subject's
   body, zoom out until the subject fits above y 1080.
 - **Below y 1248** the apps cover the frame: picture only. The view keeps the frame on the stage's sides and top but
   runs on past its bottom (the kit's places end at y 1080), so draw the ground on down there, or a foreground such
-  as a crowd. The view also stops at the stage's top edge, so a subject near it lands above (540, 675); a scene
-  whose background reaches above the stage passes the area it fills as `world`
+  as a crowd. How far it runs on depends on the zoom: the frame ends 1245 / zoom stage px below the view's point, so
+  a 2× close-up of a subject at y 760 shows only about 300 px below y 1080. Put the foreground just under y 1080, not
+  350–700 px down, where only wide shots reach. The view also stops at the stage's top edge, so a subject near it
+  lands above (540, 675); a scene whose background reaches above the stage passes the area it fills as `world`
   (`verticalView(cam, { world: [0, -900, 1920, Infinity] })`).
 
 A contact sheet with `"vertical": true` draws the safe box and the captions' top as dashed lines (a crop sheet

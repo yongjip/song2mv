@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Svg } from "./backgrounds";
 import { cameraAt } from "./camera";
-import { Framing, Plan, planShots, refilm } from "./plan";
+import { Framing, Plan, planBoards, refilm } from "./plan";
 import { Line, Section, Song, SongCtxValue, useSong } from "./song";
 import { BigLine } from "./text";
 import { VERTICAL, verticalView } from "./vertical";
@@ -9,7 +9,8 @@ import { VERTICAL, verticalView } from "./vertical";
 /**
  * A storyboard: the song as a list of boards. A board is a stretch of the song, from a line, a section or a time up
  * to the next board, that films one world through shots planned by `planShots` (cuts, framings, drifts and hits that
- * pass `song2mv check`). One component draws the board on at T, in 16:9 or, from the same boards, as the 9:16 frame:
+ * pass `song2mv check`), a section's cuts across its boards: a board start is a cut, counted in its section's rhythm.
+ * One component draws the board on at T, in 16:9 or, from the same boards, as the 9:16 frame:
  *
  *   const BOARDS: Board[] = [
  *     { at: "v1", world: (T) => <Street T={T} />, framings: [WIDE, HERO, SKYLINE] },
@@ -23,7 +24,8 @@ import { VERTICAL, verticalView } from "./vertical";
  * A world is SVG drawn on the 1920×1080 stage (no text: the camera would move it); what it draws past the stage's
  * edges shows when a shot rolls or drifts there. The 9:16 frame films it again through `verticalView`, with the
  * board's `tall` framings, so a world seen in 9:16 draws its ground on below y 1080. The first board also covers the
- * song before it.
+ * song before it. A board keyed to a line opens on its first framing; one keyed to a section takes the framings in
+ * another order in a later copy (ch2), so the copies differ.
  */
 
 export type BoardSpan = {
@@ -48,6 +50,8 @@ export type Board = {
   tall?: Framing[];
   /** bar counts between cuts, instead of the section kind's rhythm */
   pattern?: number[];
+  /** how far its shots drift (planShots' `drift`): below 1 over fine high-contrast detail, which reads as motion */
+  drift?: number;
   /** more camera punches (song times: a slam, a word), besides a hot section's cuts */
   hits?: number[];
   /**
@@ -89,7 +93,8 @@ function place(ctx: SongCtxValue | null, song: Song, boards: Board[]) {
     const to = at[i + 1]?.a[0] ?? song.duration;
     const next = at[i + 1]?.a[1] ?? Infinity;
     const lines = song.lines.filter((l) => l.words.length && (i === 0 || l.words[0].t >= a[1]) && l.words[0].t < next);
-    return { board, from, to, lines };
+    const keyed = song.lines.some((l) => l.id === board.at && l.words.length);
+    return { board, from, to, lines, keyed };
   });
 }
 
@@ -109,13 +114,19 @@ export const Storyboard: React.FC<{
   T: number; boards: Board[]; vertical?: boolean; wrap?: (filmed: React.ReactNode, span: BoardSpan) => React.ReactNode;
 }> = ({ T, boards, vertical = false, wrap = (filmed) => filmed }) => {
   const ctx = useSong();
-  const placed: Placed[] = useMemo(() => place(ctx, ctx.song, boards).map((p) => {
-    const section = ctx.section(p.from + 1e-3);
-    const plan = planShots(ctx, p.from, p.to, p.board.framings, { pattern: p.board.pattern });
-    const tall = p.board.tall ? refilm(plan, p.board.tall) : plan;
-    const hits = [...plan.hits, ...(p.board.hits ?? [])];
-    return { ...p, section, repeat: Number(/(\d+)$/.exec(section.id)?.[1] ?? 1), plan, tall, hits };
-  }), [ctx, boards]);
+  const placed: Placed[] = useMemo(() => {
+    const spans = place(ctx, ctx.song, boards);
+    const plans = planBoards(ctx, spans.map((p) => ({
+      from: p.from, to: p.to, framings: p.board.framings, pattern: p.board.pattern, drift: p.board.drift, reorder: !p.keyed,
+    })));
+    return spans.map((p, i) => {
+      const section = ctx.section(p.from + 1e-3);
+      const plan = plans[i];
+      const tall = p.board.tall ? refilm(plan, p.board.tall) : plan;
+      const hits = [...plan.hits, ...(p.board.hits ?? [])];
+      return { ...p, section, repeat: Number(/(\d+)$/.exec(section.id)?.[1] ?? 1), plan, tall, hits };
+    });
+  }, [ctx, boards]);
   let i = 0;
   while (i + 1 < placed.length && placed[i + 1].from <= T) i++;
   const p = placed[i];

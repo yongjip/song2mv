@@ -15,6 +15,7 @@ export * from "./symbols";
 export * from "./vehicles";
 export * from "./effects";
 export * from "./camera";
+export * from "./font";
 // Cut planning and storyboards: shots and boards whose cuts pass `song2mv check`
 export { planShots, type Framing, type Plan, type PlanOptions, type PlannedShot } from "./plan";
 export * from "./storyboard";

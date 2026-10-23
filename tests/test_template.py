@@ -325,3 +325,141 @@ def test_the_starter_draws_a_song_from_the_line_given_in_scenes_index(tmp_path):
         for i in range(3):
             frame = gray[gap:gap + high, round(gap + i * (tile + gap)):round(gap + i * (tile + gap) + tile)]
             assert frame.mean() > 25 and frame.std() > 20, (vertical, i, frame.mean(), frame.std())
+
+
+BOARDS_PROBE = """
+import { makeSongCtx } from "KIT/song";
+import { planBoards, planShots } from "KIT/plan";
+const song = SONG;
+const ctx = makeSongCtx(song);
+const F = [{ x: 960, y: 540 }, { x: 700, y: 640, zoom: 2.2 }, { x: 1300, y: 420, zoom: 1.5, rotate: -3 }];
+const lead = (id: string) => song.lines.find((l: any) => l.id === id).words[0].t - 0.15;
+const starts = KEYS.map((k: string) => (k.includes("-") ? lead(k) : song.sections.find((s: any) => s.id === k).start));
+const plans = planBoards(ctx, starts.map((from: number, i: number) => ({
+  from: i ? from : 0, to: starts[i + 1] ?? song.duration, framings: F, reorder: !KEYS[i].includes("-") })));
+const shots = (p: any) => p.shots.slice(0, -1).map((s: any) => ({ t: s.t, framing: s.framing, to: s.to ?? null, x: s.x, y: s.y, zoom: s.zoom }));
+console.log(JSON.stringify({
+  boards: plans.map(shots),
+  one: shots(planShots(ctx, 0, song.duration, F)), half: shots(planShots(ctx, 0, song.duration, F, { drift: 0.5 })),
+}));
+"""
+
+
+def _verse_song(spacing: list[int]) -> dict:
+    """At 100 BPM: verses of 2.2 s lines `spacing` beats apart (cycled), a hot chorus between them and a mid outro"""
+    beat = 0.6
+    secs, lines = [], []
+    for sid, kind, bars in (("in", "calm", 2), ("v1", "mid", 12), ("ch1", "hot", 8), ("v2", "mid", 12), ("ou", "mid", 6)):
+        b0 = 4 * sum(s["bars"] for s in secs)
+        secs.append({"id": sid, "name": sid, "kind": kind, "start": b0 * beat, "end": (b0 + 4 * bars) * beat, "bars": bars})
+        b, n = b0 + 0.75, 0
+        while kind != "calm" and (b + 4) * beat <= (b0 + 4 * bars) * beat:
+            words = [{"w": f"w{k}", "t": round(b * beat + k * 0.3, 3)} for k in range(7)]
+            lines.append({"id": f"{sid}-{n + 1:02d}", "section": sid, "text": "", "start": round(b * beat, 3),
+                          "end": round(b * beat + 2.2, 3), "words": words})
+            b += spacing[n % len(spacing)]
+            n += 1
+    for s in secs:
+        del s["bars"]
+    grid = {"bpm": 100, "beat": beat, "phi": 0.0, "downbeat_mod4": 0}
+    return {"title": "", "audio": None, "duration": secs[-1]["end"], "grid": grid, "sections": secs, "lines": lines}
+
+
+def _boards(tmp_path, song: dict, keys: list[str]) -> dict:
+    probe = tmp_path / "probe.ts"
+    probe.write_text(BOARDS_PROBE.replace("KIT", os.path.join(BUNDLED, "src", "kit")).replace("SONG", json.dumps(song))
+                     .replace("KEYS", json.dumps(keys)), encoding="utf-8")
+    subprocess.run([os.path.join(BUNDLED, "node_modules", ".bin", "esbuild"), str(probe), "--bundle", "--platform=node",
+                    "--format=esm", "--log-level=error", f"--outfile={tmp_path / 'probe.mjs'}"], check=True)
+    return json.loads(subprocess.run(["node", str(tmp_path / "probe.mjs")], check=True, capture_output=True, text=True).stdout)
+
+
+@pytest.mark.parametrize("spacing, whole", [([4, 4, 5, 4, 6, 4, 4], True), ([4], False)], ids=["uneven", "even"])
+def test_boards_at_lines_are_cuts_of_one_plan_for_their_section(tmp_path, spacing, whole):
+    # Boards every 2–3 lines of the verses: their starts are cuts their section's rhythm counts. Unevenly spaced, the
+    # verses cut inside none of their 2.2 s lines; a bar apart, cut only where they meet, they would cut too evenly, and
+    # the rhythm wins. A board at a line opens on its first framing in verse 2 too; the verses' section boards differ.
+    song = _verse_song(spacing)
+    keys = ["in", "v1", "v1-03", "v1-06", "v1-08", "ch1", "v2", "v2-04", "v2-06", "ou"]
+    seen = _boards(tmp_path, song, keys)
+    cuts = sorted(s["t"] for b in seen["boards"] for s in b)
+    for sec in (s for s in song["sections"] if s["kind"] == "mid"):
+        inside = [t for t in cuts if sec["start"] - 1e-6 <= t <= sec["end"] + 1e-6]
+        iv = np.diff(inside)
+        assert iv.std() / iv.mean() >= (0.37 if sec["id"] != "ou" else 0.35), (sec["id"], inside)
+        split = [t for r in song["lines"] if r["section"] == sec["id"] for t in cuts if r["start"] + 0.1 < t < r["end"] - 0.2]
+        assert sec["id"] == "ou" or (not split) == whole, (sec["id"], split)
+    opens = {k: b[0]["framing"] for k, b in zip(keys, seen["boards"])}
+    assert opens["v1-03"] == opens["v2-04"] == 0 and opens["v1"] != opens["v2"]
+
+
+def test_drift_scales_every_shots_move_and_keeps_the_cuts(tmp_path):
+    seen = _boards(tmp_path, _verse_song([4, 4, 5, 4, 6, 4, 4]), ["in"])
+    one, half = seen["one"], seen["half"]
+    assert [s["t"] for s in one] == [s["t"] for s in half] and [s["framing"] for s in one] == [s["framing"] for s in half]
+    same = 0
+    for a, b in zip(one, half):
+        if a["to"] is None or set(a["to"]) != set(b["to"]) or any((a["to"][k] is None) != (b["to"][k] is None) for k in a["to"]):
+            continue
+        for k in ("x", "y"):
+            if a["to"].get(k) is not None:
+                assert abs((b["to"][k] - b[k]) - 0.5 * (a["to"][k] - a[k])) < 1e-6, (a, b)
+        if a["to"].get("zoom") is not None:  # a push in to zoom·(1 + k), a pull out to zoom / (1 + k)
+            k = [max(s["to"]["zoom"] / s["zoom"], s["zoom"] / s["to"]["zoom"]) - 1 for s in (a, b)]
+            assert abs(k[1] - 0.5 * k[0]) < 1e-6, (a, b)
+        same += 1
+    assert same >= 10, same
+
+
+FONT_SCENES = """
+import React from "react";
+import { AbsoluteFill } from "remotion";
+import { Song, loadFont } from "../kit";
+import face from "./face.ttf";
+
+const FACE = loadFont("Song2mv Test Face", face, { fallback: "monospace" });
+const Row: React.FC<{ y: number; family: string }> = ({ y, family }) => (
+  <div style={{ position: "absolute", left: 40, top: y, fontFamily: family, fontSize: 120, color: "#fff", whiteSpace: "nowrap" }}>
+    Hamburgefonstiv
+  </div>
+);
+export const Scene: React.FC<{ T: number }> = () => (
+  <AbsoluteFill style={{ background: "#000" }}>
+    <Row y={60} family={FACE} />
+    <Row y={300} family="monospace" />
+  </AbsoluteFill>
+);
+export const VerticalScene = null;
+export const linesDrawnByScene = (_song: Song) => new Set<string>();
+"""
+
+
+def test_a_font_from_load_font_is_on_every_frame_of_a_render_longer_than_the_timeout(tmp_path):
+    # A delayRender() at the top of a module loses its handle to Remotion's entry, and its timer then cancels a render
+    # that lasts longer than the timeout (here 5 s). loadFont holds the first frame instead: the render finishes and the
+    # text is in the font, not in its monospace fallback.
+    import glob
+
+    fonts = sorted(f for pattern in ("/usr/share/fonts/**/*.ttf", "/System/Library/Fonts/**/*.ttf", "/Library/Fonts/*.ttf")
+                   for f in glob.glob(pattern, recursive=True) if "mono" not in os.path.basename(f).lower())
+    if not fonts:
+        pytest.skip("no TrueType font on this machine")
+    template = tmp_path / "video"
+    shutil.copytree(BUNDLED, template, ignore=shutil.ignore_patterns("node_modules", "out"))
+    os.symlink(os.path.join(BUNDLED, "node_modules"), template / "node_modules")
+    shutil.copy(fonts[0], template / "src" / "scenes" / "face.ttf")
+    (template / "src" / "scenes" / "index.ts").unlink()
+    (template / "src" / "scenes" / "index.tsx").write_text(FONT_SCENES, encoding="utf-8")
+    song = json.loads((template / "src" / "sample-song.json").read_text(encoding="utf-8"))
+    (tmp_path / "props.json").write_text(json.dumps({"song": {**song, "flashes": [], "vignette": False}, "from": 0, "to": 20, "hold": 0}),
+                                         encoding="utf-8")
+    pkg = json.loads((template / "node_modules" / "@remotion" / "cli" / "package.json").read_text(encoding="utf-8"))
+    cli = template / "node_modules" / "@remotion" / "cli" / pkg["bin"]["remotion"]
+    mp4 = tmp_path / "font.mp4"
+    r = subprocess.run(["node", str(cli), "render", "Lyric-16x9", str(mp4), f"--props={tmp_path / 'props.json'}", "--timeout=7000",
+                        "--scale=0.25", "--concurrency=2", "--log=error"], cwd=template, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-2000:] + r.stderr[-2000:]
+    frames = decode_gray(str(mp4), 480, 270)
+    assert len(frames) == 200
+    face, mono = frames[:, 15:50, :].astype(int), frames[:, 75:110, :].astype(int)
+    assert np.abs(face - face[-1]).max() < 40 and np.abs(face[0] - mono[0]).mean() > 5

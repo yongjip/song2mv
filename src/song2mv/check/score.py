@@ -212,6 +212,13 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
             hi -= 1
         return lo, hi, float(series[lo:hi].mean())
 
+    def whole_frame(i0, i1):
+        """Whether a line's change covers the frame: in most frames, 70 % of a 4×8 grid's cells change by at least half
+        the mean (a camera move over fine detail, a flicker), not one part of it (a mover)"""
+        d = np.abs(np.diff(body[i0:i1 + 1], axis=0))
+        cells = np.stack([c.mean(axis=(1, 2)) for band in np.array_split(d, 4, axis=1) for c in np.array_split(band, 8, axis=2)], 1)
+        return float(np.median((cells >= cells.mean(axis=1, keepdims=True) / 2).mean(axis=1))) >= 0.7
+
     def where(x, name):
         """Where a failing line failed: its measured stretch, the cuts in it, and the part or moment behind the number."""
         i0, i1 = span[x["id"]]
@@ -233,6 +240,8 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
         said.append("cuts at " + ", ".join(f"{song_t(i):.1f}" for i in cuts) if cuts else "no cut")
         if name == "motion.max" and cuts:
             said.append(f"{x['without_cuts']} without the cuts")
+        elif name == "motion.max" and whole_frame(i0, i1):
+            said.append("the whole frame changes, as under a camera move over fine high-contrast detail")
         x["msg"] = "; ".join(said)
         return x
 

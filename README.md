@@ -215,7 +215,7 @@ song2mv check video.mp4 --song mv.json [--from 92 --to 102] [--goals my-goals.js
 earlier. Checks that cannot run on a stretch (no repeated section in it, too few cuts) are listed as skipped, not
 passed. It works on any mp4 that follows the song's timing, not only on song2mv renders. A failing line says where:
 the stretch measured, the cuts in it, and its still or empty part, or for a frantic line its biggest frame change and
-its motion without the cuts.
+its motion without the cuts (without a cut: whether the whole frame changes, as under a camera drift over fine detail).
 
 The default [goals](https://github.com/yongjip/song2mv/blob/main/src/song2mv/check/goals.json) are a starting point
 measured on one video; your own goals file only needs the values you change. Passing is necessary, not proof of fun.
@@ -233,7 +233,8 @@ song2mv sheet video.mp4 --every 2 --crop 700,380,312,400 --cols 3 # one region, 
 A contact sheet of the video as rendered, captions, title and strips included: a way to review a video without
 watching it. Each tile is the frame on screen at its song time, labelled with that time and, with `--song`, the id of
 the line sung then (or of the section between lines). `--from` is the song time of the video's first frame, as for
-`check`; `--cuts` reads the start and the cuts of a saved `check --json` result and also takes its `--from` and
+`check`; without it, a stretch keeps the start in the name `render` gave it (`song-9x16-49.72-72.2.mp4` starts at
+49.72). `--cuts` reads the start and the cuts of a saved `check --json` result and also takes its `--from` and
 `--song`. `--crop X,Y,W,H` shows one region of each frame, in the video's pixels, scaled to the tile width (`--cols`
 sets the zoom; the label shows it). The sheet is a PNG 1920 px wide, `video-sheet.png` next to `video.mp4` unless
 `--out` names it; frames that do not fit on one page, about 2400 px tall, continue on `video-sheet-2.png` and so on.

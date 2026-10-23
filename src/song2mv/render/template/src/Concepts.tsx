@@ -1,6 +1,6 @@
 import React, { FC, useMemo } from "react";
 import { AbsoluteFill } from "remotion";
-import { Song, SongContext, makeSongCtx } from "./kit";
+import { Song, SongContext, makeSongCtx, useFonts } from "./kit";
 import * as concepts from "./scenes/concepts";
 
 /**
@@ -12,6 +12,7 @@ import * as concepts from "./scenes/concepts";
 const GAP = 12;
 
 export const ConceptBoard: React.FC<{ song: Song; T: number }> = ({ song, T }) => {
+  useFonts();
   const ctx = useMemo(() => makeSongCtx(song), [song]);
   const list = Object.entries(concepts)
     .filter(([, C]) => typeof C === "function")

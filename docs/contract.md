@@ -35,7 +35,8 @@ empty (`coverage.min`) line adds `stretch` `{from, to, value}`: its longest part
 (`motion.max`) adds `peak` `{t, value}`, its biggest frame change and the song time of the frame it shows on, and
 `without_cuts`, its motion with every cut-like frame change left out, also those that `cuts` lists as one cut because
 they fall within 0.3 s of each other (`msg` calls the peak a cut when it is one of them). In a pixel scene a
-whole-pixel camera step can be one of them too. `variation.repeats` lists every repeated line pair in `pairs` as
+whole-pixel camera step can be one of them too. Without a cut, `msg` says when the change covers the whole frame,
+as a camera move over fine detail does. `variation.repeats` lists every repeated line pair in `pairs` as
 `[pair, correlation]`, worst first; its `value` is their mean, or the worst pair with a line in a hot section when
 that is higher. A check in `skipped` neither passed nor failed and is not counted in `total`.
 

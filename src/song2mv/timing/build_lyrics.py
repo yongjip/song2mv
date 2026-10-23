@@ -252,13 +252,14 @@ def onset_report(lines: list[dict], audio: str) -> None:
         idx = np.where((tt > c - w) & (tt < c + w))[0]
         idx = idx[idx + 4 < len(db)]
         if not len(idx):
-            return "-"
+            return "no onset"
         d = db[idx + 4] - db[idx]  # rise over the next 20 ms
         j = idx[int(np.argmax(d))]
-        return f"{tt[j]:.2f}(+{d.max():.0f}dB)"
-    print("  lines not timed by the runs — word@time → nearest vocal onset. Pin wrong ones in \"manual\":")
+        return f"onset {tt[j]:.2f}, +{d.max():.0f} dB"
+    print("  lines not timed by the runs: each word at the time it keeps, and the strongest vocal onset near it, to check "
+          "by ear. Pin wrong ones in \"manual\":")
     for r in check:
-        print(f"    {r['id']:7s} [{r['source']}] " + "  ".join(f"{w['w']}@{w['t']:.2f}→{near(w['t'])}" for w in r["words"]))
+        print(f"    {r['id']:7s} [{r['source']}] " + "  ".join(f"{w['w']} {w['t']:.2f} ({near(w['t'])})" for w in r["words"]))
 
 
 def frame_options(cfg: dict) -> dict:

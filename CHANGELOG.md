@@ -43,7 +43,10 @@ First release (0.1.0).
   words within 0.1 s of the annotations rose from 52 % to 63 % (all 79: from 55.1 % to 55.5 %; within 0.3 s and 1 s
   unchanged). The other songs get byte-identical files. A `grid.json` made before this is reused as it is:
   `sync WORK/song.json --from grid` measures the swing.
-- Words pinned in `manual` keep the times you gave: they are no longer snapped to the beat grid.
+- Words pinned in `manual` keep the times you gave: they are no longer snapped to the beat grid. The sync log lists
+  each word of a line the runs did not time at the time it keeps, then the vocal onset near it
+  (`Beep, 66.26 (onset 66.52, +7 dB)`): its arrow (`Beep,@66.26→66.52`) read like a move, and one run opened
+  `lyrics.json` to see whether its pins had been kept.
 - Without a beat map, `sync` leaves the words in an `off_grid` stretch at whisper's times and snaps the words around
   it to 16ths, so a word just outside the stretch could snap across its edge, past a neighbour that kept its time, and
   come out of order with it; such a word now keeps whisper's time too. A first word placed at the song's start could
@@ -248,6 +251,42 @@ First release (0.1.0).
     song, 6/6 for the short).
 
   The default scene, its stills and the gallery render as before.
+- Fixes from the third new-user run, the first through the starter: 42.6 minutes against 30.7 for the run before,
+  about 14 of them lost to what follows.
+  - **Fonts.** `loadFont(family, url)` in the kit loads a font file imported from `src/` and returns the family for
+    `fontFamily`; the compositions hold their first frame until every file has loaded (`useFonts`). The skill's
+    concept step and the starter show it. The run had written Remotion's own pattern, a `delayRender()` at the top of
+    a module, and Remotion's entry, which runs after the scenes' modules, drops such a handle: the font held no frame,
+    and the timer left behind cancelled every render longer than its timeout. Drafts, stills and the short passed; the
+    full render failed at frame 1493, and with a longer timeout and retries took 171 s, two batches of frames waiting
+    58 s each. With the kit's loader the same video rendered in one go, its frames matching the delivered ones (under
+    1 grey level apart on average).
+  - **Drift over fine detail.** `drift` on `planShots`, a `Board` and the starter's `SHOW` scales every shot's push,
+    pan and pull. Over the run's brownstone street, window grids, railings and stoop treads measured as motion under
+    the planner's drift alone, 8–9 on most verse lines against `motion.max`'s 9; `drift: 0.5` on that street's boards
+    took its verse lines from 5.4 to 3.6 on average (the highest from 8.9 to 6.5), with the same cuts and no line
+    still. `check` says "the whole frame changes, as under a camera move over fine high-contrast detail" for a frantic
+    line without a cut whose change covers most of the frame (70 % of a 4×8 grid in most frames): on the run's video,
+    lines with a big mover in them measure 0.53–0.59, those with the drift alone 0.72–1.0. The skill says it under
+    "Held shots".
+  - **Boards keyed to lines.** `Storyboard` plans each section once across its boards (`planBoards` in
+    `src/kit/plan.ts`): every board start is a cut of the plan, counted in the section's rhythm, and a section with
+    boards at its lines cuts inside as few of them as an interval CV of 0.37 allows (check wants 0.35), inside none
+    under 2.5 s if it can, since a board start cuts next to them; each board was planned alone, and its cuts inside
+    2.2 s lines made the run's busy verses frantic. With the run's three outro boards two lines apart,
+    `cuts.rhythm.ou` went from 0.32 to 0.43. Over its final boards, cuts inside the keyed sections' lines went from 13
+    to 4, inside lines under 2.5 s from 8 to none (`v1-06`: 8.25 → 6.22), the verses' rhythm from 0.43 and 0.50 to
+    0.39 and 0.43; one line got a cut its verse's rhythm needed (`v1-03`, 2.8 s, whose own motion of 8.25 then measured
+    10.1), and with `drift: 0.5` on the street's boards every check passes. On 33 synthetic keyed sections the old
+    planner missed `cuts.rhythm` in 10, this one in 4, all of them short outros keyed every 2 lines. A board keyed to a
+    line now opens on its first framing in every copy of the section: verse 2's boards opened on their second one, the
+    line's subject missing. The starter no longer adds a board every 8 lines in a section whose lines have boards of
+    their own, and the skill says to key boards every 2 lines or more, unevenly. `planShots` plans one stretch as
+    before.
+  - **9:16.** The starter's `tall()` writes a 9:16 framing without `at()`'s clamp to the 16:9 stage, which had moved
+    17 of the starter's own 28 tall framings off the points written (a wide shot written for x 800 looked at x 960, a
+    close-up written for y 860 at y 762); its worlds use it. The skill says how far a close-up reaches below y 1080: the frame ends
+    1245 / zoom stage px below the view's point, about 300 px for a 2× close-up of a subject at y 760.
 - `song.json` sets the two effects the template's frame lays over every scene: `"vignette": false` turns off the dark
   vignette, and `"flashes": [[song time, strength 0–1], …]` replaces the white flash at the start of each hot section
   (`[]` for none). `sync` copies both into `mv.json`; without them `mv.json` is as before. Neither could be changed
@@ -276,7 +315,8 @@ First release (0.1.0).
   1.75 s early, and a scene-only sheet could not show one run's worst defect, two lyric lines on screen at once at
   the chorus hit. The labels are a built-in bitmap font drawn with numpy and zlib writes the PNG, so the command needs
   only ffmpeg and numpy. The skill's step 5 makes a sheet after every `check`, at its cuts, and one of every full
-  render.
+  render. Without `--from`, a stretch keeps the start in the name `render` gave it (`song-9x16-49.72-72.2.mp4` starts
+  at 49.72): one run's short was labelled with video time until its agent found `--from`.
 - A style pack for paper cut-out, `paper` in the scene kit (`src/kit/styles/paper.tsx`). The kit's people, places
   and objects are flat illustration; a style pack is a few drawing pieces that put any object in another art style:
   - outlines cut by hand: `rect`, `ellipse`, `poly` and `strip`, seeded so that a cut stays the same from frame to

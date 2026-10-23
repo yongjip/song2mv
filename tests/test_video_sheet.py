@@ -82,6 +82,16 @@ def test_every_takes_the_middle_of_each_slot_and_labels_it_with_that_time(tmp_pa
     assert shown(png, mp4, 4) == [7, 22, 37, 52]
 
 
+@pytest.mark.parametrize("name, t0, start", [
+    ("park-9x16-49.72-55.72.mp4", None, 49.72), ("park-16x9-92-end-draft.mp4", None, 92.0),
+    ("park-9x16-49.72-55.72.mp4", 50.0, 50.0), ("park-9x16.mp4", None, 0.0), ("song-2-of-3.mp4", None, 0.0),
+])
+def test_a_stretch_takes_its_start_from_the_name_render_gave_it(tmp_path, name, t0, start):
+    mp4 = numbered(tmp_path, 10, 60, name=name)
+    res = quiet(video=str(mp4), every=3, t0=t0, out=str(tmp_path / "s.png"))
+    assert res["from"] == start and res["times"] == [round(start + 1.5, 6), round(start + 4.5, 6)]
+
+
 def test_a_time_just_after_the_last_frame_shows_it_and_one_outside_the_video_is_refused(tmp_path, capsys):
     mp4 = numbered(tmp_path, 10, 20)
     png = tmp_path / "s.png"

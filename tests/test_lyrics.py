@@ -255,3 +255,24 @@ def test_music_after_the_last_sung_line_gets_a_quiet_section_of_its_own():
     assert [(s["id"], s["kind"], s["start"], s["end"]) for s in sections(lines, grid, 60.0)] == [
         ("v1", "mid", 0.0, 20.0), ("ch1", "hot", 20.0, 40.0), ("outro", "calm", 40.0, 60.0)]
     assert [s["id"] for s in sections(lines, grid, 43.0)] == ["v1", "ch1"]
+
+
+def test_the_onset_report_shows_each_word_at_the_time_it_keeps(tmp_path, capsys):
+    # A pinned word at 0.90 s and a tone from 1.00 s: the report gives the word's own time, then the onset near it, so
+    # a pin it keeps does not read as moved. Lines the runs timed are left out.
+    import re
+
+    import numpy as np
+
+    pytest.importorskip("librosa")
+    sf = pytest.importorskip("soundfile")
+    from song2mv.timing.build_lyrics import onset_report
+
+    sr = 22050
+    t = np.arange(2 * sr) / sr
+    sf.write(tmp_path / "a.wav", np.where(t >= 1.0, 0.3 * np.sin(2 * np.pi * 220 * t), 0.0), sr)
+    onset_report([{"id": "hk1-07", "source": "manual", "words": [{"w": "Beep,", "t": 0.9}]},
+                  {"id": "v1-01", "source": "asr", "words": [{"w": "la", "t": 1.2}]}], str(tmp_path / "a.wav"))
+    out = capsys.readouterr().out
+    assert "each word at the time it keeps" in out and "v1-01" not in out and "→" not in out
+    assert re.search(r"hk1-07  \[manual\] Beep, 0\.90 \(onset (0\.9[5-9]|1\.0[0-4]), \+\d+ dB\)", out), out

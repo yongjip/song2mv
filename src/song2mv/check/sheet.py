@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import struct
 import subprocess
 import zlib
@@ -27,6 +28,7 @@ SHEET_W, GAP, PAGE_H = 1920, 12, 2400
 BG, INK, DIM = (32, 33, 36), (255, 255, 255), (154, 160, 166)
 MAX_TILES = 400
 JOBS = 4
+STRETCH = re.compile(r"-(?:16x9|9x16)-(\d+(?:\.\d+)?)-(?:\d+(?:\.\d+)?|end)(?:-draft)?\.mp4$")
 
 
 def _number(v) -> Fraction:
@@ -73,6 +75,12 @@ def read_check(path: str) -> dict:
     if not isinstance(res, dict) or res.get("command") != "check" or not isinstance(res.get("cuts"), list):
         raise Song2mvError(f"{path} is not the result of `song2mv check --json`", hint=hint)
     return res
+
+
+def start_in_name(video: str) -> float | None:
+    """The song time of a stretch's first frame, from the name `song2mv render` gives it: NAME-ASPECT-FROM-TO.mp4"""
+    m = STRETCH.search(os.path.basename(video))
+    return float(m.group(1)) if m else None
 
 
 def sung_at(song: dict, t: float) -> str:
@@ -179,6 +187,8 @@ def sheet(video: str, song_path: str | None = None, every: float | None = None, 
                 song_path = check["song"]
             else:
                 warnings.append(f"the check result's mv.json is gone ({check['song']}): the labels show times only")
+    if t0 is None and (t0 := start_in_name(video)) is not None:
+        print(f"sheet: the video starts at song time {t0:g} s, as its name says (--from sets another)")
     t0 = t0 or 0.0
     song = load_mv(song_path, keys=("duration", "sections", "lines")) if song_path else None
 
