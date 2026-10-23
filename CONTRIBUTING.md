@@ -30,6 +30,11 @@ Update React and React DOM together. Keep Remotion and every `@remotion/*` packa
 After template dependency changes, run `npm ci`, `npm run typecheck`, `npm run test:assets` and the template
 render tests; type checking alone does not detect a React runtime mismatch.
 
+Asset checks transpile render probes with esbuild and validate interaction types through the installed `tsc`
+CLI, extending the template's tsconfig in a temporary project that is removed afterward. Do not import the
+legacy TypeScript compiler API: TypeScript 7 does not expose it. Keep the negative type checks as well as the
+rendered SVG and mutation checks when changing this harness.
+
 ## Pull requests
 
 - Keep changes small and focused; one behaviour per pull request.

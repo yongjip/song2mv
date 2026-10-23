@@ -4,15 +4,15 @@ import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 
 const require = createRequire(import.meta.url);
-const ts = require("typescript"),
+const { transformSync } = require("esbuild"),
   React = require("react");
 const { renderToStaticMarkup } = require("react-dom/server");
 const reactURL = pathToFileURL(require.resolve("react")).href;
 const plain = (file) =>
   `data:text/javascript;base64,${Buffer.from(
-    ts.transpileModule(fs.readFileSync(new URL(file, import.meta.url), "utf8"), {
-      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-    }).outputText,
+    transformSync(fs.readFileSync(new URL(file, import.meta.url), "utf8"), {
+      loader: "ts", format: "esm", target: "es2022",
+    }).code,
   ).toString("base64")}`;
 const helpers = [
   ["./color", plain("src/kit/color.ts")],
@@ -23,13 +23,9 @@ const compile = (file, replacements = []) => {
   for (const [from, to] of [["react", reactURL], ...helpers, ...replacements]) {
     source = source.replaceAll(`from "${from}"`, `from "${to}"`);
   }
-  const js = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.ESNext,
-      jsx: ts.JsxEmit.React,
-      target: ts.ScriptTarget.ES2022,
-    },
-  }).outputText;
+  const js = transformSync(source, {
+    loader: "tsx", format: "esm", target: "es2022", jsx: "transform",
+  }).code;
   return `data:text/javascript;base64,${Buffer.from(js).toString("base64")}`;
 };
 const bodyURL = compile("src/kit/portrait-body.tsx");

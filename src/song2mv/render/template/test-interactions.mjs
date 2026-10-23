@@ -1,19 +1,21 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import { createRequire } from "node:module";
+import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const require = createRequire(import.meta.url);
-const ts = require("typescript"),
+const { transformSync } = require("esbuild"),
   React = require("react");
 const { renderToStaticMarkup } = require("react-dom/server");
 const reactURL = pathToFileURL(require.resolve("react")).href;
 const templateDirectory = fileURLToPath(new URL(".", import.meta.url));
 const plain = (file) =>
   `data:text/javascript;base64,${Buffer.from(
-    ts.transpileModule(fs.readFileSync(new URL(file, import.meta.url), "utf8"), {
-      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-    }).outputText,
+    transformSync(fs.readFileSync(new URL(file, import.meta.url), "utf8"), {
+      loader: "ts", format: "esm", target: "es2022",
+    }).code,
   ).toString("base64")}`;
 const helpers = [
   ["./color", plain("src/kit/color.ts")],
@@ -25,13 +27,9 @@ function compile(file, replacements = [], rewrite = (source) => source) {
     source = source.replaceAll(`from "${from}"`, `from "${to}"`);
   }
   return `data:text/javascript;base64,${Buffer.from(
-    ts.transpileModule(source, {
-      compilerOptions: {
-        module: ts.ModuleKind.ESNext,
-        jsx: ts.JsxEmit.React,
-        target: ts.ScriptTarget.ES2022,
-      },
-    }).outputText,
+    transformSync(source, {
+      loader: "tsx", format: "esm", target: "es2022", jsx: "transform",
+    }).code,
   ).toString("base64")}`;
 }
 
@@ -271,16 +269,10 @@ function movePartBefore(markup, name, before) {
 }
 
 function assertTypeContracts() {
-  const configPath = ts.findConfigFile(templateDirectory, ts.sys.fileExists, "tsconfig.json");
-  assert.ok(configPath, "Use the template's compiler settings for API contract checks");
-  const config = ts.readConfigFile(configPath, ts.sys.readFile);
-  assert.equal(config.error, undefined);
-  const options = ts.parseJsonConfigFileContent(config.config, ts.sys, templateDirectory).options;
-  const virtualPath = fileURLToPath(new URL("__interaction_contract__.tsx", import.meta.url));
   const source = `
     import React from "react";
-    import {PortraitInteraction} from "./src/kit/portrait-interaction";
-    import {PortraitHand} from "./src/kit/portrait-body";
+    import {PortraitInteraction} from "../src/kit/portrait-interaction";
+    import {PortraitHand} from "../src/kit/portrait-body";
     const profile = {neck:[0,-235] as [number,number], ear:[51,-326.5] as [number,number]};
     const base = {action:"phone" as const, time:0, profile, x:0, y:0, renderHead:(_angle:number)=>null};
     const validPhone = <PortraitInteraction {...base}/>;
@@ -300,26 +292,23 @@ function assertTypeContracts() {
     // @ts-expect-error Optional temple coordinates remain a numeric landmark tuple.
     const invalidTemple = <PortraitInteraction {...base} action="head-touch" profile={{...profile,temple:"head"}}/>;
   `;
-  const host = ts.createCompilerHost(options),
-    readFile = host.readFile.bind(host),
-    fileExists = host.fileExists.bind(host);
-  host.readFile = (file) => (file === virtualPath ? source : readFile(file));
-  host.fileExists = (file) => file === virtualPath || fileExists(file);
-  host.getSourceFile = (file, languageVersion) => {
-    const text = host.readFile(file);
-    return text === undefined ? undefined : ts.createSourceFile(file, text, languageVersion, true);
-  };
-  const program = ts.createProgram([virtualPath], { ...options, noEmit: true }, host);
-  const diagnostics = ts.getPreEmitDiagnostics(program);
-  assert.equal(
-    diagnostics.length,
-    0,
-    ts.formatDiagnosticsWithColorAndContext(diagnostics, {
-      getCanonicalFileName: (file) => file,
-      getCurrentDirectory: () => templateDirectory,
-      getNewLine: () => "\n",
-    }),
-  );
+  const probeDirectory = fs.mkdtempSync(new URL(".interaction-contract-", import.meta.url));
+  try {
+    fs.writeFileSync(path.join(probeDirectory, "contract.tsx"), source);
+    const configPath = path.join(probeDirectory, "tsconfig.json");
+    fs.writeFileSync(configPath, JSON.stringify({
+      extends: "../tsconfig.json", files: ["contract.tsx"], include: [],
+    }));
+    const packagePath = require.resolve("typescript/package.json");
+    const cli = path.join(path.dirname(packagePath), JSON.parse(fs.readFileSync(packagePath, "utf8")).bin.tsc);
+    const result = spawnSync(process.execPath, [cli, "--project", configPath, "--noEmit", "--pretty", "false"], {
+      cwd: templateDirectory, encoding: "utf8",
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+  } finally {
+    fs.rmSync(probeDirectory, { recursive: true, force: true });
+  }
   return 6;
 }
 
