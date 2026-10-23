@@ -7,6 +7,8 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 First release (0.1.0).
 
 ### Fixed
+- React and React DOM update together to 19.3.1. Dependabot now groups both runtimes and their types to
+  prevent separate updates from leaving incompatible renderer versions.
 - CI verifies the built wheel and source archive survive the same upload/download action handoff used by
   releases, comparing SHA-256 checksums without publishing. Dependabot groups the two artifact actions.
 - Rendering selects a free port across both address families. With Remotion 4.0.537, an unrelated IPv6-only
