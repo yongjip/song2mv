@@ -1,4 +1,5 @@
-"""Write SRT subtitles from lyrics.json lines: one cue per lyric line, from its start to its end.
+"""Write SRT subtitles from lyrics.json lines: one cue per lyric line, from its start to its end, with its sung words
+(a "/" or "–" between them in the lyric sheet is left out, as in the video's captions).
 
 Video editors (CapCut, Premiere, DaVinci Resolve, Final Cut) import SRT directly, so a song's timing can be used
 without the render template. Cues never overlap: a cue ends at the next cue's start, and lines that start within
@@ -30,7 +31,7 @@ def to_srt(lines: list[dict], out: str) -> int:
         end = max(max(r["end"] for r in g), start + MIN_CUE)
         if i + 1 < len(groups):
             end = min(end, groups[i + 1][0]["start"])  # at least MIN_CUE after start: groups start that far apart
-        text = "\n".join(r["text"] for r in g)
+        text = "\n".join(" ".join(w["w"] for w in r["words"]) for r in g)
         cues.append(f"{len(cues) + 1}\n{ts(start)} --> {ts(end)}\n{text}\n")
     with open(out, "w", encoding="utf-8") as f:
         f.write("\n".join(cues))

@@ -1,8 +1,10 @@
 """Turn merged word times into the final lyric timing: manual values, estimates for anything still
-missing, in-line interpolation, snapping to the beat grid, line ends. Writes
+missing, in-line interpolation, snapping to the beat grid (to its beat map when grid.json has one; without one,
+not in the stretches grid.json lists under off_grid, where the grid does not fit the music; 16th notes where its
+swing puts them; never the words of a line pinned in "manual"), line ends. Writes
 
   lyrics.json — every line and word with its time, where the time came from, and how the runs agreed
-  mv.json     — the song config the Remotion template reads (lyrics + grid + sections + theme)
+  mv.json     — the song config the Remotion template reads (lyrics + grid + sections + theme, vignette, flashes)
 
 Times come from, in order of trust:
   manual    — the config's "manual" values (word start times, seconds)
@@ -15,7 +17,9 @@ Usage: run through `song2mv sync` (step "build").
 """
 from __future__ import annotations
 
+import math
 import os
+import statistics
 
 from ..errors import Song2mvError
 from .lib import warn
@@ -25,9 +29,19 @@ def _known(r):
     return [t for t in r["wt"] if t is not None]
 
 
+def manual_times(r: dict, v) -> list[float | None]:
+    """A "manual" value for line r → one start time per word (None for a word without one)."""
+    if isinstance(v, (int, float)):
+        v = [v]
+    if not isinstance(v, list) or not all(x is None or isinstance(x, (int, float)) for x in v):
+        raise Song2mvError(f"manual value for {r['id']} must be a list of word start times in seconds, got {v!r}")
+    return [float(v[i]) if i < len(v) and v[i] is not None else None for i in range(len(r["words"]))]
+
+
 def apply_manual(lines: list[dict], manual: dict) -> None:
     """"manual": {"ch1-01": [98.5, 99.2]} sets word start times (seconds). A single number sets the first word;
-    words without a value are spread out after the last given one. Times are still snapped to the beat grid."""
+    words without a value are spread out after the last given one. The line's words are not snapped to the beat grid.
+    reprompt.fill_gaps has already fitted the re-heard lines between these pins."""
     ids = {r["id"] for r in lines}
     for k in manual:
         if k not in ids:
@@ -36,13 +50,9 @@ def apply_manual(lines: list[dict], manual: dict) -> None:
         if r["id"] not in manual:
             continue
         v = manual[r["id"]]
-        if isinstance(v, (int, float)):
-            v = [v]
-        if not isinstance(v, list) or not all(x is None or isinstance(x, (int, float)) for x in v):
-            raise Song2mvError(f"manual value for {r['id']} must be a list of word start times in seconds, got {v!r}")
-        if len(v) > len(r["words"]):
+        r["wt"] = manual_times(r, v)
+        if isinstance(v, list) and len(v) > len(r["words"]):
             warn(f"manual value for {r['id']} has {len(v)} times for {len(r['words'])} words; extra times ignored")
-        r["wt"] = [float(v[i]) if i < len(v) and v[i] is not None else None for i in range(len(r["words"]))]
         given = [t for t in r["wt"] if t is not None]
         if any(b < a for a, b in zip(given, given[1:])):
             warn(f"manual times for {r['id']} go backwards ({given}); each word is kept at or after the one before")
@@ -79,10 +89,40 @@ def estimate(lines: list[dict], end_song: float) -> None:
         i = j
 
 
+def off_grid(grid: dict):
+    """t → True inside a stretch where the beat grid does not fit (grid.json `off_grid`): words are not snapped there."""
+    stretches = [(s["from"], s["to"]) for s in grid.get("off_grid") or []]
+    return lambda t: any(a <= t < b for a, b in stretches)
+
+
 def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -> list[dict]:
-    P, phi = grid["beat"], grid["phi"]
+    P, phi, beats = grid["beat"], grid["phi"], grid.get("beats")
     S = P / snap_per_beat if snap_per_beat else 0
-    snap = (lambda t: round(phi + round((t - phi) / S) * S, 3)) if S else (lambda t: round(t, 3))
+    swing = grid.get("swing") if snap_per_beat == 4 else None
+    if swing:
+        from .beat_grid import map_number, map_time, swung
+
+        if beats:
+            def snap(t: float) -> float:
+                return round(float(map_time(beats, swung(float(map_number(beats, t)), swing))), 3)
+        else:
+            off = off_grid(grid)
+            snap = lambda t: round(t, 3) if off(t) else round(phi + swung((t - phi) / P, swing) * P, 3)  # noqa: E731
+    elif beats and S:
+        from .beat_grid import map_number, map_time
+
+        def snap(t: float) -> float:
+            return round(float(map_time(beats, round(float(map_number(beats, t)) * snap_per_beat) / snap_per_beat)), 3)
+    else:
+        off = off_grid(grid)
+        snap = lambda t: round(t, 3) if not S or off(t) else round(phi + round((t - phi) / S) * S, 3)  # noqa: E731
+    on_grid = snap
+    edges = [] if beats else [s[k] for s in grid.get("off_grid") or [] for k in ("from", "to")]
+
+    def snap(t: float) -> float:
+        g = max(0.0, on_grid(t))
+        return round(max(0.0, t), 3) if any((t < e) != (g < e) for e in edges) else g
+
     starts = {i: min(_known(r)) for i, r in enumerate(lines) if _known(r)}
     out = []
     for i, r in enumerate(lines):
@@ -95,8 +135,12 @@ def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -
         nxt_start = min([t for j, t in starts.items() if j != i and t > my0 + 0.3], default=end_song)
         known = [(k, t) for k, t in enumerate(wt) if t is not None]
         k0, t0 = known[0]
-        for k in range(k0):  # words before the first placed one: 0.3 s apart
-            wt[k] = t0 - (k0 - k) * 0.3
+        # words before the first placed one: 0.3 s apart, but not before a 16th note after the last word of the line
+        # before (the captions switch to the newer line, so that word would never light up)
+        lo = out[-1]["words"][-1]["t"] + P / 4 if out and out[-1]["start"] < t0 else 0.0
+        a = min(max(t0 - 0.3 * k0, lo), t0)
+        for k in range(k0):
+            wt[k] = a + (t0 - a) * k / k0
         for (ka, ta), (kb, tb) in zip(known, known[1:]):
             for k in range(ka + 1, kb):
                 wt[k] = ta + (tb - ta) * (k - ka) / (kb - ka)
@@ -109,7 +153,7 @@ def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -
             wt[k] = tl + (tail - tl) * (k - kl) / n_tail
         for k in range(1, len(wt)):  # sung words stay in order (runs that disagree, manual times out of order)
             wt[k] = max(wt[k], wt[k - 1])
-        wt = [snap(max(0.0, t)) for t in wt]
+        wt = [round(max(0.0, t), 3) if r.get("source") == "manual" else snap(max(0.0, t)) for t in wt]
         last = wt[-1]
         # shown until 0.9 s after the last word or just before the next line, but always past its own last word
         end = max(snap(min(nxt_start - 0.15, last + 0.9)), round(last + max(S, 0.15), 3))
@@ -125,7 +169,9 @@ def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -
 
 
 def sections(lines: list[dict], grid: dict, duration: float) -> list[dict]:
-    P, bar0 = grid["beat"], grid["bar0"]
+    P, bar0, beats, down = grid["beat"], grid["bar0"], grid.get("beats"), grid.get("downbeat_mod4", 0)
+    if beats:
+        from .beat_grid import map_number, map_time
     first: dict = {}
     for r in lines:
         s = first.setdefault(r["section"], {"id": r["section"], "name": r["section_name"], "kind": r["kind"], "start": r["start"]})
@@ -134,19 +180,59 @@ def sections(lines: list[dict], grid: dict, duration: float) -> list[dict]:
     if not secs:
         return []
     late_start = secs[0]["start"] > 4.0 and secs[0]["kind"] != "calm"
+    last = max(r.get("end", r["start"]) for r in lines)
+    if beats:
+        tail = float(map_time(beats, down + 4 * math.ceil((float(map_number(beats, last)) - down) / 4 - 1e-6)))
+    else:
+        tail = bar0 + math.ceil((last - bar0) / (4 * P) - 1e-6) * 4 * P
     for s in secs:  # start the section on the bar line next to its first lyric (pickups, late entries)
-        k = round((s["start"] - bar0) / (4 * P))
-        d = bar0 + k * 4 * P
+        if beats:
+            d = float(map_time(beats, down + 4 * round((float(map_number(beats, s["start"])) - down) / 4)))
+        else:
+            k = round((s["start"] - bar0) / (4 * P))
+            d = bar0 + k * 4 * P
         if s["start"] - 2 * P <= d <= s["start"] + 1.5 * P:
             s["start"] = round(max(0.0, d), 3)
     if late_start:  # music before the first sung section gets a quiet section of its own
         secs.insert(0, {"id": "intro", "name": "(instrumental)", "kind": "calm", "start": 0.0})
+    if duration - tail > 4.0 and tail > secs[-1]["start"]:  # and so does music after the last sung line
+        secs.append({"id": "outro", "name": "(instrumental)", "kind": "calm", "start": round(tail, 3)})
     secs[0]["start"] = 0.0
     for a, b in zip(secs, secs[1:]):
         b["start"] = max(b["start"], round(a["start"] + P, 3))
         a["end"] = b["start"]
     secs[-1]["end"] = round(duration, 3)
     return secs
+
+
+LOUD_CALM = 2.0  # dB: a section labelled calm that is less than this much quieter than the mid sections is mid
+
+
+def loud_calm(lyrics: dict, loudness: list[float], overrides: dict) -> list[str]:
+    """Kinds come from the sheet's section names, but on AI-made songs a bridge or an outro is often as loud as the
+    verses: on three Suno songs every bridge and outro was, and a calm section is held to looser checks (no cut-gap
+    or cut-rhythm check, a lower motion floor). A section whose kind came from a calm name and whose median loudness
+    (music.json, per 0.5 s) is less than LOUD_CALM dB under the median over the mid sections becomes mid, in
+    `lyrics` (its sections, which mv.json shares, and its lines). Kinds set in `section_kinds` and the instrumental
+    section before the first sung one are kept. Returns one message per section changed."""
+    def level(secs):
+        vals = [v for s in secs for k, v in enumerate(loudness) if s["start"] <= 0.5 * k < s["end"]]
+        return statistics.median(vals) if vals else None
+    sung = {r["section"] for r in lyrics["lines"]}
+    ref = level([s for s in lyrics["sections"] if s["kind"] == "mid"])
+    out = []
+    for s in lyrics["sections"]:
+        db = level([s])
+        if (s["kind"] != "calm" or s["id"] not in sung or s["id"] in overrides or s["name"] in overrides
+                or ref is None or db is None or db < ref - LOUD_CALM):
+            continue
+        s["kind"] = "mid"
+        for r in lyrics["lines"]:
+            if r["section"] == s["id"]:
+                r["kind"] = "mid"
+        out.append(f"{s['id']} [{s['name']}] is about as loud as the mid sections (median {db:.1f} dB, theirs "
+                   f"{ref:.1f} dB): kind mid, not calm; set section_kinds to keep it calm")
+    return out
 
 
 def onset_report(lines: list[dict], audio: str) -> None:
@@ -166,13 +252,32 @@ def onset_report(lines: list[dict], audio: str) -> None:
         idx = np.where((tt > c - w) & (tt < c + w))[0]
         idx = idx[idx + 4 < len(db)]
         if not len(idx):
-            return "-"
+            return "no onset"
         d = db[idx + 4] - db[idx]  # rise over the next 20 ms
         j = idx[int(np.argmax(d))]
-        return f"{tt[j]:.2f}(+{d.max():.0f}dB)"
-    print("  lines not timed by the runs — word@time → nearest vocal onset. Pin wrong ones in \"manual\":")
+        return f"onset {tt[j]:.2f}, +{d.max():.0f} dB"
+    print("  lines not timed by the runs: each word at the time it keeps, and the strongest vocal onset near it, to check "
+          "by ear. Pin wrong ones in \"manual\":")
     for r in check:
-        print(f"    {r['id']:7s} [{r['source']}] " + "  ".join(f"{w['w']}@{w['t']:.2f}→{near(w['t'])}" for w in r["words"]))
+        print(f"    {r['id']:7s} [{r['source']}] " + "  ".join(f"{w['w']} {w['t']:.2f} ({near(w['t'])})" for w in r["words"]))
+
+
+def frame_options(cfg: dict) -> dict:
+    """The config's "vignette" (false = none) and "flashes" ([[song time, strength 0–1], …], [] = none) for the
+    template's frame around the scenes. Keys the config leaves out stay out of mv.json: the template's defaults."""
+    out = {}
+    vignette, flashes = cfg.get("vignette"), cfg.get("flashes")
+    if vignette is not None:
+        if not isinstance(vignette, bool):
+            raise Song2mvError(f"vignette must be true or false, got {vignette!r}")
+        out["vignette"] = vignette
+    if flashes is not None:
+        pair = lambda p: isinstance(p, list) and len(p) == 2 and all(isinstance(x, (int, float)) for x in p)  # noqa: E731
+        if not isinstance(flashes, list) or not all(pair(p) for p in flashes):
+            raise Song2mvError(f"flashes must be a list of [song time, strength] pairs, got {flashes!r}",
+                               hint='for example "flashes": [[33.6, 0.55], [81.9, 0.8]]; [] turns them off')
+        out["flashes"] = flashes
+    return out
 
 
 def build(merged: list[dict], grid: dict, cfg: dict, duration: float) -> tuple[dict, dict]:
@@ -181,7 +286,10 @@ def build(merged: list[dict], grid: dict, cfg: dict, duration: float) -> tuple[d
     estimate(merged, end_song)
     lines = finish(merged, grid, int(cfg.get("snap_per_beat") or 0), end_song)
     secs = sections(lines, grid, duration)
-    g = {k: grid[k] for k in ("bpm", "beat", "phi", "downbeat_mod4", "bar0")}
+    g = {**{k: grid[k] for k in ("bpm", "beat", "phi", "downbeat_mod4", "bar0")}, "off_grid": grid.get("off_grid") or []}
+    for k in ("beats", "swing"):
+        if grid.get(k):
+            g[k] = grid[k]
     lyrics = {"title": cfg.get("title", ""), "duration": round(duration, 3), "grid": g, "sections": secs, "lines": lines}
     mv = {
         "title": cfg.get("title", ""), "subtitle": cfg.get("subtitle", ""),
@@ -190,6 +298,7 @@ def build(merged: list[dict], grid: dict, cfg: dict, duration: float) -> tuple[d
         "lines": [{k: r[k] for k in ("id", "section", "text", "start", "end", "words")} for r in lines],
         "captions": {"hide": [], "from_word": {}, "whisper": []},
         "theme": cfg.get("theme") or {},
+        **frame_options(cfg),
     }
     src = {}
     for r in lines:

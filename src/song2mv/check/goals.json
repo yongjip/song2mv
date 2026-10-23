@@ -1,12 +1,12 @@
 {
   "_doc": "Default targets for `song2mv check`. They are a starting point, measured on one music video — not a law. Copy this file, adjust it to your song (--goals FILE) and write down why. Passing is necessary, not proof of fun: a person still judges that.",
   "frame": {
-    "_doc": "Measured area: the top part of the frame, above the karaoke captions, at 320x180 (or 180x320) grey, 10 fps.",
+    "_doc": "Measured area: the top part of the frame, above the karaoke captions, at 320x180 (or 180x320) grey, 10 fps. In 9:16 the captions start at y 1080 of 1920, also over a VerticalScene.",
     "body_frac_16x9": 0.82,
-    "body_frac_9x16": 0.7
+    "body_frac_9x16": 0.56
   },
   "motion": {
-    "_doc": "Mean absolute frame difference over each sung line. No line should be sung over a still picture; verses should not be frantic either.",
+    "_doc": "Mean absolute frame difference over each sung line. No line should be sung over a still picture; verses should not be frantic either. A line sung into the next section is measured up to that section's start, or up to the last cut in the beat before it: the hit on the downbeat belongs to the new section.",
     "min_per_line": 0.6,
     "quiet_kinds": [
       "calm"
@@ -24,7 +24,7 @@
     "median_min": 0.08
   },
   "variation": {
-    "_doc": "Repeated sections (ch1 vs ch2, v1 vs v2 ...): frame correlation of the same line at +0.5/1.0/1.5/2.0 s, averaged. Lower = the repeat looks different.",
+    "_doc": "Repeated sections (ch1 vs ch2, v1 vs v2 ...): frame correlation of the same line at +0.5/1.0/1.5/2.0 s, averaged per line pair. Lower = the repeat looks different. The mean over all pairs must stay at or under the goal, and so must every pair with a line in a hot section: no chorus line may look like its first copy.",
     "repeat_corr_max_mean": 0.55
   },
   "cuts": {
@@ -39,7 +39,7 @@
     ]
   },
   "text": {
-    "_doc": "Smallest in-scene font size (px on the 1920x1080 stage). Checked only when `song2mv check --src 'DIR/src/scenes/**/*.tsx'` is given. Captions live in the kit and are not checked.",
+    "_doc": "Smallest in-scene `fontSize`, or `size` on the kit's `Slam`, `Quiet`, `Captions` and comic `Balloon`, `Caption` and `Sfx` (px on the 1920x1080 stage); other `size` props are not read. Checked only when `song2mv check --src \"DIR/src/scenes/**/*.tsx\"` is given. Captions live in the kit and are not checked.",
     "min_font_px": 36
   }
 }
