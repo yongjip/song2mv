@@ -27,8 +27,10 @@
  * A finished video is capped at 8 Mbit/s (YouTube's figure for 1080p30): grain-heavy styles otherwise run near 14.
  */
 import { spawnSync } from "node:child_process";
+import { once } from "node:events";
 import fs from "node:fs";
 import { createRequire } from "node:module";
+import { createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -116,7 +118,20 @@ const run = (args) => {
     process.exit(r.status ?? 1);
   }
 };
-const remotion = (args) => run([...args, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`]);
+async function unusedRenderPort() {
+  const server = createServer();
+  const listening = once(server, "listening");
+  server.listen(0);
+  await listening;
+  const port = server.address().port;
+  const closed = once(server, "close");
+  server.close();
+  await closed;
+  return port;
+}
+// Remotion serves IPv4 but opens localhost; an IPv6-only Studio can own the same default port.
+const rendererPort = flag("studio") ? [] : [`--port=${await unusedRenderPort()}`];
+const remotion = (args) => run([...args, ...rendererPort, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`]);
 const probe = (file, entries) =>
   spawnSync(process.execPath, [cli, "ffprobe", "-v", "error", ...entries, "-of", "csv=p=0", file], { cwd: HERE, encoding: "utf8" })
     .stdout.trim();
