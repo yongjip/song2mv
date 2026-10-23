@@ -69,6 +69,25 @@ jobs:
           unzip -l dist/*.whl | grep -q 'song2mv/guide/AGENTS.md'
           ! unzip -l dist/*.whl | grep -E 'node_modules|template/out/|__pycache__'
           ! tar tzf dist/*.tar.gz | grep -E 'node_modules|template/out/|__pycache__'
+      - name: checksum release archives
+        run: cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-dist-check
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  release-artifacts:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-dist-check
+          path: dist/
+      - name: verify the release archive handoff without publishing
+        run: cd dist && sha256sum --check SHA256SUMS
 
   wheel:
     # the built wheel installed the way users install it: core only, then with the sync extra
@@ -138,7 +157,7 @@ jobs:
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -q
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -q fonts-noto-cjk
       - run: npx remotion render src/index.ts Kit-Gallery out/gallery --sequence --image-format=png
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: kit-gallery
           path: src/song2mv/render/template/out/gallery/
