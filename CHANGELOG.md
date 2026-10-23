@@ -44,6 +44,11 @@ First release (0.1.0).
   unchanged). The other songs get byte-identical files. A `grid.json` made before this is reused as it is:
   `sync WORK/song.json --from grid` measures the swing.
 - Words pinned in `manual` keep the times you gave: they are no longer snapped to the beat grid.
+- Without a beat map, `sync` leaves the words in an `off_grid` stretch at whisper's times and snaps the words around
+  it to 16ths, so a word just outside the stretch could snap across its edge, past a neighbour that kept its time, and
+  come out of order with it; such a word now keeps whisper's time too. A first word placed at the song's start could
+  snap to the 16th before 0 s; snapped times now stop at 0. Neither happens on the songs at hand: on the 79
+  JamendoLyrics songs, both demo songs and 11 trial songs, 10 of them with stretches and no beat map, no word moves.
 - `warnings` says when the tempo pick is uncertain: when the lyric line gaps chose another tempo than the one the
   onsets fit best, it names both. When the grid fits almost none of the song and the music's own tempo there drifts,
   the warning no longer names a `--bpm` taken from it (on a drifting song it advised 80 BPM, two thirds of the real

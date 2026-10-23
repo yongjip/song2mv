@@ -151,6 +151,41 @@ def test_trailing_words_never_go_backwards():
     assert out[0]["end"] > t[-1]
 
 
+@pytest.mark.parametrize("swing", [None, [0.33, 0.83]])
+@pytest.mark.parametrize("stretch, times", [
+    ((41.5, 60.0), [41.483, 41.503]),
+    ((10.0, 41.55), [41.54, 41.55]),
+    ((41.49, 41.50), [41.483, 41.495, 41.503]),
+])
+def test_snapping_does_not_cross_off_grid_edges_or_move_their_unsnapped_words(swing, stretch, times):
+    from song2mv.timing.build_lyrics import finish
+
+    a, b = stretch
+    grid = {**GRID, "phi": 0.025, "swing": swing, "off_grid": [{"from": a, "to": b}]}
+    out = finish([line("v1-01", times)], grid, 4, 90.0)[0]
+    actual = [w["t"] for w in out["words"]]
+    assert actual == sorted(actual)
+    for before, after in zip(times, actual):
+        if a <= before < b:
+            assert after == round(before, 3)
+        else:
+            assert (before < a) == (after < a) and (before < b) == (after < b)
+
+
+@pytest.mark.parametrize("grid", [
+    {**GRID, "phi": 0.101},
+    {**GRID, "phi": 0.07, "swing": [0.33, 0.83]},
+    {**GRID, "phi": 0.101, "beats": [0.101, 0.601, 1.101, 1.601]},
+])
+def test_snapping_an_interpolated_first_word_never_makes_its_time_negative(grid):
+    from song2mv.timing.build_lyrics import finish
+
+    out = finish([line("in-01", [None, 0.2, 0.4])], grid, 4, 2.0)[0]
+    times = [w["t"] for w in out["words"]]
+    assert times[0] == out["start"] == 0.0
+    assert times == sorted(times)
+
+
 def test_words_before_a_lines_first_timed_word_wait_for_the_line_before():
     from song2mv.timing.build_lyrics import finish
 

@@ -116,6 +116,13 @@ def finish(lines: list[dict], grid: dict, snap_per_beat: int, end_song: float) -
     else:
         off = off_grid(grid)
         snap = lambda t: round(t, 3) if not S or off(t) else round(phi + round((t - phi) / S) * S, 3)  # noqa: E731
+    on_grid = snap
+    edges = [] if beats else [s[k] for s in grid.get("off_grid") or [] for k in ("from", "to")]
+
+    def snap(t: float) -> float:
+        g = max(0.0, on_grid(t))
+        return round(max(0.0, t), 3) if any((t < e) != (g < e) for e in edges) else g
+
     starts = {i: min(_known(r)) for i, r in enumerate(lines) if _known(r)}
     out = []
     for i, r in enumerate(lines):
