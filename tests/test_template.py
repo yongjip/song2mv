@@ -303,3 +303,25 @@ def test_boards_start_at_lines_sections_or_times_and_name_the_lines_they_draw(tm
     assert seen["at_time"] == ["ch1-02", "ch1-03"]
     assert '"ch9"' in seen["unknown"]
 
+
+def test_the_starter_draws_a_song_from_the_line_given_in_scenes_index(tmp_path):
+    template = tmp_path / "video"
+    shutil.copytree(BUNDLED, template, ignore=shutil.ignore_patterns("node_modules", "out"))
+    os.symlink(os.path.join(BUNDLED, "node_modules"), template / "node_modules")
+    index = template / "src" / "scenes" / "index.ts"
+    line = next(r.lstrip("/ ") for r in index.read_text(encoding="utf-8").splitlines() if '"./Starter"' in r)
+    index.write_text(line + "\n", encoding="utf-8")
+    for vertical in (False, True):
+        (tmp_path / "sheet.json").write_text(json.dumps({"times": [2, 9, 14], "cols": 3, "vertical": vertical}), encoding="utf-8")
+        name = f"starter{int(vertical)}"
+        subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--composition", "Contact",
+                        "--props", str(tmp_path / "sheet.json"), "--out", str(tmp_path), "--name", name],
+                       cwd=template, check=True, capture_output=True)
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(tmp_path / f"{name}-Contact.png"), "-f", "rawvideo", "-pix_fmt", "gray", "-"],
+                             check=True, capture_output=True).stdout
+        gray = np.frombuffer(raw, np.uint8).reshape(-1, 1920).astype(float)
+        gap, tile = 12, (1920 - 12 * 4) / 3
+        high = round(tile * (1920 / 1080 if vertical else 1080 / 1920))
+        for i in range(3):
+            frame = gray[gap:gap + high, round(gap + i * (tile + gap)):round(gap + i * (tile + gap) + tile)]
+            assert frame.mean() > 25 and frame.std() > 20, (vertical, i, frame.mean(), frame.std())

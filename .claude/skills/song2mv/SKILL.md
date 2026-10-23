@@ -186,6 +186,28 @@ song2mv render <work>/mv.json --template <work>/video --still 1      # first use
 Write the song's scenes in `<work>/video/src/scenes/` and export them from `src/scenes/index.ts` (`Scene` and
 `linesDrawnByScene`). Draw them in the chosen concept's style, and take what fits from the kit in `src/kit/`.
 
+**Plan the cuts with the kit; don't write cut logic.** In five trial videos every agent wrote 750–1200 lines of scene
+code and rebuilt the same cut machinery, and one lost half an hour iterating cut plans against `check`. The kit has it:
+
+- `planShots(ctx, from, to, framings)` (`src/kit/plan.ts`) plans a stretch's cuts, which framing each takes, its drift
+  and the hits, by section kind: verses cut unevenly on bar lines and a 16th before a line's first word, never twice
+  in a short line, at least every 5.2 s; calm sections hold slow shots; hot sections cut on downbeats with a punch;
+  chorus 2 takes the framings in another order. It returns the kit camera's `shots` and `hits`; `pattern` sets your
+  own bar counts.
+- A `Board` (`src/kit/storyboard.tsx`) is a stretch that starts at a line id, a section id or a time: a `world` (SVG of
+  `T` on the stage), its `framings` (and `tall` ones for 9:16), and optionally `pattern`, `hits`, an `overlay` (text
+  over the camera) and `big` (its lines as big type, low in the frame). `<Storyboard T={T} boards={…} />` draws the
+  board on at T (`wrap` holds the filmed world in a style pack's `paper.Stack` or the like), the same with `vertical`
+  is the `VerticalScene`, and `linesDrawnBy(song, boards)` gives `linesDrawnByScene`.
+- A cut counts only when the picture changes: give a world framings that show different parts of it (the sky, the
+  ground, the subject up close), not one layout at two zooms. A large still overlay hides cuts from `check`.
+
+**The starter** (`src/scenes/Starter.tsx`) is a whole video built that way from kit worlds (a street, a room, a stage,
+fireworks, a beach, hills) that passes `check` on any song as it is. To start from it, put the line given in
+`src/scenes/index.ts` in place of the `LyricScene` one. Then make it this song's: edit its marked block (`SHOW`: what
+each section, copy or line shows and which lines are big type; `PALETTE`; `HERO`) and replace its worlds with the
+concept's. Its look is the kit's: a starting point, never the video.
+
 **The frame comes from the song config.** Around your scenes the template draws a background, the title and the
 captions in `theme`'s colours and font; in 9:16 its starry sky fills the screen above and below the stage. Over the
 scenes it lays a dark vignette, and a white flash at the start of each hot section, placed on the one-tempo grid.
@@ -214,7 +236,7 @@ combines them. Scene 22 is the pixel style pack, scene 23 the comic style pack, 
 | family | pieces | for |
 |---|---|---|
 | sky and light | `SkyGradient` (dawn, day, dusk, night; `to` + `k` blend; `stars`), `Sun`, `Moon`, `Clouds` (`time`, `light`, `size`), `Rays`, `BeatGlow`, `Flash`, `Bokeh`, `Dust`, `Snow` | time of day, mood, the beat in light |
-| camera | `Camera` (one world filmed as `shots`: each cuts in at a bar or word time and looks at `x`, `y` with `zoom` and `rotate`, may drift `to` the next cut or `glide` in; `hits` punch the zoom in), `cameraAt()` (the same camera as numbers and as SVG or CSS transforms), `Drift` (a slow zoom) | cutting on the music |
+| camera | `Camera` (one world filmed as `shots`: each cuts in at a bar or word time and looks at `x`, `y` with `zoom` and `rotate`, may drift `to` the next cut or `glide` in; `hits` punch the zoom in), `cameraAt()` (the same camera as numbers and as SVG or CSS transforms), `Drift` (a slow zoom), `planShots` and `Storyboard` (above) | cutting on the music |
 | places | `City` (night, `dusk`, `day`; `shift` pans by depth), `Street` (pavement, road, lamps), `Room` (`view` through the window; `bed` + `sleeper`), `Bed` (a sleeper between mattress and blanket, `cover`, `head`; `over` for what lies on the bedding), `Ground` (ridges, town, trees), `Sea` (`light` path, `beach`), `GridFloor` | where it happens |
 | people | `Person` (15 poses, `lie` on the back among them; `walk`/`run` by `phase`; `look`: outfit, hair, skin, colours; `prop` + `personHand()`; `personEye()` for tears or a glint), `Crowd` (`handsUp`, `jump`, `idle`, `lights`), `MiniPerson` | the protagonist, the audience |
 | objects | `Phone` (`messages`, `typing`, `call`), `Clock` (`spin`, `ticks` on the beat, alarm `ring`), `Heart` (`beat`, `crack`), `Car` (`distance` turns the wheels), `Plane` (`trail`), `Lantern`/`Lanterns` | what the lyrics are about |
@@ -391,10 +413,10 @@ Make one of every full render too (`--every 3 --song <work>/mv.json`).
   reframe a framing that returns after other shots.
 - **Dense lines** (a line every 1.5 s or less, as in rap): don't cut on every line of a mid section. A short line
   that holds two cuts reads frantic, and even spacing fails `cuts.rhythm`; cut every 2–3 lines, unevenly, and keep
-  the fast cutting for hot sections. Big type that changes on every line counts as a cut, and so does a large
-  transform such as a flip; a reframe of a flat or dark set may not, so change the set or its palette between
-  shots. Cut a 16th before a line's first word or on it, not just after it: `check` counts that cut as the
-  line's own, not as motion in the line before.
+  the fast cutting for hot sections (`planShots` does all this). Big type that changes on every line counts as a cut,
+  and so does a large transform such as a flip; a reframe of a flat or dark set may not, so change the set or its
+  palette between shots. Cut a 16th before a line's first word or on it, not just after it: `check` counts that cut
+  as the line's own, not as motion in the line before.
 
 **Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip of the full render and ask
 what is boring. Their answer outranks the check.

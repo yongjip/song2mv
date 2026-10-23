@@ -213,6 +213,32 @@ First release (0.1.0).
   as the hand-tuned version did, except one close-up whose subject the hand-made tall canvas had cut off, now in the
   picture; `check` passes it 6/6 as before. The skill's step 6 says where text, the subject and the ground go. The
   default template renders as before.
+- Cut planning and storyboards in the scene kit, and a starter scene built on them. Writing scenes is the slowest part
+  of a video: 12.7 of 23 minutes of a new-user run, and in five trial videos every agent wrote 750–1200 lines of
+  scene code that rebuilt the same machinery (a cut list from an uneven bar pattern, a timeline of boards, big karaoke
+  lines, a 9:16 refilm), while one lost about 30 minutes iterating cut plans on a dense rap song against `check`.
+  - `planShots(ctx, from, to, framings)` (`src/kit/plan.ts`) plans a stretch's cuts, the framing each takes, its
+    drift and the hits, so they pass `check` by construction: cuts on bar lines or a 16th before a line's first word;
+    mid sections uneven (interval CV ≥ 0.42 where it can), no shot over 5.2 s, no cut inside a line under 1.8 s and
+    never two in a short one, dense lines cut every 2–3 lines; calm sections held with slow drifts; hot sections on
+    downbeats with a punch on each bar line; a drift on every shot; later copies of a section on the framings in
+    another order; no cut between framings too alike to show it. It follows a song's beat map and swing; `pattern`
+    sets bar counts of your own.
+  - Boards (`src/kit/storyboard.tsx`): a `Board` starts at a line id, a section id or a time and films a `world`
+    through its `framings` (and `tall` ones for 9:16), with optional `pattern`, `hits`, an `overlay` over the camera
+    and `big` lines drawn with `BigLine`, low in the frame, below what `check` measures. `<Storyboard>` draws the board
+    on at T, in 16:9 or, with `vertical`, as the `VerticalScene`; `linesDrawnBy` gives `linesDrawnByScene`. `BigLine`
+    takes `x` and `width`.
+  - The starter, `src/scenes/Starter.tsx`, not used by default: a whole video of kit worlds (hills, a street at dusk
+    and in the rain, a room, a stage, fireworks, a beach) with a hero, a board per section by its role and copy, cut
+    by the planner. An agent edits one marked block (what each part shows, the palette, the hero). Switching to it is
+    one line in `src/scenes/index.ts`, which now exports `VerticalScene` with the other two in that line. Out of the box
+    its drafts pass `check` on the sample song (6/6 in 16:9 and 9:16), both demo songs (9/9 and 9/9; 10/10 and 10/10)
+    and two trial songs, a dense Korean rap (12/12 and 12/12) and a slow one with 8-second lines (11/11 and 11/11).
+    Ported to the boards, one trial's 693-line scene became 615 lines and kept its `check` results (11/11 for the
+    song, 6/6 for the short).
+
+  The default scene, its stills and the gallery render as before.
 - `song.json` sets the two effects the template's frame lays over every scene: `"vignette": false` turns off the dark
   vignette, and `"flashes": [[song time, strength 0–1], …]` replaces the white flash at the start of each hot section
   (`[]` for none). `sync` copies both into `mv.json`; without them `mv.json` is as before. Neither could be changed
