@@ -3,6 +3,10 @@
 Releases are built and published by GitHub Actions with PyPI Trusted Publishing (short-lived OIDC credentials).
 Do not upload artifacts from a developer machine.
 
+CI's `release-artifacts` job downloads the wheel and source archive from the package job and verifies their
+SHA-256 checksums with the release workflow's artifact action versions. Keep those versions aligned in both
+workflows. This checks archive transfer without running Trusted Publishing or creating a GitHub release.
+
 ## When to cut a release
 
 Merging to `main` is not a reason to release. Every published version is immutable, gets mirrored, and asks every

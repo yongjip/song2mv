@@ -2,8 +2,11 @@
 import json
 import os
 import shutil
+import socket
 import subprocess
+import threading
 import wave
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import numpy as np
 import pytest
@@ -53,6 +56,44 @@ def test_the_rendered_audio_starts_with_the_picture(tmp_path):
     c = np.fft.irfft(np.fft.rfft(y[:n], 2 * n) * np.conj(np.fft.rfft(x[:n], 2 * n)))
     lag = int(np.argmax(c))
     assert min(lag, 2 * n - lag) <= 2
+
+
+def test_a_render_does_not_connect_to_an_ipv6_only_studio_on_the_default_port(tmp_path):
+    requests = []
+
+    class ForeignStudio(ThreadingHTTPServer):
+        address_family = socket.AF_INET6
+
+        def server_bind(self):
+            self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+            super().server_bind()
+
+    class ForeignPage(BaseHTTPRequestHandler):
+        def do_GET(self):
+            requests.append(self.path)
+            self.send_error(503)
+
+        def log_message(self, *args):
+            pass
+
+    try:
+        studio = ForeignStudio(("::1", 3000), ForeignPage)
+    except OSError as error:
+        pytest.skip(f"needs a free IPv6 loopback port 3000: {error}")
+    thread = threading.Thread(target=studio.serve_forever, daemon=True)
+    thread.start()
+    try:
+        manifest = tmp_path / "wrote.txt"
+        result = subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--from", "0", "--to", "0.1",
+                                 "--out", str(tmp_path), "--manifest", str(manifest)],
+                                cwd=BUNDLED, capture_output=True, text=True, timeout=60)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert probe_size(manifest.read_text(encoding="utf-8").strip()) == (1920, 1080)
+        assert not requests, "Rendering must not request a page from an unrelated IPv6-only Studio"
+    finally:
+        studio.shutdown()
+        studio.server_close()
+        thread.join()
 
 
 def test_max_mb_encodes_a_finished_video_again_to_fit_and_keeps_its_sound(tmp_path):
@@ -456,7 +497,10 @@ def test_a_font_from_load_font_is_on_every_frame_of_a_render_longer_than_the_tim
     pkg = json.loads((template / "node_modules" / "@remotion" / "cli" / "package.json").read_text(encoding="utf-8"))
     cli = template / "node_modules" / "@remotion" / "cli" / pkg["bin"]["remotion"]
     mp4 = tmp_path / "font.mp4"
-    r = subprocess.run(["node", str(cli), "render", "Lyric-16x9", str(mp4), f"--props={tmp_path / 'props.json'}", "--timeout=7000",
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    r = subprocess.run(["node", str(cli), "render", "Lyric-16x9", str(mp4), f"--props={tmp_path / 'props.json'}", f"--port={port}", "--timeout=7000",
                         "--scale=0.25", "--concurrency=2", "--log=error"], cwd=template, capture_output=True, text=True)
     assert r.returncode == 0, r.stdout[-2000:] + r.stderr[-2000:]
     frames = decode_gray(str(mp4), 480, 270)
