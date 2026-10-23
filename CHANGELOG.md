@@ -7,6 +7,8 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 First release (0.1.0).
 
 ### Fixed
+- CI reuses an installed ffmpeg, limits system dependency downloads and supersedes older runs so a stalled
+  package mirror cannot indefinitely block a dependency update.
 - React and React DOM update together to 19.3.1. Dependabot now groups both runtimes and their types to
   prevent separate updates from leaving incompatible renderer versions.
 - CI verifies the built wheel and source archive survive the same upload/download action handoff used by

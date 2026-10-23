@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     strategy:
@@ -27,8 +31,17 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: ffmpeg
+        timeout-minutes: 5
         run: |
-          if [ "$RUNNER_OS" = "Linux" ]; then sudo apt-get update -q && sudo apt-get install -y -q ffmpeg; else brew install ffmpeg; fi
+          if ! command -v ffmpeg >/dev/null; then
+            if [ "$RUNNER_OS" = "Linux" ]; then
+              sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -q
+              sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -q ffmpeg
+            else
+              brew install ffmpeg
+            fi
+          fi
+          ffmpeg -version
       # whisper (the `sync` extra) is not installed in CI: tests use synthetic audio and video only
       - run: uv venv && uv pip install -e '.[beats,dev]'
       - run: uv run --no-sync ruff check src tests
@@ -81,7 +94,14 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
-      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - name: ffmpeg
+        timeout-minutes: 5
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -q
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -q ffmpeg
+          fi
+          ffmpeg -version
       - run: uv build
       - name: core install (numpy only)
         run: |
@@ -122,7 +142,11 @@ jobs:
       - run: npm run test:assets
       # every gallery tile as a PNG (element-00 shows them all), so a reviewer sees a pull request's drawings;
       # tile 24 letters Korean from a font on the machine
-      - run: sudo apt-get update -q && sudo apt-get install -y -q fonts-noto-cjk
+      - name: gallery fonts
+        timeout-minutes: 5
+        run: |
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -q
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -q fonts-noto-cjk
       - run: npx remotion render src/index.ts Kit-Gallery out/gallery --sequence --image-format=png
       - uses: actions/upload-artifact@v7
         with:
@@ -131,7 +155,14 @@ jobs:
           retention-days: 14
       # renders through render.mjs: a draft and its full render must give check as many frames
       - uses: astral-sh/setup-uv@v7
-      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - name: ffmpeg
+        timeout-minutes: 5
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -q
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -q ffmpeg
+          fi
+          ffmpeg -version
       - run: uv venv && uv pip install -e '.[dev]' && uv run --no-sync pytest -q tests/test_template.py
         working-directory: .
 
