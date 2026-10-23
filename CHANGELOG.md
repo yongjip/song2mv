@@ -449,6 +449,31 @@ First release (0.1.0).
   Gallery tile 23 redraws its person and cat with them: one outline round each figure, an elbow whose crease starts
   on the arm's outline, fingers round the mug, tapered features, Ben-Day dots on all skin, and puffed fur and hair
   drawn as tufts, the fur's dips rounded so the outline keeps its weight in them.
+- A body for a head of your own, and props drawn flat like a poster, in the scene kit. A trial video put cut-out
+  photo portraits on drawn bodies among poster-style props, and built all of it in its own copy of the template; the
+  generic parts are here:
+  - `PortraitBody` (`src/kit/portrait-body.tsx`): a body seen from the front, with a shirt, rounded sleeves, cuffs,
+    hands, trousers and shoes outlined in darker tones of its colours, for a head given as `children`. The arms take
+    angles or a `gesture` (`phone`, `point`, `smoke`, or `hold` a `frontProp` by its lower corners); `feet`, `lean` and
+    `armSwing` pose the rest.
+  - `portraitMotion()` (`src/kit/portrait-motion.ts`): that pose over time, for walking and running on planted feet
+    (the body moves on by `travel`, so the foot on the ground stays put) and for gestures that settle instead of
+    repeating.
+  - `PortraitCutout` (`src/kit/portrait-cutout.tsx`): a portrait clipped to its head and neck in the image's own
+    coordinates and placed by its neckline: a whole bust on the body doubles the shoulders.
+  - `PortraitInteraction` (`src/kit/portrait-interaction.tsx`): a call (the phone's back to the camera, at the ear),
+    writing in a notebook held in the other hand (the ink follows the pen) and an open hand at the temple. The hand,
+    the prop, where they touch and what is drawn in front are worked out together from the head's `profile` (neck, ear,
+    temple), and a profile the arm cannot reach throws instead of stretching the arm.
+  - `poster` (`src/kit/styles/poster.tsx`): 12 props and their palette: `Phone`, `Bubble`, `Notebook`, `CoffeeCup`,
+    `Glass`, `Lighter`, `Smoke`, `Building`, `Light`, `Cloud`, `SleevedHand` and `Pocket`.
+  - Gallery tiles 25–28 show them; the overview now has 6 tiles across, each label inside its tile.
+    `npm run test:assets` in the template, which CI runs, checks the arms, where hands and props meet all through each
+    action, the planted feet, what is drawn in front, and every SVG path drawn: Chrome draws nothing for a malformed
+    path, and says nothing. It also breaks the drawings 21 ways on purpose (a phone off the ear, ink away from the pen,
+    a hand behind the head, …) and checks that each is caught.
+
+  The default scene, its stills and the other gallery tiles render as before.
 - Adding to the kit by pull request. `CONTRIBUTING.md` says how to add an asset or a style pack: original drawings,
   MIT, no media files, the kit's rules, a gallery tile and a still. The pull request template asks for them, and CI
   renders every gallery tile and keeps the PNGs for 14 days as the run's `kit-gallery` artifact. Once a video is

@@ -230,8 +230,8 @@ scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` pu
 Look at it before you design anything (in `<work>/video`):
 
 ```bash
-npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 24 scenes
-npx remotion still src/index.ts Kit-Gallery scene.png --frame=4     # one at full size (1–24)
+npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 28 scenes
+npx remotion still src/index.ts Kit-Gallery scene.png --frame=4     # one at full size (1–28)
 ```
 
 `src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc
@@ -240,19 +240,21 @@ Scene 13 is the paper style pack. Scenes 14–20 are helpers that fit any style,
 (most of those tiles draw the helper again, flat on paper), and a person in bed: one world filmed as shots (14), hits
 (15), flames (16), a storm (17), tears (18), lying awake in bed (19), falling cash (20). Scene 21 is a recipe that
 combines them. Scene 22 is the pixel style pack, scene 23 the comic style pack, scene 24 the pixel pack's type.
+Scenes 25–28 are a body for a head of your own, such as a portrait: walking and gestures (25), the poster props (26),
+a call and writing (27), a hand at the temple (28).
 
 | family | pieces | for |
 |---|---|---|
 | sky and light | `SkyGradient` (dawn, day, dusk, night; `to` + `k` blend; `stars`), `Sun`, `Moon`, `Clouds` (`time`, `light`, `size`), `Rays`, `BeatGlow`, `Flash`, `Bokeh`, `Dust`, `Snow` | time of day, mood, the beat in light |
 | camera | `Camera` (one world filmed as `shots`: each cuts in at a bar or word time and looks at `x`, `y` with `zoom` and `rotate`, may drift `to` the next cut or `glide` in; `hits` punch the zoom in), `cameraAt()` (the same camera as numbers and as SVG or CSS transforms), `Drift` (a slow zoom), `planShots` and `Storyboard` (above) | cutting on the music |
 | places | `City` (night, `dusk`, `day`; `shift` pans by depth), `Street` (pavement, road, lamps), `Room` (`view` through the window; `bed` + `sleeper`), `Bed` (a sleeper between mattress and blanket, `cover`, `head`; `over` for what lies on the bedding), `Ground` (ridges, town, trees), `Sea` (`light` path, `beach`), `GridFloor` | where it happens |
-| people | `Person` (15 poses, `lie` on the back among them; `walk`/`run` by `phase`; `look`: outfit, hair, skin, colours; `prop` + `personHand()`; `personEye()` for tears or a glint), `Crowd` (`handsUp`, `jump`, `idle`, `lights`), `MiniPerson` | the protagonist, the audience |
+| people | `Person` (15 poses, `lie` on the back among them; `walk`/`run` by `phase`; `look`: outfit, hair, skin, colours; `prop` + `personHand()`; `personEye()` for tears or a glint), `Crowd` (`handsUp`, `jump`, `idle`, `lights`), `MiniPerson`; for a head of your own, such as a photo portrait: `PortraitCutout` (clips the head and neck out of a bust, so its shoulders don't double the body's), `PortraitBody` (from the front; arm angles, `feet`, `lean`; `gesture` `phone`, `point`, `smoke` or `hold` a `frontProp`), `portraitMotion()` (walk and run on planted feet, gestures that settle; turn the head by its `headAngle`), `PortraitInteraction` (a call, writing, a hand at the temple: hands, prop and contact worked out together from the head's `profile`; check them with the real portrait at the real camera size) | the protagonist, the audience |
 | objects | `Phone` (`messages`, `typing`, `call`), `Clock` (`spin`, `ticks` on the beat, alarm `ring`), `Heart` (`beat`, `crack`), `Car` (`distance` turns the wheels), `Plane` (`trail`), `Lantern`/`Lanterns` | what the lyrics are about |
 | effects | `Rain` (`strength`, splashes on `ground`), `Fireworks` (`bursts` at times), `Confetti`, `Hit` (`burst`, `sparkle` or `ring` at a point and time), `Flames` (a fire to a candle; `flat`, `wind`, `strength`) and `FlamesAlong` (an object's edge on fire), `Storm` (a storm deck of `Clouds` lit from inside by its `strikes`) and `Lightning` (`fork` or `zigzag` bolts; a strike's `to` aims it at a point), `strikeFlashes()` (for `Flash`), `Tears` (well up, run down a cheek, drip; `spot` dampens where they land), `Cash` (banknotes tumbling down) | weather, hits and the big moments |
 | text | `Slam`, `Quiet`, `BigLine`, `Captions` | lines in the scene |
 
-**Style packs** (`src/kit/styles/`, one namespace each: `import { paper, pixel, comic } from "../kit"`). `paper`, for
-paper cut-out:
+**Style packs** (`src/kit/styles/`, one namespace each: `import { paper, pixel, comic, poster } from "../kit"`).
+`paper`, for paper cut-out:
 - outlines cut by hand, each with its own seed: `paper.rect`, `paper.ellipse`, `paper.poly`, `paper.strip` (stems,
   cords, steam); join outlines to cut holes;
 - `paper.Cut`: one piece, placed with `x`, `y`, `rotate`, `s`; `lift` raises it off the paper under it and its
@@ -315,6 +317,12 @@ inside only the lines you place: `comic.Brush` (tapered: features, folds, an arm
 (a forearm over the body) goes in a later contour Ink; check the joints at 2×. The contour fills narrow gaps and sharp
 notches: give a small form (an ear) a lighter `line`, draw a hole (a mug handle's) as a filled shape in an `Edge`,
 round the dips between tufts of fur, and keep balloons, tails and trailing bubbles clear of the figure.
+
+`poster`, office and street props drawn flat as on a poster, in `poster.colors`: `poster.Phone` (its `children` on
+the screen, such as `poster.Bubble`s with a `tail`), `poster.Notebook` (`write` 0–1), `poster.CoffeeCup`,
+`poster.Glass` (`fill`), `poster.Lighter`, `poster.Smoke` (steam, or a `PortraitBody`'s cigarette from
+`portraitPropTip()` given the body's props), `poster.Building` (`sign`), `poster.Light` (`lit`), `poster.Cloud`, and
+`poster.SleevedHand` going into a `poster.Pocket`. Check a held prop at both ends of its move and in between.
 
 Putting a scene together:
 

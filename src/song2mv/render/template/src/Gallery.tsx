@@ -3,6 +3,7 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
   Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Line, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, comic, makeSongCtx, mix, paper, personHand, pixel, rng, shade, SKINS, STRIDE,
+  PortraitBody, PortraitInteraction, portraitMotion, poster,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -1345,6 +1346,112 @@ const ComicKitchen: React.FC<{ T: number }> = ({ T }) => {
   );
 };
 
+/** A head in a few shapes for the portrait tiles below, where a song puts a portrait (PortraitCutout) */
+const SampleHead: React.FC<{ wide?: boolean; ear?: Pt }> = ({ wide = false, ear }) => {
+  const rx = wide ? 68 : 54;
+  return (
+    <>
+      <ellipse cy={-315} rx={rx} ry={85} fill="#eac09f" />
+      {ear && <ellipse cx={ear[0]} cy={ear[1]} rx={10} ry={15} fill="#eac09f" />}
+      <path d={`M${-rx} -320Q-80 -414 0 -415Q80 -413 ${rx} -320L40 -361Q0 -340 -40 -361Z`} fill="#302f35" />
+      <circle cx={-20} cy={-316} r={5} fill="#302f35" />
+      <circle cx={20} cy={-316} r={5} fill="#302f35" />
+      <path d="M-18 -286Q0 -271 18 -286" fill="none" stroke="#a46758" strokeWidth={5} strokeLinecap="round" />
+    </>
+  );
+};
+
+/**
+ * PortraitBody (kit/portrait-body.tsx) posed by portraitMotion (kit/portrait-motion.ts): walking on planted feet, on the
+ * phone, pointing, and holding a poster.Notebook by its lower corners; each head turns by the pose's headAngle.
+ */
+const PortraitPoses: React.FC<{ T: number }> = ({ T }) => (
+  <Svg>
+    <rect width={1920} height={1080} fill={poster.colors.shade} />
+    <path d="M100 944H1820" stroke={poster.colors.ink} strokeWidth={5} />
+    {([["walk", "angles", 250], ["phone", "phone", 670], ["point", "point", 1070], ["hold", "hold", 1630]] as const).map(([action, gesture, x], i) => {
+      const pose = portraitMotion(T % 4, action);
+      return (
+        <PortraitBody key={action} {...pose} x={x + (action === "walk" ? 1.65 * (pose.travel - 48) : 0)} y={940} s={1.65}
+          color={i % 2 ? "#245c88" : "#526b59"} gesture={gesture}
+          frontProp={gesture === "hold" ? <poster.Notebook x={0} y={-160} s={0.3} write={0.7} /> : undefined}>
+          <g transform={`rotate(${pose.headAngle} 0 -235)`}><SampleHead wide /></g>
+        </PortraitBody>
+      );
+    })}
+  </Svg>
+);
+
+/**
+ * The poster props (kit/styles/poster.tsx): a phone with chat bubbles, a notebook being written in, a hand going into a
+ * pocket, steam over a coffee cup, a glass, a lighter, an office block with a sign, a traffic light and a cloud.
+ */
+const PosterProps: React.FC<{ T: number }> = ({ T }) => (
+  <Svg>
+    <rect width={1920} height={1080} fill={poster.colors.shade} />
+    <path d="M60 962H1860" stroke={poster.colors.ink} strokeWidth={5} />
+    <poster.Phone x={250} y={480} s={0.8}>
+      <poster.Bubble x={-20} y={-130} w={245} h={120} tail={[-140, -10]} color={poster.colors.sky} />
+      <poster.Bubble x={20} y={80} w={245} h={120} tail={[140, 190]} color={poster.colors.yellow} />
+    </poster.Phone>
+    <poster.Notebook x={760} y={270} s={0.65} write={0.8} />
+    <poster.Pocket x={1080} y={250} w={280} h={213}>
+      <poster.SleevedHand x={0} y={215} s={9} length={130} color="#526b59" shape="grip" />
+    </poster.Pocket>
+    <poster.Smoke T={T} x={560} y={682} h={150} color={poster.colors.blue} />
+    <poster.CoffeeCup x={560} y={960} s={0.62} />
+    <poster.Glass x={790} y={834} s={0.42} />
+    <poster.Lighter x={990} y={775} s={0.5} color={poster.colors.blue} />
+    <poster.Building x={1420} y={960} w={320} h={600} sign="WORK" />
+    <poster.Light x={1770} y={700} s={0.5} lit="red" glow={0.5 + 0.5 * Math.sin(T * 3)} />
+    <poster.Cloud x={1700} y={150} s={0.55} />
+  </Svg>
+);
+
+/**
+ * PortraitInteraction (kit/portrait-interaction.tsx): a call and writing in a notebook, each with a narrow and a wide
+ * head whose profiles put the ear in other places; the hand, the phone and the pen follow the profile.
+ */
+const PortraitActions: React.FC<{ T: number }> = ({ T }) => {
+  const t = T % 6;
+  return (
+    <Svg>
+      <rect width={1920} height={1080} fill={poster.colors.shade} />
+      <path d="M100 944H1820" stroke={poster.colors.ink} strokeWidth={5} />
+      {(["phone", "phone", "write", "write"] as const).map((action, i) => {
+        const wide = i % 2 === 1, ear: Pt = wide ? [69, -312] : [54, -325];
+        return (
+          <PortraitInteraction key={i} action={action} time={t} progress={Math.max(0, Math.min(1, (t - 1) / 4))}
+            profile={{ neck: [0, -235], ear }} x={270 + 460 * i} y={940} s={1.65} look={{ color: wide ? "#245c88" : "#526b59" }}
+            renderHead={(angle) => <g transform={`rotate(${angle} 0 -235)`}><SampleHead wide={wide} ear={ear} /></g>} />
+        );
+      })}
+    </Svg>
+  );
+};
+
+/** PortraitInteraction's head-touch: at rest before it starts, reaching, at the temple at 0.55 s, and holding there */
+const PortraitHeadTouch: React.FC = () => (
+  <Svg>
+    <rect width={1920} height={1080} fill={poster.colors.shade} />
+    <path d="M100 944H1820" stroke={poster.colors.ink} strokeWidth={5} />
+    {[-0.2, 0.25, 0.55, 3].map((time, i) => {
+      const wide = i % 2 === 1;
+      const ear: Pt = wide ? [67.6, -314.5] : [51, -326.5], temple: Pt = wide ? [53, -353] : [40, -345];
+      return (
+        <g key={i}>
+          <PortraitInteraction action="head-touch" time={time} profile={{ neck: [0, -235], ear, temple }} x={270 + 460 * i} y={940}
+            s={1.65} look={{ color: wide ? "#245c88" : "#526b59" }}
+            renderHead={(angle) => <g transform={`rotate(${angle} 0 -235)`}><SampleHead wide={wide} /></g>} />
+          <text x={270 + 460 * i} y={1030} textAnchor="middle" fontSize={30} fill={poster.colors.ink}>
+            {["REST", "REACH", "CONTACT", "HOLD"][i]}
+          </text>
+        </g>
+      );
+    })}
+  </Svg>
+);
+
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -1595,6 +1702,22 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
     name: "Style pack: pixel type, big and in a dialog box",
     draw: (T) => <PixelType T={T} />,
   },
+  {
+    name: "Portrait bodies: walking and three gestures",
+    draw: (T) => <PortraitPoses T={T} />,
+  },
+  {
+    name: "Style pack: poster props, office and street",
+    draw: (T) => <PosterProps T={T} />,
+  },
+  {
+    name: "Portrait interactions: a call and writing",
+    draw: (T) => <PortraitActions T={T} />,
+  },
+  {
+    name: "Portrait interactions: a hand at the temple",
+    draw: () => <PortraitHeadTouch />,
+  },
 ];
 
 const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNode }> = ({ x, y, k, children }) => (
@@ -1603,8 +1726,8 @@ const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNod
   </div>
 );
 
-/** The overview's grid: 4 × 4 tiles, 5 across once there are more than 16, the rows centred on the frame */
-const COLS = TILES.length > 16 ? 5 : 4;
+/** The overview's grid: 4 × 4 tiles, 5 across once there are more than 16 and 6 past 25, the rows centred on the frame */
+const COLS = TILES.length > 25 ? 6 : TILES.length > 16 ? 5 : 4;
 const TOP = (1080 - Math.ceil(TILES.length / COLS) * (1080 / COLS)) / 2;
 
 export const KitGallery: React.FC<{ T: number }> = ({ T }) => {
@@ -1622,7 +1745,7 @@ export const KitGallery: React.FC<{ T: number }> = ({ T }) => {
             return (
               <React.Fragment key={i}>
                 <Tile x={x} y={y} k={1 / COLS}>{t.draw(T)}</Tile>
-                <div style={{ position: "absolute", left: x + 8, top: y + 6, color: "#fff", fontSize: 16, fontWeight: 700, textShadow: "0 1px 4px #000" }}>{i + 1}. {t.name}</div>
+                <div style={{ position: "absolute", left: x + 8, top: y + 6, width: 1920 / COLS - 16, color: "#fff", fontSize: 16, fontWeight: 700, textShadow: "0 1px 4px #000" }}>{i + 1}. {t.name}</div>
               </React.Fragment>
             );
           })

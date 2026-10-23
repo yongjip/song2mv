@@ -8,7 +8,8 @@
   "scripts": {
     "studio": "remotion studio",
     "render": "node render.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:assets": "node test-assets.mjs && node test-interactions.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.507",
