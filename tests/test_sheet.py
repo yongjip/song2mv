@@ -1,7 +1,8 @@
 """What the whisper runs say about the lyric sheet as a whole: a line matched in two places (a repeat the sheet has
-once), words they hear that no line has, and where the sheet and the audio's lyrics tag differ."""
-from song2mv.timing.align import merge_runs, off_sheet, sheet_vs_tag
-from song2mv.timing.pipeline import check_by_ear, stretched
+once), three words at one time, words they hear that no line has, a repeat sung differently, and where the sheet and
+the audio's lyrics tag differ."""
+from song2mv.timing.align import merge_runs, off_sheet, sheet_vs_tag, sung_differently
+from song2mv.timing.pipeline import check_by_ear, stacked, stretched
 
 
 def sheet(*sections):
@@ -65,6 +66,14 @@ def test_a_line_around_words_heard_off_the_sheet_goes_on_check_by_ear():
     assert "20.9–23.2 s" in stretched(lines, off)["v1-02"]
 
 
+def test_three_words_at_one_time_go_on_check_by_ear():
+    lines = [timed("hk1-08", HOOK[2], [69.165, 69.488, 69.488, 70.254, 70.792, 71.121]),  # two words on one 16th: fast rap
+             timed("hk2-08", HOOK[2], [121.977, 121.977, 121.977, 122.414, 122.952, 123.281]),  # the runs heard "Brooklyn" only
+             timed("br-01", "ten nine eight now", [125.0, 125.05, 125.1, 125.2], source="manual")]  # pinned by hand
+    assert check_by_ear(lines, 3) == ["hk2-08"]
+    assert stacked(lines)["hk2-08"] == '"beep beep brooklyn" within 0.00 s at 121.98'
+
+
 LINES = sheet(("in", ["yeah sunday on the block"]), ("hk1", HOOK), ("v2", ["round two got a little sweat on the brow"]))
 COUPLET = "beep beep im parallel beep beep brooklyn wish me well"
 
@@ -101,6 +110,25 @@ def test_words_over_lines_the_sheet_has_there_are_not_reported():
     # no run matched an outro line, and re-listening timed it over the chant: the runs heard that line
     outro = timed("ou-01", "hey ho hey ho", [27.4, 28.2, 29.0, 29.8], source="reprompt")
     assert [x["after"] for x in heard_off([song(chant=True)] * 3, [outro])] == ["hk1-03"]
+
+
+def test_a_repeat_the_runs_hear_alike_but_not_as_written_is_reported():
+    hook = sheet(("hk1", [HOOK[1], HOOK[2], HOOK[1], HOOK[2]]))
+    sung_as = "beep beep im parallel beep beep brooklyn wish me well back it back it up im parallel beep beep brooklyn wish me well"
+    merged = merge_runs(hook, [{"words": sung((60.0, sung_as))}] * 3)
+    assert sung_differently(merged) == [{"id": "hk1-03", "heard": "back it back it up im parallel", "runs": [1, 2, 3],
+                                         "as_written": "hk1-01"}]
+    # hk1-02 and hk1-04, misheard alike wherever they are sung, are whisper's doing: not reported
+    misheard = "beep beep im parallel beep beep brooklyn which may well back it back it up im parallel beep beep brooklyn which may well"
+    lone = merge_runs(hook, [{"words": sung((60.0, misheard))}] * 3)
+    assert [x["id"] for x in sung_differently(lone)] == ["hk1-03"]
+    two = merge_runs(hook, [{"words": sung((60.0, sung_as))}, {"words": sung((60.0, sung_as.replace("back it back it up", "honk honk")))}])
+    assert sung_differently(two) == []  # the runs heard that line differently from each other
+    # one run alone heard the other copy as written: two runs missed it, or misheard it as well
+    missed = merge_runs(hook, [{"words": sung((60.0, sung_as))}] + [{"words": sung((61.6, sung_as.split(" ", 4)[4]))}] * 2)
+    first = sung_as.replace("beep beep im parallel", "deep sleep im paralyzed", 1)
+    once = merge_runs(hook, [{"words": sung((60.0, sung_as))}] + [{"words": sung((60.0, first))}] * 2)
+    assert sung_differently(missed) == sung_differently(once) == []
 
 
 def test_where_the_sheet_and_the_tag_differ_and_which_one_the_runs_support():

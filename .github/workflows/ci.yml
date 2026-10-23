@@ -22,7 +22,7 @@ jobs:
           - {os: macos-latest, python: "3.12"}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python }}
@@ -37,7 +37,7 @@ jobs:
   package:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
       - name: plant what must never ship (a template install, renders, bytecode)
         run: |
@@ -58,7 +58,7 @@ jobs:
     # the built wheel installed the way users install it: core only, then with the sync extra
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.13"
@@ -92,7 +92,7 @@ jobs:
       run:
         working-directory: src/song2mv/render/template
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -100,7 +100,10 @@ jobs:
           cache-dependency-path: src/song2mv/render/template/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npx tsc --noEmit
-      # every gallery tile as a PNG (element-00 shows them all), so a reviewer sees a pull request's drawings
+      - run: npm run test:assets
+      # every gallery tile as a PNG (element-00 shows them all), so a reviewer sees a pull request's drawings;
+      # tile 24 letters Korean from a font on the machine
+      - run: sudo apt-get update -q && sudo apt-get install -y -q fonts-noto-cjk
       - run: npx remotion render src/index.ts Kit-Gallery out/gallery --sequence --image-format=png
       - uses: actions/upload-artifact@v4
         with:
@@ -117,7 +120,7 @@ jobs:
     # song2mv render on Windows, where npx is npx.cmd: render.mjs must start Remotion without a shell
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
