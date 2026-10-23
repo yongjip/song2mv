@@ -6,6 +6,10 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 
 First release (0.1.0).
 
+### Fixed
+- Rendering selects a free port across both address families. With Remotion 4.0.537, an unrelated IPv6-only
+  Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
+
 ### Added
 - `song2mv sync`: audio + lyrics → beat grid, word-timed lyrics, `song.lrc`, `song.words.lrc`, `song.srt`, `mv.json`
   and `music.json` (loudness and likely section boundaries, for scene design). Several whisper runs merged per
