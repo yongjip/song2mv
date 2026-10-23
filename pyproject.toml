@@ -1,14 +1,15 @@
 [build-system]
-requires = ["hatchling>=1.21"]
+requires = ["hatchling>=1.27"]  # 1.27: PEP 639 license metadata
 build-backend = "hatchling.build"
 
 [project]
 name = "song2mv"
-version = "0.1.0"
+dynamic = ["version"]  # from src/song2mv/__init__.py
 description = "Song in, beat-synced lyric timing (LRC, SRT, JSON) and a code-drawn music video out. Built for coding agents like Claude Code and Codex."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "song2mv contributors" }]
 keywords = [
   "synced-lyrics",
@@ -33,13 +34,13 @@ classifiers = [
   "Environment :: Console",
   "Intended Audience :: Developers",
   "Intended Audience :: End Users/Desktop",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Multimedia :: Sound/Audio :: Analysis",
   "Topic :: Multimedia :: Video",
 ]
@@ -64,9 +65,17 @@ Documentation = "https://github.com/yongjip/song2mv/tree/main/docs"
 Issues = "https://github.com/yongjip/song2mv/issues"
 Changelog = "https://github.com/yongjip/song2mv/blob/main/CHANGELOG.md"
 
+[tool.hatch.version]
+path = "src/song2mv/__init__.py"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/song2mv"]
 exclude = ["**/node_modules", "**/out", "**/__pycache__"]
+
+# the agent guide, copied into the package for `song2mv --help` (not symlinked: symlinks break on Windows checkouts)
+[tool.hatch.build.targets.wheel.force-include]
+".claude/skills/song2mv/SKILL.md" = "song2mv/guide/SKILL.md"
+"AGENTS.md" = "song2mv/guide/AGENTS.md"
 
 [tool.hatch.build.targets.sdist]
 exclude = ["**/node_modules", "**/out", "song2mv-work", ".github"]

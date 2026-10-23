@@ -4,22 +4,33 @@
 > tool built for coding agents such as Claude Code and Codex. Alpha (0.x): formats may change; every JSON output
 > carries schema_version.
 
-Install: `uv tool install 'song2mv[sync]'` (needs ffmpeg; `render` also needs Node 18+).
+Install (not on PyPI yet): `uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"`
+(needs ffmpeg; `render` also needs Node 18+; the sync extra needs Python ≤ 3.14).
 
 ## Commands
 
-- `song2mv sync AUDIO [--lyrics FILE] --language CODE [--json]` — beat grid, word-timed lyrics, song.lrc,
-  song.words.lrc, song.srt and mv.json in a work folder. Takes minutes (several whisper runs); run it in the
+- `song2mv sync AUDIO [--lyrics FILE] --language CODE [--title TEXT] [--json]` — beat grid, word-timed lyrics, song.lrc,
+  song.words.lrc, song.srt, mv.json and music.json (loudness, section boundaries) in a work folder. Takes minutes (several whisper runs); run it in the
   background. The --json result lists `outputs` and `check_by_ear` (lines to verify by ear).
 - `song2mv beats AUDIO [--bpm auto|N] [--json]` — tempo and beat grid only.
+- `song2mv click WORK --from A --to B [--words] [--json]` — a wav of that stretch with clicks on the beat grid and
+  ticks on lyric words, for a person to listen to (an agent cannot hear the song); the result says what to ask.
 - `song2mv check VIDEO --song mv.json [--from A --to B] [--json]` — experimental; per-line motion, coverage,
   chorus variation, cut rhythm. Passing is necessary, not proof of fun.
+- `song2mv sheet VIDEO [--song mv.json] (--every S | --times T,T | --cuts CHECK_JSON) [--from A] [--crop X,Y,W,H]
+  [--json]` — a PNG contact sheet of a rendered video, captions included: frames at song times, each labelled with
+  its time and the line sung; `--cuts` takes a frame from each shot listed in a saved `check --json` result.
 - `song2mv render mv.json [--from A --to B] [--aspect 16x9|9x16|both] [--still T] [--template DIR] [--json]` —
-  experimental; Remotion template (not MIT for companies over 3 employees).
+  experimental; uses Remotion, which is not MIT: free for individuals and companies with up to 3 employees, a
+  company license otherwise.
+
+Exit codes: 0 success, 1 `check` found a failing check, 2 error. With --json an error is
+`{"ok": false, "error": {"message", "kind", "hint"}}` on stdout; do what the hint says.
 
 ## Docs
 
 - [README](https://github.com/yongjip/song2mv/blob/main/README.md)
 - [AGENTS.md — operating rules](https://github.com/yongjip/song2mv/blob/main/AGENTS.md)
 - [Machine contract](https://github.com/yongjip/song2mv/blob/main/docs/contract.md)
-- [Music-video skill](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md)
+- [Music-video skill](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md) — installed with
+  the package (with AGENTS.md) in `song2mv/guide/`; `song2mv --help` prints its path

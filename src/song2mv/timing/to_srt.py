@@ -1,9 +1,13 @@
-"""Write SRT subtitles from lyrics.json lines: one cue per lyric line, from its start to its end.
+"""Write SRT subtitles from lyrics.json lines: one cue per lyric line, from its start to its end, with its sung words
+(a "/" or "–" between them in the lyric sheet is left out, as in the video's captions).
 
 Video editors (CapCut, Premiere, DaVinci Resolve, Final Cut) import SRT directly, so a song's timing can be used
-without the render template. A cue never runs past the next line's start.
+without the render template. Cues never overlap: a cue ends at the next cue's start, and lines that start within
+MIN_CUE of each other (a backing vocal on top of a line) share one cue, one text line each.
 """
 from __future__ import annotations
+
+MIN_CUE = 0.3  # seconds
 
 
 def ts(t: float) -> str:
@@ -15,14 +19,20 @@ def ts(t: float) -> str:
 
 
 def to_srt(lines: list[dict], out: str) -> int:
-    rows = sorted(lines, key=lambda r: r["start"])
+    groups: list[list[dict]] = []
+    for r in sorted(lines, key=lambda r: r["start"]):
+        if groups and r["start"] - groups[-1][0]["start"] < MIN_CUE:
+            groups[-1].append(r)
+        else:
+            groups.append([r])
     cues = []
-    for i, r in enumerate(rows):
-        end = r["end"]
-        if i + 1 < len(rows):
-            end = min(end, rows[i + 1]["start"])
-        end = max(end, r["start"] + 0.3)
-        cues.append(f"{len(cues) + 1}\n{ts(r['start'])} --> {ts(end)}\n{r['text']}\n")
+    for i, g in enumerate(groups):
+        start = g[0]["start"]
+        end = max(max(r["end"] for r in g), start + MIN_CUE)
+        if i + 1 < len(groups):
+            end = min(end, groups[i + 1][0]["start"])  # at least MIN_CUE after start: groups start that far apart
+        text = "\n".join(" ".join(w["w"] for w in r["words"]) for r in g)
+        cues.append(f"{len(cues) + 1}\n{ts(start)} --> {ts(end)}\n{text}\n")
     with open(out, "w", encoding="utf-8") as f:
         f.write("\n".join(cues))
     return len(cues)

@@ -57,31 +57,60 @@ export const Quiet: React.FC<{ T: number; t: number; text: string; x: number; y:
   );
 };
 
-/** The line being sung at T among `lines`: the one that started last (backing vocals can overlap) */
-export function liveLine(lines: Line[], T: number, lead = 0.12): Line | undefined {
+/** A line that the next line follows within this many seconds stays up until that line appears: a blink of
+ * empty screen between two lines is harder to follow than a line held a moment longer. */
+const HOLD_GAP = 0.5;
+
+/**
+ * The line being sung at T among `lines`: the one that started last (backing vocals can overlap). A line is up
+ * from `lead` s before its first word to 0.05 s after its end, or until the next line of `all` (every line of the
+ * song) appears, when that comes within HOLD_GAP.
+ */
+export function liveLine(lines: Line[], T: number, lead = 0.12, all: Line[] = lines): Line | undefined {
   let best: Line | undefined;
   for (const l of lines) {
-    if (T >= l.words[0].t - lead && T < l.end + 0.05 && (!best || l.words[0].t >= best.words[0].t)) best = l;
+    const t0 = l.words[0].t;
+    if (T < t0 - lead || (best && t0 < best.words[0].t)) continue;
+    const end = l.end + 0.05;
+    if (T >= end) {
+      const next = Math.min(...all.filter((m) => m.words[0].t > t0).map((m) => m.words[0].t - lead));
+      if (next - end >= HOLD_GAP || T >= next) continue;
+    }
+    best = l;
   }
   return best;
 }
 
+/**
+ * The line <Captions> shows at T: the live line among those not in `skip`, unless a line in `skip` (one the scene
+ * draws) has started since that line's last word, as a pickup into a scene-drawn chorus does.
+ */
+export function captionLine(lines: Line[], T: number, skip: Set<string>): Line | undefined {
+  const line = liveLine(lines.filter((l) => !skip.has(l.id)), T, 0.12, lines);
+  if (!line) return undefined;
+  const last = line.words[line.words.length - 1].t;
+  return lines.some((l) => skip.has(l.id) && l.words[0].t > last && T >= l.words[0].t - 0.12) ? undefined : line;
+}
+
 /** Rough rendered width in em: Hangul / CJK full width, Latin about half, spaces a third */
 const emWidth = (s: string) =>
-  [...s].reduce((a, ch) => a + (/\s/.test(ch) ? 0.3 : /[ᄀ-ᇿ⺀-鿿가-힯＀-￯]/.test(ch) ? 1 : 0.62), 0);
+  [...s].reduce((a, ch) => a + (/\s/.test(ch) ? 0.3 : /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch) ? 1 : 0.62), 0);
 
 /**
  * The whole current line, huge, in the middle of the stage — pops once when the line starts, then each
  * word lights up as it is sung (karaoke). Long lines wrap to two rows. Lines drawn here should be hidden
- * from <Captions>.
+ * from <Captions>. `x`, `y` is its middle and `width` the widest it gets (1700, or 1100 in the short's band);
+ * a VerticalScene passes the 9:16 frame's own, such as its safe box.
  */
-export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?: number }> = ({ T, lines, y = 500, maxSize = 180 }) => {
-  const { theme } = useSong();
+export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?: number; x?: number; width?: number }> = ({
+  T, lines, y = 500, maxSize = 180, x = 960, width,
+}) => {
+  const { song, theme } = useSong();
   const vertical = useContext(VerticalCtx);
-  const line = liveLine(lines, T, 0.05);
+  const line = liveLine(lines, T, 0.05, song.lines);
   if (!line) return null;
   const t0 = line.words[0].t - 0.05;
-  const maxW = vertical ? 1250 : 1700;
+  const maxW = width ?? (vertical ? 1100 : 1700); // 9:16 shows the stage at 0.76: 1100 stage px = x 122–958, inside the safe box
   const u = emWidth(line.text);
   const one = maxW / u;
   const size = one >= 110 ? Math.min(maxSize, one) : Math.min(maxSize * 0.85, (2 * maxW) / (u + 2));
@@ -89,7 +118,7 @@ export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?:
   return (
     <div
       style={{
-        position: "absolute", left: 960, top: y, width: maxW, transform: `translate(-50%, -50%) scale(${s})`,
+        position: "absolute", left: x, top: y, width: maxW, transform: `translate(-50%, -50%) scale(${s})`,
         textAlign: "center", wordBreak: "keep-all", fontSize: size, fontWeight: 900, letterSpacing: "-0.035em", lineHeight: 1.1,
         opacity: clamp01((T - t0) / 0.03),
       }}
@@ -97,13 +126,15 @@ export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?:
       {line.words.map((w, i) => {
         const sung = T >= w.t;
         return (
-          <span key={i} style={{
-            color: sung ? theme.bigText : theme.unsung,
-            textShadow: sung ? `0 0 28px ${theme.bigGlow}, 0 0 90px ${theme.bigGlow}` : "none",
-            marginRight: i < line.words.length - 1 ? "0.25em" : 0,
-          }}>
-            {w.w}
-          </span>
+          <React.Fragment key={i}>
+            {i > 0 && " " /* a real space: the only place a long line may wrap */}
+            <span style={{
+              color: sung ? theme.bigText : theme.unsung,
+              textShadow: sung ? `0 0 28px ${theme.bigGlow}, 0 0 90px ${theme.bigGlow}` : theme.unsungShadow,
+            }}>
+              {w.w}
+            </span>
+          </React.Fragment>
         );
       })}
     </div>
@@ -119,7 +150,7 @@ export const Captions: React.FC<{ T: number; hide?: Set<string>; size?: number; 
 }) => {
   const { song, theme } = useSong();
   const skip = new Set([...(song.captions?.hide ?? []), ...(hide ?? [])]);
-  const line = liveLine(song.lines.filter((l) => !skip.has(l.id)), T);
+  const line = captionLine(song.lines, T, skip);
   if (!line) return null;
   const from = song.captions?.from_word?.[line.id] ?? 0;
   const words = line.words.slice(from);
@@ -139,13 +170,15 @@ export const Captions: React.FC<{ T: number; hide?: Set<string>; size?: number; 
         {words.map((w, i) => {
           const sung = T >= w.t;
           return (
-            <span key={i} style={{
-              color: sung ? theme.sung : theme.unsung,
-              textShadow: sung ? `0 0 18px ${theme.sungGlow}` : "none",
-              marginRight: i < words.length - 1 ? "0.3em" : 0,
-            }}>
-              {w.w}
-            </span>
+            <React.Fragment key={i}>
+              {i > 0 && " " /* a real space: the only place a long line may wrap */}
+              <span style={{
+                color: sung ? theme.sung : theme.unsung,
+                textShadow: sung ? `0 0 18px ${theme.sungGlow}` : theme.unsungShadow,
+              }}>
+                {w.w}
+              </span>
+            </React.Fragment>
           );
         })}
       </div>

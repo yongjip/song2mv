@@ -8,16 +8,18 @@
   "scripts": {
     "studio": "remotion studio",
     "render": "node render.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:assets": "node test-assets.mjs && node test-interactions.mjs"
   },
   "dependencies": {
-    "@remotion/cli": "4.0.507",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "remotion": "4.0.507"
+    "@remotion/cli": "4.0.537",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.537"
   },
   "devDependencies": {
-    "@types/react": "19.2.18",
+    "@types/react": "19.3.0",
+    "esbuild": "0.28.1",
     "typescript": "7.0.2"
   }
 }

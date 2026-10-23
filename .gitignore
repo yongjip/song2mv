@@ -17,5 +17,5 @@ renders/
 *.mp4
 *.mov
 # template installs
-node_modules/
+node_modules
 src/song2mv/render/template/out/

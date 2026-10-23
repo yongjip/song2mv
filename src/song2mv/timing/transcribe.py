@@ -6,17 +6,20 @@ when it is unsure, and where its 30-second windows fall changes what it hears. S
 seed k and starts after a different amount of leading silence (which moves the window edges). align.py
 then merges the runs in lyric space, where they can be compared word by word.
 
-Runs already on disk are reused, so raising "runs" from 3 to 5 only transcribes runs 4 and 5.
+Runs already on disk are reused only while their key (audio content hash, model, language, compute type, beam
+size) still matches, so raising "runs" from 3 to 5 only transcribes runs 4 and 5, and a changed audio file or
+--model / --language re-transcribes.
 
 Usage: python -m song2mv.timing.transcribe song.mp3 work/asr [--runs 3] [--model small] [--language ko]
 """
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import time
 
-from .lib import write_json
+from .lib import key_change, write_json
 
 SR = 16000
 _models: dict = {}
@@ -64,19 +67,25 @@ def transcribe_array(audio, w: dict, language=None, offset=0.0, pad=0.0, seed=No
     return {"language": info.language, "segments": segs, "words": words}
 
 
-def run_all(audio_path: str, out_dir: str, w: dict, language=None, force=False) -> list[str]:
+def run_all(audio_path: str, out_dir: str, w: dict, language=None, force=False, key: dict | None = None) -> list[str]:
     paths, audio = [], None
     for k in range(1, int(w["runs"]) + 1):
         p = os.path.join(out_dir, f"run{k}.json")
         paths.append(p)
         if os.path.exists(p) and not force:
-            print(f"  run {k}: cached")
-            continue
+            try:
+                old = json.load(open(p, encoding="utf-8")).get("key")
+            except (OSError, ValueError):
+                old = None
+            if key is None or old == key:
+                print(f"  run {k}: cached")
+                continue
+            print(f"  run {k}: {key_change(old, key)} — transcribing again")
         if audio is None:
             audio = decode(audio_path)
         t0 = time.time()
         res = transcribe_array(audio, w, language, pad=pad_for(k), seed=k)
-        res.update(run=k, pad=pad_for(k), seed=k, model=w["model"])
+        res.update(run=k, pad=pad_for(k), seed=k, model=w["model"], key=key)
         write_json(res, p)
         print(f"  run {k}: {len(res['words'])} words (lead-in {pad_for(k)} s, seed {k}, {time.time() - t0:.0f} s)")
     return paths

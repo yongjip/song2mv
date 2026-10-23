@@ -18,11 +18,12 @@ jobs:
           - {os: ubuntu-latest, python: "3.11"}
           - {os: ubuntu-latest, python: "3.12"}
           - {os: ubuntu-latest, python: "3.13"}
+          - {os: ubuntu-latest, python: "3.14"}
           - {os: macos-latest, python: "3.12"}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python }}
       - name: ffmpeg
@@ -36,14 +37,73 @@ jobs:
   package:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: plant what must never ship (a template install, renders, bytecode)
+        run: |
+          t=src/song2mv/render/template
+          mkdir -p $t/node_modules/remotion $t/out src/song2mv/check/__pycache__
+          touch $t/node_modules/remotion/index.js $t/out/song-16x9.mp4 src/song2mv/check/__pycache__/score.pyc
       - run: uv build
-      - name: wheel carries the template, not node_modules
+      - name: wheel and sdist carry the template and goals, nothing planted
         run: |
           unzip -l dist/*.whl | grep -q 'song2mv/render/template/render.mjs'
-          ! unzip -l dist/*.whl | grep -q node_modules
           unzip -l dist/*.whl | grep -q 'song2mv/check/goals.json'
+          unzip -l dist/*.whl | grep -q 'song2mv/guide/SKILL.md'
+          unzip -l dist/*.whl | grep -q 'song2mv/guide/AGENTS.md'
+          ! unzip -l dist/*.whl | grep -E 'node_modules|template/out/|__pycache__'
+          ! tar tzf dist/*.tar.gz | grep -E 'node_modules|template/out/|__pycache__'
+      - name: checksum release archives
+        run: cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-dist-check
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  release-artifacts:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-dist-check
+          path: dist/
+      - name: verify the release archive handoff without publishing
+        run: cd dist && sha256sum --check SHA256SUMS
+
+  wheel:
+    # the built wheel installed the way users install it: core only, then with the sync extra
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - run: uv build
+      - name: core install (numpy only)
+        run: |
+          uv venv core
+          uv pip install --python core/bin/python dist/*.whl
+          core/bin/song2mv --help > help.txt
+          guide=$(grep -A1 '^Coding agent? Read this guide first' help.txt | tail -1 | sed 's/^ *//')
+          case "$guide" in */site-packages/song2mv/guide/SKILL.md) ;; *) echo "help points to '$guide'"; exit 1 ;; esac
+          cmp "$guide" .claude/skills/song2mv/SKILL.md
+          cmp "$(dirname "$guide")/AGENTS.md" AGENTS.md
+          core/bin/python -c "import song2mv.check.score"
+          ffmpeg -v error -f lavfi -i sine=frequency=440:duration=2 tone.wav
+          set +e; core/bin/song2mv sync tone.wav --json > out.json 2> err.txt; code=$?; set -e
+          cat err.txt
+          test "$code" = 2
+          grep -q "'sync' extra" err.txt
+          core/bin/python -c "import json; e = json.load(open('out.json'))['error']; assert e['kind'] == 'input', e"
+      - name: sync extra (faster-whisper decodes through PyAV; no model download)
+        run: |
+          uv venv full
+          uv pip install --python full/bin/python "$(ls dist/*.whl)[sync]"
+          full/bin/python -c "from faster_whisper import decode_audio; n = len(decode_audio('tone.wav')); assert n > 30000, n"
 
   template:
     runs-on: ubuntu-latest
@@ -51,11 +111,45 @@ jobs:
       run:
         working-directory: src/song2mv/render/template
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: src/song2mv/render/template/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npx tsc --noEmit
+      - run: npm run test:assets
+      # every gallery tile as a PNG (element-00 shows them all), so a reviewer sees a pull request's drawings;
+      # tile 24 letters Korean from a font on the machine
+      - run: sudo apt-get update -q && sudo apt-get install -y -q fonts-noto-cjk
+      - run: npx remotion render src/index.ts Kit-Gallery out/gallery --sequence --image-format=png
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kit-gallery
+          path: src/song2mv/render/template/out/gallery/
+          retention-days: 14
+      # renders through render.mjs: a draft and its full render must give check as many frames
+      - uses: astral-sh/setup-uv@v7
+      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - run: uv venv && uv pip install -e '.[dev]' && uv run --no-sync pytest -q tests/test_template.py
+        working-directory: .
+
+  windows-render:
+    # song2mv render on Windows, where npx is npx.cmd: render.mjs must start Remotion without a shell
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/song2mv/render/template/package-lock.json
+      - run: uv venv
+      - run: uv pip install -e .
+      # the first render installs the template (npm ci) and Remotion's Chrome, then renders through render.mjs
+      - run: uv run --no-sync song2mv render src/song2mv/render/template/src/sample-song.json --still 5 --out out --name sample --json
+      - run: uv run --no-sync python -c "import os; n = os.path.getsize('out/sample-16x9-5s.png'); print(n, 'bytes'); assert n > 100000"

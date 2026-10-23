@@ -3,9 +3,21 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: {interval: monthly}
+    groups:
+      artifact-actions:
+        patterns: ["actions/upload-artifact", "actions/download-artifact"]
   - package-ecosystem: pip
     directory: /
     schedule: {interval: monthly}
+    ignore:
+      # av<19 is deliberate: PyAV 19 dropped `metadata_errors`, which faster-whisper passes to av.open
+      - dependency-name: av
+        versions: [">=19"]
   - package-ecosystem: npm
     directory: /src/song2mv/render/template
     schedule: {interval: monthly}
+    groups:
+      remotion:  # remotion and every @remotion/* package must stay on the same version
+        patterns: ["remotion", "@remotion/*"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
