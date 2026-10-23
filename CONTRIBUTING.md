@@ -26,6 +26,10 @@ instead: `source .venv/bin/activate`, or `.venv\Scripts\activate` on Windows.)
 Tests build synthetic audio and video. `tests/test_template.py` renders through the template and runs only after
 `npm ci` in `src/song2mv/render/template`. Do not add songs, lyrics, renders or other media to the repository.
 
+Update React and React DOM together. Keep Remotion and every `@remotion/*` package on the same version.
+After template dependency changes, run `npm ci`, `npm run typecheck`, `npm run test:assets` and the template
+render tests; type checking alone does not detect a React runtime mismatch.
+
 ## Pull requests
 
 - Keep changes small and focused; one behaviour per pull request.

@@ -19,3 +19,5 @@ updates:
     groups:
       remotion:  # remotion and every @remotion/* package must stay on the same version
         patterns: ["remotion", "@remotion/*"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
