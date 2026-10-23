@@ -164,3 +164,142 @@ def test_a_caption_gives_way_to_a_scene_drawn_pickup_but_not_to_a_chant_over_it(
                     "--format=esm", "--log-level=error", f"--outfile={tmp_path / 'probe.mjs'}"], check=True)
     seen = json.loads(subprocess.run(["node", str(tmp_path / "probe.mjs")], check=True, capture_output=True, text=True).stdout)
     assert seen == {"verse": "v1-16", "pickup": None, "chant": "v2-01", "after": "v2-01"}
+
+
+def _song(bpm: float, beats: list[float] | None = None, swing: list[float] | None = None) -> dict:
+    """A song for the planner: a calm intro, a dense verse (a line every 1.5 s), a hot chorus, a sparse verse (long
+    lines every 4 s, one bar apart and a half), the chorus again and a calm outro; every line starts on a 16th"""
+    beat = 60 / bpm
+    grid = {"bpm": bpm, "beat": beat, "phi": 0.0, "downbeat_mod4": 0, "beats": beats, "swing": swing}
+    t_of = (lambda b: float(np.interp(b, range(len(beats)), beats))) if beats else (lambda b: b * beat)
+    secs, lines = [], []
+
+    def section(sid: str, kind: str, bars: int, every: float, length: float) -> None:
+        start = t_of(4 * sum(s["bars"] for s in secs))
+        secs.append({"id": sid, "name": sid, "kind": kind, "start": start, "end": t_of(4 * (sum(s["bars"] for s in secs) + bars)), "bars": bars})
+        n = 0
+        b = 4 * sum(s["bars"] for s in secs[:-1]) + 1.75
+        while b + length / beat < 4 * sum(s["bars"] for s in secs) and kind != "calm":
+            t0 = t_of(b)
+            words = [{"w": f"w{k}", "t": round(t_of(b + k * 0.5), 3)} for k in range(int(length / beat / 0.5))]
+            lines.append({"id": f"{sid}-{n + 1:02d}", "section": sid, "text": " ".join(w["w"] for w in words), "start": round(t0, 3),
+                          "end": round(t_of(b + length / beat), 3), "words": words})
+            n += 1
+            b += every / beat
+
+    section("in", "calm", 4, 0, 0)
+    section("v1", "mid", 12, 1.5, 1.4)
+    section("ch1", "hot", 8, 2.0, 1.9)
+    section("v2", "mid", 12, 4.0 * bpm / 120, 3.8 * bpm / 120)
+    section("ch2", "hot", 8, 2.0, 1.9)
+    section("ou", "calm", 4, 0, 0)
+    for s in secs:
+        del s["bars"]
+    return {"title": "", "audio": None, "duration": secs[-1]["end"], "grid": grid, "sections": secs, "lines": lines}
+
+
+PLAN_PROBE = """
+import { makeSongCtx } from "KIT/song";
+import { planShots } from "KIT/plan";
+const song = SONG;
+const ctx = makeSongCtx(song);
+const g = ctx.grid;
+const F = [{ x: 960, y: 540 }, { x: 700, y: 640, zoom: 2.2 }, { x: 1300, y: 420, zoom: 1.5, rotate: -3 }];
+const near = (a: number, b: number) => Math.abs(a - b) < 2e-3;
+const firsts = song.lines.map((l: any) => l.words[0].t);
+const on = (t: number) => {
+  const b = g.beatPos(t), n = Math.round(b);
+  if (near(g.beatTime(n), t) && (((n - g.downbeat_mod4) % 4) + 4) % 4 === 0) return "bar";
+  if (near(g.beatTime(n), t) && (((n - g.downbeat_mod4) % 2) + 2) % 2 === 0) return "half";
+  const beat = g.beatTime(Math.floor(b) + 1) - g.beatTime(Math.floor(b));
+  return firsts.some((w: number) => near(w - Math.min(0.15, beat / 4), t)) ? "lead" : "other";
+};
+const out = song.sections.map((s: any) => {
+  const { shots, hits } = planShots(ctx, s.start, s.end, F);
+  return { id: s.id, kind: s.kind, start: s.start, end: s.end, hits,
+    shots: shots.slice(0, -1).map((x) => ({ t: x.t, framing: x.framing, on: on(x.t), drift: !!x.to })) };
+});
+console.log(JSON.stringify(out));
+"""
+
+
+def _plan(tmp_path, song: dict) -> list[dict]:
+    probe = tmp_path / "probe.ts"
+    probe.write_text(PLAN_PROBE.replace("KIT", os.path.join(BUNDLED, "src", "kit")).replace("SONG", json.dumps(song)), encoding="utf-8")
+    subprocess.run([os.path.join(BUNDLED, "node_modules", ".bin", "esbuild"), str(probe), "--bundle", "--platform=node",
+                    "--format=esm", "--log-level=error", f"--outfile={tmp_path / 'probe.mjs'}"], check=True)
+    return json.loads(subprocess.run(["node", str(tmp_path / "probe.mjs")], check=True, capture_output=True, text=True).stdout)
+
+
+def _drifting_beats(n: int) -> list[float]:
+    t, out = 0.0, []
+    for k in range(n):
+        out.append(round(t, 4))
+        t += 60 / (88 - 4 * k / n)
+    return out
+
+
+@pytest.mark.parametrize("song", [_song(120), _song(92), _song(88, _drifting_beats(400), [0.33, 0.83])], ids=["120", "92", "beat-map-swing"])
+def test_planned_cuts_pass_checks_rules(tmp_path, song):
+    plan = _plan(tmp_path, song)
+    lines = sorted(song["lines"], key=lambda r: r["start"])
+    for sec in plan:
+        ts = [s["t"] for s in sec["shots"]]
+        assert ts[0] == sec["start"] and all(s["drift"] for s in sec["shots"]), sec["id"]
+        # every cut on a bar line (or the bar's middle) or a 16th before a line's first word
+        assert all(s["on"] != "other" for s in sec["shots"][1:]), (sec["id"], sec["shots"])
+        iv = np.diff(ts + [sec["end"]])
+        if sec["kind"] != "calm":
+            assert iv.max() <= 5.6, (sec["id"], ts)
+        if sec["kind"] == "mid":
+            cv = np.diff(ts).std() / np.diff(ts).mean()
+            assert len(ts) < 4 or cv >= 0.4, (sec["id"], cv, ts)
+            for k, r in enumerate(lines):
+                if r["section"] != sec["id"]:
+                    continue
+                nxt = lines[k + 1]["start"] if k + 1 < len(lines) else sec["end"]
+                end = max(min(r["end"], nxt), r["start"] + 1.5)
+                inside = [t for t in ts if r["start"] + 0.1 < t < min(end, nxt - 0.2)]
+                assert len(inside) <= (0 if min(end, nxt) - r["start"] < 1.8 else 1), (r["id"], inside)
+        if sec["kind"] == "hot":
+            assert sec["hits"] and all(any(abs(h - t) < 1e-6 for t in ts) for h in sec["hits"]), sec["id"]
+
+
+def test_the_second_chorus_does_not_repeat_the_first_ones_shots(tmp_path):
+    plan = {s["id"]: s for s in _plan(tmp_path, _song(120))}
+    ch1, ch2 = plan["ch1"], plan["ch2"]
+
+    def framing(sec, dt):
+        return [s["framing"] for s in sec["shots"] if s["t"] <= sec["start"] + dt][-1]
+
+    times = np.arange(0.25, ch1["end"] - ch1["start"], 0.5)
+    assert all(framing(ch1, dt) != framing(ch2, dt) for dt in times)
+
+
+BOARD_PROBE = """
+import { linesDrawnBy } from "%s";
+const L = (id: string, section: string, t: number) => ({ id, section, text: id, start: t, end: t + 1, words: [{ w: id, t }] });
+const song = { title: "", audio: null, duration: 30, grid: { bpm: 120, beat: 0.5, phi: 0, downbeat_mod4: 0 },
+  sections: [{ id: "v1", name: "v1", kind: "mid", start: 0, end: 10 }, { id: "ch1", name: "ch1", kind: "hot", start: 10, end: 30 }],
+  lines: [L("v1-01", "v1", 2), L("v1-02", "v1", 6), L("ch1-01", "ch1", 11), L("ch1-02", "ch1", 15), L("ch1-03", "ch1", 20)] } as any;
+const world = () => null;
+const board = (at: string | number, big?: boolean) => ({ at, world, framings: [{ x: 960, y: 540 }], big });
+const drawn = (b: any[]) => [...linesDrawnBy(song, b)].sort();
+let unknown = "";
+try { linesDrawnBy(song, [board("v1"), board("ch9")]); } catch (e) { unknown = String(e); }
+console.log(JSON.stringify({ chorus: drawn([board("v1"), board("ch1", true)]), from_line: drawn([board("v1"), board("v1-02", true), board("ch1-03")]),
+  at_time: drawn([board(0), board(14.5, true)]), unknown }));
+"""
+
+
+def test_boards_start_at_lines_sections_or_times_and_name_the_lines_they_draw(tmp_path):
+    probe = tmp_path / "probe.ts"
+    probe.write_text(BOARD_PROBE % os.path.join(BUNDLED, "src", "kit", "storyboard"), encoding="utf-8")
+    subprocess.run([os.path.join(BUNDLED, "node_modules", ".bin", "esbuild"), str(probe), "--bundle", "--platform=node",
+                    "--format=esm", "--log-level=error", f"--outfile={tmp_path / 'probe.mjs'}"], check=True)
+    seen = json.loads(subprocess.run(["node", str(tmp_path / "probe.mjs")], check=True, capture_output=True, text=True).stdout)
+    assert seen["chorus"] == ["ch1-01", "ch1-02", "ch1-03"]
+    assert seen["from_line"] == ["ch1-01", "ch1-02", "v1-02"]
+    assert seen["at_time"] == ["ch1-02", "ch1-03"]
+    assert '"ch9"' in seen["unknown"]
+

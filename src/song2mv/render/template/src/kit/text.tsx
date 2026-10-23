@@ -99,15 +99,18 @@ const emWidth = (s: string) =>
 /**
  * The whole current line, huge, in the middle of the stage — pops once when the line starts, then each
  * word lights up as it is sung (karaoke). Long lines wrap to two rows. Lines drawn here should be hidden
- * from <Captions>.
+ * from <Captions>. `x`, `y` is its middle and `width` the widest it gets (1700, or 1100 in the short's band);
+ * a VerticalScene passes the 9:16 frame's own, such as its safe box.
  */
-export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?: number }> = ({ T, lines, y = 500, maxSize = 180 }) => {
+export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?: number; x?: number; width?: number }> = ({
+  T, lines, y = 500, maxSize = 180, x = 960, width,
+}) => {
   const { song, theme } = useSong();
   const vertical = useContext(VerticalCtx);
   const line = liveLine(lines, T, 0.05, song.lines);
   if (!line) return null;
   const t0 = line.words[0].t - 0.05;
-  const maxW = vertical ? 1100 : 1700; // 9:16 shows the stage at 0.76: 1100 stage px = x 122–958, inside the safe box
+  const maxW = width ?? (vertical ? 1100 : 1700); // 9:16 shows the stage at 0.76: 1100 stage px = x 122–958, inside the safe box
   const u = emWidth(line.text);
   const one = maxW / u;
   const size = one >= 110 ? Math.min(maxSize, one) : Math.min(maxSize * 0.85, (2 * maxW) / (u + 2));
@@ -115,7 +118,7 @@ export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?:
   return (
     <div
       style={{
-        position: "absolute", left: 960, top: y, width: maxW, transform: `translate(-50%, -50%) scale(${s})`,
+        position: "absolute", left: x, top: y, width: maxW, transform: `translate(-50%, -50%) scale(${s})`,
         textAlign: "center", wordBreak: "keep-all", fontSize: size, fontWeight: 900, letterSpacing: "-0.035em", lineHeight: 1.1,
         opacity: clamp01((T - t0) / 0.03),
       }}

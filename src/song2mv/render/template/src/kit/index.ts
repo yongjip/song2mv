@@ -15,6 +15,9 @@ export * from "./symbols";
 export * from "./vehicles";
 export * from "./effects";
 export * from "./camera";
+// Cut planning and storyboards: shots and boards whose cuts pass `song2mv check`
+export { planShots, type Framing, type Plan, type PlanOptions, type PlannedShot } from "./plan";
+export * from "./storyboard";
 // tallView stays inside: pixel scenes reach it through pixel.cameraAt, which first steadies their shots
 export { VERTICAL, verticalView } from "./vertical";
 export * from "./hit";
