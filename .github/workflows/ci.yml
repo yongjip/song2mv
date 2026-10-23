@@ -35,6 +35,9 @@ jobs:
         run: |
           if ! command -v ffmpeg >/dev/null; then
             if [ "$RUNNER_OS" = "Linux" ]; then
+              if [ -f /etc/apt/apt-mirrors.txt ]; then
+                sudo sed -i '/azure\.archive\.ubuntu\.com/d; s#http://#https://#g' /etc/apt/apt-mirrors.txt
+              fi
               sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -q
               sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -q ffmpeg
             else
@@ -98,6 +101,9 @@ jobs:
         timeout-minutes: 5
         run: |
           if ! command -v ffmpeg >/dev/null; then
+            if [ -f /etc/apt/apt-mirrors.txt ]; then
+              sudo sed -i '/azure\.archive\.ubuntu\.com/d; s#http://#https://#g' /etc/apt/apt-mirrors.txt
+            fi
             sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -q
             sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -q ffmpeg
           fi
@@ -145,6 +151,9 @@ jobs:
       - name: gallery fonts
         timeout-minutes: 5
         run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d; s#http://#https://#g' /etc/apt/apt-mirrors.txt
+          fi
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -q
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -q fonts-noto-cjk
       - run: npx remotion render src/index.ts Kit-Gallery out/gallery --sequence --image-format=png
@@ -159,6 +168,9 @@ jobs:
         timeout-minutes: 5
         run: |
           if ! command -v ffmpeg >/dev/null; then
+            if [ -f /etc/apt/apt-mirrors.txt ]; then
+              sudo sed -i '/azure\.archive\.ubuntu\.com/d; s#http://#https://#g' /etc/apt/apt-mirrors.txt
+            fi
             sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -q
             sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y -q ffmpeg
           fi
