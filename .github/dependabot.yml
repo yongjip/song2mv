@@ -3,6 +3,9 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: {interval: monthly}
+    groups:
+      artifact-actions:
+        patterns: ["actions/upload-artifact", "actions/download-artifact"]
   - package-ecosystem: pip
     directory: /
     schedule: {interval: monthly}
@@ -16,3 +19,5 @@ updates:
     groups:
       remotion:  # remotion and every @remotion/* package must stay on the same version
         patterns: ["remotion", "@remotion/*"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]

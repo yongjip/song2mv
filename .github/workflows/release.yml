@@ -12,8 +12,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
       - name: tag, versions and changelog agree
@@ -34,7 +34,7 @@ jobs:
           uv run --no-sync ruff check src tests
           uv run --no-sync pytest -q
       - run: uv build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: {name: dist, path: dist/}
 
   publish:
@@ -44,7 +44,7 @@ jobs:
     permissions:
       id-token: write  # Trusted Publishing
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: {name: dist, path: dist/}
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -56,8 +56,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with: {name: dist, path: dist/}
       - name: create release with the changelog section
         env:
