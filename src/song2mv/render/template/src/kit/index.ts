@@ -24,7 +24,7 @@ export * from "./font";
 export { planShots, type Framing, type Plan, type PlanOptions, type PlannedShot } from "./plan";
 export * from "./storyboard";
 // tallView stays inside: pixel scenes reach it through pixel.cameraAt, which first steadies their shots
-export { VERTICAL, verticalView } from "./vertical";
+export { VERTICAL, WIDE, verticalView, wideView } from "./vertical";
 export * from "./hit";
 export * from "./flames";
 export * from "./storm";

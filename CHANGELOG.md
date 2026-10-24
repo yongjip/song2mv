@@ -7,6 +7,13 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 First release (0.1.0).
 
 ### Fixed
+- Captions and big type no longer cover a storyboard's subject. The 16:9 frame now has a picture above its
+  captions, as the 9:16 frame has: a Storyboard puts each framing's point, its subject's middle, in the middle of
+  that picture (y 420 of 1080 instead of 540; `WIDE` and `wideView` in the kit), runs on past the stage's bottom edge
+  under it as the 9:16 frame does, and sets a board's big type in the captions' place (y 955). The starter's
+  framings point at its hero and keep the whole figure above the captions in both frames. Over the five starter
+  songs, the captioned frames whose caption box covers the hero (1 % of the box or more, 4 frames a second) fell from
+  1,460 to 0 of 2,437 in 16:9 and from 774 to 2 in 9:16. Contact sheets mark the captions' top in 16:9 too.
 - CI runs every commit pushed to `main` to the end instead of cancelling it for the next push, so each commit on
   `main` gets a result; runs of one pull request still supersede each other.
 - Portrait head-touch folds the arm along a compact path without collapsing segments during the reach,

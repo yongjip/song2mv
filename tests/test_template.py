@@ -163,6 +163,51 @@ def test_vertical_view_puts_the_subject_in_the_picture_area_and_keeps_the_frame_
         assert abs(x - ex) < 3 and abs(y - ey) < 3, found
 
 
+WIDE_SCENES = """
+import React from "react";
+import { Board, Song, Storyboard } from "../kit";
+
+const Dot: React.FC<{ x: number; y: number }> = ({ x, y }) => (
+  <>
+    <rect x={-200} y={-200} width={2320} height={1600} fill="#203040" />
+    <rect x={x - 5} y={y - 5} width={10} height={10} fill="#ff0000" />
+  </>
+);
+const BOARDS: Board[] = [
+  { at: "v1", world: () => <Dot x={700} y={640} />, framings: [{ x: 700, y: 640, zoom: 1.5 }, { x: 960, y: 540 }], drift: 0 },
+  { at: "ch", world: () => <Dot x={960} y={1150} />, framings: [{ x: 960, y: 540 }, { x: 600, y: 300, zoom: 2 }], drift: 0 },
+];
+export const Scene: React.FC<{ T: number }> = ({ T }) => <Storyboard T={T} boards={BOARDS} />;
+export const VerticalScene = null;
+export const linesDrawnByScene = (_song: Song) => new Set<string>();
+"""
+
+
+def test_a_storyboard_puts_a_framings_point_above_the_captions_in_16x9(tmp_path):
+    template = tmp_path / "video"
+    shutil.copytree(BUNDLED, template, ignore=shutil.ignore_patterns("node_modules", "out"))
+    os.symlink(os.path.join(BUNDLED, "node_modules"), template / "node_modules")
+    (template / "src" / "scenes" / "index.ts").unlink()
+    (template / "src" / "scenes" / "index.tsx").write_text(WIDE_SCENES, encoding="utf-8")
+    (tmp_path / "sheet.json").write_text('{"times": [0.5, 9.3], "cols": 2}', encoding="utf-8")
+    subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--composition", "Contact",
+                    "--props", str(tmp_path / "sheet.json"), "--out", str(tmp_path), "--name", "w"],
+                   cwd=template, check=True, capture_output=True)
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(tmp_path / "w-Contact.png"), "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+                         check=True, capture_output=True).stdout
+    rgb = np.frombuffer(raw, np.uint8).reshape(-1, 1920, 3).astype(int)
+    red = (rgb[..., 0] > 200) & (rgb[..., 1] < 60) & (rgb[..., 2] < 60)
+    gap, tile = 12, (1920 - 12 * 3) / 2
+    scale = tile / 1920
+    found = []
+    for i in range(2):
+        ys, xs = np.nonzero(red[:, round(gap + i * (tile + gap)):round(gap + i * (tile + gap) + tile)])
+        found.append((xs.mean() / scale, (ys.mean() - gap) / scale))
+    # the subject's middle in the middle of the picture above the captions (y 0–840); a wide shot runs on below the stage
+    for (x, y), (ex, ey) in zip(found, [(960, 420), (960, 1030)]):
+        assert abs(x - ex) < 4 and abs(y - ey) < 4, found
+
+
 PIXEL_PROBE = """
 import { cameraAt } from "%s";
 
