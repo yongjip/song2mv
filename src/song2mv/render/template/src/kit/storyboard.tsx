@@ -4,7 +4,7 @@ import { cameraAt } from "./camera";
 import { Framing, Plan, planBoards, refilm } from "./plan";
 import { Line, Section, Song, SongCtxValue, useSong } from "./song";
 import { BigLine } from "./text";
-import { VERTICAL, verticalView } from "./vertical";
+import { VERTICAL, verticalView, wideView } from "./vertical";
 
 /**
  * A storyboard: the song as a list of boards. A board is a stretch of the song, from a line, a section or a time up
@@ -13,22 +13,24 @@ import { VERTICAL, verticalView } from "./vertical";
  * One component draws the board on at T, in 16:9 or, from the same boards, as the 9:16 frame:
  *
  *   const BOARDS: Board[] = [
- *     { at: "v1", world: (T) => <Street T={T} />, framings: [WIDE, HERO, SKYLINE] },
- *     { at: "v1-05", world: (T) => <Room T={T} />, framings: [WIDE, WINDOW] },          // from line v1-05 on
- *     { at: "ch1", world: (T, b) => <Stage T={T} copy={b.repeat} />, framings: [WIDE, CROWD], big: true },
+ *     { at: "v1", world: (T) => <Street T={T} />, framings: [LONG, HERO, SKYLINE] },
+ *     { at: "v1-05", world: (T) => <Room T={T} />, framings: [LONG, WINDOW] },          // from line v1-05 on
+ *     { at: "ch1", world: (T, b) => <Stage T={T} copy={b.repeat} />, framings: [LONG, CROWD], big: true },
  *   ];
  *   export const Scene = ({ T }) => <Storyboard T={T} boards={BOARDS} />;
  *   export const VerticalScene = ({ T }) => <Storyboard T={T} boards={BOARDS} vertical />;
  *   export const linesDrawnByScene = (song: Song) => linesDrawnBy(song, BOARDS);
  *
  * A world is SVG drawn on the 1920×1080 stage (no text: the camera would move it); what it draws past the stage's
- * edges shows when a shot rolls or drifts there. The 9:16 frame films it again through `verticalView`, with the
- * board's `tall` framings, so a world seen in 9:16 draws its ground on below y 1080. The first board also covers the
- * song before it. A board keyed to a line opens on its first framing; one keyed to a section opens on framing n − 1 in
- * the section's copy n (ch2 on framings[1]), so the copies differ, and so does a board keyed to the same line of each
- * copy with the same framings (ch1-04, ch2-04). A framing too alike to the one before it for a cut (under 1.35× apart
- * in zoom, near it, under 4° apart in roll) is skipped, in either frame; one that never shows is named in a video
- * render's log.
+ * edges shows when a shot rolls or drifts there. A framing's point is its subject's middle: both frames put it in the
+ * middle of their picture, above the captions and big type (`wideView`, and `verticalView` with the board's `tall`
+ * framings), so a subject that fits the picture is never under them. Under the picture both frames run on past the
+ * stage's bottom edge (the 16:9 one by 120 px at zoom 1): draw the ground on below y 1080. The first board also covers
+ * the song before it. A board keyed to a line opens on its first framing; one keyed to a section opens on framing
+ * n − 1 in the section's copy n (ch2 on framings[1]), so the copies differ, and so does a board keyed to the same
+ * line of each copy with the same framings (ch1-04, ch2-04). A framing too alike to the one before it for a cut
+ * (under 1.35× apart in zoom, near it, under 4° apart in roll) is skipped, in either frame; one that never shows is
+ * named in a video render's log.
  */
 
 export type BoardSpan = {
@@ -63,9 +65,9 @@ export type Board = {
    */
   overlay?: (T: number, span: BoardSpan) => React.ReactNode;
   /**
-   * true: the board's lines are drawn big (BigLine) instead of as captions, low in the frame, under the part of the
-   * picture `check` measures, so they hide no cut and no change between copies; a number puts them at that stage y in
-   * 16:9 (the 9:16 frame keeps them where its captions go)
+   * true: the board's lines are drawn big (BigLine) instead of as captions, where the captions go, under the picture
+   * (WIDE.captions, VERTICAL.captions), so they hide no subject, no cut and no change between copies; a number puts
+   * them at that y in the 16:9 frame instead
    */
   big?: boolean | number;
 };
@@ -146,10 +148,10 @@ export function planStoryboard(ctx: SongCtxValue, boards: Board[]): Placed[] {
 /**
  * Draws the board on at T, filmed by its planned shots, and its lines as big type when the board asks for it.
  * `wrap` holds the filmed world in the frame, unmoved by the camera, such as a style pack's `paper.Stack`.
- * `vertical` draws the whole 1080×1920 frame for a VerticalScene: the same shots through `verticalView`, big type
- * where the template's captions go, larger (the picture above stays clear, and `check` measures only the picture).
- * `world` is the area the worlds fill, [left, top, right, bottom], which the 9:16 frame keeps inside (verticalView's
- * `world`): by default the stage's sides and top, open below.
+ * The 16:9 frame films through `wideView`; `vertical` draws the whole 1080×1920 frame for a VerticalScene: the same
+ * shots through `verticalView`, big type where the template's captions go, larger (the picture above stays clear,
+ * and `check` measures only the picture). `world` is the area the worlds fill, [left, top, right, bottom], which both
+ * frames keep inside: by default the stage's sides and top, open below.
  */
 export const Storyboard: React.FC<{
   T: number; boards: Board[]; vertical?: boolean; wrap?: (filmed: React.ReactNode, span: BoardSpan) => React.ReactNode;
@@ -163,9 +165,9 @@ export const Storyboard: React.FC<{
   if (!p) return null;
   const { big, overlay } = p.board;
   const span: BoardSpan = { from: p.from, to: p.to, section: p.section, repeat: p.repeat, lines: p.lines, vertical };
-  const big16 = typeof big === "number" ? { y: big } : { y: 945, maxSize: 125 };
+  const big16 = typeof big === "number" ? { y: big } : { y: 955, maxSize: 125 };
   if (!vertical) {
-    const cam = cameraAt(T, p.plan.shots, { hits: p.hits });
+    const cam = wideView(cameraAt(T, p.plan.shots, { hits: p.hits }), { world });
     return (
       <>
         <Svg>{wrap(<g transform={cam.svg}>{p.board.world(T, span)}</g>, span)}</Svg>

@@ -204,7 +204,7 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   `pattern` sets your own bar counts.
 - A `Board` (`src/kit/storyboard.tsx`) is a stretch that starts at a line id, a section id or a time: a `world` (SVG of
   `T` on the stage), its `framings` (and `tall` ones for 9:16), and optionally `pattern`, `drift`, `hits`, an
-  `overlay` (text over the camera) and `big` (its lines as big type, low in the frame).
+  `overlay` (text over the camera) and `big` (its lines as big type, where the captions go).
   `<Storyboard T={T} boards={…} />` draws the board on at T (`wrap` holds the filmed world in a style pack's
   `paper.Stack` or the like), the same with `vertical` is the `VerticalScene`, and `linesDrawnBy(song, boards)` gives
   `linesDrawnByScene`. A board's start is a cut, planned with its section's other cuts: the rhythm counts it, and a
@@ -222,6 +222,13 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   a framing too alike to the one before it (a close-up at 2.4 after one at 1.8 never showed), and a draft's render
   log names one it skipped that never shows (`storyboard: the board at v2-08 never shows framing 2 …`). The 9:16
   frame skips a `tall` framing too alike to the one before it the same way.
+- **Point a framing at its subject's middle**: the character or the thing the line is about. Both frames put the
+  point in the middle of their picture, above the captions and big type: y 0–840 of the 16:9 frame (`WIDE` in the
+  kit), y 269–1080 of the 9:16 one (`VERTICAL`). Zoom so the subject fits the picture, also when the shot's drift
+  pushes in by up to 15 %: a `Person` 300·s px tall fits up to zoom 2.3 / s. A closer shot runs on behind the
+  captions; let that be the ground, never a face or the line's prop. Both frames show the world past the stage's
+  bottom edge (16:9 by 120 px at zoom 1): draw the ground on below y 1080. A contact sheet draws the captions' top as
+  a dashed line.
 
 **The starter** (`src/scenes/Starter.tsx`) is a whole video built that way from kit worlds (a street, a room, a stage,
 fireworks, a beach, hills) that passes `check` on any song as it is. To start from it, put the line given in
@@ -496,8 +503,8 @@ Where things go (`VERTICAL` in the kit has the numbers):
   middle (540, 675), as large as in the 16:9 frame; pass a larger zoom to come closer. A wide shot's point is
   usually the middle of the stage, not its subject: give the tall frame's wide shots the subject's point
   (`shots.map(s => (s.zoom ?? 1) > 1.5 ? s : { ...s, x: 900, y: 820 })`), or the subject drops under the captions.
-  Write a board's `tall` framings with the starter's `tall()`, not `at()`, which keeps a framing on the 16:9 stage
-  and so moves a tall frame's subject off its middle.
+  Point a board's `tall` framings at the subject's middle too (step 4), with the starter's `tall()`, not `at()`, which
+  keeps a framing on the 16:9 stage and so moves a tall frame's subject off its middle.
   A close-up shows more below its point than in 16:9, and that part sits under the captions: if it is the subject's
   body, zoom out until the subject fits above y 1080.
 - **Below y 1248** the apps cover the frame: picture only. The view keeps the frame on the stage's sides and top but
@@ -509,7 +516,7 @@ Where things go (`VERTICAL` in the kit has the numbers):
   (`verticalView(cam, { world: [0, -900, 1920, Infinity] })`, or with boards
   `<Storyboard T={T} boards={BOARDS} vertical world={[0, -900, 1920, Infinity]} />`).
 
-A contact sheet with `"vertical": true` draws the safe box and the captions' top as dashed lines (a crop sheet
+A contact sheet draws the captions' top as a dashed line, and with `"vertical": true` the safe box too (a crop sheet
 leaves them out): check them there before rendering the short. `check` measures the top 56 % of a short, above the
 captions, also with a `VerticalScene`; a large still overlay there (a HUD, a dialogue box) hides cuts from it, so cut
 between shots that look different.

@@ -51,15 +51,21 @@ type Show = { worlds: string[]; big?: boolean; pattern?: number[]; drift?: numbe
 /** A world: what it draws, and its framings in 16:9 and 9:16 */
 type World = { draw: (T: number, b: BoardSpan) => React.ReactNode; framings: Framing[]; tall?: Framing[] };
 
-/** A framing kept on the stage, its roll included: the frame shows only what the worlds draw */
+/**
+ * A 16:9 framing: the stage point the frame puts in the middle of its picture, above the captions (wideView), at that
+ * zoom: point it at the subject's middle, and keep the subject smaller than the picture (WIDE.picture: 840 px tall).
+ * Kept on the stage's sides and top, its roll included, so the frame shows only what the worlds draw; below the stage
+ * it shows the ground they draw there
+ */
 const at = (x: number, y: number, zoom = 1, rotate = 0): Framing => {
   const c = Math.abs(Math.cos((rotate * Math.PI) / 180)), s = Math.abs(Math.sin((rotate * Math.PI) / 180));
-  const w = (960 * c + 540 * s) / zoom, h = (960 * s + 540 * c) / zoom;
-  return { x: Math.min(1920 - w, Math.max(w, x)), y: Math.min(1080 - h, Math.max(h, y)), zoom, rotate };
+  const w = (960 * c + 660 * s) / zoom, top = (960 * s + 420 * c) / zoom;
+  return { x: Math.min(1920 - w, Math.max(w, x)), y: Math.max(top, y), zoom, rotate };
 };
 /**
- * A 9:16 framing: the stage point the tall frame puts in the middle of its picture (verticalView), at that zoom. Not
- * kept on the 16:9 stage as `at` keeps one: verticalView keeps the tall frame on the stage's sides and top itself
+ * A 9:16 framing: the stage point the tall frame puts in the middle of its picture (verticalView), at that zoom: the
+ * subject's middle, as for `at`, with the subject smaller than VERTICAL.picture (811 px tall). verticalView keeps the
+ * tall frame on the stage's sides and top itself
  */
 const tall = (x: number, y: number, zoom = 1, rotate = 0): Framing => ({ x, y, zoom, rotate });
 /** Ground under the stage's bottom edge, for the 9:16 frame */
@@ -131,8 +137,8 @@ const WORLDS: Record<string, World> = {
         </>
       );
     },
-    framings: [at(960, 540), at(800, 700, 2.4), at(1400, 330, 1.8, -3), at(1000, 600, 1.3)],
-    tall: [tall(800, 600), tall(800, 700, 2.2), tall(1350, 420, 1.5, -3), tall(900, 640, 1.2)],
+    framings: [at(960, 560), at(760, 739, 1.6), at(1400, 330, 2.0, -3), at(1000, 739, 1.35, 5)],
+    tall: [tall(760, 700), tall(760, 750, 1.6), tall(1350, 420, 1.5, -3), tall(860, 739, 1.3, 5)],
   },
   /** a city street at dusk, the hero walking with the crowd */
   street: {
@@ -151,8 +157,8 @@ const WORLDS: Record<string, World> = {
         </>
       );
     },
-    framings: [at(960, 540), at(830, 740, 2.0), at(1450, 360, 1.7, 3), at(1100, 700, 1.4)],
-    tall: [tall(900, 620), tall(830, 760, 1.9), tall(1400, 420, 1.5, 3), tall(1000, 700, 1.3)],
+    framings: [at(960, 590), at(820, 817, 1.9), at(1460, 330, 2.2, 3), at(1060, 817, 1.45, -5)],
+    tall: [tall(900, 760), tall(820, 817, 1.8), tall(1400, 380, 1.8, 3), tall(900, 817, 1.3, -5)],
   },
   /** the same street at night in the rain */
   rain: {
@@ -170,8 +176,8 @@ const WORLDS: Record<string, World> = {
         </>
       );
     },
-    framings: [at(960, 540), at(1090, 750, 2.0), at(520, 330, 1.7, -3), at(800, 700, 1.4)],
-    tall: [tall(1000, 620), tall(1090, 760, 1.9), tall(700, 420, 1.5, -3), tall(1000, 700, 1.3)],
+    framings: [at(960, 590), at(1080, 825, 1.9), at(480, 300, 2.2, -3), at(840, 825, 1.45, 5)],
+    tall: [tall(1000, 760), tall(1080, 825, 1.8), tall(600, 380, 1.5, -3), tall(980, 825, 1.3, 5)],
   },
   /** a room at night, the city through the window, the hero on the phone */
   room: {
@@ -189,8 +195,8 @@ const WORLDS: Record<string, World> = {
         <Dust T={T} color={PALETTE.glow} n={30} speed={14} />
       </>
     ),
-    framings: [at(960, 540), at(450, 420, 2.0), at(1060, 640, 2.3), at(1400, 640, 1.6, 3)],
-    tall: [tall(960, 600), tall(450, 430, 1.8), tall(1060, 660, 2.0), tall(1300, 640, 1.4, 3)],
+    framings: [at(960, 585), at(450, 420, 2.0), at(1060, 760, 1.55), at(1400, 760, 1.4, 4)],
+    tall: [tall(1000, 720), tall(450, 430, 1.8), tall(1060, 760, 1.6), tall(1200, 760, 1.3, 4)],
   },
   /** a concert: the hero sings on a stage over the crowd's raised hands */
   stage: {
@@ -205,8 +211,8 @@ const WORLDS: Record<string, World> = {
         <Below color="#0d0a1a" />
       </>
     ),
-    framings: [at(960, 540), at(960, 420, 2.6), at(400, 900, 2.4, -4), at(960, 500, 1.7, 2)],
-    tall: [tall(960, 420, 1.3), tall(960, 400, 2.2), tall(300, 720, 1.7, -4), tall(960, 470, 1.6, 2)],
+    framings: [at(960, 540), at(960, 437, 2.0), at(400, 900, 2.4, -4), at(1220, 470, 1.5, 5)],
+    tall: [tall(960, 437, 1.2), tall(960, 437, 2.0), tall(300, 720, 1.7, -4), tall(1060, 470, 1.5, 5)],
   },
   /** fireworks over the city on the bar lines, a crowd jumping, the hero's arms up */
   fireworks: {
@@ -221,8 +227,8 @@ const WORLDS: Record<string, World> = {
         <Confetti T={T} from={b.from} n={120} id="st-fw-confetti" />
       </>
     ),
-    framings: [at(960, 540), at(700, 280, 2.0, -3), at(1240, 600, 2.2), at(500, 880, 2.0, 2)],
-    tall: [tall(1150, 560), tall(800, 320, 1.8, -3), tall(1240, 640, 2.0), tall(600, 860, 1.8, 2)],
+    framings: [at(960, 600), at(560, 280, 2.2, -3), at(1240, 739, 1.35), at(500, 880, 2.0, 2)],
+    tall: [tall(1150, 700), tall(800, 320, 1.8, -3), tall(1240, 760, 1.45), tall(600, 860, 1.8, 2)],
   },
   /** a beach at sunset: the hero walks along the water; in a hot section the crowd dances and fireworks go up */
   beach: {
@@ -237,15 +243,15 @@ const WORLDS: Record<string, World> = {
           <Sea T={T} horizon={640} color="#7a3f7a" deep="#1a1238" light={{ x: 960, color: "#ffc48a" }} beach id="st-beach-sea" />
           <Below color="#c9a27a" y={1060} />
           {party && <Crowd T={T} mode="jump" cones={false} id="st-beach-crowd" />}
-          {party ? hero(T, 760, 1040, 1.4, "armsUp")
+          {party ? hero(T, 760, 1040, 1.1, "armsUp")
             : b.section.kind === "calm" ? hero(T, 760, 1030, 1.15, "lookUp", { flip: true })
-            : hero(T, 560 + (400 * (T - b.from)) / (b.to - b.from), 1030, 1.1, "walk", { phase: (400 * (T - b.from)) / (b.to - b.from) / (STRIDE * 1.1) })}
+            : hero(T, 560 + (200 * (T - b.from)) / (b.to - b.from), 1030, 1.1, "walk", { phase: (200 * (T - b.from)) / (b.to - b.from) / (STRIDE * 1.1) })}
           <Dust T={T} color="#ffe2b0" n={50} speed={30} />
         </>
       );
     },
-    framings: [at(960, 540), at(760, 760, 2.1), at(860, 660, 1.5), at(1100, 860, 2.0, 3)],
-    tall: [tall(860, 620), tall(760, 760, 1.9), tall(860, 660, 1.4), tall(900, 820, 1.8, 3)],
+    framings: [at(960, 630), at(760, 800, 1.4), at(1300, 620, 2.2, 3), at(1000, 800, 1.45, -5)],
+    tall: [tall(860, 760), tall(760, 842, 1.9), tall(900, 800, 1.4), tall(700, 860, 1.8, 5)],
   },
 };
 
@@ -288,7 +294,7 @@ export function linesDrawnByScene(song: Song): Set<string> {
   return linesDrawnBy(song, boardsOf(song));
 }
 
-export const Starter: React.FC<{ T: number }> = ({ T }) => <Storyboard T={T} boards={useBoards()} />;
-/** The 9:16 frame keeps to the stage's sides and top; worlds drawn past them give Storyboard the area they fill,
+/** Both frames keep to the stage's sides and top; worlds drawn past them give both Storyboards the area they fill,
  * such as `world={[0, -900, 1920, Infinity]}` */
+export const Starter: React.FC<{ T: number }> = ({ T }) => <Storyboard T={T} boards={useBoards()} />;
 export const StarterTall: React.FC<{ T: number }> = ({ T }) => <Storyboard T={T} boards={useBoards()} vertical />;

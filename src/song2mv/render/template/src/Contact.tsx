@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, CalculateMetadataFunction } from "remotion";
-import { Song, SongContext, VERTICAL, VerticalCtx, makeSongCtx, useFonts } from "./kit";
+import { Song, SongContext, VERTICAL, VerticalCtx, WIDE, makeSongCtx, useFonts } from "./kit";
 import { BAND_CY, BAND_SCALE } from "./LyricShort";
 import { Scene, VerticalScene } from "./scenes";
 
@@ -10,18 +10,20 @@ import { Scene, VerticalScene } from "./scenes";
  * scene alone on the theme's background, without the frame's sky, captions or vignette. In a template copy:
  *   node render.mjs ../mv.json --composition Contact --props sheet.json      (sheet.json: {"times": [12, 33.1, 47.5]})
  * `crop: [x, y, w, h]`, in the frame's pixels (1920×1080, or 1080×1920 with `vertical`), shows only that region,
- * scaled to the tile's width: `cols` sets the zoom, and each label shows it. A whole 9:16 frame shows the safe box for
- * text and the top of the template's captions as dashed lines (VERTICAL in the kit); a crop leaves them out, so they
- * don't cross the details it is for.
+ * scaled to the tile's width: `cols` sets the zoom, and each label shows it. A whole frame shows the top of the
+ * template's captions as a dashed line, and a 9:16 frame the safe box for text too (WIDE and VERTICAL in the kit): a
+ * subject belongs above the line. A crop leaves them out, so they don't cross the details it is for.
  */
 export type ContactProps = { song: Song; times: number[]; cols?: number; vertical?: boolean; crop?: [number, number, number, number] };
 
 const GAP = 12;
 
-/** The 9:16 safe box and the captions' top as dashed lines, 3 sheet px wide on a frame scaled by `k` */
-const SafeLines: React.FC<{ k: number }> = ({ k }) => {
-  const { w, h, safe, captions } = VERTICAL;
-  const d = `M${safe.left} ${safe.top}H${safe.right}V${safe.bottom}H${safe.left}Z M${safe.left} ${captions.top}H${safe.right}`;
+/** The captions' top, and the 9:16 safe box, as dashed lines, 3 sheet px wide on a frame scaled by `k` */
+const SafeLines: React.FC<{ k: number; vertical: boolean }> = ({ k, vertical }) => {
+  const { w, h, safe, captions } = vertical ? VERTICAL : { ...WIDE, safe: null };
+  const d = safe
+    ? `M${safe.left} ${safe.top}H${safe.right}V${safe.bottom}H${safe.left}Z M${safe.left} ${captions.top}H${safe.right}`
+    : `M0 ${captions.top}H${w}`;
   return (
     <svg width={w} height={h} style={{ position: "absolute", inset: 0 }}>
       <path d={d} fill="none" stroke="#000" strokeOpacity={0.6} strokeWidth={3 / k} />
@@ -74,7 +76,7 @@ export const ContactSheet: React.FC<ContactProps> = (props) => {
                   }}
                 >
                   {frame(T)}
-                  {vertical && !crop && <SafeLines k={k} />}
+                  {!crop && <SafeLines k={k} vertical={vertical} />}
                 </div>
                 <div style={{ position: "absolute", left: x, top: y + frameH + label * 0.2, fontSize: label, lineHeight: 1.1, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                   {T.toFixed(2)} s{crop && ` · ${k.toFixed(2)}×`}
