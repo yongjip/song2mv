@@ -6,7 +6,9 @@ rhythm made a false peak). Here the grid is fitted directly to percussive onsets
   2. a wide search over P = 0.30–0.75 s (80–200 BPM) for the grid that lands on the strongest onsets;
   3. picking the tempo: a number you give, or "auto" — lyric lines mostly start a whole number of bars
      apart, so among the candidates the ones where most line gaps are whole bars win, and the strongest
-     onset score breaks the tie (90 vs 180 BPM fit the same lines; the onsets prefer the real beat);
+     onset score breaks the tie (90 vs 180 BPM fit the same lines; the onsets prefer the real beat). When the line
+     gaps pick another tempo than the strongest onsets, both grids are fitted to the music (`fit_check`) and the one
+     off the beat for less of the song wins;
   4. fine phase search, then the bar's first beat = the beat position with the strongest kick
      (harmony change is printed as a second opinion — off-beat chord changes can fool it);
   5. does the grid fit everywhere? Tempo and phase are fitted again in windows of 4 bars (`fit_check`); where the
@@ -444,6 +446,12 @@ def find_grid(audio: str, bpm: str | float | None = "auto", line_starts: list[fl
             break
     print("  tempo candidates:", ", ".join(f"{c['bpm']} BPM ({c['score']})" for c in cands))
 
+    def fit_phase(P):
+        phis = np.arange(0, P, 0.001)
+        K = np.arange(0, int(span / P))
+        s = np.interp(phis[:, None] + K[None, :] * P, ft, oenv).mean(axis=1)
+        return float(phis[s.argmax()]), float(s.max())
+
     # 3) pick the tempo
     why = ""
     if bpm not in (None, "auto"):
@@ -461,14 +469,15 @@ def find_grid(audio: str, bpm: str | float | None = "auto", line_starts: list[fl
             P = pick["P"]
             why = (f"{pick['line_fit']:.0%} of lyric line gaps are whole bars at this tempo "
                    f"(others: {', '.join(f'''{c['bpm']}→{c['line_fit']:.0%}''' for c in cands if c is not pick)})")
+            if pick is not cands[0]:
+                off = [sum(s["to"] - s["from"] for s in fit_check(oenv, ft, dur, c["P"], fit_phase(c["P"])[0])[1]) for c in (pick, cands[0])]
+                if off[1] < off[0]:
+                    P = cands[0]["P"]
+                    why = (f"best onset score, whose grid is off the music for {off[1]:.0f} s of the song against {off[0]:.0f} s at "
+                           f"{pick['bpm']:g} BPM, where {pick['line_fit']:.0%} of lyric line gaps are whole bars")
         else:
             why += " (too few lyric line starts to cross-check)"
 
-    def fit_phase(P):
-        phis = np.arange(0, P, 0.001)
-        K = np.arange(0, int(span / P))
-        s = np.interp(phis[:, None] + K[None, :] * P, ft, oenv).mean(axis=1)
-        return float(phis[s.argmax()]), float(s.max())
     phi, sc = fit_phase(P)
     if why != "given":
         # produced music is almost always at a whole BPM; a 0.02 BPM error drifts ~60 ms over a song

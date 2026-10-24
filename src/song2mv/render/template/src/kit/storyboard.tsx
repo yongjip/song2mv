@@ -25,8 +25,9 @@ import { VERTICAL, verticalView } from "./vertical";
  * edges shows when a shot rolls or drifts there. The 9:16 frame films it again through `verticalView`, with the
  * board's `tall` framings, so a world seen in 9:16 draws its ground on below y 1080. The first board also covers the
  * song before it. A board keyed to a line opens on its first framing; one keyed to a section opens on framing n − 1 in
- * the section's copy n (ch2 on framings[1]), so the copies differ. A framing too alike to the one before it for a cut
- * (under 1.35× apart in zoom, near it, under 4° apart in roll) is skipped; one that never shows is named in a video
+ * the section's copy n (ch2 on framings[1]), so the copies differ, and so does a board keyed to the same line of each
+ * copy with the same framings (ch1-04, ch2-04). A framing too alike to the one before it for a cut (under 1.35× apart
+ * in zoom, near it, under 4° apart in roll) is skipped, in either frame; one that never shows is named in a video
  * render's log.
  */
 
@@ -100,6 +101,13 @@ function place(ctx: SongCtxValue | null, song: Song, boards: Board[]) {
   });
 }
 
+/** A line's place in its section, the same in every copy of it: ch2-04 → ch-04 */
+const slot = (id: string | number) => (typeof id === "string" ? id.replace(/^(.*?)\d+(-\d+)$/, "$1$2") : id);
+
+/** Boards keyed to the same line of two copies of a section, with the same framings: copies of one board */
+const copies = (a: Board, b: Board) =>
+  a !== b && slot(a.at) === slot(b.at) && a.at !== slot(a.at) && JSON.stringify(a.framings) === JSON.stringify(b.framings);
+
 /** The ids of the lines the boards draw as big type, for linesDrawnByScene */
 export function linesDrawnBy(song: Song, boards: Board[]): Set<string> {
   const big = place(null, song, boards).filter((p) => p.board.big !== undefined && p.board.big !== false);
@@ -115,6 +123,26 @@ function warnOnce(message: string) {
   console.warn(message);
 }
 
+/** The boards in song order, each with its stretch and lines and the shots that film it in both frames */
+export function planStoryboard(ctx: SongCtxValue, boards: Board[]): Placed[] {
+  const spans = place(ctx, ctx.song, boards);
+  const plans = planBoards(ctx, spans.map((p) => ({
+    from: p.from, to: p.to, framings: p.board.framings, pattern: p.board.pattern, drift: p.board.drift,
+    reorder: !p.keyed || spans.some((q) => q.keyed && copies(p.board, q.board)),
+  })));
+  spans.forEach((p, i) => plans[i].dropped?.forEach(([f, before]) => warnOnce(
+    `storyboard: the board at ${typeof p.board.at === "number" ? `${p.board.at} s` : p.board.at} never shows `
+    + `framing ${f} ${JSON.stringify(p.board.framings[f])}: it comes after framing ${before}, too alike for a cut `
+    + "(a cut needs 1.35× in zoom, another part of the world or 4° of roll)")));
+  return spans.map((p, i) => {
+    const section = ctx.section(p.from + 1e-3);
+    const plan = plans[i];
+    const tall = p.board.tall ? refilm(plan, p.board.tall) : plan;
+    const hits = [...plan.hits, ...(p.board.hits ?? [])];
+    return { ...p, section, repeat: Number(/(\d+)$/.exec(section.id)?.[1] ?? 1), plan, tall, hits };
+  });
+}
+
 /**
  * Draws the board on at T, filmed by its planned shots, and its lines as big type when the board asks for it.
  * `wrap` holds the filmed world in the frame, unmoved by the camera, such as a style pack's `paper.Stack`.
@@ -128,23 +156,7 @@ export const Storyboard: React.FC<{
   world?: [number, number, number, number];
 }> = ({ T, boards, vertical = false, wrap = (filmed) => filmed, world }) => {
   const ctx = useSong();
-  const placed: Placed[] = useMemo(() => {
-    const spans = place(ctx, ctx.song, boards);
-    const plans = planBoards(ctx, spans.map((p) => ({
-      from: p.from, to: p.to, framings: p.board.framings, pattern: p.board.pattern, drift: p.board.drift, reorder: !p.keyed,
-    })));
-    spans.forEach((p, i) => plans[i].dropped?.forEach(([f, before]) => warnOnce(
-      `storyboard: the board at ${typeof p.board.at === "number" ? `${p.board.at} s` : p.board.at} never shows `
-      + `framing ${f} ${JSON.stringify(p.board.framings[f])}: it comes after framing ${before}, too alike for a cut `
-      + "(a cut needs 1.35× in zoom, another part of the world or 4° of roll)")));
-    return spans.map((p, i) => {
-      const section = ctx.section(p.from + 1e-3);
-      const plan = plans[i];
-      const tall = p.board.tall ? refilm(plan, p.board.tall) : plan;
-      const hits = [...plan.hits, ...(p.board.hits ?? [])];
-      return { ...p, section, repeat: Number(/(\d+)$/.exec(section.id)?.[1] ?? 1), plan, tall, hits };
-    });
-  }, [ctx, boards]);
+  const placed = useMemo(() => planStoryboard(ctx, boards), [ctx, boards]);
   let i = 0;
   while (i + 1 < placed.length && placed[i + 1].from <= T) i++;
   const p = placed[i];

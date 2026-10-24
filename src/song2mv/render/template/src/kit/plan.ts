@@ -271,12 +271,19 @@ export function twoAtLeast(framings: Framing[]): Framing[] {
   return framings.length > 1 ? framings : [f, { ...f, zoom: 1.6 * (f.zoom ?? 1) }];
 }
 
-/** The same plan filmed with other framings, taken by index, each drifting as its shot does */
+/**
+ * The same plan filmed with other framings, taken by index, each drifting as its shot does. A framing too alike to
+ * the one before it for a cut gives way to the next one in the list, as in the plan.
+ */
 export function refilm(plan: Plan, framings: Framing[]): Plan {
   const views = twoAtLeast(framings);
   const shots: PlannedShot[] = [];
+  let last = -1;
   for (const s of plan.shots) {
-    const f = views[s.framing % views.length], z = f.zoom ?? 1, k = (s.zoom ?? 1) / z;
+    let i = s.framing % views.length;
+    for (let k = 0; k < views.length && s.to && last >= 0 && alike(views[i], views[last]); k++) i = (i + 1) % views.length;
+    if (s.to) last = i;
+    const f = views[i], z = f.zoom ?? 1, k = (s.zoom ?? 1) / z;
     if (!s.to) {
       const p = shots[shots.length - 1];
       shots.push(p ? { ...s, x: p.to?.x ?? p.x, y: p.to?.y ?? p.y, zoom: p.to?.zoom ?? p.zoom, rotate: p.rotate } : { ...s, ...f });
@@ -287,7 +294,7 @@ export function refilm(plan: Plan, framings: Framing[]): Plan {
       y: s.to.y === undefined ? undefined : f.y + (s.to.y - s.y) * k,
       zoom: s.to.zoom === undefined ? undefined : z * (s.to.zoom / (s.zoom ?? 1)),
     };
-    shots.push({ ...s, x: f.x, y: f.y, zoom: z, rotate: f.rotate ?? 0, to });
+    shots.push({ ...s, x: f.x, y: f.y, zoom: z, rotate: f.rotate ?? 0, to, framing: i });
   }
   return { shots, hits: plan.hits };
 }

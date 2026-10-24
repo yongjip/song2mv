@@ -110,7 +110,8 @@ Why it works the way it does:
   goes on `check_by_ear`.
 - **`librosa.beat.beat_track` can be off by a ratio** (it reported 123 BPM for a 90 BPM song with a dotted-8th
   rhythm). The grid is fitted to percussive onsets instead, and `auto` tempo prefers the candidate where most gaps
-  between lyric lines are whole bars. The bar's first beat is the beat position with the strongest kick.
+  between lyric lines are whole bars, unless its grid is off the music for more of the song than the strongest
+  onsets' grid is. The bar's first beat is the beat position with the strongest kick.
 - **The grid has one tempo, and songs do not always keep one.** A live band drifts, jazz speeds up for a solo, a song
   slows down at the end, an AI-generated song can jump by a 16th note between sections. So tempo and phase are fitted
   again in windows of 4 bars, and where the music's beats are more than half a 16th note off the grid (a tempo

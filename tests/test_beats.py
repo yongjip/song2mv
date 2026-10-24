@@ -35,3 +35,15 @@ def test_grid_finds_tempo_phase_and_bar(tmp_path):
     assert abs(g["phi"] - FIRST) < 0.03
     assert g["downbeat_mod4"] == 0
     assert g["off_grid"] == []  # one tempo throughout: nothing flagged
+
+
+@pytest.mark.parametrize("spacing, bpm", [(3.0, 100), (1.2, 200)])
+def test_lyric_line_gaps_choose_the_tempo_only_when_its_grid_fits_the_music(tmp_path, spacing, bpm):
+    # Lines 3 s apart are whole bars at 80 BPM, not at the clicks' 100: an 80 BPM grid misses the clicks, so it loses.
+    # Lines 1.2 s apart are whole bars at 200 BPM, whose grid fits the clicks as well as 100 does: the line gaps keep it.
+    from song2mv.timing.beat_grid import find_grid
+
+    wav = tmp_path / "click.wav"
+    click_track(str(wav))
+    g = find_grid(str(wav), "auto", [FIRST + k * spacing for k in range(int(36 / spacing))], None)
+    assert round(g["bpm"]) == bpm, g["why"]

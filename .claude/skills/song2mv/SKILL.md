@@ -152,6 +152,9 @@ and any kit changes into it.
   protagonist is more watchable than a slideshow of effects.
 - **Hit points**: the first beat of each chorus, drops, the last word. These get the biggest moment (cut, flash,
   slam). Use `grid.bar(k)` and line/word times — never hand-typed seconds.
+- **Breaks**: list every stretch of 4 s or more without a sung line in `mv.json` (an intro, an instrumental, an
+  "oh-oh" that `off_sheet` names) and give each an event of its own: everything dances, someone joins in, a new
+  world. One world held through a break is the dullest part of a chorus clip.
 - **Contrast**: chorus 2 must not look like chorus 1 (the check measures it). The same words in the same place
   look alike to it even over another sky: move or restyle chorus 2's big type and boxes too. Verses cut on an uneven
   rhythm (2 bars, 1 bar, 3 bars …), not every bar.
@@ -209,17 +212,24 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   Key boards to the lines that name something, every 2 lines or more and unevenly: in one outro three boards 2 lines
   apart cut too evenly for `cuts.rhythm`. A board at a line opens on its first framing in every copy of the section;
   a board at a section opens on framing n − 1 in copy n (`v2` on `framings[1]`), so put that copy's opening there.
+  So does a board at the same line of every copy with the same framings (`ch1-04`, `ch2-04`): a board repeated in
+  each chorus needs as many framings as there are copies, each composing the subject differently (off-centre,
+  rolled, close). Another background alone measured alike in one chorus (0.81 → 0.73); another composition passed
+  (0.36).
 - A cut counts only when the picture changes: give a world framings that show different parts of it (the sky, the
   ground, the subject up close), not one layout at two zooms. A large still overlay hides cuts from `check`. Framings
   next to each other in the list need 1.35× apart in zoom, another part of the world or 4° of roll: the planner skips
   a framing too alike to the one before it (a close-up at 2.4 after one at 1.8 never showed), and a draft's render
-  log names one it skipped that never shows (`storyboard: the board at v2-08 never shows framing 2 …`).
+  log names one it skipped that never shows (`storyboard: the board at v2-08 never shows framing 2 …`). The 9:16
+  frame skips a `tall` framing too alike to the one before it the same way.
 
 **The starter** (`src/scenes/Starter.tsx`) is a whole video built that way from kit worlds (a street, a room, a stage,
 fireworks, a beach, hills) that passes `check` on any song as it is. To start from it, put the line given in
 `src/scenes/index.ts` in place of the `LyricScene` one. Then make it this song's: edit its marked block (`SHOW`: what
 each section, copy or line shows and which lines are big type; `PALETTE`; `HERO`) and replace its worlds with the
-concept's. Its look is the kit's: a starting point, never the video.
+concept's. Its look is the kit's: a starting point, never the video. When a line runs into the next section (a
+count-in such as "one, two, three" that ends after the chorus starts), that section's board starts at its own first
+line instead, so the line stays on screen to its last word.
 
 **The frame comes from the song config.** Around your scenes the template draws a background, the title and the
 captions in `theme`'s colours and font; in 9:16 its starry sky fills the screen above and below the stage. Over the
@@ -407,8 +417,10 @@ song2mv sheet <work>/renders/<name>-16x9-A-B-draft.mp4 --cuts <work>/check.json
 A draft is the video at 10 fps and half size (960×540), enough for `check`, which measures 10 frames a second at
 320×180: 30 s of a paper-cut scene renders in 15 s instead of 55–70 s at full size (and about 2.5 min as the finished
 video), and `check` gives it the same passes, fails and cuts as the full render, with per-line motion within 0.3 (a
-line that opens on a cut can differ by about 1). When the stretch passes, render it once without `--draft` and check
-that too; the user only ever sees full renders, since a draft looks choppy and soft.
+line that opens on a cut can differ by about 1). A draft's `warnings` name the lines that pass a motion goal by less
+than that: move them further inside it, or the full render may fail them (a line at 8.94 in a draft measured 9.20 at
+full size). When the stretch passes, render it once without `--draft` and check that too; the user only ever sees
+full renders, since a draft looks choppy and soft.
 Before that full render, look at a few frames at full size (`--still T` renders one): a contact sheet's small tiles
 hid a scene drawn twice, a band across the picture that cost one trial its final render.
 Run one render, still or sync at a time: each uses every core, and two renders in one template copy have hung.

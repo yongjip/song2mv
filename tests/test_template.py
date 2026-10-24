@@ -452,6 +452,67 @@ def test_drift_scales_every_shots_move_and_keeps_the_cuts(tmp_path):
     assert same >= 10, same
 
 
+def _probe(tmp_path, code: str, song: dict) -> object:
+    probe = tmp_path / "probe.tsx"
+    probe.write_text(code.replace("KIT", os.path.join(BUNDLED, "src", "kit")).replace("SCENES", os.path.join(BUNDLED, "src", "scenes"))
+                     .replace("SONG", json.dumps(song)), encoding="utf-8")
+    subprocess.run([os.path.join(BUNDLED, "node_modules", ".bin", "esbuild"), str(probe), "--bundle", "--platform=node",
+                    "--format=esm", "--log-level=error", f"--outfile={tmp_path / 'probe.mjs'}"], check=True)
+    return json.loads(subprocess.run(["node", str(tmp_path / "probe.mjs")], check=True, capture_output=True, text=True).stdout)
+
+
+def _alike(a: dict, b: dict) -> bool:
+    za, zb = a["zoom"] or 1, b["zoom"] or 1
+    return (max(za, zb) / min(za, zb) < 1.35 and np.hypot(a["x"] - b["x"], a["y"] - b["y"]) < 400 / min(za, zb)
+            and abs((a["rotate"] or 0) - (b["rotate"] or 0)) < 4)
+
+
+def test_the_9x16_frame_skips_a_tall_framing_too_alike_to_the_one_before_it(tmp_path):
+    # tall framings 0 and 1 look at one place at nearly one zoom: a cut between them would not show
+    shots = _probe(tmp_path, """
+import { makeSongCtx } from "KIT/song";
+import { planShots, refilm } from "KIT/plan";
+const song = SONG;
+const F = [{ x: 960, y: 540 }, { x: 700, y: 640, zoom: 2.2 }, { x: 1300, y: 420, zoom: 1.5, rotate: -3 }];
+const TALL = [{ x: 960, y: 600 }, { x: 990, y: 620, zoom: 1.1 }, { x: 1300, y: 420, zoom: 1.6, rotate: -3 }];
+const tall = refilm(planShots(makeSongCtx(song), 0, song.duration, F), TALL);
+console.log(JSON.stringify(tall.shots.slice(0, -1).map((s) => ({ x: s.x, y: s.y, zoom: s.zoom, rotate: s.rotate }))));
+""", _verse_song([4, 4, 5, 4, 6, 4, 4]))
+    assert len(shots) > 10 and not any(_alike(a, b) for a, b in zip(shots, shots[1:])), shots
+
+
+def test_a_board_at_the_same_line_of_every_copy_opens_as_a_sections_board_does(tmp_path):
+    # v1-03 and v2-03 share their framings: copies of one board, so verse 2's opens on its second framing. v1-06 and
+    # v2-06 have framings of their own: each opens on its first, as a board at a line does.
+    opens = _probe(tmp_path, """
+import { makeSongCtx } from "KIT/song";
+import { planStoryboard } from "KIT/storyboard";
+const song = SONG;
+const F = [{ x: 960, y: 540 }, { x: 700, y: 640, zoom: 2.2 }, { x: 1300, y: 420, zoom: 1.5, rotate: -3 }];
+const world = () => null;
+const board = (at: string, framings = F) => ({ at, world, framings });
+const boards = [board("in"), board("v1-03"), board("v1-06", [F[2], F[0]]), board("ch1"), board("v2-03"), board("v2-06", [F[1], F[2]])];
+console.log(JSON.stringify(Object.fromEntries(planStoryboard(makeSongCtx(song), boards).map((p) => [p.board.at, p.plan.shots[0].framing]))));
+""", _verse_song([4, 4, 5, 4, 6, 4, 4]))
+    assert (opens["v1-03"], opens["v2-03"], opens["v1-06"], opens["v2-06"]) == (0, 1, 0, 0), opens
+
+
+def test_the_starters_section_board_waits_for_a_line_sung_into_the_section(tmp_path):
+    # pc1-02 counts in "one, two, three" past the chorus's first beat: the chorus's board starts at its first line
+    song = _verse_song([4])
+    ch = next(s for s in song["sections"] if s["id"] == "ch1")
+    v1 = [r for r in song["lines"] if r["section"] == "v1"]
+    v1[-1]["end"] = ch["start"] + 0.4
+    first = {"id": "ch1-01", "section": "ch1", "text": "", "start": ch["start"] + 0.9, "end": ch["start"] + 3,
+             "words": [{"w": "w0", "t": ch["start"] + 0.9}]}
+    song["lines"].append(first)
+    keys = _probe(tmp_path, """
+import { boardsOf } from "SCENES/Starter";
+console.log(JSON.stringify(boardsOf(SONG).map((b) => b.at)));
+""", song)
+    assert "ch1-01" in keys and "ch1" not in keys and "v2" in keys, keys
+
+
 BOARD_SCENES = """
 import React from "react";
 import { Board, Song, Storyboard } from "../kit";

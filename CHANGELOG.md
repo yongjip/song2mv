@@ -7,6 +7,21 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 First release (0.1.0).
 
 ### Fixed
+- The automatic tempo no longer follows lyric line gaps onto a grid that misses the music. When the line gaps pick
+  another tempo than the strongest onsets, both grids are fitted to the music and the one off the beat for less of
+  the song wins; an octave fits as well, and the line gaps keep it. A Suno song at 118 BPM that drifts to 121 had
+  picked 88.5 BPM twice, whose grid fit none of it, and now gets 118 and its beat map. On JamendoLyrics two songs
+  change tempo (95 → 130 and 97.5 → 130 BPM, each grid now on the music for more of the song), with one more word
+  within 0.3 s and four more within 0.1 s; on the demo and trial songs nothing else changes, byte for byte.
+- A storyboard's 9:16 frame skips a `tall` framing too alike to the one before it, as the 16:9 frame does: two
+  framings that looked like one shot no longer cut into each other.
+- A board keyed to the same line of every copy of a section with the same framings (`ch1-04`, `ch2-04`) opens on
+  framing n − 1 in copy n, as a section's board does, instead of repeating the first copy's shots.
+- The starter starts a section's board at its first line when the line before runs into the section, as a count-in
+  does, so that line stays on screen to its last word.
+- `check` on a draft warns about lines that pass a motion goal by less than 0.3, the most a full render measures
+  apart from its draft (a line at 8.94 in a draft measured 9.20 at full size).
+- The guide's song map lists stretches of 4 s or more without a sung line and gives each an event of its own.
 - CI runs every commit pushed to `main` to the end instead of cancelling it for the next push, so each commit on
   `main` gets a result; runs of one pull request still supersede each other.
 - Portrait head-touch folds the arm along a compact path without collapsing segments during the reach,

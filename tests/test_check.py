@@ -97,6 +97,21 @@ def test_a_frantic_line_says_where_its_motion_comes_from(tmp_path, capsys):
     assert f"     v1-01    {line['msg']}" in capsys.readouterr().out  # the report prints it under the FAIL
 
 
+@pytest.mark.parametrize("size, margin, warned", [("960x540", 0.1, True), ("960x540", 0.5, False), ("1920x1080", 0.1, False)])
+def test_a_draft_names_the_lines_that_pass_a_motion_goal_by_less_than_its_full_render_can_differ(tmp_path, size, margin, warned):
+    from song2mv.check.score import score
+
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"testsrc2=size={size}:rate=10:duration=12", str(mp4)],
+                   check=True)
+    song = write(tmp_path, "mv.json", SONG)
+    moving = next(r["motion"] for r in score(str(mp4), str(song), quiet=True)["per_line"] if r["id"] == "v1-01")
+    goals = write(tmp_path, "goals.json", {"motion": {"max_per_line": round(moving + margin, 2)}})
+    res = score(str(mp4), str(song), str(goals), quiet=True)
+    assert res["results"]["motion.max"]["ok"]
+    assert any("v1-01" in w and "may fail at full size" in w for w in res["warnings"]) is warned, res["warnings"]
+
+
 @pytest.mark.parametrize("picture, whole", [("stripes", True), ("box", False)])
 def test_a_frantic_line_without_a_cut_says_when_the_whole_frame_changes(tmp_path, picture, whole):
     # Fine stripes drifting half a pixel a frame change the whole frame, as a camera drift over fine detail does; a big

@@ -36,6 +36,8 @@ from ..errors import Song2mvError
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_GOALS = os.path.join(HERE, "goals.json")
+# A draft (half size, 10 fps) measures each line's motion within this of the full render, which keeps more fine detail
+DRAFT_SPREAD = 0.3
 
 
 def load_lines(song: dict) -> list[dict]:
@@ -253,6 +255,13 @@ def score(mp4: str, song_path: str, goals_path: str | None = None, t0: float = 0
             for r, m, c in per if r["kind"] in g["max_kinds"] and m > g["max_per_line"]]
     check("motion.min", not low, len(low), {"max": 0}, f"{len(low)} still lines {failing(low)}", lines=low)
     check("motion.max", not high, len(high), {"max": 0}, f"{len(high)} frantic lines {failing(high)}", lines=high)
+    if max(vw, vh) <= 960:
+        near = [f"{r['id']} {m:.2f} (goal ≥ {floor(r)})" for r, m, c in per if floor(r) <= m < floor(r) + DRAFT_SPREAD]
+        near += [f"{r['id']} {m:.2f} (goal ≤ {g['max_per_line']})" for r, m, c in per
+                 if r["kind"] in g["max_kinds"] and g["max_per_line"] - DRAFT_SPREAD < m <= g["max_per_line"]]
+        if near:
+            warnings.append(f"motion near a goal in this draft: {', '.join(near)}. A full render measures up to {DRAFT_SPREAD} "
+                            "apart from its draft, so these may fail at full size: move them further inside the goal")
     empty = [where({"id": r["id"], "value": round(c, 3), "goal": {"min": gc["min_per_line"]}}, "coverage.min")
              for r, m, c in per if c < gc["min_per_line"]]
     med = float(np.median([c for _, _, c in per]))

@@ -38,7 +38,9 @@ they fall within 0.3 s of each other (`msg` calls the peak a cut when it is one 
 whole-pixel camera step can be one of them too. Without a cut, `msg` says when the change covers the whole frame,
 as a camera move over fine detail does. `variation.repeats` lists every repeated line pair in `pairs` as
 `[pair, correlation]`, worst first; its `value` is their mean, or the worst pair with a line in a hot section when
-that is higher. A check in `skipped` neither passed nor failed and is not counted in `total`.
+that is higher. A check in `skipped` neither passed nor failed and is not counted in `total`. On a draft (a video at
+half size), `warnings` names the lines that pass a motion goal by less than 0.3, the most a full render measures apart
+from its draft.
 
 `off_sheet` lists the stretches of at least 1.5 s where two or more whisper runs agree on two or more words that no
 line of the lyric sheet matched: a chant or an ad-lib the sheet leaves out, a line sung differently, a repeat the
@@ -60,7 +62,8 @@ where, for example `the tempo changes near 0:30 (100 → 120 BPM): the beat grid
 single entry when the grid fits almost none of the song (`the beat grid (80 BPM) does not fit this song: …`, with a
 `--bpm` to try, except when that other tempo drifts too). Read the stretches from `off_grid`, not from the text.
 `sync` also warns when the tempo pick is uncertain: when the lyric line gaps chose another tempo than the one the
-onsets fit best (`the tempo pick is uncertain: the onsets fit 118.02 BPM best, but …`).
+onsets fit best (`the tempo pick is uncertain: the onsets fit 118.02 BPM best, but …`). They choose it only when its
+grid is off the music for no more of the song than the onsets' favourite's; otherwise that one is the grid.
 
 ## Exit codes and errors
 

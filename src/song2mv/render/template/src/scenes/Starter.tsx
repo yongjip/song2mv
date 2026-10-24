@@ -262,15 +262,17 @@ function board(at: string | number, show: Show, copy: number): Board {
 }
 
 /** The boards for a song: one per section from SHOW, a new one every 8 lines of a long section without line keys, and
- * one per line key */
-function boardsOf(song: Song): Board[] {
+ * one per line key. A section's board starts at its first line when the line before runs into the section, as a
+ * count-in does, so it never cuts in under that line */
+export function boardsOf(song: Song): Board[] {
   const out: Board[] = [];
   const secs: Section[] = song.sections.length ? song.sections : [{ id: "", name: "", kind: "mid", start: 0, end: song.duration }];
   for (const sec of secs) {
     const show = SHOW[sec.id] ?? SHOW[roleOf(sec)];
     const copy = Number(/(\d+)$/.exec(sec.id)?.[1] ?? 1) - 1;
     const lines = song.lines.filter((l) => l.section === sec.id && l.words.length);
-    out.push(board(sec.id || 0, show, copy));
+    const pickup = song.lines.find((l) => l.section !== sec.id && l.words.length && l.words[0].t < sec.start && l.end > sec.start);
+    out.push(board(pickup && lines[0]?.words[0].t >= pickup.end ? lines[0].id : sec.id || 0, show, copy));
     if (!lines.some((l) => SHOW[l.id])) lines.forEach((l, i) => i > 0 && i % 8 === 0 && out.push(board(l.id, show, copy + i / 8)));
   }
   for (const [key, show] of Object.entries(SHOW)) if (song.lines.some((l) => l.id === key)) out.push(board(key, show, 0));
