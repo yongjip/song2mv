@@ -45,6 +45,7 @@ start)
   <key>StandardOutPath</key><string>$log</string>
   <key>StandardErrorPath</key><string>$log</string>
   <key>RunAtLoad</key><true/>
+  <key>ProcessType</key><string>Interactive</string>
 </dict>
 </plist>
 EOF

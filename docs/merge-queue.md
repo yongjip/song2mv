@@ -37,7 +37,7 @@ the queue's control checkout and stays on `main`. A separate clone has a queue o
    | `failed …` or `blocked …` | nothing landed | step 4 |
    | anything else | waiting or running | keep waiting |
 
-   The checks take about 40 seconds, or 2 minutes when the train touches the renderer, and CI about 6 more. Jobs
+   The checks take about 40 seconds, or 2 minutes when the train touches the renderer, and CI about 5 more. Jobs
    enqueued meanwhile go in the next train together. If your job stays `queued` and
    `scripts/mergetrain/daemon.sh status` says the runner is stopped, it was stopped for a benchmark: report that and
    stop waiting.
@@ -86,7 +86,8 @@ scripts/mergetrain/daemon.sh start    # or: stop, status
 
 `start` runs `mergetrain daemon` for `~/AIProjects/song2mv-new` as the launchd agent
 `com.yongjip.mergetrain.song2mv-new`, holding `caffeinate -i` while it runs, and starts it again at login. Its log is
-`~/Library/Logs/mergetrain-song2mv-new.log`. It lands only `--auto` jobs.
+`~/Library/Logs/mergetrain-song2mv-new.log`. It lands only `--auto` jobs. The agent runs at full speed
+(`ProcessType` `Interactive`): launchd's default limits made the render tests take 109 s instead of 64.
 
 `caffeinate` prevents idle sleep only: a closed lid still sleeps the Mac. Nothing is lost then, and the train goes on
 after waking. With mergetrain 3.7.0, `status` may offer `mergetrain unlock --force` right after a sleep longer than
