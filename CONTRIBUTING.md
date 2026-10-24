@@ -45,6 +45,12 @@ rendered SVG and mutation checks when changing this harness.
 - Few comments: let names and types explain the code, and comment only what they cannot say.
 - Coding agents are welcome to help; `AGENTS.md` has the rules they should follow here.
 
+## Changes made on the maintainer's machine
+
+Agent sessions working in the maintainer's checkout do not push `main`: they enqueue their branch in a local merge
+queue that runs the checks, pushes and waits for CI. Follow [docs/merge-queue.md](docs/merge-queue.md). Pull requests
+are unaffected.
+
 ## Adding an asset or a style pack
 
 The render template's scene kit (`src/song2mv/render/template/src/kit/`) grows by pull request. Three kinds of drawing

@@ -1,0 +1,43 @@
+version: 2
+
+# How agent sessions land changes through this queue: docs/merge-queue.md.
+# The gates are the part of CI one Mac reproduces; the verify hook waits for CI itself.
+
+project:
+  name: song2mv
+
+gate_parallelism:
+  max_workers: 4
+
+gates:
+  - name: setup
+    run: sh scripts/mergetrain/setup.sh
+  - name: ruff
+    run: uv run --no-sync ruff check src tests
+    parallel_group: checks
+    workers: 1
+  - name: tsc
+    run: cd src/song2mv/render/template && npx tsc --noEmit
+    parallel_group: checks
+    workers: 1
+  - name: pytest
+    run: uv run --no-sync pytest -q --ignore=tests/test_template.py
+    parallel_group: checks
+    workers: 1
+  - name: render
+    run: test -d src/song2mv/render/template/node_modules/@remotion/cli && command -v ffmpeg && (cd src/song2mv/render/template && npm run -s test:assets) && uv run --no-sync pytest -q tests/test_template.py
+    workers: 4
+    paths:
+      - src/song2mv/render/**
+      - src/song2mv/check/**
+      - src/song2mv/__init__.py
+      - src/song2mv/contract.py
+      - src/song2mv/errors.py
+      - tests/test_template.py
+      - pyproject.toml
+      - scripts/mergetrain/**
+
+deploy:
+  verify:
+    - name: ci
+      run: sh scripts/mergetrain/verify-ci.sh

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Installed as .git/hooks/pre-push of ~/AIProjects/song2mv-new, which its worktrees share (docs/merge-queue.md).
+# Only mergetrain updates main: its push carries refs/mergetrain/deploys/<sha> for the same commit.
+input=$(cat)
+printf '%s\n' "$input" | while read -r _ sha ref _; do
+  [ "$ref" = refs/heads/main ] || continue
+  printf '%s\n' "$input" | grep -q " refs/mergetrain/deploys/$sha " && continue
+  echo "pre-push: main is updated by the merge queue. Commit on your branch and enqueue it instead:" >&2
+  echo "  mergetrain enqueue --task \"<what it does>\" --branch <branch> --auto --json" >&2
+  echo "See docs/merge-queue.md." >&2
+  exit 1
+done

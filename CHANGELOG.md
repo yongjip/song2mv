@@ -19,6 +19,9 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- Changes made on the maintainer's machine land through a local merge queue,
+  [mergetrain](https://github.com/yongjip/mergetrain), that runs the checks a Mac can reproduce, pushes `main` and
+  waits for CI: `docs/merge-queue.md`.
 - `song2mv sync`: audio + lyrics → beat grid, word-timed lyrics, `song.lrc`, `song.words.lrc`, `song.srt`, `mv.json`
   and `music.json` (loudness and likely section boundaries, for scene design). Several whisper runs merged per
   lyric word; tempo fitted to percussive onsets; gaps re-heard with the expected words as prompt; per-song manual

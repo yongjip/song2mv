@@ -65,3 +65,4 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
 7. Write everything in English: code, docs, test data, messages and commits. Write a non-Latin character range in
    a regex as escapes (`\uac00-\ud7af`).
 8. Add a comment only when the code cannot say it; prefer clear names and types.
+9. Read `CONTRIBUTING.md` before you commit: it says how a change lands on `main`.
