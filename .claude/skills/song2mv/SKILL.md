@@ -423,11 +423,11 @@ song2mv sheet <work>/renders/<name>-16x9-A-B-draft.mp4 --cuts <work>/check.json
 
 A draft is the video at 10 fps and half size (960×540), enough for `check`, which measures 10 frames a second at
 320×180: 30 s of a paper-cut scene renders in 15 s instead of 55–70 s at full size (and about 2.5 min as the finished
-video), and `check` gives it the same passes, fails and cuts as the full render, with per-line motion within 0.3 (a
-line that opens on a cut can differ by about 1). A draft's `warnings` name the lines that pass a motion goal by less
-than that: move them further inside it, or the full render may fail them (a line at 8.94 in a draft measured 9.20 at
-full size). When the stretch passes, render it once without `--draft` and check that too; the user only ever sees
-full renders, since a draft looks choppy and soft.
+video), and `check` gives it the same passes, fails and cuts as the full render. Per-line motion is up to 0.3 higher
+at full size, never lower (a line that opens on a cut can differ by about 1), so a draft's `warnings` name the lines
+within 0.3 under `motion.max`: bring them lower, or the full render may fail them (a line at 8.94 in a grainy draft
+measured 9.20 at full size). When the stretch passes, render it once without `--draft` and check that too; the user
+only ever sees full renders, since a draft looks choppy and soft.
 Before that full render, look at a few frames at full size (`--still T` renders one): a contact sheet's small tiles
 hid a scene drawn twice, a band across the picture that cost one trial its final render.
 Run one render, still or sync at a time: each uses every core, and two renders in one template copy have hung.

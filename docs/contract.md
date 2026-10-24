@@ -39,8 +39,8 @@ whole-pixel camera step can be one of them too. Without a cut, `msg` says when t
 as a camera move over fine detail does. `variation.repeats` lists every repeated line pair in `pairs` as
 `[pair, correlation]`, worst first; its `value` is their mean, or the worst pair with a line in a hot section when
 that is higher. A check in `skipped` neither passed nor failed and is not counted in `total`. On a draft (a video at
-half size), `warnings` names the lines that pass a motion goal by less than 0.3, the most a full render measures apart
-from its draft.
+half size), `warnings` names the lines that pass `motion.max` by less than 0.3: a full render measures up to that much
+higher than its draft.
 
 `off_sheet` lists the stretches of at least 1.5 s where two or more whisper runs agree on two or more words that no
 line of the lyric sheet matched: a chant or an ad-lib the sheet leaves out, a line sung differently, a repeat the

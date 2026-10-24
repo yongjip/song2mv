@@ -19,8 +19,8 @@ First release (0.1.0).
   framing n − 1 in copy n, as a section's board does, instead of repeating the first copy's shots.
 - The starter starts a section's board at its first line when the line before runs into the section, as a count-in
   does, so that line stays on screen to its last word.
-- `check` on a draft warns about lines that pass a motion goal by less than 0.3, the most a full render measures
-  apart from its draft (a line at 8.94 in a draft measured 9.20 at full size).
+- `check` on a draft warns about lines within 0.3 under the frantic-motion goal: a full render measures up to that
+  much higher than its draft (a line at 8.94 in a grainy draft measured 9.20 at full size).
 - The guide's song map lists stretches of 4 s or more without a sung line and gives each an event of its own.
 - Captions and big type no longer cover a storyboard's subject. The 16:9 frame now has a picture above its
   captions, as the 9:16 frame has: a Storyboard puts each framing's point, its subject's middle, in the middle of
