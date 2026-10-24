@@ -319,6 +319,7 @@ const interactionURL = compile("src/kit/portrait-interaction.tsx", [
   ["./styles/poster", posterURL],
 ]);
 const { PortraitInteraction, resolveInteraction } = await import(interactionURL);
+const { portraitHeadTransform } = await import(compile("src/kit/portrait-cutout.tsx"));
 const profiles = {
   narrow: { neck: [0, -235], ear: [51, -326.5] },
   wide: { neck: [0, -235], ear: [67.6, -314.5] },
@@ -337,12 +338,12 @@ const renderCase = (props, Component = PortraitInteraction) =>
         { transform: props.wrapper ?? "translate(-37 59) rotate(17 600 800) scale(.83)" },
         React.createElement(Component, {
           ...props,
-          renderHead: (angle) =>
+          renderHead: (angle, pitch) =>
             React.createElement(
               "g",
               {
                 "data-part": "test-head",
-                transform: `rotate(${angle} ${props.profile.neck.join(" ")})`,
+                transform: portraitHeadTransform({neck: props.profile.neck, angle, pitch}),
               },
               React.createElement("circle", {
                 "data-part": "test-head-pivot",
@@ -881,7 +882,7 @@ for (const profile of Object.values(profiles)) {
 let headTouchCases = 0,
   headTouchGuardCases = 0,
   headTouchTemporalSamples = 0;
-const headTouchStats = { maxWristAngle: 0, maxStep: 0, maxAccelerationStep: 0 };
+const headTouchStats = { maxWristAngle: 0, maxStep: 0, maxAccelerationStep: 0, maxWristX: 0, maxContactX: 0, maxElbowX: 0 };
 const headTimes = [-1, 0, 0.001, 0.1, 0.275, 0.45, 0.549, 0.55, 0.551, 1, 6];
 for (const profile of Object.values(headProfiles))
   for (const s of [0.55, 1, 1.8]) {
@@ -1014,6 +1015,8 @@ function assertHeadTrajectory(base, Component = PortraitInteraction, record = fa
       frame.wristAngle <= 65,
       `Head-touch palm must continue the actual forearm through the approach (${frame.wristAngle.toFixed(2)} degrees)`,
     );
+    assert.ok(frame.points.wrist[0] <= 120 && frame.points.contact[0] <= 166,
+      "Head-touch reach must remain compact beside the torso rather than sweep sideways");
     if (previous) {
       const delta = Object.fromEntries(
         Object.entries(frame.points).map(([name, point]) => [
@@ -1022,10 +1025,10 @@ function assertHeadTrajectory(base, Component = PortraitInteraction, record = fa
         ]),
       );
       const step = Math.max(...Object.values(delta).map((v) => Math.hypot(...v)));
-      assert.ok(step < 1.2, "The actual head-touch hand and joints cannot jump between 1ms samples");
+      assert.ok(step < 1.2, `The actual head-touch hand and joints cannot jump between 1ms samples: ${step.toFixed(4)} at ${i}ms`);
       if (previousDelta) {
         const acceleration = Math.max(...Object.entries(delta).map(([name, v]) => distance(v, previousDelta[name])));
-        assert.ok(acceleration < 0.03, "The actual head-touch contour must not snap its velocity during approach");
+        assert.ok(acceleration < 0.03, `The actual head-touch contour must not snap its velocity during approach: ${acceleration.toFixed(5)} at ${i}ms`);
         if (record) headTouchStats.maxAccelerationStep = Math.max(headTouchStats.maxAccelerationStep, acceleration);
       }
       previousDelta = delta;
@@ -1033,6 +1036,9 @@ function assertHeadTrajectory(base, Component = PortraitInteraction, record = fa
     }
     if (record) {
       headTouchStats.maxWristAngle = Math.max(headTouchStats.maxWristAngle, frame.wristAngle);
+      headTouchStats.maxWristX = Math.max(headTouchStats.maxWristX, frame.points.wrist[0]);
+      headTouchStats.maxContactX = Math.max(headTouchStats.maxContactX, frame.points.contact[0]);
+      headTouchStats.maxElbowX = Math.max(headTouchStats.maxElbowX, frame.points.elbow[0]);
       armRanges["head-touch"].upper.push(frame.upperLength);
       armRanges["head-touch"].lower.push(frame.lowerLength);
       headTouchTemporalSamples++;
@@ -1056,6 +1062,32 @@ for (const [index, profile] of Object.values(headProfiles).entries()) {
     PortraitInteraction,
     true,
   );
+}
+
+let writingPostureCases = 0;
+function assertWritingPosture(props, Component = PortraitInteraction) {
+  const frame = time => {
+    const elements = elementsFrom(renderCase({...props, time}, Component));
+    const head = part(elements, "test-head");
+    const relative = multiply(inverse(head.parent.matrix), head.matrix);
+    near(at(relative, props.profile.neck), props.profile.neck, 1e-8, "A writing nod must preserve the calibrated neck pivot");
+    return {angle: Math.atan2(relative[1], relative[0]) * 180 / Math.PI,
+      height: Math.hypot(relative[2], relative[3]), forehead: at(relative, [0, -380])};
+  };
+  const rest = frame(0), ready = frame(.6);
+  assert.ok(ready.angle >= 7 && ready.angle <= 10, "Writing must turn the rendered head toward the page");
+  assert.ok(ready.height >= .95 && ready.height <= .97, "Writing must render a bounded downward nod, not a fixed frontal head");
+  assert.ok(ready.forehead[1] - rest.forehead[1] > 5, "The rendered forehead must settle down toward the notebook");
+  let priorHeight = 1;
+  for (const time of [0, .1, .2, .3, .4, .5, .6]) {
+    const pose = frame(time);
+    assert.ok(pose.height <= priorHeight + 1e-8, "The writing nod must settle without bouncing back up");
+    priorHeight = pose.height;
+  }
+}
+for (const profile of Object.values(profiles)) for (const s of [.55, 1, 1.8]) {
+  assertWritingPosture({action:"write",profile,x:600,y:800,s,progress:.5});
+  writingPostureCases++;
 }
 
 const mutationChecks = [];
@@ -1264,6 +1296,20 @@ assert.throws(
 );
 mutationChecks.push("head-touch-teleports-directly-into-hold");
 
+const wideHeadReachURL = compile("src/kit/portrait-interaction.tsx", [
+  ["./portrait-body", bodyURL], ["./styles/poster", posterURL],
+], source => source.replace("Math.PI * 11 / 18 * Math.sin(Math.PI * approach)", "0 * Math.sin(Math.PI * approach)"));
+const {PortraitInteraction: WideHeadReach} = await import(wideHeadReachURL);
+assert.throws(() => assertHeadTrajectory({...headFixture,x:0,y:0,s:1,wrapper:""}, WideHeadReach), /reach must remain compact/);
+mutationChecks.push("head-touch-sideways-sweep");
+
+const fixedWritingHeadURL = compile("src/kit/portrait-interaction.tsx", [
+  ["./portrait-body", bodyURL], ["./styles/poster", posterURL],
+], source => source.replace("renderHead(pose.headAngle, pose.headPitch)", "renderHead(0, 0)"));
+const {PortraitInteraction: FixedWritingHead} = await import(fixedWritingHeadURL);
+assert.throws(() => assertWritingPosture({action:"write",profile:profiles.narrow,x:0,y:0,progress:.5}, FixedWritingHead), /turn the rendered head toward the page/);
+mutationChecks.push("writing-head-remains-frontal");
+
 const typeContracts = assertTypeContracts();
 const ranges = Object.fromEntries(
   Object.entries(armRanges).map(([action, segments]) => [
@@ -1289,6 +1335,7 @@ console.log(
     preparation_samples: preparationSamples,
     phone_cycle_samples: phoneCycleSamples,
     profile_guard_cases: profileGuardCases,
+    writing_posture_cases: writingPostureCases,
     head_touch_cases: headTouchCases,
     head_touch_guard_cases: headTouchGuardCases,
     head_touch_temporal_samples: headTouchTemporalSamples,

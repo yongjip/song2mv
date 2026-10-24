@@ -3,7 +3,7 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
   Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Line, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, comic, makeSongCtx, mix, paper, personHand, pixel, rng, shade, SKINS, STRIDE,
-  PortraitBody, PortraitInteraction, portraitMotion, poster,
+  PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -1423,7 +1423,7 @@ const PortraitActions: React.FC<{ T: number }> = ({ T }) => {
         return (
           <PortraitInteraction key={i} action={action} time={t} progress={Math.max(0, Math.min(1, (t - 1) / 4))}
             profile={{ neck: [0, -235], ear }} x={270 + 460 * i} y={940} s={1.65} look={{ color: wide ? "#245c88" : "#526b59" }}
-            renderHead={(angle) => <g transform={`rotate(${angle} 0 -235)`}><SampleHead wide={wide} ear={ear} /></g>} />
+            renderHead={(angle, pitch) => <g transform={portraitHeadTransform({neck:[0,-235], angle, pitch})}><SampleHead wide={wide} ear={ear} /></g>} />
         );
       })}
     </Svg>

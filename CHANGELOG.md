@@ -7,6 +7,11 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 First release (0.1.0).
 
 ### Fixed
+- Portrait head-touch folds the arm along a compact path without collapsing segments during the reach,
+  instead of shrinking a Cartesian elbow/wrist interpolation. Joint and fingertip travel distribute its timing;
+  regression checks reject a renewed sideways sweep, reversed wrist, discontinuity or detached contact.
+- Writing settles the torso and head toward the notebook. The backwards-compatible second renderHead argument
+  carries downward head pitch; portraitHeadTransform projects a flat head about its calibrated neckline.
 - CI reuses an installed ffmpeg, limits system dependency downloads and supersedes older runs so a stalled
   package mirror cannot indefinitely block a dependency update.
 - React and React DOM update together to 19.3.1. Dependabot now groups both runtimes and their types to

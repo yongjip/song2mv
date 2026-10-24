@@ -7,6 +7,7 @@ import { GALLERY_TILES, KitGallery } from "./Gallery";
 import { LyricShort } from "./LyricShort";
 import { LyricVideo } from "./LyricVideo";
 import sample from "./sample-song.json";
+import { PortraitDemo } from "./PortraitDemo";
 
 /**
  * Two compositions over the same song config. Pass your own with
@@ -28,6 +29,7 @@ const duration: CalculateMetadataFunction<MvProps> = ({ props }) => {
 
 export const RemotionRoot: React.FC = () => (
   <>
+    <Composition id="Portrait-Actions" component={PortraitDemo} fps={FPS} width={1920} height={1080} durationInFrames={8 * FPS} />
     <Composition id="Lyric-16x9" component={LyricVideo} fps={FPS} width={1920} height={1080} durationInFrames={300}
       defaultProps={defaults} calculateMetadata={duration} />
     <Composition id="Lyric-9x16" component={LyricShort} fps={FPS} width={1080} height={1920} durationInFrames={300}
