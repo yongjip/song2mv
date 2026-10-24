@@ -318,6 +318,11 @@ inside only the lines you place: `comic.Brush` (tapered: features, folds, an arm
 notches: give a small form (an ear) a lighter `line`, draw a hole (a mug handle's) as a filled shape in an `Edge`,
 round the dips between tufts of fur, and keep balloons, tails and trailing bubbles clear of the figure.
 
+For portrait actions, `renderHead(angle, pitch)` can use `portraitHeadTransform({neck, angle, pitch})` to nod a
+flat head about its calibrated neckline while writing. The helper does not change eyes in a photograph. Reuse
+`PortraitInteraction` for the arm, hand and held object rather than patching a scene's joint coordinates; see
+`docs/portrait-acting.md` for the callback and regression contract.
+
 `poster`, office and street props drawn flat as on a poster, in `poster.colors`: `poster.Phone` (its `children` on
 the screen, such as `poster.Bubble`s with a `tail`), `poster.Notebook` (`write` 0–1), `poster.CoffeeCup`,
 `poster.Glass` (`fill`), `poster.Lighter`, `poster.Smoke` (steam, or a `PortraitBody`'s cigarette from

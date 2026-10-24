@@ -32,7 +32,7 @@ const bodyURL = compile("src/kit/portrait-body.tsx");
 const body = await import(bodyURL);
 const poster = await import(compile("src/kit/styles/poster.tsx", [["../portrait-body", bodyURL]]));
 const { portraitMotion } = await import(compile("src/kit/portrait-motion.ts"));
-const { PortraitCutout } = await import(compile("src/kit/portrait-cutout.tsx"));
+const { PortraitCutout, portraitHeadTransform } = await import(compile("src/kit/portrait-cutout.tsx"));
 
 let armCases = 0,
   anchorCases = 0,
@@ -337,6 +337,18 @@ const ids = [...cutouts.matchAll(/<clipPath id="([^"]+)"/g)].map((m) => m[1]);
 assert.equal(ids.length, 2);
 assert.equal(new Set(ids).size, 2, "Independent image heads must not share a clipping id");
 for (const id of ids) assert.ok(cutouts.includes(`clip-path="url(#${id})"`));
+let headPoseCases = 0;
+for (const neck of [[0, -235], [3, -233]]) for (const angle of [-8, 0, 9]) for (const pitch of [0, 8, 16, 30]) {
+  const matrix = svgTransform(portraitHeadTransform({neck, angle, pitch}));
+  const pivot = pointAt(matrix, neck);
+  assert.ok(Math.hypot(pivot[0]-neck[0],pivot[1]-neck[1]) < 1e-8, "Head projection must preserve its calibrated neckline");
+  assert.ok(Math.abs(Math.hypot(matrix[0],matrix[1])-1) < 1e-8, "Head projection must preserve horizontal scale");
+  assert.ok(Math.hypot(matrix[2],matrix[3]) >= .866 && Math.hypot(matrix[2],matrix[3]) <= 1 + 1e-8);
+  headPoseCases++;
+}
+for (const pose of [{neck:[NaN,-235]}, {neck:[0]}, {neck:[0,-235],angle:Infinity}, {neck:[0,-235],pitch:NaN}])
+  assert.throws(()=>portraitHeadTransform(pose), RangeError, "Malformed head poses must fail before SVG emission");
+
 console.log(
   JSON.stringify({
     ok: true,
@@ -350,5 +362,6 @@ console.log(
     phone_orientation_cases: phoneOrientationCases,
     hold_layer_cases: holdLayerCases,
     cutout_ids: ids.length,
+    head_pose_cases: headPoseCases,
   }),
 );

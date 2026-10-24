@@ -32,13 +32,15 @@ export type PortraitInteractionProps = PortraitInteractionInput & {
   y: number;
   s?: number;
   look?: PortraitInteractionLook;
-  /** Return the original portrait, rotated about profile.neck, plus any fixed chest decoration. */
-  renderHead: (headAngle: number) => React.ReactNode;
+  /** Render the head using angle and downward pitch in degrees about profile.neck; fixed chest decoration stays outside that transform. */
+  renderHead: (headAngle: number, headPitch: number) => React.ReactNode;
 };
 type Point = PortraitPoint;
 type ResolvedBase = {
   lean: number;
   headAngle: number;
+  /** Downward projection of the head plane; SVG head adapters can animate their own eyes from this value. */
+  headPitch: number;
   arms: { left: PortraitArmRig; right: PortraitArmRig };
   foreground: { left: boolean; right: boolean };
 };
@@ -158,48 +160,80 @@ export function resolveInteraction({ action, time, progress, profile }: Portrait
     }
     const q = clamp(t / 0.55, 0, 1),
       approach = q * q * (3 - 2 * q);
-    const headAngle = 2.2 * approach,
-      lean = 0.45 * approach;
-    const rotatedTemple = add(
-      profile.neck,
-      rotate([temple[0] - profile.neck[0], temple[1] - profile.neck[1]], headAngle),
-    );
-    const rest = solveArm(1, 13),
-      heldAngle = 160 + headAngle;
-    const offset = rotate([8.5, 46], heldAngle);
-    const heldWrist: Point = [rotatedTemple[0] - offset[0], rotatedTemple[1] - offset[1]];
-    const heldElbow: Point = [clamp(heldWrist[0] + 19, 93, 108), heldWrist[1] + 59];
-    const targetUpper = Math.hypot(heldElbow[0] - rest.shoulder[0], heldElbow[1] - rest.shoulder[1]);
-    const targetLower = Math.hypot(heldWrist[0] - heldElbow[0], heldWrist[1] - heldElbow[1]);
-    if (targetUpper < 35 || targetUpper > 80 || targetLower < 35 || targetLower > 80) {
-      throw new RangeError("Head-touch temple is out of the arm's reach: fit the portrait to the body");
-    }
-    const mix = (a: Point, b: Point): Point => [a[0] + (b[0] - a[0]) * approach, a[1] + (b[1] - a[1]) * approach];
-    const wrist = mix(rest.wrist, heldWrist);
-    wrist[0] += 54 * Math.sin(Math.PI * approach);
-    const elbow = mix(rest.elbow, heldElbow);
-    const right = armAt(1, elbow, wrist),
-      held = armAt(1, heldElbow, heldWrist);
-    const wristTurn = ((heldAngle - held.sleeveAngle + 540) % 360) - 180;
-    // turned from the forearm, not between absolute angles, which wrap at ±180
-    const handAngle = right.sleeveAngle + wristTurn * approach;
-    const contact = add(wrist, rotate([8.5, 46], handAngle));
-    return {
-      action,
-      lean,
-      headAngle,
-      arms: { left: solveArm(-1, 13), right },
-      foreground: { left: false, right: true },
-      headTouch: {
-        phase: t <= 0 ? "rest" : t < 0.55 ? "approach" : "hold",
-        approach,
-        temple: rotatedTemple,
-        contact,
-        wrist,
-        handAngle,
-      },
+    const poseAt = (approach: number): Extract<ResolvedInteraction, {action: "head-touch"}> => {
+      const headAngle = 2.2 * approach,
+        lean = 0.45 * approach;
+      const rotatedTemple = add(
+        profile.neck,
+        rotate([temple[0] - profile.neck[0], temple[1] - profile.neck[1]], headAngle),
+      );
+      const rest = solveArm(1, 13),
+        heldAngle = 160 + headAngle;
+      const offset = rotate([8.5, 46], heldAngle);
+      const heldWrist: Point = [rotatedTemple[0] - offset[0], rotatedTemple[1] - offset[1]];
+      const heldElbow: Point = [clamp(heldWrist[0] + 19, 93, 108), heldWrist[1] + 59];
+      const targetUpper = Math.hypot(heldElbow[0] - rest.shoulder[0], heldElbow[1] - rest.shoulder[1]);
+      const targetLower = Math.hypot(heldWrist[0] - heldElbow[0], heldWrist[1] - heldElbow[1]);
+      if (targetUpper < 35 || targetUpper > 80 || targetLower < 35 || targetLower > 80) {
+        throw new RangeError("Head-touch temple is out of the arm's reach: fit the portrait to the body");
+      }
+      const mix = (a: number, b: number, u: number) => a + (b - a) * u;
+      const direction = (a: Point, b: Point) => Math.atan2(b[0] - a[0], b[1] - a[1]);
+      const restUpper = direction(rest.shoulder, rest.elbow);
+      const restBend = direction(rest.elbow, rest.wrist) - restUpper;
+      const targetBend = ((direction(heldElbow, heldWrist) - direction(rest.shoulder, heldElbow) + 3 * Math.PI) % (2 * Math.PI)) - Math.PI;
+      // Fold before lifting while interpolating segment lengths, rather than shortening a Cartesian wrist path.
+      const aim = mix(direction(rest.shoulder, rest.wrist), direction(rest.shoulder, heldWrist), approach);
+      const bend = mix(restBend, targetBend, approach) + Math.PI * 11 / 18 * Math.sin(Math.PI * approach);
+      const upperLength = mix(52, targetUpper, approach);
+      const lowerLength = mix(48, targetLower, approach);
+      const upperAngle = aim - Math.atan2(lowerLength * Math.sin(bend), upperLength + lowerLength * Math.cos(bend));
+      const lowerAngle = upperAngle + bend;
+      const elbow: Point = [rest.shoulder[0] + upperLength * Math.sin(upperAngle), rest.shoulder[1] + upperLength * Math.cos(upperAngle)];
+      const wrist: Point = [elbow[0] + lowerLength * Math.sin(lowerAngle), elbow[1] + lowerLength * Math.cos(lowerAngle)];
+      const right = armAt(1, elbow, wrist),
+        held = armAt(1, heldElbow, heldWrist);
+      const wristTurn = ((heldAngle - held.sleeveAngle + 540) % 360) - 180;
+      // turned from the forearm, not between absolute angles, which wrap at ±180
+      const handAngle = right.sleeveAngle + wristTurn * approach;
+      const contact = add(wrist, rotate([8.5, 46], handAngle));
+      return {
+        action,
+        lean,
+        headAngle,
+        headPitch: 0,
+        arms: { left: solveArm(-1, 13), right },
+        foreground: { left: false, right: true },
+        headTouch: {
+          phase: t <= 0 ? "rest" : t < 0.55 ? "approach" : "hold",
+          approach,
+          temple: rotatedTemple,
+          contact,
+          wrist,
+          handAngle,
+        },
+      };
     };
+    if (q === 0 || q === 1) return poseAt(approach);
+    // Distribute time by joint and fingertip travel so the compact bend does not rush through its middle.
+    const count = 256;
+    const samples = Array.from({length: count + 1}, (_, i) => poseAt(i / count));
+    const lengths = samples.slice(1).map((pose, i) => Math.hypot(
+      ...(["elbow", "wrist"] as const).flatMap(joint => [
+        pose.arms.right[joint][0] - samples[i].arms.right[joint][0],
+        pose.arms.right[joint][1] - samples[i].arms.right[joint][1],
+      ]),
+      pose.headTouch.contact[0] - samples[i].headTouch.contact[0],
+      pose.headTouch.contact[1] - samples[i].headTouch.contact[1],
+    ));
+    let remaining = approach * lengths.reduce((sum, length) => sum + length, 0);
+    for (let i = 0; i < lengths.length; i++) {
+      if (remaining <= lengths[i]) return poseAt((i + remaining / lengths[i]) / count);
+      remaining -= lengths[i];
+    }
+    return poseAt(1);
   }
+
   if (action === "phone") {
     const lean = 0.65 * Math.sin(t * 0.9),
       headAngle = -1.5 - 1.1 * Math.sin(t * 1.2);
@@ -225,13 +259,15 @@ export function resolveInteraction({ action, time, progress, profile }: Portrait
       action,
       lean,
       headAngle,
+      headPitch: 0,
       arms: { left: solveArm(-1, 13), right },
       foreground: { left: false, right: true },
       phone: { origin, angle, ear, grip, wrist },
     };
   }
   const prepare = clamp(t / 0.6, 0, 1);
-  const lift = 24 * (1 - prepare * prepare * (3 - 2 * prepare));
+  const settle = prepare * prepare * (3 - 2 * prepare);
+  const lift = 24 * (1 - settle);
   const u = clamp(finite(progress), 0, 1),
     { tip, inkPath } = writingPathAt(u, lift);
   const penAngle = 25,
@@ -241,8 +277,9 @@ export function resolveInteraction({ action, time, progress, profile }: Portrait
   const elbow: Point = [90 + (tip[0] - 35) * 0.18, -151 + (tip[1] - lift + 185) * 0.08 + lift];
   return {
     action: "write",
-    lean: -0.35 * Math.sin(t),
-    headAngle: 3.5 + 1.2 * Math.sin(Math.PI * u),
+    lean: (2.4 + 0.25 * Math.sin(t)) * settle,
+    headAngle: (8 + 0.6 * Math.sin(Math.PI * u)) * settle,
+    headPitch: 16 * settle,
     arms: { left: armAt(-1, [-77, -157 + lift], support), right: armAt(1, elbow, wrist) },
     foreground: { left: true, right: true },
     writing: {
@@ -306,7 +343,7 @@ function HeadTouchHand({ skin }: { skin: string }) {
  * the pen, `progress` 0–1) or "head-touch" (an open hand at the temple, reached in 0.55 s and held: start it 0.55 s
  * before the word). `time` is seconds since the action started. `profile` gives the head's neck (within 4 of
  * (0, −235)), screen-right ear and, for head-touch, temple (where the hair meets the skin beside the eyebrow) in body
- * coordinates, before lean and `s`; `renderHead(angle)` draws the head turned by `angle` about that neck. A profile out
+ * coordinates, before lean and `s`; `renderHead(angle, pitch)` draws the head turned and nodded about that neck. A profile out
  * of the arm's reach throws a RangeError: fit the portrait to the body rather than widening the limits.
  */
 export function PortraitInteraction({
@@ -441,7 +478,7 @@ export function PortraitInteraction({
           overObject,
         }}
       >
-        {renderHead(pose.headAngle)}
+        {renderHead(pose.headAngle, pose.headPitch)}
       </PortraitBody>
     </g>
   );
