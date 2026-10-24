@@ -68,8 +68,9 @@ the progress log and the JSON:
   between words far apart (the log names the word: `◀ no run timed "…"`; the words around it may be off too), or
   spread over far more time than they are sung in (`◀ … spread out: …` in the log: usually split between two copies
   of a repeat the sheet has once; look for an `off_sheet` stretch or a tag warning next to it), with three words at
-  almost one time (`◀ … stacked: …`), with runs that disagree by more than 0.7 s (`◀ runs disagree by …`) or on a
-  word (`◀ no run times "…" near …`), or heard alike by the runs but not as written while another copy of it is
+  almost one time or two that another copy of the line has apart (`◀ … stacked: …`), with runs that disagree by more
+  than 0.7 s (`◀ runs disagree by …`; the log flags it from 0.4 s, and below 0.7 s such lines mostly start on time) or
+  on a word (`◀ no run times "…" near …`), or heard alike by the runs but not as written while another copy of it is
   (a warning `… is heard as "…"`: Suno changed that repeat, or whisper misheard it the same way in every run, which
   is what every such warning on the JamendoLyrics benchmark was; put the line into the user's ear check with both
   versions, as written and as heard, and change the sheet only after the user confirms). Most likely wrong. A warning
@@ -196,8 +197,8 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
 - `planShots(ctx, from, to, framings)` (`src/kit/plan.ts`) plans a stretch's cuts, which framing each takes, its drift
   and the hits, by section kind: verses cut unevenly on bar lines and a 16th before a line's first word, never twice
   in a short line, at least every 5.2 s; calm sections hold slow shots; hot sections cut on downbeats with a punch;
-  chorus 2 takes the framings in another order. It returns the kit camera's `shots` and `hits`; `pattern` sets your
-  own bar counts.
+  copy n of a section opens on framing n − 1 (chorus 2 on the second). It returns the kit camera's `shots` and `hits`;
+  `pattern` sets your own bar counts.
 - A `Board` (`src/kit/storyboard.tsx`) is a stretch that starts at a line id, a section id or a time: a `world` (SVG of
   `T` on the stage), its `framings` (and `tall` ones for 9:16), and optionally `pattern`, `drift`, `hits`, an
   `overlay` (text over the camera) and `big` (its lines as big type, low in the frame).
@@ -206,9 +207,13 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   `linesDrawnByScene`. A board's start is a cut, planned with its section's other cuts: the rhythm counts it, and a
   section with boards at its lines cuts inside as few lines as its rhythm allows, inside none under 2.5 s if it can.
   Key boards to the lines that name something, every 2 lines or more and unevenly: in one outro three boards 2 lines
-  apart cut too evenly for `cuts.rhythm`. A board at a line opens on its first framing in every copy of the section.
+  apart cut too evenly for `cuts.rhythm`. A board at a line opens on its first framing in every copy of the section;
+  a board at a section opens on framing n − 1 in copy n (`v2` on `framings[1]`), so put that copy's opening there.
 - A cut counts only when the picture changes: give a world framings that show different parts of it (the sky, the
-  ground, the subject up close), not one layout at two zooms. A large still overlay hides cuts from `check`.
+  ground, the subject up close), not one layout at two zooms. A large still overlay hides cuts from `check`. Framings
+  next to each other in the list need 1.35× apart in zoom, another part of the world or 4° of roll: the planner skips
+  a framing too alike to the one before it (a close-up at 2.4 after one at 1.8 never showed), and a draft's render
+  log names one it skipped that never shows (`storyboard: the board at v2-08 never shows framing 2 …`).
 
 **The starter** (`src/scenes/Starter.tsx`) is a whole video built that way from kit worlds (a street, a room, a stage,
 fireworks, a beach, hills) that passes `check` on any song as it is. To start from it, put the line given in
@@ -484,7 +489,8 @@ Where things go (`VERTICAL` in the kit has the numbers):
   a 2× close-up of a subject at y 760 shows only about 300 px below y 1080. Put the foreground just under y 1080, not
   350–700 px down, where only wide shots reach. The view also stops at the stage's top edge, so a subject near it
   lands above (540, 675); a scene whose background reaches above the stage passes the area it fills as `world`
-  (`verticalView(cam, { world: [0, -900, 1920, Infinity] })`).
+  (`verticalView(cam, { world: [0, -900, 1920, Infinity] })`, or with boards
+  `<Storyboard T={T} boards={BOARDS} vertical world={[0, -900, 1920, Infinity]} />`).
 
 A contact sheet with `"vertical": true` draws the safe box and the captions' top as dashed lines (a crop sheet
 leaves them out): check them there before rendering the short. `check` measures the top 56 % of a short, above the

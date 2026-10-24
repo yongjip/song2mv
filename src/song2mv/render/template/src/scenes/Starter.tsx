@@ -30,10 +30,10 @@ const PALETTE = { light: "#ff3355", glow: "#ffd36b", sparks: ["#ff5fd2", "#3fe6f
  * What each part of the song shows. A key is a line id ("v1-05": a new board from that line on, opening on its world's
  * first framing), a section id ("ch2") or a section's role (intro, verse, pre, chorus, post, bridge, outro); the most
  * specific wins. `worlds` name worlds of WORLDS below: copies of a section take them in turn (ch1 the first, ch2 the
- * second …), and so does each 8 lines of a long section without line keys. Each line key is a cut: key the lines that
- * name something, every 2 lines or more and unevenly. `big`: its lines are big type in the scene instead of bottom
- * captions. `pattern`: bar counts between cuts, instead of the section kind's rhythm. `drift`: below 1 calms the camera
- * over fine high-contrast detail.
+ * second …), and so does each 8 lines of a long section without line keys. A section's board opens on framing n − 1 of
+ * its world in copy n (v2 on framings[1]). Each line key is a cut: key the lines that name something, every 2 lines or
+ * more and unevenly. `big`: its lines are big type in the scene instead of bottom captions. `pattern`: bar counts
+ * between cuts, instead of the section kind's rhythm. `drift`: below 1 calms the camera over fine high-contrast detail.
  */
 const SHOW: Record<string, Show> = {
   intro: { worlds: ["hills"] },
@@ -287,4 +287,6 @@ export function linesDrawnByScene(song: Song): Set<string> {
 }
 
 export const Starter: React.FC<{ T: number }> = ({ T }) => <Storyboard T={T} boards={useBoards()} />;
+/** The 9:16 frame keeps to the stage's sides and top; worlds drawn past them give Storyboard the area they fill,
+ * such as `world={[0, -900, 1920, Infinity]}` */
 export const StarterTall: React.FC<{ T: number }> = ({ T }) => <Storyboard T={T} boards={useBoards()} vertical />;

@@ -31,7 +31,7 @@ The numbers are for `69c4d29` unless they say otherwise; [Before and after](#bef
   lists really are (45 % before). Both fell because what it found best is gone: lines squeezed in after a misplaced
   chorus. The lines more than 1 s off that it misses halved, from 143 to 72. It now also lists lines out of the lyric
   sheet's order; 4 are left. With the later additions ([below](#stacked-words-runs-that-disagree-and-repeats-sung-differently))
-  it lists 425 lines and 75.4 % of the lines more than 1 s off.
+  it lists 449 lines and 78.3 % of the lines more than 1 s off.
 - **Compared with dedicated aligners**, song2mv's share of words within 0.3 s, averaged per song (87 %), falls
   between older systems (59–73 %) and the character-based models of the paper (89–94 %). Its average error per song
   (0.30 s) is now in the range of those models (0.18–0.35 s); before `69c4d29` it was 2.2 s.
@@ -409,6 +409,57 @@ before, 77 % and 50 %. The new reasons are about a word inside the line more tha
 start drops a little while 56 of the 65 lines added for timing have a word more than 0.3 s off. On the Suno song the
 list now holds both hooks' changed repeats, the stacked line and the bridge's three lines whose runs disagree (one of
 them the late "One"); with the new user's corrected sheet and pins it holds the two bridge lines nobody pinned.
+
+### Two words at one time, and runs that disagree by less than 0.7 s
+
+Three new-user runs on that Suno song checked a line by hand that the list did not have: in the first hook's last
+line two of the three whisper runs put "beep" and "Brooklyn" at one time (the third 0.32 s apart), and both snapped
+to one 16th, while the same line elsewhere in the hooks has them 0.21 and 0.33 s apart. Two words on one 16th note
+alone say little. On these songs 355 whisper
+lines have them, the annotations put the two words a median 0.17 s apart (about a 16th), and of the 300 such lines
+not on the list, fewer have a word more than 0.3 s off than of the whisper lines not on it. How close whisper's own
+times for the two are does not tell them apart either. Where another copy of the line has the two words 0.2 s apart
+or more, they are sung at least 0.2 s apart in 46 of the 65 pairs (of all such pairs, 148 of 454), so `check_by_ear`
+now lists a line with two words at one time when another copy of it has them 0.2 s apart or more
+(`◀ hk1-08 stacked: "beep, Brooklyn," both at 69.49, 0.33 s apart in hk2-06`):
+
+| two words at one time, listed when … | lines added | start > 0.3 s off | a word > 0.3 s off | a word > 1 s off |
+|---|---:|---:|---:|---:|
+| always | 300 | 8 % | 22 % | 5 % |
+| whisper's times for them are under 0.05 s apart | 65 | 8 % | 28 % | 5 % |
+| one of the two was timed by no run | 29 | 24 % | 41 % | 24 % |
+| another copy of the line has them a 16th apart or more | 68 | 15 % | 32 % | 12 % |
+| **another copy of the line has them 0.2 s apart or more** | **24** | **38 %** | **62 %** | **25 %** |
+| another copy of the line has them 0.3 s apart or more | 16 | 44 % | 75 % | 25 % |
+| *whisper lines not listed, for comparison* | *2,958* | *11 %* | *31 %* | *3 %* |
+| *whisper lines listed, for comparison* | *354* | *40 %* | *74 %* | *39 %* |
+
+The log has flagged lines whose kept runs' starts are 0.4–0.7 s apart all along (`◀ runs disagree by 0.58 s`), and
+one of those runs checked such a bridge line by hand too. Those lines mostly start on time, so they stay off the list:
+from 0.55 s it would add 35 lines, 23 % of them starting more than 0.3 s off, against 51 % of the 43 lines whose
+runs are more than 0.7 s apart (below 0.7 s the table counts the lines not listed for another reason).
+
+| kept runs' starts apart by | lines | start > 0.3 s off | a word > 0.3 s off | a word > 1 s off |
+|---|---:|---:|---:|---:|
+| 0.4–0.5 s | 39 | 26 % | 41 % | 5 % |
+| 0.5–0.55 s | 14 | 21 % | 57 % | 7 % |
+| 0.55–0.6 s | 16 | 38 % | 63 % | 13 % |
+| 0.6–0.65 s | 8 | 0 % | 25 % | 13 % |
+| 0.65–0.7 s | 11 | 18 % | 55 % | 9 % |
+| more than 0.7 s (listed) | 43 | 51 % | 84 % | 21 % |
+
+Measured from the align step with the cached whisper runs, at `d268f57` and with the change. No word time changes;
+the list grows by 24 lines in 21 songs and loses none.
+
+| | before | after |
+|---|---:|---:|
+| `check_by_ear` lines | 425 | 449 |
+| recall: lines > 0.3 s / > 1 s off that are listed | 38.7 / 75.4 % | 40.4 / 78.3 % |
+| precision: listed lines that start > 0.3 s / > 1 s off | 48.2 / 31.1 % | 47.7 / 30.5 % |
+
+On the Suno rap song's first sync the list now holds the first hook's last line too; on 11 trial songs it adds 2
+lines in one, where the runs put a line's third word before its second and another copy of the line has the two
+2.17 s apart.
 
 ## What the numbers point to
 

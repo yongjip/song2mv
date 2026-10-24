@@ -24,8 +24,10 @@ import { VERTICAL, verticalView } from "./vertical";
  * A world is SVG drawn on the 1920×1080 stage (no text: the camera would move it); what it draws past the stage's
  * edges shows when a shot rolls or drifts there. The 9:16 frame films it again through `verticalView`, with the
  * board's `tall` framings, so a world seen in 9:16 draws its ground on below y 1080. The first board also covers the
- * song before it. A board keyed to a line opens on its first framing; one keyed to a section takes the framings in
- * another order in a later copy (ch2), so the copies differ.
+ * song before it. A board keyed to a line opens on its first framing; one keyed to a section opens on framing n − 1 in
+ * the section's copy n (ch2 on framings[1]), so the copies differ. A framing too alike to the one before it for a cut
+ * (under 1.35× apart in zoom, near it, under 4° apart in roll) is skipped; one that never shows is named in a video
+ * render's log.
  */
 
 export type BoardSpan = {
@@ -104,21 +106,37 @@ export function linesDrawnBy(song: Song, boards: Board[]): Set<string> {
   return new Set(big.flatMap((p) => p.lines.map((l) => l.id)));
 }
 
+const warned = new Set<string>();
+
+/** Logs once per render: a render runs the scenes in several tabs, and only the main one says it */
+function warnOnce(message: string) {
+  if (warned.has(message) || (typeof window !== "undefined" && window.remotion_isMainTab === false)) return;
+  warned.add(message);
+  console.warn(message);
+}
+
 /**
  * Draws the board on at T, filmed by its planned shots, and its lines as big type when the board asks for it.
  * `wrap` holds the filmed world in the frame, unmoved by the camera, such as a style pack's `paper.Stack`.
  * `vertical` draws the whole 1080×1920 frame for a VerticalScene: the same shots through `verticalView`, big type
  * where the template's captions go, larger (the picture above stays clear, and `check` measures only the picture).
+ * `world` is the area the worlds fill, [left, top, right, bottom], which the 9:16 frame keeps inside (verticalView's
+ * `world`): by default the stage's sides and top, open below.
  */
 export const Storyboard: React.FC<{
   T: number; boards: Board[]; vertical?: boolean; wrap?: (filmed: React.ReactNode, span: BoardSpan) => React.ReactNode;
-}> = ({ T, boards, vertical = false, wrap = (filmed) => filmed }) => {
+  world?: [number, number, number, number];
+}> = ({ T, boards, vertical = false, wrap = (filmed) => filmed, world }) => {
   const ctx = useSong();
   const placed: Placed[] = useMemo(() => {
     const spans = place(ctx, ctx.song, boards);
     const plans = planBoards(ctx, spans.map((p) => ({
       from: p.from, to: p.to, framings: p.board.framings, pattern: p.board.pattern, drift: p.board.drift, reorder: !p.keyed,
     })));
+    spans.forEach((p, i) => plans[i].dropped?.forEach(([f, before]) => warnOnce(
+      `storyboard: the board at ${typeof p.board.at === "number" ? `${p.board.at} s` : p.board.at} never shows `
+      + `framing ${f} ${JSON.stringify(p.board.framings[f])}: it comes after framing ${before}, too alike for a cut `
+      + "(a cut needs 1.35× in zoom, another part of the world or 4° of roll)")));
     return spans.map((p, i) => {
       const section = ctx.section(p.from + 1e-3);
       const plan = plans[i];
@@ -144,7 +162,7 @@ export const Storyboard: React.FC<{
       </>
     );
   }
-  const cam = verticalView(cameraAt(T, p.tall.shots, { hits: p.hits }));
+  const cam = verticalView(cameraAt(T, p.tall.shots, { hits: p.hits }), { world });
   const { safe, captions } = VERTICAL;
   return (
     <>

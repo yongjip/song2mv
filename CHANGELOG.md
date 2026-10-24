@@ -299,6 +299,39 @@ First release (0.1.0).
     17 of the starter's own 28 tall framings off the points written (a wide shot written for x 800 looked at x 960, a
     close-up written for y 860 at y 762); its worlds use it. The skill says how far a close-up reaches below y 1080: the frame ends
     1245 / zoom stage px below the view's point, about 300 px for a 2× close-up of a subject at y 760.
+- Fixes from the fourth new-user run, the second through the starter: 27.1 minutes against 42.6 for the run before,
+  about 4 of them lost to what follows.
+  - **9:16 above the stage.** `Storyboard` takes `world`, the area its worlds fill, for the 9:16 frame
+    (`verticalView`'s `world`): `<Storyboard T={T} boards={BOARDS} vertical world={[0, -900, 1920, Infinity]} />`. The
+    frame keeps to the stage's sides and top by default, so the run's block, its sidewalk at stage y 110–300, sat high
+    above the picture's middle in every 9:16 board until the run added the prop to its own copy of the kit. The skill's
+    9:16 section and `StarterTall` name it.
+  - **Framings the planner drops.** A framing too alike to the one before it for a cut (under 1.35× apart in zoom,
+    near it, under 4° apart in roll) is skipped, and one that no shot then took never showed, without a word: the
+    run's close-up at zoom 2.4, after one at 1.8, turned up missing only on a `--cuts` sheet. `planShots` and
+    `planBoards` now list such framings under `dropped`, and `Storyboard` names them in a video render's log, a
+    draft's included, once per render (`storyboard: the board at v2-08 never shows framing 2 {…}: it comes after
+    framing 1, too alike for a cut …`); without a terminal, Remotion prints no browser log for a still. The skill's
+    Board paragraph gives the rule. A draft of the run's own scenes, its close-up set back to 2.4, names it, and a
+    second framing nobody had noticed: verse 1's board never showed its zoom 1.3 view after its 1.6 one.
+  - **Which framing a later copy opens on.** A board at a section opens on framing n − 1 in the section's copy n
+    (verse 2 on `framings[1]`): the starter's `SHOW`, `Storyboard`, the planner and the skill say so, where they said
+    "another order", and the run read `plan.ts` to find out.
+  - **Two words at one time.** `check_by_ear` lists a whisper line with two words at one time where another copy of the
+    line has them 0.2 s apart or more (`◀ hk1-08 stacked: "beep, Brooklyn," both at 69.49, 0.33 s apart in hk2-06`).
+    Runs 2, 3 and 4 each compared the whisper runs by hand for that line: two of the three put "beep," and "Brooklyn,"
+    at one time, the merge kept it, and the line was not listed while its twin with three words at one time was. Two
+    words on one 16th alone say little: on the JamendoLyrics benchmark 355 whisper lines have them, sung a median 0.17 s
+    apart, and the 300 of them not listed yet have a word more than 0.3 s off less often (22 %) than the whisper lines
+    not listed (31 %). With another copy of the line as the yardstick, the 24 lines added have such a word in 15 and one
+    more than 1 s off in 6, and 9 start more than 0.3 s off. No word time changes, and the list grows from 425 to 449
+    lines, its recall for lines that start more than 1 s off from 75.4 to 78.3 % at about the same precision (31.1 →
+    30.5 %). Lines whose runs disagree by less than 0.7 s stay off the list: from 0.55 s it would add 35 lines, 23 % of
+    them starting more than 0.3 s off against 51 % above 0.7 s, so the skill now says that a line the log flags as
+    `◀ runs disagree by …` under 0.7 s mostly starts on time (run 4 had worked out its `br-04`, 0.58 s, by hand).
+    `docs/benchmark.md` has the tables.
+
+  The default stills, the starter's contact sheets and the gallery tiles render as before.
 - `song.json` sets the two effects the template's frame lays over every scene: `"vignette": false` turns off the dark
   vignette, and `"flashes": [[song time, strength 0–1], …]` replaces the white flash at the start of each hot section
   (`[]` for none). `sync` copies both into `mv.json`; without them `mv.json` is as before. Neither could be changed

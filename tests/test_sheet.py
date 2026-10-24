@@ -74,6 +74,20 @@ def test_three_words_at_one_time_go_on_check_by_ear():
     assert stacked(lines)["hk2-08"] == '"beep beep brooklyn" within 0.00 s at 121.98'
 
 
+def test_two_words_at_one_time_go_on_check_by_ear_where_another_copy_has_them_apart():
+    lines = [timed("hk1-06", HOOK[2], [63.949, 64.06, 64.272, 64.95, 65.5, 65.8]),
+             timed("hk1-08", HOOK[2], [69.165, 69.488, 69.488, 70.254, 70.792, 71.121]),  # "beep" and "brooklyn" at one time
+             timed("v1-01", "in the middle of it", [80.0, 80.0, 80.3, 80.6, 80.9]),
+             timed("v1-02", "in the middle of it", [84.0, 84.1, 84.3, 84.6, 84.9])]  # "in the" sung fast in both copies
+    assert check_by_ear(lines, 3) == ["hk1-08"]
+    assert stacked(lines)["hk1-08"] == '"beep brooklyn" both at 69.49, 0.21 s apart in hk1-06'
+    # a copy pinned by hand counts; the pinned line itself is not listed
+    pinned = [timed("hk1-06", HOOK[2], [63.9, 64.0, 64.0, 64.95, 65.5, 65.8]), {**lines[1], "id": "hk2-08", "source": "manual"}]
+    assert check_by_ear(pinned, 3) == []
+    pinned[1]["words"] = [{**w, "t": t} for w, t in zip(pinned[1]["words"], [69.17, 69.3, 69.55, 70.22, 70.76, 71.02])]
+    assert check_by_ear(pinned, 3) == ["hk1-06"]
+
+
 LINES = sheet(("in", ["yeah sunday on the block"]), ("hk1", HOOK), ("v2", ["round two got a little sweat on the brow"]))
 COUPLET = "beep beep im parallel beep beep brooklyn wish me well"
 

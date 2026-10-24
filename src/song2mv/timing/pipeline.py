@@ -31,7 +31,7 @@ from collections.abc import Sequence
 from ..contract import SCHEMA_VERSION, stamp
 from ..errors import Song2mvError
 from . import lib
-from .lib import asr_key, audio_duration, file_sha256, has_sections, in_order, load_config, lyric_lines, warn, with_sections, write_json
+from .lib import asr_key, audio_duration, file_sha256, has_sections, in_order, load_config, lyric_lines, norm, warn, with_sections, write_json
 
 STEPS = ["lyrics", "asr", "align", "grid", "build"]
 OUTPUTS = ["grid.json", "lyrics.json", "mv.json", "song.lrc", "song.words.lrc", "song.srt", "music.json"]
@@ -142,6 +142,7 @@ def update_config(path: str, lyrics: str | None = None, language: str | None = N
 GAP = 3.0  # seconds between two neighbouring words of a line
 SPAN = 2.5  # a line lasting this many times its word count × the song's median time from one word to the next
 STACK = 0.1  # seconds holding three words of a line
+APART = 0.2  # seconds between two words that another copy of their line has apart
 
 
 def stretched(lines: list[dict], off: Sequence[dict] = ()) -> dict[str, str]:
@@ -169,16 +170,30 @@ def stretched(lines: list[dict], off: Sequence[dict] = ()) -> dict[str, str]:
 
 
 def stacked(lines: list[dict]) -> dict[str, str]:
-    """Lines with three neighbouring words inside STACK s, with the reason. No one sings three words that fast: the
-    words between two timed ones were spread over almost no time, or the runs timed the line's first words on a later
-    one ("Beep, beep" on "Brooklyn"). On the JamendoLyrics benchmark the annotations had such three words 0.15–4.2 s
-    apart, and in 25 of 29 lines one of them was more than 0.3 s off (in 11, more than 1 s)."""
+    """Lines with three neighbouring words inside STACK s, or two at one time that another copy of the line has at
+    least APART s apart, with the reason. No one sings three words that fast: the words between two timed ones were
+    spread over almost no time, or the runs timed the line's first words on a later one ("Beep, beep" on "Brooklyn").
+    On the JamendoLyrics benchmark the annotations had such three words 0.15–4.2 s apart, and in 25 of 29 lines one of
+    them was more than 0.3 s off (in 11, more than 1 s). Two words on one 16th note are common in fast singing: 355
+    lines there, sung a median 0.17 s apart, fewer of them with a word more than 0.3 s off than of the lines not
+    listed. Where another copy of the line has the two apart, 15 of the 24 lines it adds have such a word."""
+    copies: dict[tuple, list[dict]] = {}
+    for r in lines:
+        copies.setdefault(tuple(norm(w["w"]) for w in r.get("words") or []), []).append(r)
     out = {}
     for r in lines:
-        t = [w["t"] for w in r.get("words") or []]
+        w = r.get("words") or []
+        t = [x["t"] for x in w]
         k = next((k for k in range(len(t) - 2) if t[k + 2] - t[k] <= STACK), None)
         if k is not None:
-            out[r["id"]] = f'"{" ".join(w["w"] for w in r["words"][k:k + 3])}" within {t[k + 2] - t[k]:.2f} s at {t[k]:.2f}'
+            out[r["id"]] = f'"{" ".join(x["w"] for x in w[k:k + 3])}" within {t[k + 2] - t[k]:.2f} s at {t[k]:.2f}'
+            continue
+        others = [c for c in copies[tuple(norm(x["w"]) for x in w)] if c is not r]
+        for j in range(len(t) - 1):
+            gap, copy = max(((c["words"][j + 1]["t"] - c["words"][j]["t"], c["id"]) for c in others), default=(0.0, ""))
+            if t[j + 1] - t[j] <= 1e-3 and gap >= APART:
+                out[r["id"]] = f'"{w[j]["w"]} {w[j + 1]["w"]}" both at {t[j]:.2f}, {gap:.2f} s apart in {copy}'
+                break
     return out
 
 
@@ -189,8 +204,8 @@ def check_by_ear(lines: list[dict], n_runs: int, doubtful: set[str] | frozenset[
     (lib.in_order), where a repeated line was placed on another copy of its words, the whisper lines in `doubtful`
     (align.doubt: a word no run timed between words far apart, runs that disagree on its start or on a word's time;
     align.sung_differently), whisper lines spread over far more time than they are sung in (stretched, with the
-    stretches heard off the sheet in `off`) and whisper lines with three words at almost one time (stacked). Lines
-    pinned in "manual" are not listed."""
+    stretches heard off the sheet in `off`) and whisper lines with three words at almost one time, or two that another
+    copy of the line has apart (stacked). Lines pinned in "manual" are not listed."""
     def one_run(r):
         return n_runs > 1 and r.get("source") == "asr" and len(r.get("runs_used") or []) < 2
     starts = [r.get("start") for r in lines]

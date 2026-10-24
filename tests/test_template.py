@@ -452,6 +452,64 @@ def test_drift_scales_every_shots_move_and_keeps_the_cuts(tmp_path):
     assert same >= 10, same
 
 
+BOARD_SCENES = """
+import React from "react";
+import { Board, Song, Storyboard } from "../kit";
+
+const Dot: React.FC = () => (
+  <>
+    <rect x={0} y={0} width={1920} height={1080} fill="#203040" />
+    <rect x={955} y={145} width={10} height={10} fill="#ff0000" />
+  </>
+);
+const BOARDS: Board[] = [
+  { at: "v1", world: () => <Dot />, framings: [{ x: 960, y: 540 }, { x: 600, y: 300, zoom: 2 }], tall: [{ x: 960, y: 150 }], drift: 0 },
+  // a close-up 1.33× the one before it, close by: too alike for a cut
+  { at: "ch", world: () => <Dot />, framings: [{ x: 960, y: 540 }, { x: 700, y: 600, zoom: 1.8 }, { x: 720, y: 620, zoom: 2.4 }] },
+];
+export const Scene: React.FC<{ T: number }> = ({ T }) => <Storyboard T={T} boards={BOARDS} />;
+export const VerticalScene: React.FC<{ T: number }> = ({ T }) => (
+  <Storyboard T={T} boards={BOARDS} vertical world={T > 4 ? [0, -900, 1920, Infinity] : undefined} />
+);
+export const linesDrawnByScene = (_song: Song) => new Set<string>();
+"""
+
+
+def _board_template(tmp_path):
+    template = tmp_path / "video"
+    shutil.copytree(BUNDLED, template, ignore=shutil.ignore_patterns("node_modules", "out"))
+    os.symlink(os.path.join(BUNDLED, "node_modules"), template / "node_modules")
+    (template / "src" / "scenes" / "index.ts").unlink()
+    (template / "src" / "scenes" / "index.tsx").write_text(BOARD_SCENES, encoding="utf-8")
+    return template
+
+
+def test_a_storyboard_given_the_area_its_worlds_fill_frames_a_subject_above_the_stage_in_9x16(tmp_path):
+    template = _board_template(tmp_path)
+    (tmp_path / "sheet.json").write_text('{"times": [1, 6], "cols": 2, "vertical": true}', encoding="utf-8")
+    subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--composition", "Contact",
+                    "--props", str(tmp_path / "sheet.json"), "--out", str(tmp_path), "--name", "v"],
+                   cwd=template, check=True, capture_output=True)
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(tmp_path / "v-Contact.png"), "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+                         check=True, capture_output=True).stdout
+    rgb = np.frombuffer(raw, np.uint8).reshape(-1, 1920, 3).astype(int)
+    red = (rgb[..., 0] > 200) & (rgb[..., 1] < 60) & (rgb[..., 2] < 60)
+    gap, tile = 12, (1920 - 12 * 3) / 2
+    ys = [np.nonzero(red[:, round(gap + i * (tile + gap)):round(gap + i * (tile + gap) + tile)])[0] for i in range(2)]
+    stopped, framed = [(y.mean() - gap) * 1080 / tile for y in ys]
+    # without `world` the frame stops at the stage's top edge and the subject sits high; with it, mid-picture
+    assert stopped < 300 and abs(framed - 674.5) < 3, (stopped, framed)
+
+
+def test_a_drafts_render_log_names_a_framing_the_planner_never_shows(tmp_path):
+    template = _board_template(tmp_path)
+    # a video renders its frames in several tabs, and the line comes once
+    r = subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--from", "8", "--to", "10", "--draft",
+                        "--out", str(tmp_path)], cwd=template, check=True, capture_output=True, text=True)
+    named = [line for line in r.stdout.splitlines() + r.stderr.splitlines() if "never shows framing" in line]
+    assert len(named) == 1 and "the board at ch never shows framing 2" in named[0] and "after framing 1" in named[0], named
+
+
 FONT_SCENES = """
 import React from "react";
 import { AbsoluteFill } from "remotion";

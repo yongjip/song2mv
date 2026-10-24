@@ -22,9 +22,10 @@ import type { Kind, Line, Section, SongCtxValue } from "./song";
  * - calm sections hold shots of 3–4 bars with slow drifts; hot sections cut on downbeats, every bar or two (half bars on
  *   slow songs), a hit (the camera's punch) on each bar line;
  * - every shot drifts (a push, a pan or a pull; `drift` scales it), so a held line never measures still;
- * - later copies of a section (ch2, v3) take the framings in another order, so they do not repeat the first copy's
- *   shots (`variation.repeats`);
- * - consecutive shots never take framings too alike to show a cut (under 1.35× apart in zoom and close together).
+ * - copy n of a section opens on framing n − 1 (ch2 on framings[1], v3 on framings[2]) and takes the rest in turn, so
+ *   it does not repeat the first copy's shots (`variation.repeats`);
+ * - consecutive shots never take framings too alike to show a cut: under 1.35× apart in zoom, closer than 400 px / zoom
+ *   and under 4° apart in roll. The plan skips such a framing, and lists one that no shot took under `dropped`.
  *
  * `pattern` sets your own bar counts between cuts (cycled); the rules above still hold. A cut only counts when the
  * picture changes: give framings that show different parts of the world (the sky, the ground, the subject up close),
@@ -39,7 +40,11 @@ export type Framing = { x: number; y: number; zoom?: number; rotate?: number };
 /** A camera Shot of the plan, and the index of the framing it took */
 export type PlannedShot = Shot & { framing: number };
 
-export type Plan = { shots: PlannedShot[]; hits: number[] };
+export type Plan = {
+  shots: PlannedShot[]; hits: number[];
+  /** framings no shot took because each turn they came after one too alike: [framing, the framing before it] */
+  dropped?: [number, number][];
+};
 
 export type PlanOptions = {
   /** bar counts between cuts, cycled through the stretch: replaces each section kind's default rhythm */
@@ -313,6 +318,7 @@ export function planBoards(ctx: SongCtxValue, boards: BoardPlan[]): Plan[] {
     const views = twoAtLeast(o.framings);
     const shots: PlannedShot[] = [];
     const hits: number[] = [];
+    const skipped = new Map<number, number>();
     let last = -1;
     for (const { part, times: all, rule, hits: on } of parts) {
       const times = all.filter((t) => t >= o.from - 1e-6 && t < o.to - 1e-6);
@@ -321,7 +327,10 @@ export function planBoards(ctx: SongCtxValue, boards: BoardPlan[]): Plan[] {
       hits.push(...on.filter((t) => times.includes(t)));
       times.forEach((t, j) => {
         let f = (j + first) % views.length;
-        for (let k = 0; k < views.length && last >= 0 && alike(views[f], views[last]); k++) f = (f + 1) % views.length;
+        for (let k = 0; k < views.length && last >= 0 && alike(views[f], views[last]); k++) {
+          skipped.set(f, last);
+          f = (f + 1) % views.length;
+        }
         last = f;
         const end = times[j + 1] ?? Math.min(part.end, o.to);
         shots.push(drifted(views[f], end - t, rule, MOVES[(j + 2 * rep) % MOVES.length], t, f, o.drift ?? 1));
@@ -333,6 +342,7 @@ export function planBoards(ctx: SongCtxValue, boards: BoardPlan[]): Plan[] {
       const end = { x: tail.to?.x ?? tail.x, y: tail.to?.y ?? tail.y, zoom: tail.to?.zoom ?? tail.zoom, rotate: tail.rotate };
       shots.push({ t: o.to, ...end, framing: tail.framing });
     }
-    return { shots, hits };
+    const dropped = [...skipped].filter(([f]) => !shots.some((s) => s.framing === f)).sort((a, b) => a[0] - b[0]);
+    return { shots, hits, dropped };
   });
 }

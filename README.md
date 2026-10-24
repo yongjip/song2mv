@@ -147,7 +147,9 @@ Why it works the way it does:
   timed "Beep, beep" on "Brooklyn"), runs whose starts for a line are more than 0.7 s apart, and a word whose merged
   time is more than 0.5 s from every run's time for it (two runs that disagree, merged to their middle) put a line on
   `check_by_ear`: on the JamendoLyrics benchmark, 56 of the 65 lines these add have a word more than 0.3 s off (of
-  all lines, 37 % have).
+  all lines, 37 % have). Two words at one time are listed where another copy of the line has them 0.2 s apart or
+  more ("beep" and "Brooklyn" on one 16th in one hook, 0.33 s apart in the other); alone they are not, since fast
+  singing puts two words on one 16th all the time.
 
 To hear whether the grid and timing are right, mix a click track over a stretch — a high click on the first beat
 of each bar, a low click on the other beats and, with `--words`, a soft tick on every lyric word:
