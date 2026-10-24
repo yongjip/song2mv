@@ -7,6 +7,8 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 First release (0.1.0).
 
 ### Fixed
+- CI runs every commit pushed to `main` to the end instead of cancelling it for the next push, so each commit on
+  `main` gets a result; runs of one pull request still supersede each other.
 - Portrait head-touch folds the arm along a compact path without collapsing segments during the reach,
   instead of shrinking a Cartesian elbow/wrist interpolation. Joint and fingertip travel distribute its timing;
   regression checks reject a renewed sideways sweep, reversed wrist, discontinuity or detached contact.

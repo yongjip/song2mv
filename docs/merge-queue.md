@@ -2,7 +2,7 @@
 
 Agent sessions on the maintainer's Mac do not push `main`. They enqueue their branch in
 [mergetrain](https://github.com/yongjip/mergetrain), a local merge queue: one runner merges the queued branches onto
-`origin/main` in order, runs the checks below, pushes, and waits for CI. Pull requests from forks work as before.
+`origin/main` in order, runs the checks below, pushes, and waits for CI. Pull requests land through it too.
 
 ## Land a change
 
@@ -35,12 +35,13 @@ the queue's control checkout and stays on `main`. A separate clone has a queue o
    | `deployed succeeded succeeded` | on `main`, CI passed | report `.job.deploy_sha` and the `verify-ci:` line of `.job.log_path` |
    | `deployed succeeded failed` | on `main`, CI failed or did not finish | report the same; fix forward on a new branch |
    | `failed …` or `blocked …` | nothing landed | step 4 |
+   | `canceled …`, `.job.note` `retried as job N` | `main` moved on GitHub during its train; the runner retried it | wait on job N |
    | anything else | waiting or running | keep waiting |
 
    The checks take about 40 seconds, or 2 minutes when the train touches the renderer, and CI about 5 more. Jobs
    enqueued meanwhile go in the next train together. If your job stays `queued` and
    `scripts/mergetrain/daemon.sh status` says the runner is stopped, it was stopped for a benchmark: report that and
-   stop waiting.
+   stop waiting. Keep your worktree and branch until the job is deployed: the runner may retry it.
 4. Failed or blocked: `.outcome.message` says why, and the whole output is in `.job.log_path`. Fix it on the same
    branch (for a conflict, merge `origin/main` into it), commit, and run the job's `.retry_command`
    (`mergetrain retry ID --json`): that is how the queue takes the branch again, as enqueueing it a second time is
@@ -48,12 +49,39 @@ the queue's control checkout and stays on `main`. A separate clone has a queue o
 
 The rules every agent follows with this queue are in [AGENTS.mergetrain.md](../AGENTS.mergetrain.md).
 
+## Pull requests and merges on GitHub
+
+Merge a pull request, Dependabot's included, through the queue as well:
+
+```sh
+scripts/mergetrain/land-pr.sh N
+```
+
+It checks out the pull request's head in `.mergetrain/pr/N` of `~/AIProjects/song2mv-new` and enqueues it with
+`--auto`; wait on the job as in step 3. GitHub marks the pull request merged once its commit is on `main`. After the
+pull request changes (`@dependabot rebase`, a fix), run it again: it retries the blocked job with the new head. The
+next run removes the worktrees of pull requests that have landed. Whether to merge a pull request stays the
+maintainer's call; the script replaces only the merge button.
+
+A merge made on GitHub anyway, or a push from another machine, moves `main` under the queue:
+
+- Queued jobs are unaffected: every train starts from the current `main`.
+- A train that is running then has its push refused (`fetch first`). Nothing landed, and the runner retries those
+  jobs within 15 seconds: they run the checks again on the new `main` and land. The old job turns `canceled` with
+  `retried as job N`.
+- A job that conflicts with the merged change is blocked like any conflict: step 4.
+- CI runs every commit on `main` to the end, so a merge right after a landing does not cancel that landing's CI.
+
+The `pre-push` hook below sees only pushes made on this Mac from `~/AIProjects/song2mv-new` and its worktrees.
+GitHub's merge button, `gh pr merge`, other clones and other machines never run it.
+
 ## What `--auto` approves
 
 The maintainer approved landing song2mv without asking again. For the job's pinned commit, `--auto` lets the
 runner merge it with the other queued jobs onto `origin/main`, run the checks, push the result to `main` together
-with `refs/mergetrain/deploys/<sha>`, and wait for CI. A session may also run `mergetrain verify --job ID` to check
-CI again after rerunning it on GitHub.
+with `refs/mergetrain/deploys/<sha>`, and wait for CI; `land-pr.sh` asks for the same for a pull request's head.
+When a moved `main` refuses a train's push, the runner retries its jobs and their approval carries over. A session
+may also run `mergetrain verify --job ID` to check CI again after rerunning it on GitHub.
 
 Not approved: tags (a `v*` tag publishes to PyPI), releases, other branches, force pushes, `verify --ack`, and the
 recovery commands `status` may offer (`reconcile`, `unlock`, and `cancel` or `dismiss` of another session's job).
@@ -84,10 +112,11 @@ when every job passed. CI also covers what the Mac cannot: Linux, Windows and Py
 scripts/mergetrain/daemon.sh start    # or: stop, status
 ```
 
-`start` runs `mergetrain daemon` for `~/AIProjects/song2mv-new` as the launchd agent
-`com.yongjip.mergetrain.song2mv-new`, holding `caffeinate -i` while it runs, and starts it again at login. Its log is
-`~/Library/Logs/mergetrain-song2mv-new.log`. It lands only `--auto` jobs. The agent runs at full speed
-(`ProcessType` `Interactive`): launchd's default limits made the render tests take 109 s instead of 64.
+`start` installs the launchd agent `com.yongjip.mergetrain.song2mv-new`, which runs `mergetrain daemon --once` for
+`~/AIProjects/song2mv-new` every 15 seconds, retries jobs whose push a moved `main` refused, holds `caffeinate -i`
+while it runs, and starts again at login. Its log is `~/Library/Logs/mergetrain-song2mv-new.log`. It lands only
+`--auto` jobs. The agent runs at full speed (`ProcessType` `Interactive`): launchd's default limits made the render
+tests take 109 s instead of 64.
 
 `caffeinate` prevents idle sleep only: a closed lid still sleeps the Mac. Nothing is lost then, and the train goes on
 after waking. With mergetrain 3.7.0, `status` may offer `mergetrain unlock --force` right after a sleep longer than
@@ -97,9 +126,9 @@ after waking. With mergetrain 3.7.0, `status` may offer `mergetrain unlock --for
 `scripts/mergetrain/daemon.sh start` after. `stop` lets a train in progress finish, CI wait included, so it can take
 several minutes. Jobs enqueued meanwhile wait and land after `start`.
 
-Restart the runner (`stop`, then `start`) after upgrading mergetrain. It reads `.mergetrain.yaml` from
-`~/AIProjects/song2mv-new`, so a change to it applies once that checkout has it:
-`git -C ~/AIProjects/song2mv-new pull --ff-only`.
+The runner reads `.mergetrain.yaml` and `scripts/mergetrain/daemon.sh` from `~/AIProjects/song2mv-new`, so a change to
+them applies once that checkout has it: `git -C ~/AIProjects/song2mv-new pull --ff-only`. Restart the runner (`stop`,
+then `start`) after that, and after upgrading mergetrain.
 
 ## Pushes
 
@@ -119,4 +148,5 @@ A `pre-push` hook refuses pushes to `main` that do not come from the queue, whos
 cp scripts/mergetrain/pre-push "$(git -C ~/AIProjects/song2mv-new rev-parse --path-format=absolute --git-path hooks)/pre-push"
 ```
 
-It is a guard against mistakes, not a lock: `git push --no-verify` and GitHub's web interface bypass it.
+It is a guard against local mistakes, not a lock: `git push --no-verify` skips it, and pushes and merges made
+elsewhere never meet it (see [Pull requests and merges on GitHub](#pull-requests-and-merges-on-github)).

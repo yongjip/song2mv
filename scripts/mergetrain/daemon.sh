@@ -11,10 +11,24 @@ domain="gui/$(id -u)"
 
 pid() { launchctl print "$domain/$label" 2>/dev/null | awk '$1 == "pid" {print $3}'; }
 
+# A merge made on GitHub while a train runs gets the train's push refused as non-fast-forward. Nothing landed and the
+# jobs keep their approval, so they are retried: the next train starts from the new main and runs the gates again.
+retry_after_main_moved() {
+  tried="$repo/.mergetrain/retried-after-main-moved"
+  mergetrain --repo "$repo" status --json |
+    jq -r '.attention_jobs[] | select((.reason // "") | test("\\((fetch first|non-fast-forward)\\)")) | .id' |
+    while read -r id; do
+      grep -qx "$id" "$tried" 2>/dev/null && continue
+      echo "$id" >>"$tried"
+      echo "daemon.sh: main moved under job $id; retrying it on the new main"
+      mergetrain --repo "$repo" retry "$id" --json | jq -c '{ok, replacement: .job.id, error: .error.code}'
+    done
+}
+
 case "${1:-status}" in
 start)
   [ -f "$repo/.mergetrain.yaml" ] || { echo "daemon.sh: $repo has no .mergetrain.yaml; check out main there" >&2; exit 1; }
-  for tool in mergetrain git uv node npx ffmpeg gh; do
+  for tool in mergetrain git jq uv node npx ffmpeg gh; do
     command -v "$tool" >/dev/null || { echo "daemon.sh: $tool is not on PATH" >&2; exit 1; }
   done
   if [ -n "$(pid)" ]; then
@@ -30,10 +44,7 @@ start)
 <dict>
   <key>Label</key><string>$label</string>
   <key>ProgramArguments</key>
-  <array>
-    <string>/bin/sh</string><string>-c</string>
-    <string>caffeinate -i -w \$\$ &amp; exec mergetrain daemon --interval 15</string>
-  </array>
+  <array><string>/bin/sh</string><string>$repo/scripts/mergetrain/daemon.sh</string><string>run</string></array>
   <key>WorkingDirectory</key><string>$repo</string>
   <key>EnvironmentVariables</key>
   <dict>
@@ -51,6 +62,16 @@ start)
 EOF
   launchctl bootstrap "$domain" "$plist"
   echo "daemon.sh: started $label for $repo, pid $(pid); log: $log"
+  ;;
+run)
+  caffeinate -i -w $$ &
+  stopping=
+  trap 'stopping=1' TERM INT
+  while [ -z "$stopping" ]; do
+    mergetrain --repo "$repo" daemon --once || true
+    retry_after_main_moved || true
+    [ -n "$stopping" ] || sleep 15
+  done
   ;;
 stop)
   # Not launchctl bootout: it kills a train that takes longer than a minute to finish.

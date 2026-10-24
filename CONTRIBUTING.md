@@ -49,7 +49,7 @@ rendered SVG and mutation checks when changing this harness.
 
 Agent sessions working in the maintainer's checkout do not push `main`: they enqueue their branch in a local merge
 queue that runs the checks, pushes and waits for CI. Follow [docs/merge-queue.md](docs/merge-queue.md). Pull requests
-are unaffected.
+are opened and reviewed as usual; the maintainer lands them through the same queue.
 
 ## Adding an asset or a style pack
 
