@@ -7,6 +7,6 @@ printf '%s\n' "$input" | while read -r _ sha ref _; do
   printf '%s\n' "$input" | grep -q " refs/mergetrain/deploys/$sha " && continue
   echo "pre-push: main is updated by the merge queue. Commit on your branch and enqueue it instead:" >&2
   echo "  mergetrain enqueue --task \"<what it does>\" --branch <branch> --auto --json" >&2
-  echo "See docs/merge-queue.md." >&2
+  echo "See docs/merge-queue.md (on a branch without it: git show origin/main:docs/merge-queue.md)." >&2
   exit 1
 done

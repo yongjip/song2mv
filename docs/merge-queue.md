@@ -71,7 +71,7 @@ with `approval_execution_policy_changed`: `mergetrain dismiss ID`, then enqueue 
 | `diff-check` | `git diff --check` of the train, mergetrain's own | always |
 | `setup` | `scripts/mergetrain/setup.sh`: `.venv` from uv's cache, the template's `node_modules` linked from `~/.cache/song2mv-gates` | always |
 | `ruff`, `tsc`, `pytest` | `ruff check src tests`, `npx tsc --noEmit` in the template, `pytest -q` without `tests/test_template.py`, side by side | always |
-| `render` | `npm run test:assets` in the template, then `pytest -q tests/test_template.py` | when the train changes `src/song2mv/render/`, `src/song2mv/check/`, a module they import, their tests, `pyproject.toml` or `scripts/mergetrain/` |
+| `render` | `npm run test:assets` in the template, then `pytest -q tests/test_template.py` | when the train changes `src/song2mv/render/`, `src/song2mv/check/`, a module they import, their tests, `pyproject.toml` or `scripts/mergetrain/setup.sh` |
 
 At most 4 worker slots run at once (the Mac has 12 cores): one each for `ruff`, `tsc` and `pytest`, and all 4 for
 `render`, which runs after them. Its renders use about 2 cores on average and up to 7 for moments. After the push,

@@ -35,7 +35,7 @@ gates:
       - src/song2mv/errors.py
       - tests/test_template.py
       - pyproject.toml
-      - scripts/mergetrain/**
+      - scripts/mergetrain/setup.sh
 
 deploy:
   verify:
