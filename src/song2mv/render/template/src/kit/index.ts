@@ -37,3 +37,4 @@ export * as paper from "./styles/paper";
 export * as pixel from "./styles/pixel";
 export * as comic from "./styles/comic";
 export * as poster from "./styles/poster";
+export * as toon from "./styles/toon";

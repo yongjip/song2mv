@@ -48,6 +48,11 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- A `toon` style pack: `toon.Ink` puts one ink outline round the silhouette of anything inside it, kit pieces
+  included, leaving their soft shadows and glows unlined; `toon.Shade`, `toon.fill`, `toon.Shine` shade a form from
+  its lit side, and `toon.Line` draws a limb or cord with its own outline. Gallery tile 29 shows kit pieces as drawn
+  and in the pack. In one trial the user found a flat first take's pictures lacking, and the second take was drawn
+  this way.
 - The portrait guide (`docs/portrait-acting.md`, and the skill in short) puts a photo on a portrait body: import it
   from the template's `src/` and draw it with `<Img>`, so that a missing file stops the render (an SVG `<image>`
   rendered Chrome's broken-image icon and succeeded); clip it with `PortraitCutout` on the collar and give the

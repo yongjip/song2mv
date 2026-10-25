@@ -3,7 +3,7 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
   Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Line, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, comic, makeSongCtx, mix, paper, personHand, pixel, rng, shade, SKINS, STRIDE,
-  PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster,
+  PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster, toon,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -1408,6 +1408,42 @@ const PosterProps: React.FC<{ T: number }> = ({ T }) => (
   </Svg>
 );
 
+/** The toon pack (kit/styles/toon.tsx): kit pieces as drawn on the left, in one ink outline each on the right, and an
+ * apple and a mug drawn in the style */
+const ToonProps: React.FC<{ T: number }> = ({ T }) => (
+  <Svg>
+    <rect width={1920} height={1080} fill="#fdf1dc" />
+    <rect x={960} width={960} height={1080} fill="#fbe6c4" />
+    <toon.Defs id="g29" width={4} />
+    <toon.Shade id="g29-apple" color="#e8443a" round />
+    <toon.Shade id="g29-mug" color="#3a8ee0" />
+    <path d="M40 960H1880" stroke="#c9a77a" strokeWidth={5} />
+    <Person x={190} y={960} s={1.6} pose="wave" T={T} />
+    <Car T={T} x={600} y={960} s={0.85} id="g29-car-flat" />
+    <Heart T={T} x={740} y={330} s={0.9} beat={1} id="g29-heart-flat" />
+    <toon.Ink id="g29">
+      <Person x={1150} y={960} s={1.6} pose="wave" T={T} />
+    </toon.Ink>
+    <toon.Ink id="g29">
+      <Car T={T} x={1560} y={960} s={0.85} id="g29-car" />
+    </toon.Ink>
+    <toon.Ink id="g29">
+      <Heart T={T} x={1775} y={330} s={0.8} beat={1} id="g29-heart" />
+    </toon.Ink>
+    <toon.Ink id="g29">
+      <circle cx={1215} cy={300} r={90} fill={toon.fill("g29-apple")} />
+      <path d="M1231 200Q1277 168 1307 196Q1269 222 1231 200Z" fill="#4caf50" />
+      <toon.Shine x={1185} y={264} rx={23} />
+    </toon.Ink>
+    <toon.Line d="M1215 212Q1218 186 1231 170" width={9} color="#6a4022" ink={4} />
+    <toon.Ink id="g29">
+      <path d="M1390 230H1540V380Q1540 420 1500 420H1430Q1390 420 1390 380Z" fill={toon.fill("g29-mug")} />
+      <path d="M1540 270Q1598 270 1598 320Q1598 370 1540 370" fill="none" stroke="#3a8ee0" strokeWidth={18} />
+      <toon.Shine x={1418} y={290} rx={12} ry={44} rotate={0} opacity={0.5} />
+    </toon.Ink>
+  </Svg>
+);
+
 /**
  * PortraitInteraction (kit/portrait-interaction.tsx): a call and writing in a notebook, each with a narrow and a wide
  * head whose profiles put the ear in other places; the hand, the phone and the pen follow the profile.
@@ -1717,6 +1753,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Portrait interactions: a hand at the temple",
     draw: () => <PortraitHeadTouch />,
+  },
+  {
+    name: "Style pack: toon outline, shading and shine",
+    draw: (T) => <ToonProps T={T} />,
   },
 ];
 

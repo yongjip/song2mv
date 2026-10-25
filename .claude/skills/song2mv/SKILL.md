@@ -141,6 +141,8 @@ different central image. For each, write:
   - paper cut-out with drop shadows (the kit has a style pack for it), or ink lines on paper, or chalk on a
     blackboard;
   - pixel art (the kit has a style pack for it too), or a retro VHS / photocopy look;
+  - toon: an ink outline round each character and prop, shading from a lit side and a shine on round forms (the kit
+    has a style pack for it, which outlines kit pieces as they are);
   - collage, or watercolour washes;
   - an isometric miniature;
   - kinetic typography only, or neon signs on brick.
@@ -390,6 +392,18 @@ the screen, such as `poster.Bubble`s with a `tail`), `poster.Notebook` (`write` 
 `poster.Glass` (`fill`), `poster.Lighter`, `poster.Smoke` (steam, or a `PortraitBody`'s cigarette from
 `portraitPropTip()` given the body's props), `poster.Building` (`sign`), `poster.Light` (`lit`), `poster.Cloud`, and
 `poster.SleevedHand` going into a `poster.Pocket`. Check a held prop at both ends of its move and in between.
+
+`toon`, an ink outline and shading for any drawing (gallery tile 29: kit pieces as drawn, then in the pack):
+- `toon.Defs id` once in the scene's `<Svg>`, then `<toon.Ink id>` round each character or prop: one outline round
+  its silhouette, kit pieces included (a `Person`, a `Car`); their soft ground shadows and glows stay without a line.
+  One Ink per character or prop: an Ink round a whole group outlines only the group's outer edge;
+- `toon.Shade id color` (`round` for a ball lit from the top left) with `fill={toon.fill(id)}` shades a form from its
+  lit side, and `toon.Shine` puts a highlight there;
+- `toon.Line` draws a limb, cord or handle with an outline of its own, outside an Ink.
+
+In one trial the user's first note on a flat first take was that its pictures were lacking; the second take drew
+every character and prop this way. Outlines are fine high-contrast detail, which measures as motion under drift: that
+video's boards ran at `drift` 0.5–0.6.
 
 **A photo as the head.** Import the image from the song's `src/` (PNG or JPEG; `song2mv render` ignores `public/`)
 and draw it with Remotion's `<Img>` in a `<foreignObject>`: a missing file then stops the render, where an SVG
