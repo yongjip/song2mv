@@ -48,6 +48,17 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- The portrait guide (`docs/portrait-acting.md`, and the skill in short) puts a photo on a portrait body: import it
+  from the template's `src/` and draw it with `<Img>`, so that a missing file stops the render (an SVG `<image>`
+  rendered Chrome's broken-image icon and succeeded); clip it with `PortraitCutout` on the collar and give the
+  profile as `neck + s × (point − anchor)`. A grid of profiles run through the actions gives their reach: a call, an
+  ear 40–100 above the neck (within 2 of the top, a call passes its first frame and throws up to 1.3 s in, as the
+  head sways); head-touch, a temple up to about 125 above the neck. `PortraitBody`'s doc comment adds
+  `foregroundCollar`, which covers the cut, and where `hold` grips, (±72, −116). Calls go through
+  `PortraitInteraction`: in a trial the body's own phone gesture floated beside two photo heads' cheeks. For adding
+  an action, the guide lists what building the three taught: one transform for a held object and the hand on it, the
+  wrist turned from the forearm (between two absolute angles it bent backwards mid-reach), and a look at the frames
+  (the contact checks passed an open hand that read as a salute).
 - `AGENTS.md` states the aim, that anyone makes a high-quality video from this repository alone through any agent,
   and its first rule for changes: what a video teaches (a user's verdict, a failure's cause, the numbers before and
   after a fix) goes into the skill, `AGENTS.md` or the kit in the same change, never only into an agent's memory.

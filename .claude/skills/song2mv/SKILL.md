@@ -385,16 +385,23 @@ inside only the lines you place: `comic.Brush` (tapered: features, folds, an arm
 notches: give a small form (an ear) a lighter `line`, draw a hole (a mug handle's) as a filled shape in an `Edge`,
 round the dips between tufts of fur, and keep balloons, tails and trailing bubbles clear of the figure.
 
-For portrait actions, `renderHead(angle, pitch)` can use `portraitHeadTransform({neck, angle, pitch})` to nod a
-flat head about its calibrated neckline while writing. The helper does not change eyes in a photograph. Reuse
-`PortraitInteraction` for the arm, hand and held object rather than patching a scene's joint coordinates; see
-`docs/portrait-acting.md` for the callback and regression contract.
-
 `poster`, office and street props drawn flat as on a poster, in `poster.colors`: `poster.Phone` (its `children` on
 the screen, such as `poster.Bubble`s with a `tail`), `poster.Notebook` (`write` 0–1), `poster.CoffeeCup`,
 `poster.Glass` (`fill`), `poster.Lighter`, `poster.Smoke` (steam, or a `PortraitBody`'s cigarette from
 `portraitPropTip()` given the body's props), `poster.Building` (`sign`), `poster.Light` (`lit`), `poster.Cloud`, and
 `poster.SleevedHand` going into a `poster.Pocket`. Check a held prop at both ends of its move and in between.
+
+**A photo as the head.** Import the image from the song's `src/` (PNG or JPEG; `song2mv render` ignores `public/`)
+and draw it with Remotion's `<Img>` in a `<foreignObject>`: a missing file then stops the render, where an SVG
+`<image>` leaves Chrome's broken-image icon in the frame. `PortraitCutout` clips it to the head and neck and puts its
+neckline (`anchor`) on the collar at (0, −235). Give the profile's ear and temple in body units,
+`neck + s × (point in the photo − anchor)`, and pick `s` so that the ear is 40–100 above the neck, where a call
+reaches it. A call, writing or a hand at the head goes through `PortraitInteraction`, not a scene's own joint
+coordinates: `PortraitBody`'s `phone` gesture holds the phone in one place, by the gallery head's jaw, and misses a
+photo's ear. On a `PortraitBody`, `foregroundCollar` covers the cut, and `hold` grips at (±72, −116), the lower
+corners of what it holds. `renderHead(angle, pitch)` can use `portraitHeadTransform({neck, angle, pitch})` to nod a
+flat head about its neckline; a photo keeps its expression, so the acting is the head's turn, the lean and the hands.
+`docs/portrait-acting.md` has an example, the checks and how to add an action.
 
 Putting a scene together:
 

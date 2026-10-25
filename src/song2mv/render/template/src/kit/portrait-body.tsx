@@ -202,10 +202,11 @@ export function PortraitHand({ shape, skin, prop }: { shape: HandShape; skin: st
  * centred about 315 above the feet. Use inside <Svg>. The feet are at (x, y), the hip 100 and the collar 235 above
  * them, times `s`. `armL`, `armR`: degrees, 0 down, 90 out, 180 up; `armSwing` for a walk. `feet` places each foot
  * (`x`, `lift`) and `step` −1…1 lifts one; `lean` turns the upper body about the hip (degrees). `gesture` "phone",
- * "point" or "smoke" poses the right arm, "hold" brings both hands to the lower corners of `frontProp`, a held object in
- * body coordinates (poster.Notebook at (0, −160), s 0.3). `handL`, `handR` override the hand shapes; `color` (the
- * shirt), `legs`, `skin` and `shoes` take "#rrggbb", shaded from there. portraitMotion gives these props for walking
- * and gestures; for a call, writing or a hand at the head, use PortraitInteraction.
+ * "point" or "smoke" poses the right arm, "hold" brings both hands to (±72, −116), the lower corners of `frontProp`, a
+ * held object in body coordinates (poster.Notebook at (0, −160), s 0.3), with only the thumbs in front of it. `handL`,
+ * `handR` override the hand shapes; `color` (the shirt), `legs`, `skin` and `shoes` take "#rrggbb", shaded from there.
+ * `foregroundCollar` draws the collar over the head's neck, where a cut-out photo ends. portraitMotion gives these
+ * props for walking and gestures; for a call, writing or a hand at the head, use PortraitInteraction.
  */
 export function PortraitBody({
   x,
