@@ -402,8 +402,8 @@ the screen, such as `poster.Bubble`s with a `tail`), `poster.Notebook` (`write` 
 - `toon.Line` draws a limb, cord or handle with an outline of its own, outside an Ink.
 
 In one trial the user's first note on a flat first take was that its pictures were lacking; the second take drew
-every character and prop this way. Outlines are fine high-contrast detail, which measures as motion under drift: that
-video's boards ran at `drift` 0.5–0.6.
+every character and prop this way, and the user liked the outlines. Outlines are fine high-contrast detail, which
+measures as motion under drift: that video's boards ran at `drift` 0.5–0.6.
 
 **A photo as the head.** Import the image from the song's `src/` (PNG or JPEG; `song2mv render` ignores `public/`)
 and draw it with Remotion's `<Img>` in a `<foreignObject>`: a missing file then stops the render, where an SVG
