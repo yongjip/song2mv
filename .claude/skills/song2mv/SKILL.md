@@ -125,7 +125,9 @@ A line you would rather not draw (a slur, a sexual line) gets the harmless readi
 the word its rhyme turns it into, or a censor gag; never nothing, since a skipped punchline reads as a video that
 missed the joke. On-screen text names the twist ("knead → need"), not what the picture shows. Choose the concept with
 the map in hand: a song with a device in every other line needs a frame where a new picture per line fits (a TV
-show's screen, a comic strip, a quiz), not one long scene.
+show's screen, a comic strip, a quiz), not one long scene. Show the user the lines you found doing something, with
+your reading of each, and carry on: a slang word or an in-joke you misread costs a row of the map now and a scene
+later.
 
 Every song gets its own look. One kit or template applied to every song makes every video look alike, so the look is
 decided before you touch the kit.
