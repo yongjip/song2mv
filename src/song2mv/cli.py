@@ -98,6 +98,14 @@ def _times(v: str) -> list[float]:
     return times
 
 
+def _ids(v: str) -> list[str]:
+    """argparse type for --lines: line ids separated by commas."""
+    ids = [i.strip() for i in v.split(",") if i.strip()]
+    if not ids:
+        raise argparse.ArgumentTypeError(f"'{v}' is not a list of line ids such as v1-03,ch1-02")
+    return ids
+
+
 def _cols(v: str) -> int:
     """argparse type for --cols: 1 to 12 frames per row."""
     try:
@@ -197,7 +205,7 @@ def cmd_sheet(a) -> dict:
     _existing_file(a.song, "mv.json")
     _existing_file(a.cuts, "check result")
     from .check.sheet import sheet
-    return sheet(a.video, a.song, a.every, a.times, a.cuts, a.start, a.cols, a.crop, a.out)
+    return sheet(a.video, a.song, a.every, a.times, a.cuts, a.start, a.cols, a.crop, a.out, a.lines)
 
 
 def cmd_render(a) -> dict:
@@ -267,6 +275,8 @@ def build_parser() -> argparse.ArgumentParser:
     pick = h.add_mutually_exclusive_group(required=True)
     pick.add_argument("--every", type=_seconds, metavar="S", help="a frame from the middle of every S seconds of the video")
     pick.add_argument("--times", type=_times, metavar="T,T,…", help="frames at these song times, e.g. 12,33.1,47.5")
+    pick.add_argument("--lines", type=_ids, metavar="ID,ID,…", help="a frame from the middle of each of these lines, "
+                      "e.g. v1-03,ch1-02 (needs --song)")
     pick.add_argument("--cuts", metavar="CHECK_JSON", help="a frame 0.3 s into each shot: the start and the cuts of a "
                       "saved `song2mv check --json` result, whose from and song are then the defaults")
     h.add_argument("--from", dest="start", type=float, help="song time of the video's first frame (default: the start "

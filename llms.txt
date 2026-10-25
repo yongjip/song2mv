@@ -17,9 +17,10 @@ Install (not on PyPI yet): `uv tool install --python 3.13 "song2mv[sync] @ git+h
   ticks on lyric words, for a person to listen to (an agent cannot hear the song); the result says what to ask.
 - `song2mv check VIDEO --song mv.json [--from A --to B] [--json]` — experimental; per-line motion, coverage,
   chorus variation, cut rhythm. Passing is necessary, not proof of fun.
-- `song2mv sheet VIDEO [--song mv.json] (--every S | --times T,T | --cuts CHECK_JSON) [--from A] [--crop X,Y,W,H]
-  [--json]` — a PNG contact sheet of a rendered video, captions included: frames at song times, each labelled with
-  its time and the line sung; `--cuts` takes a frame from each shot listed in a saved `check --json` result.
+- `song2mv sheet VIDEO [--song mv.json] (--every S | --times T,T | --lines ID,ID | --cuts CHECK_JSON) [--from A]
+  [--crop X,Y,W,H] [--json]` — a PNG contact sheet of a rendered video, captions included: frames at song times, each
+  labelled with its time and the line sung; `--lines` takes one from the middle of each line named, `--cuts` one from
+  each shot listed in a saved `check --json` result.
 - `song2mv render mv.json [--from A --to B] [--aspect 16x9|9x16|both] [--still T] [--template DIR] [--json]` —
   experimental; uses Remotion, which is not MIT: free for individuals and companies with up to 3 employees, a
   company license otherwise.

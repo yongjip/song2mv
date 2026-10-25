@@ -8,8 +8,8 @@ description: Make a beat-synced music video or lyric video for a song, drawn in 
 You turn one audio file into a music video whose every frame is code (React/SVG in Remotion), synced to the song's
 beat and lyrics. `song2mv` has the tools; this file is the order to use them in and what to watch for.
 
-The loop is: **timing → scene design → render → check → fix**. You cannot hear the song, so every judgement that
-needs ears goes to the user as a short clip or click track that makes it a ten-second check.
+The loop is: **timing → reading the lyrics → scene design → render → check → fix**. You cannot hear the song, so
+every judgement that needs ears goes to the user as a short clip or click track that makes it a ten-second check.
 
 **Checkpoints don't block.** At each one, show the user what you have, with your pick and the reason in one line,
 and keep going; they can redirect you at any time. Decide timing by measurement, send the ear-check clips anyway and
@@ -102,7 +102,30 @@ song2mv render <work>/mv.json --still <time> --aspect both          # PNGs you c
 Look at the stills yourself. This plain lyric video is the floor: captions in time, sections coloured by energy,
 choruses big. Show it to the user early — sometimes it is all they need.
 
-## 3. Concept, then the song map
+## 3. Lyrics, concept, then the song map
+
+**Read the lyrics first, line by line,** into `<work>/lyrics-map.md`: a row per line id from `mv.json`, with what the
+line says and what it does. Most lines just say something. The lines that do something (a pun, a metaphor, a parody)
+are the jokes and images the song is made of, and drawing their nouns misses them. One trial's first take gave each
+line a prop for its nouns: 6 of its 17 wordplay lines never reached the screen, 4 showed one of their two meanings,
+and its on-screen tags read out what the picture already showed. The user's first note was that the jokes were
+missing. For each line that does something, write the device, the picture and the text it needs:
+
+| The line … | Show |
+|---|---|
+| makes a metaphor or simile ("my heart's a stereo") | its image (a heart-shaped boombox), not the singer saying it |
+| means two things (a pun, a double meaning) | both meanings, one turning into the other |
+| sounds like another word ("I knead you") | the other word's picture (hands in dough) and both words as text, "knead → need": a picture cannot show that two words sound alike |
+| bends a famous line (a parody, a quote) | the famous image, then the twist |
+| names a person, brand or work | what the song uses the name for (its sound, its trait), never the real person |
+| lists or rhymes several things | one picture per word, each on its word |
+| comes back (a callback, the hook again) | the earlier picture, changed |
+
+A line you would rather not draw (a slur, a sexual line) gets the harmless reading the song itself offers, such as
+the word its rhyme turns it into, or a censor gag; never nothing, since a skipped punchline reads as a video that
+missed the joke. On-screen text names the twist ("knead → need"), not what the picture shows. Choose the concept with
+the map in hand: a song with a device in every other line needs a frame where a new picture per line fits (a TV
+show's screen, a comic strip, a quiz), not one long scene.
 
 Every song gets its own look. One kit or template applied to every song makes every video look alike, so the look is
 decided before you touch the kit.
@@ -147,7 +170,8 @@ and any kit changes into it.
 **Then the song map** for the chosen concept, `<work>/map.md`. Show it to the user and carry on:
 
 - Per section (from `mv.json` sections; `<work>/music.json` has the loudness curve and likely boundaries): bars,
-  energy (rising / peak / falling), what the lyrics say, **one visual idea**, colour.
+  energy (rising / peak / falling), what the lyrics say, **one visual idea**, colour, and where the lyric map's
+  pictures go in it.
 - **One main character or motif** that carries through the whole song and changes with it. A video with a
   protagonist is more watchable than a slideshow of effects.
 - **Hit points**: the first beat of each chorus, drops, the last word. These get the biggest moment (cut, flash,
@@ -209,9 +233,11 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   `paper.Stack` or the like), the same with `vertical` is the `VerticalScene`, and `linesDrawnBy(song, boards)` gives
   `linesDrawnByScene`. A board's start is a cut, planned with its section's other cuts: the rhythm counts it, and a
   section with boards at its lines cuts inside as few lines as its rhythm allows, inside none under 2.5 s if it can.
-  Key boards to the lines that name something, every 2 lines or more and unevenly: in one outro three boards 2 lines
-  apart cut too evenly for `cuts.rhythm`. A board at a line opens on its first framing in every copy of the section;
-  a board at a section opens on framing n − 1 in copy n (`v2` on `framings[1]`), so put that copy's opening there.
+  Key boards to the lyric map's lines whose picture needs a new place or subject, every 2 lines or more and unevenly:
+  in one outro three boards 2 lines apart cut too evenly for `cuts.rhythm`. The map's other lines change something
+  inside the board on their own line (a prop, a sign, a screen; `liveLine(span.lines, T)` is the line sung at T). A
+  board at a line opens on its first framing in every copy of the section; a board at a section opens on framing
+  n − 1 in copy n (`v2` on `framings[1]`), so put that copy's opening there.
   So does a board at the same line of every copy with the same framings (`ch1-04`, `ch2-04`): a board repeated in
   each chorus needs as many framings as there are copies, each composing the subject differently (off-centre,
   rolled, close). Another background alone measured alike in one chorus (0.81 → 0.73); another composition passed
@@ -445,10 +471,12 @@ In a pixel scene a whole-pixel camera step (`pixel.cameraAt`) can count as a cut
 **Look at what you rendered.** `song2mv sheet` tiles the video's own frames into a PNG, captions, title and strips
 included, each labelled with its song time and the line sung then (or the section between lines). With `--cuts` it
 takes a frame 0.3 s into each shot from the saved check result, whose `--from` and `--song` it reuses; `--every S`
-takes one from the middle of every S seconds, `--times` the song times you list, and `--crop X,Y,W,H` zooms into one
-region as `Contact`'s `crop` does. A long sheet goes on more pages, all listed in `outputs` (`--json`): look at every
-page. No number catches two lyric lines on screen at once, a caption over big type or a cut-off title; a sheet does.
-Make one of every full render too (`--every 3 --song <work>/mv.json`).
+takes one from the middle of every S seconds, `--times` the song times you list, `--lines` one from the middle of
+each line id you list, and `--crop X,Y,W,H` zooms into one region as `Contact`'s `crop` does. A long sheet goes on
+more pages, all listed in `outputs` (`--json`): look at every page. No number catches two lyric lines on screen at
+once, a caption over big type or a cut-off title; a sheet does. Make one of every full render too (`--every 3 --song
+<work>/mv.json`), and one of the lyric map's lines (`--lines` with their ids): each frame must show its row's
+picture, or the line's joke is not in the video.
 
 - **Held shots** measure still; a slow drift (the shot's `to`) keeps one alive. On one pixel street a 4–6 pixel drift
   over a 2–3 s close-up measured 2–5; a 14-pixel drift measured up to 16 (frantic). A small thing moving across a

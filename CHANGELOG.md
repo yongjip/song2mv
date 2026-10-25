@@ -48,6 +48,11 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- The guide reads the lyrics line by line before the concept, into `<work>/lyrics-map.md`: what each line does (a
+  pun, a sound-alike, a metaphor, a parody, a name, a list, a callback) and the picture and text that show it, with
+  a line one would rather not draw given the harmless reading the song offers instead of nothing. In one trial the
+  first take drew each line's nouns, and 6 of its 17 wordplay lines never reached the screen. `song2mv sheet --lines
+  ID,ID,…` takes a frame from the middle of each line named, to hold the video against that map.
 - Changes made on the maintainer's machine land through a local merge queue,
   [mergetrain](https://github.com/yongjip/mergetrain), that runs the checks a Mac can reproduce, pushes `main` and
   waits for CI: `docs/merge-queue.md`.

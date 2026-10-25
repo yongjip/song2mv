@@ -89,6 +89,16 @@ def sung_at(song: dict, t: float) -> str:
     return " ".join(ids) or next((s["id"] for s in song["sections"] if s["start"] <= t < s["end"]), "")
 
 
+def line_middles(song: dict, ids: list[str]) -> list[float]:
+    """The middle of each line named, from mv.json's start and end."""
+    by_id = {r["id"]: r for r in song["lines"]}
+    for i in ids:
+        if i not in by_id:
+            raise Song2mvError(f"--lines {i}: the mv.json has no line with this id",
+                               hint=f"its line ids run {song['lines'][0]['id']} … {song['lines'][-1]['id']}")
+    return [round((by_id[i]["start"] + by_id[i].get("end", by_id[i]["start"])) / 2, 3) for i in ids]
+
+
 def grab(video: str, info: dict, v: float, vf: str, size: tuple[int, int]) -> np.ndarray:
     """The frame on screen at video time v. ffmpeg's input seek returns the first frame at or after the time it is
     given, so it is given a quarter frame before the start of the frame that shows at v."""
@@ -171,7 +181,7 @@ def page(tiles: list[np.ndarray], labels: list[tuple[str, str]], cols: int, lay:
 
 def sheet(video: str, song_path: str | None = None, every: float | None = None, times: list[float] | None = None,
           cuts: str | None = None, t0: float | None = None, cols: int | None = None,
-          crop: tuple[int, int, int, int] | None = None, out: str | None = None) -> dict:
+          crop: tuple[int, int, int, int] | None = None, out: str | None = None, lines: list[str] | None = None) -> dict:
     out = out or os.path.splitext(video)[0] + "-sheet.png"
     if not out.lower().endswith(".png"):
         raise Song2mvError(f"--out {out}: the sheet is a PNG file", hint="give --out a name ending in .png")
@@ -190,7 +200,11 @@ def sheet(video: str, song_path: str | None = None, every: float | None = None, 
     if t0 is None and (t0 := start_in_name(video)) is not None:
         print(f"sheet: the video starts at song time {t0:g} s, as its name says (--from sets another)")
     t0 = t0 or 0.0
+    if lines and not song_path:
+        raise Song2mvError("--lines needs --song, the mv.json whose line ids it names")
     song = load_mv(song_path, keys=("duration", "sections", "lines")) if song_path else None
+    if lines:
+        times = line_middles(song, lines)
 
     info = probe(video)
     if crop:

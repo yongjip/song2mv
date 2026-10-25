@@ -125,6 +125,26 @@ def test_cuts_come_from_a_saved_check_result_with_its_from_and_song(tmp_path):
     assert list(res["outputs"]) == ["v-sheet.png"]
 
 
+def test_lines_take_a_frame_from_the_middle_of_each_line_named(tmp_path):
+    mp4 = numbered(tmp_path, 5, 60)
+    mv = tmp_path / "mv.json"
+    mv.write_text(json.dumps(SONG), encoding="utf-8")
+    png = tmp_path / "s.png"
+    res = quiet(video=str(mp4), song_path=str(mv), lines=["ch1-01", "v1-01"], out=str(png))
+    assert res["times"] == [8.5, 2.5] and shown(png, mp4, 2) == [42, 12]
+
+
+def test_lines_need_the_song_and_one_of_its_line_ids(tmp_path, capsys):
+    mp4 = numbered(tmp_path, 10, 30)
+    mv = tmp_path / "mv.json"
+    mv.write_text(json.dumps(SONG), encoding="utf-8")
+    assert main(["sheet", str(mp4), "--lines", "v1-01", "--json"]) == 2
+    assert "needs --song" in json.loads(capsys.readouterr().out)["error"]["message"]
+    assert main(["sheet", str(mp4), "--song", str(mv), "--lines", "v1-01,br-09", "--json"]) == 2
+    err = json.loads(capsys.readouterr().out)["error"]
+    assert "br-09" in err["message"] and "v1-01 … ch1-01" in err["hint"]
+
+
 def test_labels_name_the_lines_sung_then_or_else_the_section():
     song = dict(SONG, lines=[*SONG["lines"], {"id": "ch1-02", "section": "ch1", "text": "pickup", "start": 9.5, "end": 12.0}])
     assert [sung_at(song, t) for t in (0.5, 1.0, 4.0, 9.7, 13.0)] == ["v1", "v1-01", "v1", "ch1-01 ch1-02", "ch1"]
