@@ -590,4 +590,7 @@ lower than that.
 **Give back what other songs can use.** Look over what you drew for the video. Some pieces are generic, not tied to
 this song: an object, a pose, a place, a style pack. Offer those to the user as a pull request to song2mv, following
 `CONTRIBUTING.md` ("Adding an asset or a style pack"): original drawings, no media files, the kit's rules, a gallery
-tile and a still. Open it only if the user agrees, and leave the song, its lyrics and its own scenes out.
+tile and a still. Open it only if the user agrees, and leave the song, its lyrics and its own scenes out. Give back
+what the video taught as well: what the user found fun or dull and what fixed it, with the numbers that moved, as a
+change to this skill, so the next agent starts where you finished. Describe the song in general terms and make up
+the examples.

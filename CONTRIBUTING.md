@@ -10,6 +10,9 @@ answers may take a few days.
 - Output formats editors need (for example ASS karaoke tags) — see the admission test in `docs/product-scope.md`.
 - Lyric parsing for languages and lyric-sheet styles we have not seen.
 - Drawings for the scene kit: an asset many songs can use, or a style pack (see below).
+- What a video taught you: what its viewers found fun or dull and what fixed it, with the numbers that moved, as a
+  change to `.claude/skills/song2mv/SKILL.md`. The skill is how any agent makes a good video from this repository
+  alone. Describe the song in general terms, never its lyrics.
 
 ## Development
 

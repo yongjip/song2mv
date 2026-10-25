@@ -48,6 +48,10 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- `AGENTS.md` states the aim, that anyone makes a high-quality video from this repository alone through any agent,
+  and its first rule for changes: what a video teaches (a user's verdict, a failure's cause, the numbers before and
+  after a fix) goes into the skill, `AGENTS.md` or the kit in the same change, never only into an agent's memory.
+  The skill's last step and `CONTRIBUTING.md` ask for the same lessons back.
 - The guide says to take a board's lines from `span.lines`: a board keyed to a line opens only a 16th before its
   first word, and one song's overlay tags, which looked for their line by time, missed the line of all 11 boards
   keyed to one.

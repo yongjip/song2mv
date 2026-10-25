@@ -6,6 +6,10 @@ music video out. It is a command-line tool built for coding agents. Six commands
 The full music-video loop, scene design included, is the skill `.claude/skills/song2mv/SKILL.md`. An installed song2mv
 carries the skill and this file in its package folder `song2mv/guide/`; `song2mv --help` prints the skill's path.
 
+**The aim:** anyone with this repository alone, through any coding agent, makes a high-quality music video quickly.
+So what makes a video good is written down here, in the skill, in this file and in the kit: not kept in one agent's
+memory or in notes outside the repository, where it helps nobody else.
+
 ## Using song2mv for a user
 
 The checkpoints below don't block: show what you have with your pick and the reason in one line, and carry on; the
@@ -42,7 +46,8 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    places, sky, objects, effects; style packs such as `paper` that put any object in another art style) is optional:
    reuse what fits the concept, change it in DIR, draw the rest. See it with
    `npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR. When the video is done, offer the user
-   anything generic you drew as a pull request (`CONTRIBUTING.md`). Remotion is not MIT — tell company users about its
+   anything generic you drew as a pull request (`CONTRIBUTING.md`), and what the video taught (what the user found
+   dull, what fixed it) as a change to the skill. Remotion is not MIT — tell company users about its
    license before they rely on it.
 6. **Check after every render.** `song2mv check VIDEO --song WORK/mv.json --from A --to B --json`. Fix FAILs and
    say which numbers moved. The default goals are a starting point; if one is wrong for this song, copy the goals
@@ -57,17 +62,22 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
 
 ## Changing this repository
 
-1. Keep the public grammar small: six commands. Before adding a command, flag, config key or output file, apply
+1. **What a video teaches goes into the repository, in the same change.** A user's verdict on what was fun or dull,
+   the cause of a failure, the numbers measured before and after a fix: write it into `.claude/skills/song2mv/SKILL.md`
+   where an agent will need it, and in short into "Using song2mv for a user" above when every agent must follow it; a
+   pattern that several songs repeat becomes kit code. Give the evidence (the runs compared, the numbers), describe the
+   song only in general terms and make up the examples: never its lyrics.
+2. Keep the public grammar small: six commands. Before adding a command, flag, config key or output file, apply
    the admission test in `docs/product-scope.md` and prefer extending an existing one.
-2. Every `--json` result and every output file in `docs/contract.md` is stamped by `song2mv.contract.stamp`. An
+3. Every `--json` result and every output file in `docs/contract.md` is stamped by `song2mv.contract.stamp`. An
    incompatible change bumps `SCHEMA_VERSION`, updates `docs/contract.md` and gets a `CHANGELOG.md` entry.
-3. Add your `CHANGELOG.md` entry under `## Unreleased`. Do not bump the version outside a release-preparation change.
-4. Heavy dependencies stay optional (extras `beats`, `sync`). `song2mv --help` and `song2mv check` must work with
+4. Add your `CHANGELOG.md` entry under `## Unreleased`. Do not bump the version outside a release-preparation change.
+5. Heavy dependencies stay optional (extras `beats`, `sync`). `song2mv --help` and `song2mv check` must work with
    only numpy installed; import heavy modules inside the command that needs them.
-5. Before committing: `ruff check src tests` and `pytest -q` in the activated `.venv` (or `uv run --no-sync …`).
+6. Before committing: `ruff check src tests` and `pytest -q` in the activated `.venv` (or `uv run --no-sync …`).
    Tests build synthetic audio and video; never add songs, lyrics, renders or other media to the repository.
-6. Pin a dependency upper bound only with a comment that says what broke (see `av<19` in pyproject.toml).
-7. Write everything in English: code, docs, test data, messages and commits. Write a non-Latin character range in
+7. Pin a dependency upper bound only with a comment that says what broke (see `av<19` in pyproject.toml).
+8. Write everything in English: code, docs, test data, messages and commits. Write a non-Latin character range in
    a regex as escapes (`\uac00-\ud7af`).
-8. Add a comment only when the code cannot say it; prefer clear names and types.
-9. Read `CONTRIBUTING.md` before you commit: it says how a change lands on `main`.
+9. Add a comment only when the code cannot say it; prefer clear names and types.
+10. Read `CONTRIBUTING.md` before you commit: it says how a change lands on `main`.
