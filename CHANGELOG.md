@@ -48,6 +48,11 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- The guide lists what the user judged fun across three new-user runs, in step 3: an event on each line's key word,
+  reactions, a viewpoint that shows faces, a frame that turns the everyday into an event, other kinds of shot. The
+  two runs judged fun took 40 and 43 minutes, the one judged less fun 27. Step 5 gives the numbers of one video's
+  fast changes inside a shot (a rewind gag 29.5 → 4.7, a windmill 14.2 → 5.5) and keeps the gag while slowing it.
+  `AGENTS.md` carries the lyric map and the fun list in short, for agents that read only that file.
 - The guide reads the lyrics line by line before the concept, into `<work>/lyrics-map.md`: what each line does (a
   pun, a sound-alike, a metaphor, a parody, a name, a list, a callback) and the picture and text that show it, with
   a line one would rather not draw given the harmless reading the song offers instead of nothing. In one trial the

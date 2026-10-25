@@ -72,8 +72,8 @@ for example: *"make a lyric video for ~/Music/my-song.mp3"* or *"give me word-ti
 
 - [`AGENTS.md`](https://github.com/yongjip/song2mv/blob/main/AGENTS.md) — the operating rules: which command to run when, what to check by ear, what never to
   commit. Codex reads it, and Claude Code reads it through `CLAUDE.md`, when this repository is open.
-- [`.claude/skills/song2mv/`](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md) — the full music-video loop (timing → scene design →
-  render → check → fix) as a Claude Code skill. Copy it to `~/.claude/skills/` to use it in any project.
+- [`.claude/skills/song2mv/`](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md) — the full music-video loop (timing → reading the
+  lyrics → scene design → render → check → fix) as a Claude Code skill. Copy it to `~/.claude/skills/` to use it in any project.
 - Both ship in the package, in `song2mv/guide/`: `song2mv --help` (and the help of every command) prints the
   installed skill's path, under a line telling the agent to read it first, so an agent in any project finds it.
 - Every command takes `--json`: progress goes to stderr and stdout carries one JSON result. See

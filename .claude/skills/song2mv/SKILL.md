@@ -153,6 +153,20 @@ different central image. For each, write:
 - **Main character or motif,** and how it changes over the song.
 - **First chorus:** how it hits, the song's biggest moment.
 
+**What the user judged fun.** Three new-user runs were ranked by fun, not by the checks. The two judged fun took 40
+and 43 minutes and did all of these; the one judged less fun took 27 and did none of the first three. Don't buy
+minutes with a plainer concept.
+
+1. **Something happens on the key word of each line,** not a picture of the line's noun: a paw pushes the mug off the
+   desk on "three", a telestrator draws the play as it is rapped. The lyric map says which word and what.
+2. **Reactions.** Cut from the act to someone reacting: a crowd, an old man yelling, a mug sweating. Props with faces
+   are cheap extra reactors.
+3. **A viewpoint that shows faces.** Top-down or far wide shots hide the acting: the dull run's toy-town view turned
+   its people into dots.
+4. **A frame that turns the everyday into an event:** a sports broadcast, a heist, a nature film, a period cartoon, a
+   TV show. It brings its own overlays, sound words and title cards.
+5. **Change the kind of shot, not just its zoom:** a diagram, a side view, a close-up, a new world for a punchline.
+
 Make each concept concrete enough to picture: one rough still each, shown side by side with your pick and the reason
 in one line. Copy the template now (step 4's first command), draw each concept as a component of `T` in
 `<work>/video/src/scenes/concepts/`, export it by name from `src/scenes/concepts/index.ts`, and render them all at one
@@ -497,6 +511,11 @@ picture, or the line's joke is not in the video.
   and so does a large transform such as a flip; a reframe of a flat or dark set may not, so change the set or its
   palette between shots. Cut a 16th before a line's first word or on it, not just after it: `check` counts that cut
   as the line's own, not as motion in the line before.
+- **Fast change inside one shot** measures frantic without any cut. In one video a rewind gag that flipped between
+  old frames measured 29.5 (goal ≤ 9) and one crossfade under a slow scan bar 4.7; a windmill spinning in a close
+  shot 14.2, and filmed wide at 70° a second 5.5; a wobbling stack of burgers with new ones popping in 14.5, and the
+  stack still with one burger held up per line (`drift: 0.5`) 6.8. Keep the gag and slow its motion: the line still
+  needs its event.
 
 **Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip of the full render and ask
 what is boring. Their answer outranks the check.

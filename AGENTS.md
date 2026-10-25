@@ -33,8 +33,12 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
 5. **Video.** `song2mv render WORK/mv.json --still T --aspect both` writes PNGs you can look at; render short stretches
    as drafts (`--from A --to B --draft`, 10 fps at half size) while working, and the finished video once without it. For
    the user's own scenes use `--template DIR` and write them in `DIR/src/scenes/`: a scene is a pure function of song
-   time `T`; text pops once and then holds still; lay out on the 1920×1080 stage. Start from a concept: propose two or
-   three, in different art styles, as stills side by side, and pick one. The scene kit in `DIR/src/kit/` (people,
+   time `T`; text pops once and then holds still; lay out on the 1920×1080 stage. First read the lyrics line by line
+   into `WORK/lyrics-map.md`: every line that does something (a pun, a sound-alike, a metaphor, a parody, a list)
+   gets an event on its key word and, for a sound-alike, both words as text ("knead → need"); a picture of the line's
+   noun misses the joke. Show the user your reading and carry on. Then start from a concept: propose two or three, in
+   different art styles, as stills side by side, and pick one; the skill's step 3 lists what the user judged fun
+   (reactions, faces in view, a frame that makes the everyday an event). The scene kit in `DIR/src/kit/` (people,
    places, sky, objects, effects; style packs such as `paper` that put any object in another art style) is optional:
    reuse what fits the concept, change it in DIR, draw the rest. See it with
    `npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR. When the video is done, offer the user
@@ -44,7 +48,8 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    say which numbers moved. The default goals are a starting point; if one is wrong for this song, copy the goals
    file, change it and tell the user why. Then look at the video: save that result and run
    `song2mv sheet VIDEO --cuts CHECK_JSON` for a PNG with a frame of every shot as rendered, captions included, each
-   labelled with its song time and line. Passing is necessary, not proof of fun — send a clip and ask what is
+   labelled with its song time and line; `--lines` with the lyric map's ids shows whether each joke made it on screen.
+   Passing is necessary, not proof of fun — send a clip and ask what is
    boring. The user's answer outranks the numbers.
 7. **Every command takes `--json`.** Progress goes to stderr, stdout carries one object with `schema_version` and
    `ok`. Exit code 2 is an error: read `error.message` and do what `error.hint` says. Exit code 1 only means `check`
