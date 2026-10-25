@@ -412,7 +412,8 @@ measures as motion under drift: that video's boards ran at `drift` 0.5–0.6.
 - `<line.Lines id look>` round a character, a prop or a whole world traces its outline and the edges inside it where
   the brightness changes, and draws only those lines. `look` is `ink`, `chalk`, `blueprint` or `neon`; `color` gives
   another line colour (one neon tube per colour). Soft shadows and glows leave no line, detail too dense for the
-  lines (a wheel's spokes at half size) is drawn round instead of filled in, and `soften` drops small detail;
+  lines (a wheel's spokes at half size) is drawn round instead of filled in, and `soften` drops small detail. A world
+  wider than the frame takes `region`, as `paint.Paint` does, or the trace covers all of it;
 - `<line.Paper id look>` lays the look's ground: grained paper, a chalkboard, blueprint paper with its grid, a brick
   wall in the dark;
 - `line.looks` has each look's paper and line colours, for type and anything drawn beside the traced pieces.

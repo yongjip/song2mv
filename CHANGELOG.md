@@ -50,7 +50,8 @@ First release (0.1.0).
 ### Added
 - A `paint` style pack: `paint.Paint` turns any drawing, kit pieces included, into watercolour (wandering edges,
   uneven washes, pigment pooling at the edges, a pencil underdrawing from the same edges) on `paint.Paper`. A world
-  painted in one `Paint` keeps what is in front over what is behind; `region` bounds a world wider than the frame.
+  painted in one `Paint` keeps what is in front over what is behind; `region` bounds a world wider than the frame,
+  in `line.Lines` too.
   Gallery tile 31 paints the street world: 8.2 s a still against 2.3 s unpainted.
 - A `finish` pack for a whole frame over any style: `finish.Film` (sepia or black and white, grain, scratches, dust,
   flicker, gate weave), `finish.Vhs` (colour fringing, scanlines, a rolling band, a counter) and `finish.Print`
