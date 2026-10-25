@@ -48,6 +48,9 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- The guide says to take a board's lines from `span.lines`: a board keyed to a line opens only a 16th before its
+  first word, and one song's overlay tags, which looked for their line by time, missed the line of all 11 boards
+  keyed to one.
 - The guide lists what the user judged fun across three new-user runs, in step 3: an event on each line's key word,
   reactions, a viewpoint that shows faces, a frame that turns the everyday into an event, other kinds of shot. The
   two runs judged fun took 40 and 43 minutes, the one judged less fun 27. Step 5 gives the numbers of one video's

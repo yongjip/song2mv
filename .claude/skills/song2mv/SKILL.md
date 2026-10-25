@@ -251,9 +251,12 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   section with boards at its lines cuts inside as few lines as its rhythm allows, inside none under 2.5 s if it can.
   Key boards to the lyric map's lines whose picture needs a new place or subject, every 2 lines or more and unevenly:
   in one outro three boards 2 lines apart cut too evenly for `cuts.rhythm`. The map's other lines change something
-  inside the board on their own line (a prop, a sign, a screen; `liveLine(span.lines, T)` is the line sung at T). A
-  board at a line opens on its first framing in every copy of the section; a board at a section opens on framing
-  n − 1 in copy n (`v2` on `framings[1]`), so put that copy's opening there.
+  inside the board on their own line (a prop, a sign, a screen; `liveLine(span.lines, T)` is the line sung at T).
+  Take a board's lines from `span.lines`, not from the song by time: a board keyed to a line opens only a 16th
+  before its first word (0.1 s at 150 BPM). One song's overlay tags started 0.12 s before each first word and were
+  dropped when that fell before the board's start, so the tag of the line each of 11 boards was keyed to never
+  showed. A board at a line opens on its first framing in every copy of the section; a board at a section opens on
+  framing n − 1 in copy n (`v2` on `framings[1]`), so put that copy's opening there.
   So does a board at the same line of every copy with the same framings (`ch1-04`, `ch2-04`): a board repeated in
   each chorus needs as many framings as there are copies, each composing the subject differently (off-centre,
   rolled, close). Another background alone measured alike in one chorus (0.81 → 0.73); another composition passed
