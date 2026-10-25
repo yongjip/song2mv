@@ -21,14 +21,16 @@ const LUM = "0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.3 0.59 0.11 0 0";
  * Its children as lines in `look`, `color` instead of the look's line colour. `soften` blurs the drawing before it is
  * traced, in px at its own scale, to drop small detail.
  */
-export const Lines: React.FC<{ id: string; look: Look; color?: string; soften?: number; children: React.ReactNode }> = ({
-  id, look, color, soften = 0, children,
-}) => {
+export const Lines: React.FC<{
+  id: string; look: Look; color?: string; soften?: number; region?: [number, number, number, number]; children: React.ReactNode;
+}> = ({ id, look, color, soften = 0, region, children }) => {
   const L = looks[look];
   return (
     <>
       <defs>
-        <filter id={`${id}-line`} x="-10%" y="-10%" width="120%" height="120%" colorInterpolationFilters="sRGB">
+        <filter id={`${id}-line`} colorInterpolationFilters="sRGB" {...(region
+          ? { filterUnits: "userSpaceOnUse", x: region[0], y: region[1], width: region[2], height: region[3] }
+          : { x: "-10%", y: "-10%", width: "120%", height: "120%" })}>
           <feComponentTransfer in="SourceGraphic" result="solid">
             <feFuncA type="linear" slope={10} intercept={-6} />
           </feComponentTransfer>

@@ -141,12 +141,14 @@ different central image. For each, write:
   - paper cut-out with drop shadows (the kit has a style pack for it);
   - line art: ink on paper, chalk on a blackboard, a blueprint or neon tubes on brick (the kit has a style pack for
     all four, which traces any drawing, kit pieces included);
-  - pixel art (the kit has a style pack for it too), or a retro VHS / photocopy look;
+  - pixel art (the kit has a style pack for it too);
   - toon: an ink outline round each character and prop, shading from a lit side and a shine on round forms (the kit
     has a style pack for it, which outlines kit pieces as they are);
-  - collage, or watercolour washes;
+  - watercolour washes over a pencil drawing (the kit has a style pack for it, which paints kit pieces as they are),
+    or collage;
   - an isometric miniature;
-  - kinetic typography only.
+  - kinetic typography only;
+  - over any of these, an old film, a VHS tape or a halftone print (the kit's `finish` pack).
 - **Palette, texture and typeface.** The typeface is part of the look: rather than a system font, use an OFL font
   file imported from `src/` (`song2mv render` ignores `public/`) and loaded with the kit's `loadFont` at the top of a
   module: `import lilita from "../fonts/LilitaOne-Regular.ttf"` and `export const DISPLAY = loadFont("Lilita One",
@@ -421,6 +423,26 @@ line inside a piece (its outline always draws). Traced worlds are fine high-cont
 against 2.0 s untraced, 16 half-size pieces 2.8 s. Concept boards in five new-user runs proposed these looks four
 times (an ink diagram or blueprint twice, chalk and neon once each) and dropped them for the drawing they needed; one
 trial video drew its navy ink by hand.
+
+`paint`, watercolour for any drawing (gallery tile 31: a street world painted on paper):
+- `<paint.Paper id>` lays cold-press paper, and `<paint.Paint id>` paints what it holds on it, kit pieces included:
+  edges that wander (`wobble`), thinned and uneven washes (`seed` moves the blooms), pigment pooling darker at the
+  edges of each wash, and a pencil underdrawing traced from the same drawing (`pencil={false}` leaves it out);
+- paint a world in one `Paint`, so that what is in front covers what is behind: separate Paints lay their washes over
+  each other like glazes, and buildings showed through the people. A world wider than the frame takes `region`, such
+  as the stage `[-60, -60, 2040, 1200]`, or the filter covers all of it;
+- it costs render time: on a 12-core Mac a still of the painted street took 8.2 s against 2.3 s unpainted.
+
+`finish`, a whole frame as an old film, a VHS tape or a halftone print, over any style (gallery tile 32). Wrap the
+frame, camera and all, in `<finish.Film id T>` (`tone` `sepia` or `bw`; grain, scratches, dust, flicker, gate weave,
+a vignette), `<finish.Vhs id T>` (colour fringing, scanlines, a rolling band, a `label` and a counter) or
+`<finish.Print id>` (cyan, magenta, yellow and black halftone dots, off register). Each clips what it holds to its
+`w` × `h`, so a finish on a screen inside a scene stays on the screen. `finish.step(T)` holds the picture for a
+twelfth of a second, for film-era motion: pass it to the scene as its T. Keep the song's captions outside. A still
+of the street took 3.2 s as film, 2.4 s as VHS and 5.2 s as print, against 2.0 s.
+
+Concept boards in five new-user runs proposed a watercolour dreamland and a monster-movie poster once each, and one
+run drew a 1930s rubber-hose cartoon by hand (about 1,250 lines): `toon` under `finish.Film` comes close to that look.
 
 **A photo as the head.** Import the image from the song's `src/` (PNG or JPEG; `song2mv render` ignores `public/`)
 and draw it with Remotion's `<Img>` in a `<foreignObject>`: a missing file then stops the render, where an SVG

@@ -48,6 +48,14 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- A `paint` style pack: `paint.Paint` turns any drawing, kit pieces included, into watercolour (wandering edges,
+  uneven washes, pigment pooling at the edges, a pencil underdrawing from the same edges) on `paint.Paper`. A world
+  painted in one `Paint` keeps what is in front over what is behind; `region` bounds a world wider than the frame.
+  Gallery tile 31 paints the street world: 8.2 s a still against 2.3 s unpainted.
+- A `finish` pack for a whole frame over any style: `finish.Film` (sepia or black and white, grain, scratches, dust,
+  flicker, gate weave), `finish.Vhs` (colour fringing, scanlines, a rolling band, a counter) and `finish.Print`
+  (cyan, magenta, yellow and black halftone dots off register), each clipped to its frame, and `finish.step(T)` for
+  motion held twelve times a second. Gallery tile 32 shows the street as drawn and in all three.
 - A `line` style pack: `line.Lines` traces any drawing, kit pieces included, as line art in four looks (ink on paper,
   chalk on a blackboard, a blueprint, neon on brick): its outline and the edges where the brightness changes inside.
   `line.Paper` lays each look's ground. Soft shadows and glows leave no line, and detail too dense for the lines

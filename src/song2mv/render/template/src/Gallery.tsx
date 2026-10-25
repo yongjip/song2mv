@@ -3,7 +3,7 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
   Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Line, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, comic, makeSongCtx, mix, paper, personHand, pixel, rng, shade, SKINS, STRIDE,
-  PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster, toon, line,
+  PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster, toon, line, paint, finish,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -1516,6 +1516,46 @@ const LineLooks: React.FC<{ T: number }> = ({ T }) => {
 };
 
 
+
+/** A street by day, for the paint and finish tiles: the same world painted, filmed, taped and printed */
+const DayStreet: React.FC<{ T: number; q: string; sky?: boolean }> = ({ T, q, sky = true }) => (
+  <>
+    {sky && <SkyGradient time="day" id={`${q}-sky`} />}
+    <Sun T={T} x={1600} y={180} r={70} color="#ffe08a" core="#fffbe8" id={`${q}-sun`} />
+    <Clouds T={T} seed={21} id={`${q}-clouds`} />
+    <City T={T} day shift={T * 60} id={`${q}-city`} />
+    <Street T={T} day id={`${q}-street`} />
+    <Person x={700} y={985} s={1.2} pose="walk" phase={0.4} T={T} look={{ outfit: "suit" }} tie={false} />
+    <Person x={1150} y={985} s={1.2} pose="phone" T={T} flip look={{ outfit: "dress", top: "#2f8f6b", hair: "ponytail" }} />
+  </>
+);
+
+/** The paint pack (kit/styles/paint.tsx): the street world and its people in one watercolour, on paper for a sky */
+const PaintStreet: React.FC<{ T: number }> = ({ T }) => (
+  <Svg>
+    <paint.Paper id="g31-paper" />
+    <paint.Paint id="g31-sun" seed={4} pencil={false}><Sun T={T} x={1600} y={180} r={70} color="#ffd36a" core="#ffe9a8" id="g31-sun-d" /></paint.Paint>
+    <paint.Paint id="g31-world" seed={3} region={[-60, -60, 2040, 1200]}>
+      <City T={T} day shift={T * 60} id="g31-city" />
+      <Street T={T} day id="g31-street" />
+      <Person x={700} y={985} s={1.2} pose="walk" phase={0.4} T={T} look={{ outfit: "suit" }} tie={false} />
+      <Person x={1150} y={985} s={1.2} pose="phone" T={T} flip look={{ outfit: "dress", top: "#2f8f6b", hair: "ponytail" }} />
+    </paint.Paint>
+  </Svg>
+);
+
+/** The finish pack (kit/styles/finish.tsx): the same street as drawn, then as old film, a VHS tape and a halftone print */
+const Finishes: React.FC<{ T: number }> = ({ T }) => (
+  <Svg>
+    <g transform="scale(0.5)"><DayStreet T={T} q="g32a" /></g>
+    <g transform="translate(960 0) scale(0.5)"><finish.Film id="g32b" T={T}><DayStreet T={T} q="g32b" /></finish.Film></g>
+    <g transform="translate(0 540) scale(0.5)"><finish.Vhs id="g32c" T={T}><DayStreet T={T} q="g32c" /></finish.Vhs></g>
+    <g transform="translate(960 540) scale(0.5)"><finish.Print id="g32d"><DayStreet T={T} q="g32d" /></finish.Print></g>
+  </Svg>
+);
+
+
+
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -1789,6 +1829,14 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Style pack: line art in four looks",
     draw: (T) => <LineLooks T={T} />,
+  },
+  {
+    name: "Style pack: watercolour, a street painted on paper",
+    draw: (T) => <PaintStreet T={T} />,
+  },
+  {
+    name: "Finishes: as drawn, old film, VHS and print",
+    draw: (T) => <Finishes T={T} />,
   },
 ];
 

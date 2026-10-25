@@ -39,3 +39,5 @@ export * as comic from "./styles/comic";
 export * as poster from "./styles/poster";
 export * as toon from "./styles/toon";
 export * as line from "./styles/line";
+export * as paint from "./styles/paint";
+export * as finish from "./styles/finish";
