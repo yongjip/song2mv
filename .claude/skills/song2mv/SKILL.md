@@ -138,14 +138,15 @@ different central image. For each, write:
 - **Idea:** one line, the image that carries the song, taken from its lyrics and mood.
 - **Art style:** what fits this song, not what is quickest to build. Some options:
   - flat illustration (the kit's own style);
-  - paper cut-out with drop shadows (the kit has a style pack for it), or ink lines on paper, or chalk on a
-    blackboard;
+  - paper cut-out with drop shadows (the kit has a style pack for it);
+  - line art: ink on paper, chalk on a blackboard, a blueprint or neon tubes on brick (the kit has a style pack for
+    all four, which traces any drawing, kit pieces included);
   - pixel art (the kit has a style pack for it too), or a retro VHS / photocopy look;
   - toon: an ink outline round each character and prop, shading from a lit side and a shine on round forms (the kit
     has a style pack for it, which outlines kit pieces as they are);
   - collage, or watercolour washes;
   - an isometric miniature;
-  - kinetic typography only, or neon signs on brick.
+  - kinetic typography only.
 - **Palette, texture and typeface.** The typeface is part of the look: rather than a system font, use an OFL font
   file imported from `src/` (`song2mv render` ignores `public/`) and loaded with the kit's `loadFont` at the top of a
   module: `import lilita from "../fonts/LilitaOne-Regular.ttf"` and `export const DISPLAY = loadFont("Lilita One",
@@ -404,6 +405,22 @@ the screen, such as `poster.Bubble`s with a `tail`), `poster.Notebook` (`write` 
 In one trial the user's first note on a flat first take was that its pictures were lacking; the second take drew
 every character and prop this way, and the user liked the outlines. Outlines are fine high-contrast detail, which
 measures as motion under drift: that video's boards ran at `drift` 0.5–0.6.
+
+`line`, line art traced from any drawing (gallery tile 30: kit pieces in its four looks):
+- `<line.Lines id look>` round a character, a prop or a whole world traces its outline and the edges inside it where
+  the brightness changes, and draws only those lines. `look` is `ink`, `chalk`, `blueprint` or `neon`; `color` gives
+  another line colour (one neon tube per colour). Soft shadows and glows leave no line, detail too dense for the
+  lines (a wheel's spokes at half size) is drawn round instead of filled in, and `soften` drops small detail;
+- `<line.Paper id look>` lays the look's ground: grained paper, a chalkboard, blueprint paper with its grid, a brick
+  wall in the dark;
+- `line.looks` has each look's paper and line colours, for type and anything drawn beside the traced pieces.
+
+Shading steps become lines too, so pieces drawn flat trace cleanest, and two colours of one brightness meet without a
+line inside a piece (its outline always draws). Traced worlds are fine high-contrast detail, so calm their drift
+(step 5), and tracing costs render time: on a 12-core Mac a still of one traced world filling the frame took 5.2 s
+against 2.0 s untraced, 16 half-size pieces 2.8 s. Concept boards in five new-user runs proposed these looks four
+times (an ink diagram or blueprint twice, chalk and neon once each) and dropped them for the drawing they needed; one
+trial video drew its navy ink by hand.
 
 **A photo as the head.** Import the image from the song's `src/` (PNG or JPEG; `song2mv render` ignores `public/`)
 and draw it with Remotion's `<Img>` in a `<foreignObject>`: a missing file then stops the render, where an SVG

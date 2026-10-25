@@ -3,7 +3,7 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
   Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Line, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, comic, makeSongCtx, mix, paper, personHand, pixel, rng, shade, SKINS, STRIDE,
-  PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster, toon,
+  PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster, toon, line,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -1488,6 +1488,34 @@ const PortraitHeadTouch: React.FC = () => (
   </Svg>
 );
 
+
+/** The line pack (kit/styles/line.tsx): the same kit pieces traced in its four looks, each on its own ground */
+const LineLooks: React.FC<{ T: number }> = ({ T }) => {
+  const quads: { look: line.Look; x: number; y: number; colors?: string[] }[] = [
+    { look: "ink", x: 0, y: 0 },
+    { look: "chalk", x: 960, y: 0 },
+    { look: "blueprint", x: 0, y: 540 },
+    { look: "neon", x: 960, y: 540, colors: ["#4ff3ff", "#ff5ad8", "#ff4060", "#ffe14d"] },
+  ];
+  return (
+    <Svg>
+      {quads.map(({ look, x, y, colors }) => {
+        const q = `g30-${look}`;
+        return (
+          <g key={look} transform={`translate(${x} ${y}) scale(0.5)`}>
+            <line.Paper id={q} look={look} />
+            <line.Lines id={`${q}-p`} look={look} color={colors?.[0]}><Person x={260} y={930} s={1.5} pose="wave" T={T} /></line.Lines>
+            <line.Lines id={`${q}-c`} look={look} color={colors?.[1]}><Car T={T} x={830} y={930} s={0.9} id={`${q}-car`} /></line.Lines>
+            <line.Lines id={`${q}-h`} look={look} color={colors?.[2]}><Heart T={T} x={1500} y={330} s={0.85} id={`${q}-heart`} /></line.Lines>
+            <line.Lines id={`${q}-k`} look={look} color={colors?.[3]}><Clock T={T} x={1500} y={760} r={150} id={`${q}-clock`} /></line.Lines>
+          </g>
+        );
+      })}
+    </Svg>
+  );
+};
+
+
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -1757,6 +1785,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Style pack: toon outline, shading and shine",
     draw: (T) => <ToonProps T={T} />,
+  },
+  {
+    name: "Style pack: line art in four looks",
+    draw: (T) => <LineLooks T={T} />,
   },
 ];
 

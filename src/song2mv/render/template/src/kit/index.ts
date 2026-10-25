@@ -38,3 +38,4 @@ export * as pixel from "./styles/pixel";
 export * as comic from "./styles/comic";
 export * as poster from "./styles/poster";
 export * as toon from "./styles/toon";
+export * as line from "./styles/line";

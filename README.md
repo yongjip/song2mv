@@ -293,7 +293,8 @@ kit in `DIR/src/kit/`, and draw the rest. Besides `useSong()`, beat-grid helpers
   `comic` inks drawings over off-register colour and Ben-Day dots, characters in one
   heavy outline with tapered inner lines, in panels that each film the scene with their own camera, with speech
   balloons and captions lettered as the line is sung; `toon` puts one ink outline round any drawing, kit pieces
-  included, with shading and shines. New assets and packs are welcome
+  included, with shading and shines; `line` traces any drawing as ink on paper, chalk on a blackboard, a blueprint
+  or neon on brick. New assets and packs are welcome
   ([CONTRIBUTING.md](https://github.com/yongjip/song2mv/blob/main/CONTRIBUTING.md)).
 
 The people, places and objects are drawn in one flat style. To see everything, run

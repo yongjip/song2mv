@@ -48,6 +48,13 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- A `line` style pack: `line.Lines` traces any drawing, kit pieces included, as line art in four looks (ink on paper,
+  chalk on a blackboard, a blueprint, neon on brick): its outline and the edges where the brightness changes inside.
+  `line.Paper` lays each look's ground. Soft shadows and glows leave no line, and detail too dense for the lines
+  (spokes at half size) is drawn round instead of filled in. The edges come from shifted copies of the drawing rather
+  than a convolution, which took a full-frame still from 15.3 s to 5.2 s (2.0 s untraced).
+  Concept boards in five new-user runs proposed these looks four times and dropped them for the drawing they needed.
+  Gallery tile 30 shows kit pieces in all four.
 - A `toon` style pack: `toon.Ink` puts one ink outline round the silhouette of anything inside it, kit pieces
   included, leaving their soft shadows and glows unlined; `toon.Shade`, `toon.fill`, `toon.Shine` shade a form from
   its lit side, and `toon.Line` draws a limb or cord with its own outline. Gallery tile 29 shows kit pieces as drawn
