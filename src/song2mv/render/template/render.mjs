@@ -25,6 +25,8 @@
  * The audio is never copied into this folder: a temporary public folder outside it holds a link to it.
  * Remotion mixes the audio to WAV and its ffmpeg writes the AAC: Remotion's own AAC starts 2048 samples late.
  * A finished video is capped at 8 Mbit/s (YouTube's figure for 1080p30): grain-heavy styles otherwise run near 14.
+ * On a Mac, Chrome draws on the GPU (Remotion's --gl=angle, Metal): the style packs' filters render many times faster
+ * and look the same. SONG2MV_GL=off draws in software, as on Linux and Windows; another value is passed to --gl.
  */
 import { spawnSync } from "node:child_process";
 import { once } from "node:events";
@@ -131,7 +133,10 @@ async function unusedRenderPort() {
 }
 // Remotion serves IPv4 but opens localhost; an IPv6-only Studio can own the same default port.
 const rendererPort = flag("studio") ? [] : [`--port=${await unusedRenderPort()}`];
-const remotion = (args) => run([...args, ...rendererPort, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`]);
+const gl = process.env.SONG2MV_GL || (process.platform === "darwin" ? "angle" : "off");
+const glFlag = gl === "off" ? [] : [`--gl=${gl}`];
+const remotion = (args) =>
+  run([...args, ...rendererPort, ...glFlag, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`]);
 const probe = (file, entries) =>
   spawnSync(process.execPath, [cli, "ffprobe", "-v", "error", ...entries, "-of", "csv=p=0", file], { cwd: HERE, encoding: "utf8" })
     .stdout.trim();

@@ -48,11 +48,22 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- `song2mv render` has Chrome draw on the GPU on a Mac (Remotion's `--gl=angle`, Metal). Left to itself, headless
+  Chrome drew in software, every frame's SVG filters on one core whatever Remotion's concurrency, so the style packs
+  made renders slow. On an M4 Pro, with a pack over the whole frame of the starter: 16 s at 1080p30 under `toon` in
+  21 s instead of 5.6 min, 6 s under `line` in 11 s instead of 10.8 min and under `paint` in 14 s instead of 12.3 min;
+  16 s drafts in 10–14 s instead of 31–197 s; the plain starter in 17 s instead of 25 s. A still of the painted street
+  takes 2.3 s instead of 8.0 s. `SONG2MV_GL=off` draws in software, as on Linux and Windows, where nothing changes.
+  The line, paint and print packs shift copies of the drawing by whole or half pixels, and Chrome rounds a shift that
+  lands on half a pixel up in software and down on the GPU: a line-pack draft (half size) came out blank and failed
+  `check`, and the watercolour lost its pencil. Their shifts now sit a hair over (1.01, 1.51), which software draws
+  byte for byte as before; on the GPU every gallery tile is within 1.0 of 255 of software on average, as
+  anti-aliasing is, and `check` gives drafts and full renders the same passes and cuts.
 - A `paint` style pack: `paint.Paint` turns any drawing, kit pieces included, into watercolour (wandering edges,
   uneven washes, pigment pooling at the edges, a pencil underdrawing from the same edges) on `paint.Paper`. A world
   painted in one `Paint` keeps what is in front over what is behind; `region` bounds a world wider than the frame,
   in `line.Lines` too.
-  Gallery tile 31 paints the street world: 8.2 s a still against 2.3 s unpainted.
+  Gallery tile 31 paints the street world: 2.3 s a still against 2.0 s unpainted on a Mac's GPU, 8.0 s in software.
 - A `finish` pack for a whole frame over any style: `finish.Film` (sepia or black and white, grain, scratches, dust,
   flicker, gate weave), `finish.Vhs` (colour fringing, scanlines, a rolling band, a counter) and `finish.Print`
   (cyan, magenta, yellow and black halftone dots off register), each clipped to its frame, and `finish.step(T)` for

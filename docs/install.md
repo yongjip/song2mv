@@ -41,7 +41,8 @@ After the first PyPI release these become `uv tool install "song2mv[sync]"`, `pi
 | whisper model `small` | ~460 MB | first `sync` (Hugging Face cache); `--model base` is ~3× smaller, less accurate |
 | Remotion + Chrome (`render`) | ~570 MB | first `render`, in `~/.cache/song2mv/`; a `--template` folder links to it (it installs its own only when its `package-lock.json` differs) |
 
-Set `SONG2MV_CACHE` to move the render cache.
+Set `SONG2MV_CACHE` to move the render cache. On a Mac, `render` has Chrome draw on the GPU (Remotion's
+`--gl=angle`); `SONG2MV_GL=off` draws in software, as on Linux and Windows, and another value is passed to `--gl`.
 
 ## Network access
 

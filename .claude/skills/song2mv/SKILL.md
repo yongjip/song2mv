@@ -326,6 +326,11 @@ a call and writing (27), a hand at the temple (28).
 | text | `Slam`, `Quiet`, `BigLine`, `Captions` | lines in the scene |
 
 **Style packs** (`src/kit/styles/`, one namespace each: `import { paper, pixel, comic, poster } from "../kit"`).
+Their filters cost little on a Mac, where `song2mv render` has Chrome draw on the GPU; in software (Linux, Windows,
+`SONG2MV_GL=off`) Chrome draws them one frame at a time on one core: 16 s of the starter with `toon` over the whole
+frame rendered in 21 s on the GPU and 5.6 min in software. A filter of your own: shift an `feOffset` a hair over a
+whole or half number (1.01, not 1). Offsets land on whole pixels, and Chrome rounds an exact half up in software and
+down on the GPU, where a line-pack draft (half size, so a shift of half a pixel) came out blank.
 `paper`, for paper cut-out:
 - outlines cut by hand, each with its own seed: `paper.rect`, `paper.ellipse`, `paper.poly`, `paper.strip` (stems,
   cords, steam); join outlines to cut holes;
@@ -420,10 +425,10 @@ measures as motion under drift: that video's boards ran at `drift` 0.5–0.6.
 
 Shading steps become lines too, so pieces drawn flat trace cleanest, and two colours of one brightness meet without a
 line inside a piece (its outline always draws). Traced worlds are fine high-contrast detail, so calm their drift
-(step 5), and tracing costs render time: on a 12-core Mac a still of one traced world filling the frame took 5.2 s
-against 2.0 s untraced, 16 half-size pieces 2.8 s. Concept boards in five new-user runs proposed these looks four
-times (an ink diagram or blueprint twice, chalk and neon once each) and dropped them for the drawing they needed; one
-trial video drew its navy ink by hand.
+(step 5). On a 12-core Mac's GPU a still of the street traced over the whole frame takes 2.2 s against 2.0 s
+untraced, 16 half-size pieces 2.3 s; in software 6.8 s and 2.8 s. Concept boards in five new-user runs proposed these
+looks four times (an ink diagram or blueprint twice, chalk and neon once each) and dropped them for the drawing they
+needed; one trial video drew its navy ink by hand.
 
 `paint`, watercolour for any drawing (gallery tile 31: a street world painted on paper):
 - `<paint.Paper id>` lays cold-press paper, and `<paint.Paint id>` paints what it holds on it, kit pieces included:
@@ -432,15 +437,16 @@ trial video drew its navy ink by hand.
 - paint a world in one `Paint`, so that what is in front covers what is behind: separate Paints lay their washes over
   each other like glazes, and buildings showed through the people. A world wider than the frame takes `region`, such
   as the stage `[-60, -60, 2040, 1200]`, or the filter covers all of it;
-- it costs render time: on a 12-core Mac a still of the painted street took 8.2 s against 2.3 s unpainted.
+- on a 12-core Mac's GPU a still of the painted street takes 2.3 s against 2.0 s unpainted; in software 8.0 s.
 
 `finish`, a whole frame as an old film, a VHS tape or a halftone print, over any style (gallery tile 32). Wrap the
 frame, camera and all, in `<finish.Film id T>` (`tone` `sepia` or `bw`; grain, scratches, dust, flicker, gate weave,
 a vignette), `<finish.Vhs id T>` (colour fringing, scanlines, a rolling band, a `label` and a counter) or
 `<finish.Print id>` (cyan, magenta, yellow and black halftone dots, off register). Each clips what it holds to its
 `w` × `h`, so a finish on a screen inside a scene stays on the screen. `finish.step(T)` holds the picture for a
-twelfth of a second, for film-era motion: pass it to the scene as its T. Keep the song's captions outside. A still
-of the street took 3.2 s as film, 2.4 s as VHS and 5.2 s as print, against 2.0 s.
+twelfth of a second, for film-era motion: pass it to the scene as its T. Keep the song's captions outside. On a
+Mac's GPU a still of the street takes 2.1–2.2 s in each against 2.0 s; in software 3.2 s as film, 2.5 s as VHS and
+5.4 s as print.
 
 Concept boards in five new-user runs proposed a watercolour dreamland and a monster-movie poster once each, and one
 run drew a 1930s rubber-hose cartoon by hand (about 1,250 lines): `toon` under `finish.Film` comes close to that look.

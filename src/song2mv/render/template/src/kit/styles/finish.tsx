@@ -119,10 +119,12 @@ const DOT = encodeURIComponent(
     "<rect width='10' height='10' fill='url(#d)'/></svg>",
 );
 
+// offsets a hair over whole and half pixels: they land on whole pixels, and Chrome rounds a half up in software, down
+// on the GPU
 const INKS = [
   { name: "c", color: "#00a0dc", tone: "0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1 0 0 0 1", screen: [0, 0], shift: [0, 0] },
-  { name: "m", color: "#e6007e", tone: "0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 -1 0 0 1", screen: [3, 5], shift: [2.5, 1.5] },
-  { name: "y", color: "#ffe100", tone: "0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 -1 0 1", screen: [6, 2], shift: [-1.5, 2] },
+  { name: "m", color: "#e6007e", tone: "0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 -1 0 0 1", screen: [3.01, 5.01], shift: [2.51, 1.51] },
+  { name: "y", color: "#ffe100", tone: "0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 -1 0 1", screen: [6.01, 2.01], shift: [-1.49, 2.01] },
 ] as const;
 
 export const Print: React.FC<{ id: string; w?: number; h?: number; children: React.ReactNode }> = ({

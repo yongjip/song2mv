@@ -48,9 +48,10 @@ export const Paint: React.FC<{
         </feComponentTransfer>
         <feFlood floodColor="#ffffff" result="white" />
         <feComposite in="solid" in2="white" operator="over" result="onWhite" />
-        <feOffset in="onWhite" dx={1.5} result="sx" />
+        {/* 1.51, not 1.5: an offset lands on whole pixels, and Chrome rounds a half up in software, down on the GPU */}
+        <feOffset in="onWhite" dx={1.51} result="sx" />
         <feComposite in="sx" in2="white" operator="over" result="shiftX" />
-        <feOffset in="onWhite" dy={1.5} result="sy" />
+        <feOffset in="onWhite" dy={1.51} result="sy" />
         <feComposite in="sy" in2="white" operator="over" result="shiftY" />
         <feColorMatrix in="onWhite" type="matrix" values={LUM} result="lum" />
         <feColorMatrix in="shiftX" type="matrix" values={LUM} result="lx" />

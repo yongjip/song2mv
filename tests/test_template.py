@@ -1,9 +1,11 @@
 """The bundled template rendered through render.mjs: needs Node, ffmpeg and `npm ci` in the template (CI's template job)."""
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
+import sys
 import threading
 import wave
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -671,3 +673,42 @@ def test_a_font_from_load_font_is_on_every_frame_of_a_render_longer_than_the_tim
     assert len(frames) == 200
     face, mono = frames[:, 15:50, :].astype(int), frames[:, 75:110, :].astype(int)
     assert np.abs(face - face[-1]).max() < 40 and np.abs(face[0] - mono[0]).mean() > 5
+
+
+def _opened_with(tmp_path, **env) -> str:
+    """The --gl backend Remotion opened Chrome with for a still through render.mjs ("null": Chrome's own choice)"""
+    base = {k: v for k, v in os.environ.items() if k != "SONG2MV_GL"}
+    r = subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--still", "1", "--out", str(tmp_path),
+                        "--manifest", str(tmp_path / "wrote.txt")],
+                       cwd=BUNDLED, capture_output=True, text=True, env={**base, "SONG2MV_REMOTION_LOG": "verbose", **env})
+    opened = re.search(r"Opening browser: gl = ([\w-]+)", r.stdout + r.stderr)
+    assert r.returncode == 0 and opened, r.stdout[-2000:] + r.stderr[-2000:]
+    return opened.group(1)
+
+
+def test_a_render_draws_on_the_gpu_on_a_mac_unless_turned_off(tmp_path):
+    assert _opened_with(tmp_path) == ("angle" if sys.platform == "darwin" else "null")
+    assert _opened_with(tmp_path, SONG2MV_GL="off") == "null"
+
+
+def _gallery_tile(tmp_path, tile: int, gl: str | None) -> np.ndarray:
+    pkg = json.loads(open(os.path.join(BUNDLED, "node_modules", "@remotion", "cli", "package.json"), encoding="utf-8").read())
+    cli = os.path.join(BUNDLED, "node_modules", "@remotion", "cli", pkg["bin"]["remotion"])
+    png = tmp_path / f"tile-{tile}-{gl}.png"
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    subprocess.run(["node", cli, "still", "src/index.ts", "Kit-Gallery", str(png), f"--frame={tile}", f"--port={port}", "--log=error",
+                    *([f"--gl={gl}"] if gl else [])], cwd=BUNDLED, check=True, capture_output=True)
+    rgb = subprocess.run(["ffmpeg", "-v", "error", "-i", str(png), "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+                         check=True, capture_output=True).stdout
+    return np.frombuffer(rgb, np.uint8).reshape(1080, 1920, 3).astype(np.int16)
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="render.mjs draws on the GPU on a Mac only")
+@pytest.mark.parametrize("tile", [30, 31], ids=["line", "paint"])
+def test_the_line_and_paint_packs_look_the_same_on_the_gpu(tmp_path, tile):
+    # Both trace edges from copies shifted by about a pixel; a shift on half a pixel rounded the other way on the GPU
+    # and took line's inner lines (mean difference 2.27) and paint's pencil (2.09). Anti-aliasing alone stays under 1.
+    gap = np.abs(_gallery_tile(tmp_path, tile, None) - _gallery_tile(tmp_path, tile, "angle")).mean()
+    assert gap < 1.5, gap

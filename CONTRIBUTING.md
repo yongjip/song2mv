@@ -77,6 +77,9 @@ A song's own characters and scenes stay in that song's copy of the template; con
   - a pure function of song time `T`, never of the frame number or state;
   - an `id` prop for anything it puts in SVG `<defs>`, so two copies on one stage don't clash;
   - text pops once and then holds still: no wobble, bob or beat-shake on letters;
+  - an SVG filter's `feOffset` a hair over a whole or half number (1.01, not 1; 1.51, not 1.5): an offset lands on
+    whole pixels, and Chrome rounds an exact half up in software and down on a Mac's GPU, where `song2mv render`
+    draws, so the tile must look the same rendered with `--gl=angle` and without;
   - laid out on the 1920×1080 stage, with props named so that they need no comment.
 - **A gallery tile and a still.** Add a tile that uses it to `src/Gallery.tsx` (a style pack's tile draws a few
   everyday objects in the style). In the template folder, run `npx tsc --noEmit`, render the tile with
