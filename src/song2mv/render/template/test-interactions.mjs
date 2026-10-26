@@ -1325,6 +1325,14 @@ const ranges = Object.fromEntries(
     ),
   ]),
 );
+const { Bed, bedPoint } = await import(compile("src/kit/room.tsx", [["./math", plain("src/kit/math.ts")]]));
+const bedPointCases = [];
+for (const head of ["left", "right"]) {
+  const mark = React.createElement("circle", { "data-part": "mark", cx: 42, cy: -17, r: 2 });
+  const markup = renderToStaticMarkup(React.createElement("svg", null, React.createElement(Bed, { x: 1450, y: 926, s: 1.4, head, over: mark })));
+  near(circleCentre(part(elementsFrom(markup), "mark")), bedPoint(1450, 926, 1.4, head, [42, -17]), 1e-6, `bedPoint with the head ${head}`);
+  bedPointCases.push(head);
+}
 console.log(
   JSON.stringify({
     ok: true,
@@ -1345,6 +1353,7 @@ console.log(
     head_touch_arm_safety_bounds: { upper: [24, 80], lower: [30, 90] },
     type_rejection_cases: typeContracts,
     hand_phone_cases: handPhoneCases,
+    bed_point_cases: bedPointCases,
     mutation_checks: mutationChecks,
     measured_right_arm_lengths: ranges,
     limitations: [

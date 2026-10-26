@@ -53,7 +53,10 @@ export type Board = {
   framings: Framing[];
   /** the 9:16 frame's framings, matched to `framings` by index; default `framings` */
   tall?: Framing[];
-  /** bar counts between cuts, instead of the section kind's rhythm */
+  /**
+   * bar counts between cuts, instead of the section kind's rhythm, in each section that opens on this board (a board
+   * at a section, or at its first line); a video render's log names a pattern no section takes
+   */
   pattern?: number[];
   /** how far its shots drift (planShots' `drift`): below 1 over fine high-contrast detail, which reads as motion */
   drift?: number;
@@ -132,10 +135,19 @@ export function planStoryboard(ctx: SongCtxValue, boards: Board[]): Placed[] {
     from: p.from, to: p.to, framings: p.board.framings, pattern: p.board.pattern, drift: p.board.drift,
     reorder: !p.keyed || spans.some((q) => q.keyed && copies(p.board, q.board)),
   })));
+  const where = (b: Board) => (typeof b.at === "number" ? `${b.at} s` : b.at);
   spans.forEach((p, i) => plans[i].dropped?.forEach(([f, before]) => warnOnce(
-    `storyboard: the board at ${typeof p.board.at === "number" ? `${p.board.at} s` : p.board.at} never shows `
+    `storyboard: the board at ${where(p.board)} never shows `
     + `framing ${f} ${JSON.stringify(p.board.framings[f])}: it comes after framing ${before}, too alike for a cut `
     + "(a cut needs 1.35× in zoom, another part of the world or 4° of roll)")));
+  spans.forEach((p, i) => plans[i].idlePattern && warnOnce(
+    `storyboard: no section takes the pattern of the board at ${where(p.board)}: a section cuts in the pattern of `
+    + "the board it opens on (a board at the section, or at its first line)"));
+  const opens = (i: number) => JSON.stringify(spans[i].board.framings[plans[i].shots[0]?.framing ?? 0]);
+  spans.forEach((p, i) => spans.forEach((q, j) => j > i && p.keyed && q.keyed && slot(p.board.at) === slot(q.board.at)
+    && opens(i) === opens(j) && warnOnce(
+      `storyboard: the boards at ${where(p.board)} and ${where(q.board)} open on the same framing ${opens(i)}: `
+      + "copies of a section that open alike measure alike (variation.repeats); open each on a framing of its own")));
   return spans.map((p, i) => {
     const section = ctx.section(p.from + 1e-3);
     const plan = plans[i];

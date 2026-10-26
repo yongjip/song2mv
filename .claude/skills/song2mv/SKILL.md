@@ -38,8 +38,9 @@ where it and the tag differ, `warnings` names the lines and says which of the tw
 one song the sheet was right, for another the tag). `off_sheet` lists stretches where the runs agree on words that no
 line matched: chants, ad-libs, changed lines, a repeat the sheet has once, or a line of the sheet placed elsewhere
 (its words are on the sheet; that line is then usually on `check_by_ear`). Sync again with a sheet that matches what
-the runs heard (`<work>/asr/run*.json` has every word), and put the stretches you add into the user's ear check. Read
-the progress log and the JSON:
+the runs heard (`<work>/asr/run*.json` has every word), and put the stretches you add into the user's ear check. A
+chant without words to read ("oh, oh, oh") may stay off the sheet and the captions when the song map gives its stretch
+an event of its own (a break, step 3). Read the progress log and the JSON:
 
 - **Section parsing** (`── [Chorus] → ch1 (hot)`): are the kinds right? A section named calm (a bridge, an outro)
   that is about as loud as the verses becomes `mid`, and `warnings` says so. Fix with `section_kinds` in `song.json`.
@@ -158,9 +159,12 @@ different central image. For each, write:
 - **Main character or motif,** and how it changes over the song.
 - **First chorus:** how it hits, the song's biggest moment.
 
-**What the user judged fun.** Three new-user runs were ranked by fun, not by the checks. The two judged fun took 40
-and 43 minutes and did all of these; the one judged less fun took 27 and did none of the first three. Don't buy
-minutes with a plainer concept.
+**What the user judged fun.** Four new-user runs were ranked by fun, not by the checks. Two judged fun did all of
+these; the one judged less fun did none of the first three and saved minutes with a plainer concept (27 against 40 and
+43): don't buy minutes that way. The latest, made from this list and the lyric map without any earlier run's clips or
+notes, was judged more fun than the run before it on the same song ("both good, the newer one more to my taste"): a
+device on the key word of 32 of its 33 lines and five kinds of shot (a telestrator, a photo finish, a jumbotron
+replay, a press conference, a thermal camera), though only its cat's face was in view.
 
 1. **Something happens on the key word of each line,** not a picture of the line's noun: a paw pushes the mug off the
    desk on "three", a telestrator draws the play as it is rapped. The lyric map says which word and what.
@@ -249,7 +253,9 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   `pattern` sets your own bar counts.
 - A `Board` (`src/kit/storyboard.tsx`) is a stretch that starts at a line id, a section id or a time: a `world` (SVG of
   `T` on the stage), its `framings` (and `tall` ones for 9:16), and optionally `pattern`, `drift`, `hits`, an
-  `overlay` (text over the camera) and `big` (its lines as big type, where the captions go).
+  `overlay` (text over the camera) and `big` (its lines as big type, where the captions go). A section cuts in the
+  `pattern` of the board it opens on, one at the section or at its first line; a video render's log names a pattern
+  no section takes.
   `<Storyboard T={T} boards={…} />` draws the board on at T (`wrap` holds the filmed world in a style pack's
   `paper.Stack` or the like), the same with `vertical` is the `VerticalScene`, and `linesDrawnBy(song, boards)` gives
   `linesDrawnByScene`. A board's start is a cut, planned with its section's other cuts: the rhythm counts it, and a
@@ -265,7 +271,7 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   So does a board at the same line of every copy with the same framings (`ch1-04`, `ch2-04`): a board repeated in
   each chorus needs as many framings as there are copies, each composing the subject differently (off-centre,
   rolled, close). Another background alone measured alike in one chorus (0.81 → 0.73); another composition passed
-  (0.36).
+  (0.36). A video render's log names boards at one line of two copies that open on the same framing.
 - A cut counts only when the picture changes: give a world framings that show different parts of it (the sky, the
   ground, the subject up close), not one layout at two zooms. A large still overlay hides cuts from `check`. Framings
   next to each other in the list need 1.35× apart in zoom, another part of the world or 4° of roll: the planner skips
@@ -302,8 +308,8 @@ scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` pu
 Look at it before you design anything (in `<work>/video`):
 
 ```bash
-npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 28 scenes
-npx remotion still src/index.ts Kit-Gallery scene.png --frame=4     # one at full size (1–28)
+npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 32 scenes
+npx remotion still src/index.ts Kit-Gallery scene.png --frame=4     # one at full size (1–32)
 ```
 
 `src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc
@@ -313,7 +319,7 @@ Scene 13 is the paper style pack. Scenes 14–20 are helpers that fit any style,
 (15), flames (16), a storm (17), tears (18), lying awake in bed (19), falling cash (20). Scene 21 is a recipe that
 combines them. Scene 22 is the pixel style pack, scene 23 the comic style pack, scene 24 the pixel pack's type.
 Scenes 25–28 are a body for a head of your own, such as a portrait: walking and gestures (25), the poster props (26),
-a call and writing (27), a hand at the temple (28).
+a call and writing (27), a hand at the temple (28). Scenes 29–32 are the toon, line, paint and finish style packs.
 
 | family | pieces | for |
 |---|---|---|
@@ -425,10 +431,12 @@ measures as motion under drift: that video's boards ran at `drift` 0.5–0.6.
 
 Shading steps become lines too, so pieces drawn flat trace cleanest, and two colours of one brightness meet without a
 line inside a piece (its outline always draws). Traced worlds are fine high-contrast detail, so calm their drift
-(step 5). On a 12-core Mac's GPU a still of the street traced over the whole frame takes 2.2 s against 2.0 s
-untraced, 16 half-size pieces 2.3 s; in software 6.8 s and 2.8 s. Concept boards in five new-user runs proposed these
-looks four times (an ink diagram or blueprint twice, chalk and neon once each) and dropped them for the drawing they
-needed; one trial video drew its navy ink by hand.
+(step 5). It traces at any size, a concept board's tile or a draft under a camera that pulls back included. On a
+12-core Mac's GPU a still of the street traced over the whole frame takes 2.2 s against 2.0 s untraced, 16 half-size
+pieces 2.3 s; in software 10.5 s and 3.6 s. Concept boards in six new-user runs proposed these looks five times (an
+ink diagram or blueprint three times, chalk and neon once each) and dropped them for the drawing they needed; the
+sixth run's blueprint tile came out blank, before the pack traced at that size. One trial video drew its navy ink by
+hand.
 
 `paint`, watercolour for any drawing (gallery tile 31: a street world painted on paper):
 - `<paint.Paper id>` lays cold-press paper, and `<paint.Paint id>` paints what it holds on it, kit pieces included:
@@ -557,12 +565,14 @@ In a pixel scene a whole-pixel camera step (`pixel.cameraAt`) can count as a cut
 **Look at what you rendered.** `song2mv sheet` tiles the video's own frames into a PNG, captions, title and strips
 included, each labelled with its song time and the line sung then (or the section between lines). With `--cuts` it
 takes a frame 0.3 s into each shot from the saved check result, whose `--from` and `--song` it reuses; `--every S`
-takes one from the middle of every S seconds, `--times` the song times you list, `--lines` one from the middle of
+takes one from the middle of every S seconds, `--times` the song times you list, `--lines` one in the last word of
 each line id you list, and `--crop X,Y,W,H` zooms into one region as `Contact`'s `crop` does. A long sheet goes on
 more pages, all listed in `outputs` (`--json`): look at every page. No number catches two lyric lines on screen at
 once, a caption over big type or a cut-off title; a sheet does. Make one of every full render too (`--every 3 --song
 <work>/mv.json`), and one of the lyric map's lines (`--lines` with their ids): each frame must show its row's
-picture, or the line's joke is not in the video.
+picture, or the line's joke is not in the video. The frame is in the line's last word, where an event on a late key
+word has landed: in one run the lines' middle frames showed the pictures of 26 of 32 rows, frames on the key words all
+32.
 
 - **Held shots** measure still; a slow drift (the shot's `to`) keeps one alive. On one pixel street a 4–6 pixel drift
   over a 2–3 s close-up measured 2–5; a 14-pixel drift measured up to 16 (frantic). A small thing moving across a

@@ -119,7 +119,8 @@ function drape(x0: number, x1: number, top: number, bottom: number, T: number, n
  * front of it. The window opening is at win {x, y, w, h}; furniture and decor that would overlap it are left out.
  * `bed` puts a Bed where the desk stands (the desk and its lamp go, so only the window lights the room); `sleeper`
  * is drawn in it, under the blanket: <Room bed sleeper={<Person x={0} y={0} pose="lie" T={T} />} />, and `onBed` on
- * top of the bedding in the same coordinates (Bed's `over`). `cover` is how far up the blanket reaches (see Bed).
+ * top of the bedding in the same coordinates (Bed's `over`; bedPoint() maps them to the stage). `cover` is how far up
+ * the blanket reaches (see Bed).
  */
 export const Room: React.FC<{
   T: number; wall?: string; floorY?: number; win?: { x: number; y: number; w: number; h: number }; view?: React.ReactNode;
@@ -530,13 +531,23 @@ const BED = { half: 185, top: -112, bot: -62, rail: -30, hip: 10 };
 const OVER_SLEEPER: Pt[] = [[-110, 58], [-80, 63], [-45, 64], [-12, 62], [16, 56], [44, 50], [72, 53], [100, 47], [126, 45], [150, 54], [164, 51], [178, 36], [190, 22]];
 
 /**
+ * A point of a Bed's sleeper coordinates (its children's and `over`'s, the hips at (0, 0)) on the stage, for the Bed at
+ * (x, y) with `s` and `head`: bedPoint(x, y, s, head, personEye("lie", 1, 0, T)) is the sleeper's eye. A Room's bed
+ * stands at (1450, floorY + 26) with s 1.4.
+ */
+export function bedPoint(x: number, y: number, s: number, head: "left" | "right", [px, py]: [number, number]): [number, number] {
+  return [x + (head === "right" ? -s : s) * (BED.hip + px), y + s * (BED.top + py)];
+}
+
+/**
  * A bed seen from the side, standing on (x, y) with its middle there, `s` times a size that fits a Person of the same
  * s: a wooden frame with a headboard and a low footboard, a mattress in a sheet, a pillow and a blanket.
  * - The sleeper goes in as children, drawn between the mattress and the blanket, at (0, 0) where a lying Person's hips
  *   go: <Bed …><Person x={0} y={0} pose="lie" T={T} /></Bed> (the bed scales them with it); the pillow's near side
  *   comes up over the back of their head, so it sinks in. Without children the blanket lies flat.
  * - `over` is drawn on top of the bedding, in the same coordinates: what lies on the pillow or the blanket (tears that
- *   run onto the pillow, a phone, a cat).
+ *   run onto the pillow, a phone, a cat). personEye("lie", 1, 0, T) is the sleeper's eye there; bedPoint() puts a
+ *   point of these coordinates on the stage, to aim a framing at the face or draw on it from outside the bed.
  * - `head` "left" or "right": the end with the headboard (right mirrors the bed and the sleeper). `cover` 0–1: how far
  *   up the sleeper the blanket reaches (0 folded at the foot, 1 to the shoulders).
  * - Colours: `frame`, `sheet`, `blanket`, `pillow`; they lean towards `wall`, the room's colour, as everything does in

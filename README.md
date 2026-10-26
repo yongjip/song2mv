@@ -228,7 +228,7 @@ measured on one video; your own goals file only needs the values you change. Pas
 ```bash
 song2mv sheet video.mp4 --song mv.json --every 3                  # a frame from the middle of every 3 s
 song2mv sheet video.mp4 --song mv.json --from 92 --times 93.1,97.6   # frames at these song times
-song2mv sheet video.mp4 --song mv.json --lines v1-03,ch1-02       # a frame from the middle of each line
+song2mv sheet video.mp4 --song mv.json --lines v1-03,ch1-02       # a frame in the last word of each line
 song2mv check video.mp4 --song mv.json --json > check.json
 song2mv sheet video.mp4 --cuts check.json                         # a frame 0.3 s into each shot
 song2mv sheet video.mp4 --every 2 --crop 700,380,312,400 --cols 3 # one region, zoomed
@@ -239,7 +239,8 @@ watching it. Each tile is the frame on screen at its song time, labelled with th
 the line sung then (or of the section between lines). `--from` is the song time of the video's first frame, as for
 `check`; without it, a stretch keeps the start in the name `render` gave it (`song-9x16-49.72-72.2.mp4` starts at
 49.72). `--cuts` reads the start and the cuts of a saved `check --json` result and also takes its `--from` and
-`--song`. `--lines ID,ID` takes a frame from the middle of each line named, by its start and end in `--song`.
+`--song`. `--lines ID,ID` takes a frame in the last word of each line named, halfway from the word's start to the
+line's end in `--song` (the line's middle without word times).
 `--crop X,Y,W,H` shows one region of each frame, in the video's pixels, scaled to the tile width (`--cols`
 sets the zoom; the label shows it). The sheet is a PNG 1920 px wide, `video-sheet.png` next to `video.mp4` unless
 `--out` names it; frames that do not fit on one page, about 2400 px tall, continue on `video-sheet-2.png` and so on.

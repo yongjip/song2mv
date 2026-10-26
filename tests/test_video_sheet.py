@@ -125,13 +125,16 @@ def test_cuts_come_from_a_saved_check_result_with_its_from_and_song(tmp_path):
     assert list(res["outputs"]) == ["v-sheet.png"]
 
 
-def test_lines_take_a_frame_from_the_middle_of_each_line_named(tmp_path):
+def test_lines_take_a_frame_in_the_last_word_of_each_line_named(tmp_path):
+    # halfway from the last word's start to the line's end, where a key word's picture has landed; a line without word
+    # times gives its middle
     mp4 = numbered(tmp_path, 5, 60)
     mv = tmp_path / "mv.json"
-    mv.write_text(json.dumps(SONG), encoding="utf-8")
+    words = [{"w": w, "t": t} for w, t in (("still", 7.0), ("pic", 8.0), ("ture", 9.2))]
+    mv.write_text(json.dumps(dict(SONG, lines=[SONG["lines"][0], dict(SONG["lines"][1], words=words)])), encoding="utf-8")
     png = tmp_path / "s.png"
     res = quiet(video=str(mp4), song_path=str(mv), lines=["ch1-01", "v1-01"], out=str(png))
-    assert res["times"] == [8.5, 2.5] and shown(png, mp4, 2) == [42, 12]
+    assert res["times"] == [9.6, 2.5] and shown(png, mp4, 2) == [48, 12]
 
 
 def test_lines_need_the_song_and_one_of_its_line_ids(tmp_path, capsys):

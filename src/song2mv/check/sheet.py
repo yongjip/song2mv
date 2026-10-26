@@ -89,14 +89,20 @@ def sung_at(song: dict, t: float) -> str:
     return " ".join(ids) or next((s["id"] for s in song["sections"] if s["start"] <= t < s["end"]), "")
 
 
-def line_middles(song: dict, ids: list[str]) -> list[float]:
-    """The middle of each line named, from mv.json's start and end."""
+def line_times(song: dict, ids: list[str]) -> list[float]:
+    """A moment of each line named, from mv.json: halfway from its last word's start to the line's end, where the
+    picture for a key word late in the line has landed; the line's middle without word times."""
     by_id = {r["id"]: r for r in song["lines"]}
     for i in ids:
         if i not in by_id:
             raise Song2mvError(f"--lines {i}: the mv.json has no line with this id",
                                hint=f"its line ids run {song['lines'][0]['id']} … {song['lines'][-1]['id']}")
-    return [round((by_id[i]["start"] + by_id[i].get("end", by_id[i]["start"])) / 2, 3) for i in ids]
+    times = []
+    for r in (by_id[i] for i in ids):
+        end = r.get("end", r["start"])
+        last = (r.get("words") or [{"t": r["start"]}])[-1]["t"]
+        times.append(round(((last if r["start"] <= last < end else r["start"]) + end) / 2, 3))
+    return times
 
 
 def grab(video: str, info: dict, v: float, vf: str, size: tuple[int, int]) -> np.ndarray:
@@ -204,7 +210,7 @@ def sheet(video: str, song_path: str | None = None, every: float | None = None, 
         raise Song2mvError("--lines needs --song, the mv.json whose line ids it names")
     song = load_mv(song_path, keys=("duration", "sections", "lines")) if song_path else None
     if lines:
-        times = line_middles(song, lines)
+        times = line_times(song, lines)
 
     info = probe(video)
     if crop:

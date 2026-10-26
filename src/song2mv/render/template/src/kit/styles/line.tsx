@@ -39,12 +39,10 @@ export const Lines: React.FC<{
           <feFlood floodColor="#7f7f7f" result="grey" />
           <feComposite in="solid" in2="grey" operator="over" result="flat" />
           {soften > 0 ? <feGaussianBlur in="flat" stdDeviation={soften} result="soft" /> : <feOffset in="flat" result="soft" />}
-          {/* 1.01, not 1: an offset lands on whole pixels, and at half size Chrome rounds its half up in software and
-              down on the GPU, where the shifted copy then matches the drawing and the lines inside vanish */}
-          <feOffset in="soft" dx={1.01} result="sx" />
-          <feComposite in="sx" in2="grey" operator="over" result="softX" />
-          <feOffset in="soft" dy={1.01} result="sy" />
-          <feComposite in="sy" in2="grey" operator="over" result="softY" />
+          {/* one device pixel at any size, where an feOffset rounds to whole pixels: drawn under half size (a concept
+              board's tile, a draft under a camera that pulls back) its 1-unit shift rounded to 0 and nothing traced */}
+          <feConvolveMatrix in="soft" order="2 1" kernelMatrix="0 1" targetX={1} targetY={0} edgeMode="duplicate" result="softX" />
+          <feConvolveMatrix in="soft" order="1 2" kernelMatrix="0 1" targetX={0} targetY={1} edgeMode="duplicate" result="softY" />
           <feColorMatrix in="soft" type="matrix" values={LUM} result="lum" />
           <feColorMatrix in="softX" type="matrix" values={LUM} result="lx" />
           <feColorMatrix in="softY" type="matrix" values={LUM} result="ly" />

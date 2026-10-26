@@ -14,8 +14,9 @@ import type { Kind, Line, Section, SongCtxValue } from "./song";
  *   <Camera T={T} shots={shots} hits={hits}>…the world…</Camera>
  *
  * The rules follow the section kinds and check's goals:
- * - every section starts on a cut; cuts sit on bar lines (or a bar's middle, when bars are long) or a 16th before a
- *   line's first word, where check counts the cut as that line's own;
+ * - every section starts on a cut (or on a board that starts sooner than its first shot could end); cuts sit on bar
+ *   lines (or a bar's middle, when bars are long) or a 16th before a line's first word, where check counts the cut as
+ *   that line's own;
  * - mid sections cut unevenly (2, 1, 3, 1, 2 … bars; on dense lines, one every 1.6 s or less as in rap, every 2–3
  *   lines), with interval CV ≥ 0.42 where it can (`cuts.rhythm` wants 0.35), no shot over 5.2 s (`cuts.max_gap`), no
  *   cut inside a line shorter than 1.8 s and never two in one short line (`motion.max`);
@@ -44,6 +45,8 @@ export type Plan = {
   shots: PlannedShot[]; hits: number[];
   /** framings no shot took because each turn they came after one too alike: [framing, the framing before it] */
   dropped?: [number, number][];
+  /** true when the board's `pattern` set no section's rhythm (planBoards): no section opens on the board */
+  idlePattern?: boolean;
 };
 
 export type PlanOptions = {
@@ -77,7 +80,7 @@ const KEYED_CV = 0.37;
 const MOVES = ["in", "right", "out", "left", "in", "up"] as const;
 
 type Grid = SongCtxValue["grid"];
-type Part = { sec: Section; start: number; end: number };
+type Part = { sec: Section; start: number; end: number; open?: number };
 type Zone = { from: number; to: number; start: number; cap: number };
 type Cand = { t: number; lead: boolean };
 
@@ -141,12 +144,22 @@ function beatsIn(grid: Grid, a: number, b: number) {
 }
 
 /**
+ * Where a section's part opens: its start, or a key (a board start) sooner after it than the shortest shot, when the
+ * shot before, which began at `before`, can run on to the key instead of cutting twice (check counts the two as one)
+ */
+function opening(part: Part, keys: number[], before: number) {
+  const rule = RULES[part.sec.kind];
+  const soon = keys.find((k) => k > part.start + 1e-6 && k < part.start + rule.min);
+  return soon !== undefined && soon - before <= rule.max ? soon : part.start;
+}
+
+/**
  * The cut times of one section's part of the stretch: a greedy walk along the pattern over the allowed candidates. It
- * takes every key (a board start) on its way, as it takes the part's start.
+ * takes every key (a board start) on its way, as it takes the part's opening.
  */
 function walk(part: Part, rule: Rule, unit: number, pattern: number[], phase: number, cands: Cand[], zones: Zone[], beats: number[], strict: boolean,
   keys: number[]) {
-  const out = [part.start];
+  const out = [part.open ?? part.start];
   const used = new Map<Zone, number[]>();
   const zoneAt = (t: number) => zones.find((z) => t > z.from && t < z.to);
   const fits = (t: number) => {
@@ -161,7 +174,7 @@ function walk(part: Part, rule: Rule, unit: number, pattern: number[], phase: nu
     if (z) used.set(z, [...(used.get(z) ?? []), t]);
     out.push(t);
   };
-  let prev = part.start;
+  let prev = out[0];
   for (let i = phase; ; i++) {
     const want = prev + Math.min(rule.max, Math.max(rule.min, pattern[i % pattern.length] * unit));
     const key = keys.find((k) => k > prev + 1e-6);
@@ -311,15 +324,23 @@ export function planShots(ctx: SongCtxValue, from: number, to: number, framings:
  * Plans boards that follow each other (sorted, each up to the next one's `from`) as planShots plans one stretch, with
  * a section's cuts planned across its boards: every board start is a cut its section's rhythm counts, and a section
  * with boards starting at its lines cuts inside as few of them as an interval CV of 0.37 allows (check wants 0.35),
- * inside none under 2.5 s if it can.
+ * inside none under 2.5 s if it can. A section cuts in the `pattern` of the board it opens on; a board whose pattern
+ * no section takes says so (`idlePattern`).
  */
 export function planBoards(ctx: SongCtxValue, boards: BoardPlan[]): Plan[] {
   const lines = ctx.song.lines.filter((l) => l.words.length).sort((a, b) => a.words[0].t - b.words[0].t);
   const keys = boards.slice(1).map((b) => b.from);
   const at = (t: number) => boards.find((b) => t >= b.from - 1e-6 && t < b.to - 1e-6) ?? boards[0];
-  const parts = partsOf(ctx, boards[0].from, boards[boards.length - 1].to).map((part) => {
-    const inner = keys.filter((k) => k > part.start + 1e-6 && k < part.end - 1e-6);
-    return { part, ...cutsOf(ctx, part, at(part.start).pattern, lines, inner) };
+  const patterned = new Set<BoardPlan>();
+  let before = -Infinity;
+  const parts = partsOf(ctx, boards[0].from, boards[boards.length - 1].to).map((p) => {
+    const inner = keys.filter((k) => k > p.start + 1e-6 && k < p.end - 1e-6);
+    const part = { ...p, open: opening(p, inner, before) };
+    const opens = at(part.open);
+    if (opens.pattern) patterned.add(opens);
+    const cuts = cutsOf(ctx, part, opens.pattern, lines, inner);
+    before = cuts.times[cuts.times.length - 1] ?? before;
+    return { part, ...cuts };
   });
   return boards.map((o) => {
     const views = twoAtLeast(o.framings);
@@ -350,6 +371,6 @@ export function planBoards(ctx: SongCtxValue, boards: BoardPlan[]): Plan[] {
       shots.push({ t: o.to, ...end, framing: tail.framing });
     }
     const dropped = [...skipped].filter(([f]) => !shots.some((s) => s.framing === f)).sort((a, b) => a[0] - b[0]);
-    return { shots, hits, dropped };
+    return { shots, hits, dropped, ...(o.pattern && !patterned.has(o) ? { idlePattern: true } : {}) };
   });
 }

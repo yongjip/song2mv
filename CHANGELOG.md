@@ -7,6 +7,26 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 First release (0.1.0).
 
 ### Fixed
+- A section no longer cuts at its start when a board starts less than its shortest shot later (a board at its first
+  line, a 16th before the first word): the shot before runs on to the board. The two cuts, 0.3–0.8 s apart, made a
+  flash that `check` counts as one cut, so the planner weighed a rhythm `check` never saw. In the sixth new-user run,
+  verse 2 measured 0.29 against the 0.35 goal in every draft while its plan counted 0.63; replanned, its cuts measure
+  0.47 as `check` counts them, and no stretch goes longer without a cut (5.1 s at most). The shot before runs on only
+  while it stays within the longest shot the section allows (5.2 s in a verse).
+- A section cuts in the `pattern` of the board it opens on, a board at its first line included. Before, a section the
+  previous board ran into for a moment took that board's pattern, and the same run's patterns on the verse's own
+  board changed nothing in three drafts. A video render's log names a pattern no section takes.
+- A video render's log names boards at one line of two copies of a section that open on the same framing, which
+  `variation.repeats` measures alike (the same run lost a draft to three chorus boards that did, at 0.85).
+- `sheet --lines` takes each frame in the line's last word, halfway from its start to the line's end (the line's
+  middle without word times): a picture on a key word late in the line was missing from 6 of the same run's 32
+  middle frames.
+- The line pack traces at any size. It found edges by shifting a copy of the drawing one unit, and Chrome shifts by
+  whole pixels, so under half size the shift rounded to nothing and the pack drew nothing: the sixth run judged its
+  blueprint concept on a blank concept-board tile (drawn at 0.49), and a draft under a camera pulled back to 0.8
+  traced nothing where its final did. The shift is now one device pixel at any size (an `feConvolveMatrix`); at full
+  size every pixel is the same as before. It costs nothing on the GPU; in software a still of the street traced over
+  the frame takes 10.5 s instead of 7.5 s.
 - The automatic tempo no longer follows lyric line gaps onto a grid that misses the music. When the line gaps pick
   another tempo than the strongest onsets, both grids are fitted to the music and the one off the beat for less of
   the song wins; an octave fits as well, and the line gaps keep it. A Suno song at 118 BPM that drifts to 121 had
@@ -48,6 +68,11 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- `bedPoint(x, y, s, head, p)` puts a point of a `Bed`'s sleeper coordinates on the stage: with
+  `personEye("lie", 1, 0, T)` it is the sleeper's eye, to aim a framing at the face or draw on it from outside the bed.
+  The sixth new-user run put a waking sleeper's eyes at the bed's place plus `s` × `personEye`, missing where the bed
+  lays the hips, and drew them on the mattress 150 px under the face. The Bed's doc says that `over` takes
+  `personEye` as it is.
 - `song2mv render` has Chrome draw on the GPU on a Mac (Remotion's `--gl=angle`, Metal). Left to itself, headless
   Chrome drew in software, every frame's SVG filters on one core whatever Remotion's concurrency, so the style packs
   made renders slow. On an M4 Pro, with a pack over the whole frame of the starter: 16 s at 1080p30 under `toon` in

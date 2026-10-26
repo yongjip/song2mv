@@ -499,6 +499,69 @@ def test_drift_scales_every_shots_move_and_keeps_the_cuts(tmp_path):
     assert same >= 10, same
 
 
+OPENING_PROBE = """
+import { makeSongCtx } from "KIT/song";
+import { planBoards } from "KIT/plan";
+const song = SONG;
+const ctx = makeSongCtx(song);
+const F = [{ x: 960, y: 540 }, { x: 700, y: 640, zoom: 2.2 }, { x: 1300, y: 420, zoom: 1.5, rotate: -3 }];
+const keys = ["in", "v1-01", "v1-05", "ch1", "v2-01", "ou"];
+const lead = (id: string) => song.lines.find((l: any) => l.id === id).words[0].t - 0.15;
+const starts = keys.map((k) => (k.includes("-") ? lead(k) : song.sections.find((s: any) => s.id === k).start));
+const plan = (patterns: Record<string, number[]>) => planBoards(ctx, starts.map((from: number, i: number) => ({
+  from: i ? from : 0, to: starts[i + 1] ?? song.duration, framings: F, pattern: patterns[keys[i]] })));
+const cuts = (plans: any[]) => plans.flatMap((p) => p.shots.slice(0, -1).map((s: any) => s.t)).sort((a: number, b: number) => a - b);
+const set = plan({ "v2-01": [1, 3], "v1-05": [1, 1] });
+console.log(JSON.stringify({ starts: Object.fromEntries(keys.map((k, i) => [k, starts[i]])), plain: cuts(plan({})), set: cuts(set),
+  idle: set.map((p: any) => Boolean(p.idlePattern)) }));
+"""
+
+
+def test_a_section_opens_on_the_board_at_its_first_line_and_cuts_in_its_pattern(tmp_path):
+    # Boards at the first lines of v1 and v2 start 0.3 s into their sections: the shot before runs on to them, where a
+    # cut at the section's start too would make a 0.3 s shot that check counts as one cut with the board's (and the
+    # plan would weigh a rhythm check never sees). v2 opens on its board, whose pattern sets v2's cuts; no section opens
+    # on v1-05, whose pattern is idle.
+    song = _verse_song([4, 4, 5, 4, 6, 4, 4])
+    seen = _probe(tmp_path, OPENING_PROBE, song)
+    secs = {s["id"]: s for s in song["sections"]}
+    for cuts in (seen["plain"], seen["set"]):
+        assert np.diff(cuts).min() >= 0.4, cuts
+        for sid in ("v1", "v2"):
+            assert min(t for t in cuts if t >= secs[sid]["start"] - 1e-6) == pytest.approx(seen["starts"][f"{sid}-01"]), (sid, cuts)
+    v2 = [[t for t in cuts if secs["v2"]["start"] <= t < secs["v2"]["end"]] for cuts in (seen["plain"], seen["set"])]
+    assert v2[0] != v2[1], v2
+    assert seen["idle"] == [False, False, True, False, False, False]
+
+
+STORYBOARD_WARNINGS_PROBE = """
+import { makeSongCtx } from "KIT/song";
+import { planStoryboard } from "KIT/storyboard";
+const L = (id: string, section: string, t: number) => ({ id, section, text: id, start: t, end: t + 2, words: [{ w: id, t }] });
+const S = (id: string, kind: string, start: number) => ({ id, name: id, kind, start, end: start + 16 });
+const song = { title: "", audio: null, duration: 64, grid: { bpm: 120, beat: 0.5, phi: 0, downbeat_mod4: 0 },
+  sections: [S("v1", "mid", 0), S("ch1", "hot", 16), S("v2", "mid", 32), S("ch2", "hot", 48)],
+  lines: ["v1", "ch1", "v2", "ch2"].flatMap((s, k) => [1, 2, 3].map((n) => L(`${s}-0${n}`, s, 16 * k + 4 * n - 3.5))) } as any;
+const world = () => null;
+const A = { x: 960, y: 540 }, B = { x: 700, y: 640, zoom: 2.2 }, C = { x: 1300, y: 420, zoom: 1.6 };
+const warned: string[] = [];
+console.warn = (m: string) => { warned.push(m); };
+planStoryboard(makeSongCtx(song), [
+  { at: "v1", world, framings: [A, B] }, { at: "v1-02", world, framings: [A, B], pattern: [1, 1] },
+  { at: "ch1", world, framings: [A, B] }, { at: "ch1-03", world, framings: [A, B] },
+  { at: "v2", world, framings: [A, B] }, { at: "ch2", world, framings: [A, B] }, { at: "ch2-03", world, framings: [A, C] },
+]);
+console.log(JSON.stringify(warned));
+"""
+
+
+def test_the_storyboard_names_an_idle_pattern_and_copies_that_open_alike(tmp_path):
+    warned = _probe(tmp_path, STORYBOARD_WARNINGS_PROBE, {})
+    assert any("no section takes the pattern of the board at v1-02" in w for w in warned), warned
+    alike = [w for w in warned if "open on the same framing" in w]
+    assert len(alike) == 1 and "the boards at ch1-03 and ch2-03" in alike[0], warned
+
+
 def _probe(tmp_path, code: str, song: dict) -> object:
     probe = tmp_path / "probe.tsx"
     probe.write_text(code.replace("KIT", os.path.join(BUNDLED, "src", "kit")).replace("SCENES", os.path.join(BUNDLED, "src", "scenes"))
