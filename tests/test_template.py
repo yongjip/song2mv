@@ -797,14 +797,22 @@ def test_a_render_draws_on_the_gpu_on_a_mac_unless_turned_off(tmp_path):
 
 
 def test_a_render_opens_googles_build_of_the_chrome_remotion_pins(tmp_path):
-    # Remotion's own Chrome for a Mac and Linux keeps V8's debug checks: one stopped every whole-song render of two
-    # songs after a few hundred frames ("Page crashed!"), and Google's build of the same version leaves it out
+    # Remotion's own Chrome for a Mac keeps V8's debug checks (its Linux builds turn them off): one stopped every
+    # whole-song render of two songs after a few hundred frames ("Page crashed!"); Google's build of the same version
+    # leaves it out
     pins = open(os.path.join(BUNDLED, "node_modules", "@remotion", "renderer", "dist", "browser", "get-chrome-download-url.js"),
                 encoding="utf-8").read()
     tested = re.search(r"TESTED_VERSION = '([\d.]+)'", pins)
     assert tested and f'const CHROME = "{tested.group(1)}"' in open(os.path.join(BUNDLED, "render.mjs"), encoding="utf-8").read()
-    if sys.platform in ("darwin", "linux"):
-        assert os.sep + ".song2mv-chrome" + os.sep in _opened_with(tmp_path)[1]
+    assert (os.sep + ".song2mv-chrome" + os.sep in _opened_with(tmp_path)[1]) == (sys.platform == "darwin")
+
+
+def test_the_kit_gallery_renders_through_render_mjs_without_a_song(tmp_path):
+    # the guide shows the gallery with render.mjs: the Chrome a video gets, on the GPU on a Mac
+    r = subprocess.run(["node", "render.mjs", "--composition", "Kit-Gallery", "--frame", "4", "--out", str(tmp_path)],
+                       cwd=BUNDLED, check=True, capture_output=True, text=True)
+    png = tmp_path / "kit-Kit-Gallery-4.png"
+    assert r.stdout.strip().splitlines()[-1] == str(png) and probe_size(str(png)) == (1920, 1080)
 
 
 def _gallery_tile(tmp_path, tile: int, gl: str | None) -> np.ndarray:

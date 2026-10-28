@@ -23,7 +23,7 @@ song's rights, or a lyric only the user knows.
   folder (`song2mv-work/<song>/`).
 - **Setup**, once: `uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"` (not on
   PyPI yet; faster-whisper has no Python 3.15 wheels). Needs ffmpeg; `render` needs Node 18+ and installs Remotion
-  and Google's headless Chrome (~500 MB) on its first run.
+  and a headless Chrome (~500 MB) on its first run.
 - **What they want**: full 16:9 video, 9:16 short(s), LRC/SRT only, or all. Title text. Mood or references. If you
   make the song too (Suno and the like), name a BPM in the style prompt: it tends to give a steady tempo.
 
@@ -320,8 +320,8 @@ scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` pu
 Look at it before you design anything (in `<work>/video`):
 
 ```bash
-npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0   # all 32 scenes
-npx remotion still src/index.ts Kit-Gallery scene.png --frame=4     # one at full size (1–32)
+node render.mjs --composition Kit-Gallery             # out/kit-Kit-Gallery.png: all 32 scenes
+node render.mjs --composition Kit-Gallery --frame 4   # out/kit-Kit-Gallery-4.png: one at full size (1–32)
 ```
 
 `src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc

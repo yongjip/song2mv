@@ -28,7 +28,7 @@ After the first PyPI release these become `uv tool install "song2mv[sync]"`, `pi
 | needed by | requirement |
 | --- | --- |
 | `sync`, `beats`, `click`, `check`, `sheet` | **ffmpeg** and **ffprobe** on PATH (`brew install ffmpeg`, `apt install ffmpeg`) |
-| `render` | **Node 18+** with npm. The first render installs Remotion (~300 npm packages) and downloads Google's headless Chrome (~500 MB in all) |
+| `render` | **Node 18+** with npm. The first render installs Remotion (~300 npm packages) and downloads a headless Chrome (~500 MB in all) |
 | Python | 3.10–3.14 (tested in CI). `sync` needs faster-whisper, whose ctranslate2 has no Python 3.15 wheels yet — use `--python 3.13`. `check`, `beats` and `render` also run on 3.15 |
 
 ## Disk use
@@ -43,11 +43,12 @@ After the first PyPI release these become `uv tool install "song2mv[sync]"`, `pi
 
 Set `SONG2MV_CACHE` to move the render cache. On a Mac, `render` has Chrome draw on the GPU (Remotion's
 `--gl=angle`); `SONG2MV_GL=off` draws in software, as on Linux and Windows, and another value is passed to `--gl`.
-On a Mac and Linux, `render` uses Google's build of the Chrome version Remotion pins (`node_modules/.song2mv-chrome`)
-instead of Remotion's own, which keeps V8's debug checks: one of them stopped long renders of some scenes with
-"Page crashed!". `SONG2MV_BROWSER=PATH` renders with another Chrome.
+On a Mac, `render` uses Google's build of the Chrome version Remotion pins (`node_modules/.song2mv-chrome`) instead of
+Remotion's own, which keeps V8's debug checks (its Linux builds turn them off): one of them stopped long renders of
+some scenes with "Page crashed!". `SONG2MV_BROWSER=PATH` renders with another Chrome.
 
 ## Network access
 
 `sync` downloads the whisper model from Hugging Face on first use. The first `render` runs `npm ci` (npm registry) and
-downloads a headless Chrome from Google's Chrome for Testing storage. Nothing else contacts the network.
+downloads a headless Chrome from Google's Chrome for Testing storage (on Linux, usually Remotion's own build from
+remotion.media). Nothing else contacts the network.

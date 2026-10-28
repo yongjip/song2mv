@@ -9,6 +9,7 @@
  *   node render.mjs ../work/my-song/mv.json --still 98.5            # one PNG frame at song time 98.5 s
  *   node render.mjs ../work/my-song/mv.json --max-mb 200             # whole song, at most 200 MB (an upload limit)
  *   node render.mjs ../work/my-song/mv.json --composition Concepts --props concepts.json   # a PNG of Concepts
+ *   node render.mjs --composition Kit-Gallery --frame 4               # the kit gallery's scene 4 (frame 0: all of them)
  *   node render.mjs ../work/my-song/mv.json --studio                # Remotion Studio with this song
  *
  * `song2mv render` runs this for you with --out WORK/renders; the paths above are for running node directly.
@@ -19,7 +20,8 @@
  *          BASE-…-draft.mp4; --still ignores it)
  *          --max-mb N (a finished video over N MB is encoded again, in two passes, to fit; the audio is kept)
  *          --composition ID --props FILE (a PNG of the composition's first frame, its props {song, from, to, hold}
- *          and the JSON object in FILE, such as {"T": 33.1} for Concepts or {"times": [12, 33.1]} for Contact)
+ *          and the JSON object in FILE, such as {"T": 33.1} for Concepts or {"times": [12, 33.1]} for Contact;
+ *          --frame N takes frame N, as BASE-ID-N.png; without an mv.json, the sample song stands in and BASE is kit)
  *          --manifest FILE (append the path of every file written, one per line; else they are printed)
  *
  * The audio is never copied into this folder: a temporary public folder outside it holds a link to it.
@@ -27,9 +29,9 @@
  * A finished video is capped at 8 Mbit/s (YouTube's figure for 1080p30): grain-heavy styles otherwise run near 14.
  * On a Mac, Chrome draws on the GPU (Remotion's --gl=angle, Metal): the style packs' filters render many times faster
  * and look the same. SONG2MV_GL=off draws in software, as on Linux and Windows; another value is passed to --gl.
- * On a Mac and Linux, Remotion's own Chrome keeps V8's debug checks, and one of them stops some scenes' renders after a
- * few hundred frames ("Page crashed!"). Renders use Google's build of the same Chrome instead, downloaded once into
- * node_modules/.song2mv-chrome (105–125 MB). SONG2MV_BROWSER=PATH renders with another Chrome.
+ * On a Mac, Remotion's own Chrome keeps V8's debug checks (its Linux builds turn them off), and one of them stops some
+ * scenes' renders after a few hundred frames ("Page crashed!"). Renders there use Google's build of the same Chrome
+ * instead, downloaded once into node_modules/.song2mv-chrome (about 105 MB). SONG2MV_BROWSER=PATH renders with another.
  */
 import { spawnSync } from "node:child_process";
 import { once } from "node:events";
@@ -50,11 +52,12 @@ const FINAL_VIDEO = ["--max-rate=8M", "--buffer-size=16M"];
 // of 80 a final came out 36 % larger for its artifacts, at 100 it is as fast and within 8 % of a raw-pixel render
 const CAPTURE = ["--jpeg-quality=100"];
 const argv = process.argv.slice(2);
-if (!argv.length || argv[0].startsWith("-")) {
+const songless = argv[0]?.startsWith("-") && argv.includes("--composition");
+if (!argv.length || (argv[0].startsWith("-") && !songless)) {
   console.error(fs.readFileSync(fileURLToPath(import.meta.url), "utf8").split("*/")[0]);
   process.exit(1);
 }
-const songPath = path.resolve(argv[0]);
+const songPath = songless ? path.join(HERE, "src", "sample-song.json") : path.resolve(argv[0]);
 const opt = (name, dflt) => {
   const i = argv.indexOf(`--${name}`);
   return i < 0 ? dflt : argv[i + 1];
@@ -78,7 +81,7 @@ const hold = Number(opt("hold", 0));
 const aspects = { "16x9": ["Lyric-16x9"], "9x16": ["Lyric-9x16"], both: ["Lyric-16x9", "Lyric-9x16"] }[opt("aspect", "16x9")];
 if (!aspects) throw new Error("--aspect must be 16x9, 9x16 or both");
 const outDir = path.resolve(opt("out", path.join(HERE, "out")));
-const base = opt("name", path.basename(path.dirname(songPath)) || "song");
+const base = opt("name", songless ? "kit" : path.basename(path.dirname(songPath)) || "song");
 
 // ── audio: find it, then expose it through a temporary public folder ──
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "song2mv-"));
@@ -145,7 +148,7 @@ const glFlag = gl === "off" ? [] : [`--gl=${gl}`];
 const CHROME = "157.0.8080.0"; // the version @remotion/renderer pins (TESTED_VERSION)
 async function googleChrome() {
   if (process.env.SONG2MV_BROWSER) return process.env.SONG2MV_BROWSER;
-  if (process.platform !== "darwin" && process.platform !== "linux") return null; // Remotion takes Google's build there
+  if (process.platform !== "darwin") return null; // Remotion's builds for Linux leave the checks out, Windows gets Google's
   const { ensureBrowser } = createRequire(cliPkg)("@remotion/renderer");
   // Remotion keeps a browser under the nearest package.json: this one keeps Google's apart from Remotion's own
   const home = path.join(HERE, "node_modules", ".song2mv-chrome");
@@ -216,9 +219,10 @@ const range = from > 0 || to !== null ? `-${from}-${to ?? "end"}` : "";
 if (flag("studio")) {
   remotion(["studio"]);
 } else if (opt("composition")) {
+  const id = opt("composition"), frame = Number(opt("frame", 0));
   const made = path.join(tmp, "still.png");
-  remotion(["still", opt("composition"), made, "--frame=0"]);
-  place(made, path.join(outDir, `${base}-${opt("composition")}.png`));
+  remotion(["still", id, made, `--frame=${frame}`]);
+  place(made, path.join(outDir, `${base}-${id}${frame ? `-${frame}` : ""}.png`));
 } else if (opt("still") !== undefined) {
   const t = Number(opt("still"));
   const frame = Math.max(0, Math.round((t - from) * FPS));

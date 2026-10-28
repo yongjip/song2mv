@@ -50,7 +50,7 @@ Install only what you use — the parts differ a lot in size:
 | `check`, `sheet` | `song2mv` | numpy (35 MB) |
 | `beats`, `click` | `song2mv[beats]` | librosa, scipy, numba (300 MB) |
 | `sync` | `song2mv[sync]` | beats + faster-whisper (130 MB) + a whisper model on first run (small: 460 MB) |
-| `render` | Node 18+ | Remotion and Google's headless Chrome on first render (~500 MB) |
+| `render` | Node 18+ | Remotion and a headless Chrome on first render (~500 MB) |
 
 ## Quick start
 
@@ -300,7 +300,7 @@ kit in `DIR/src/kit/`, and draw the rest. Besides `useSong()`, beat-grid helpers
   ([CONTRIBUTING.md](https://github.com/yongjip/song2mv/blob/main/CONTRIBUTING.md)).
 
 The people, places and objects are drawn in one flat style. To see everything, run
-`npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0` in DIR. Rules that held up: a scene is a pure
+`node render.mjs --composition Kit-Gallery` in DIR. Rules that held up: a scene is a pure
 function of song time `T`; text pops once and then holds still while it is read; lay out on the 1920×1080 stage. For
 9:16, a song can also export a `VerticalScene` that draws the whole 1080×1920 frame, instead of the stage shrunk into a
 band; the kit's `verticalView` films the 16:9 world for it, its subject above the captions and inside the apps' safe

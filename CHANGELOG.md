@@ -7,13 +7,14 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 First release (0.1.0).
 
 ### Fixed
-- Whole-song renders no longer stop with "Page crashed!". On a Mac and Linux, Remotion downloads its own build of
-  Chrome, which keeps V8's debug checks, and one of them ended every whole-song render of two songs' scenes after
-  1,324 frames (after 52 with 12 tabs). Google's build of the same Chrome version leaves the checks out and rendered
-  one of those songs whole, 8,856 frames in 3.4 minutes. `render` now downloads it once into
-  `node_modules/.song2mv-chrome` (105–125 MB) and renders with it; its frames reach Remotion as JPEG, taken at
-  quality 100, as fast as Remotion's build and within 8 % of its file size (at the default 80, a final was 36 %
-  larger). The first render downloads about 500 MB instead of 570. `SONG2MV_BROWSER=PATH` renders with another Chrome.
+- Whole-song renders on a Mac no longer stop with "Page crashed!". Remotion's own Chrome for a Mac keeps V8's debug
+  checks (`dcheck_always_on` is unset in its mac-arm64 build args; its Linux builds turn the checks off), and one of
+  them ended every whole-song render of two songs' scenes after 1,324 frames (after 52 with 12 tabs). Google's build
+  of the same Chrome version leaves the checks out and rendered one of those songs whole, 8,856 frames in 3.4
+  minutes. On a Mac, `render` now downloads it once into `node_modules/.song2mv-chrome` (a 104 MB download instead
+  of Remotion's 179 MB, 203 MB on disk instead of 570) and renders with it; its frames reach Remotion as JPEG, taken
+  at quality 100, as fast as Remotion's build and within 8 % of its file size (at the default 80, a final was 36 %
+  larger). `SONG2MV_BROWSER=PATH` renders with another Chrome.
 - A board at a line sung into a section, starting sooner before the section than its shortest shot, opens it: it cut
   at its start and again at the section's, 0.46 s later in one song's bridge, a pair `check` counts as one cut. The
   mirror of the fix below for a board just after a section's start.
@@ -80,6 +81,10 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- `node render.mjs --composition ID --frame N` renders frame N of a composition, and a composition needs no mv.json
+  (the sample song stands in). The guide, AGENTS.md, README and CONTRIBUTING show the kit gallery with
+  `node render.mjs --composition Kit-Gallery`: it renders with the Chrome a video gets, on the GPU on a Mac, where
+  `npx remotion still` drew in software and, on a Mac, downloaded Remotion's own Chrome next to Google's.
 - The guide splits a whole song among agents, as two songs (81 and 43 lines) were made from audio to finished videos
   in about two hours: shared props first from one brief and palette, a template copy per section builder, then the
   whole song checked after merging and a 9:16 sheet of every board. It reads Suno's timed lines (a subtitle track in

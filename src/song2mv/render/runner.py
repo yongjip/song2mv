@@ -1,7 +1,7 @@
 """Render an mv.json with the bundled Remotion template (experimental).
 
 The template ships inside the package (render/template). It needs Node 18+ and npm; the first render installs
-Remotion and Google's headless Chrome (about 500 MB) into the shared copy of the template.
+Remotion and a headless Chrome (about 500 MB) into the shared copy of the template.
 
 - Without --template: the shared copy in the cache (~/.cache/song2mv/template-<version>, or $SONG2MV_CACHE) renders
   the plain lyric video. It is refreshed from the package on every render; do not edit it.
