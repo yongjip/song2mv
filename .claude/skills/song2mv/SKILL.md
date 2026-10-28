@@ -23,7 +23,7 @@ song's rights, or a lyric only the user knows.
   folder (`song2mv-work/<song>/`).
 - **Setup**, once: `uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"` (not on
   PyPI yet; faster-whisper has no Python 3.15 wheels). Needs ffmpeg; `render` needs Node 18+ and installs Remotion
-  (~570 MB) on its first run.
+  and Google's headless Chrome (~500 MB) on its first run.
 - **What they want**: full 16:9 video, 9:16 short(s), LRC/SRT only, or all. Title text. Mood or references. If you
   make the song too (Suno and the like), name a BPM in the style prompt: it tends to give a steady tempo.
 
@@ -32,6 +32,10 @@ song's rights, or a lyric only the user knows.
 ```bash
 song2mv sync <audio> --lyrics <lyrics.txt> --language <code> --title "<title>" --json   # run in the background; minutes
 ```
+
+A Suno download also carries timed lines, a subtitle track (`ffmpeg -i song.m4a -map 0:s:0 suno.srt`): on two songs
+they agreed with `sync`'s line starts to a median 0.07 s and 0.32 s and were 1.3–2.8 s apart on three lines, where
+the whisper runs sided with `sync` twice. Read them as a second opinion on `check_by_ear`, not as the timing.
 
 `--lyrics` is optional when the audio has a lyrics tag (Suno writes one). If you also have a lyric sheet, pass it:
 where it and the tag differ, `warnings` names the lines and says which of the two the whisper runs support there (for
@@ -243,6 +247,14 @@ song2mv render <work>/mv.json --template <work>/video --still 1      # first use
 Write the song's scenes in `<work>/video/src/scenes/` and export them from `src/scenes/index.ts` (`Scene` and
 `linesDrawnByScene`). Draw them in the chosen concept's style, and take what fits from the kit in `src/kit/`.
 
+**A whole song goes faster split among agents.** Two songs (81 and 43 lines) went from the audio to finished 16:9 and
+9:16 videos in about two hours: five agents first drew the props both songs share from one brief and one palette
+file, then seven agents built a quarter to two fifths of a song each. Each builder works in its own template copy
+(`--template <work>/video-<section>`), owns one scene file, reads the shared drawings only, and renders only its own
+copy: one half-edited file breaks every render that bundles it. After merging the files into `<work>/video`, check the
+whole song, not the builders' stretches (a check that starts inside a line misses it: one passed in its builder's
+stretch and failed in the song), and look at a 9:16 sheet of every board: builders forget `tall` framings.
+
 **Plan the cuts with the kit; don't write cut logic.** In five trial videos every agent wrote 750–1200 lines of scene
 code and rebuilt the same cut machinery, and one lost half an hour iterating cut plans against `check`. The kit has it:
 
@@ -254,8 +266,8 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
 - A `Board` (`src/kit/storyboard.tsx`) is a stretch that starts at a line id, a section id or a time: a `world` (SVG of
   `T` on the stage), its `framings` (and `tall` ones for 9:16), and optionally `pattern`, `drift`, `hits`, an
   `overlay` (text over the camera) and `big` (its lines as big type, where the captions go). A section cuts in the
-  `pattern` of the board it opens on, one at the section or at its first line; a video render's log names a pattern
-  no section takes.
+  `pattern` of the board it opens on, one at the section, at its first line or at a line sung into it just before;
+  a video render's log names a pattern no section takes.
   `<Storyboard T={T} boards={…} />` draws the board on at T (`wrap` holds the filmed world in a style pack's
   `paper.Stack` or the like), the same with `vertical` is the `VerticalScene`, and `linesDrawnBy(song, boards)` gives
   `linesDrawnByScene`. A board's start is a cut, planned with its section's other cuts: the rhythm counts it, and a
@@ -520,6 +532,9 @@ there is a video, `song2mv sheet` shows it as rendered (step 5):
 ```bash
 node render.mjs ../mv.json --composition Contact --props sheet.json
 ```
+
+A sheet draws every tile in one page, where an SVG id names one definition for all of them: a gradient, clip or filter
+that changes with T needs T in its id (`id={"glow-" + Math.round(T * 100)}`), or every tile shows the first tile's.
 
 **Before the first full render, look closer.** A whole frame on a sheet hides rough lines. `"crop": [x, y, w, h]`
 shows only that region of the frame (its pixels: 1920×1080, or 1080×1920 with `"vertical"`), scaled to the tile

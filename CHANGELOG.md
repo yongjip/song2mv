@@ -7,6 +7,18 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 First release (0.1.0).
 
 ### Fixed
+- Whole-song renders no longer stop with "Page crashed!". On a Mac and Linux, Remotion downloads its own build of
+  Chrome, which keeps V8's debug checks, and one of them ended every whole-song render of two songs' scenes after
+  1,324 frames (after 52 with 12 tabs). Google's build of the same Chrome version leaves the checks out and rendered
+  one of those songs whole, 8,856 frames in 3.4 minutes. `render` now downloads it once into
+  `node_modules/.song2mv-chrome` (105–125 MB) and renders with it; its frames reach Remotion as JPEG, taken at
+  quality 100, as fast as Remotion's build and within 8 % of its file size (at the default 80, a final was 36 %
+  larger). The first render downloads about 500 MB instead of 570. `SONG2MV_BROWSER=PATH` renders with another Chrome.
+- A board at a line sung into a section, starting sooner before the section than its shortest shot, opens it: it cut
+  at its start and again at the section's, 0.46 s later in one song's bridge, a pair `check` counts as one cut. The
+  mirror of the fix below for a board just after a section's start.
+- A video render's log names a `theme.font` none of whose families is loaded or installed: one song's fonts module was
+  never imported, and its captions came out in a serif without a word.
 - A section no longer cuts at its start when a board starts less than its shortest shot later (a board at its first
   line, a 16th before the first word): the shot before runs on to the board. The two cuts, 0.3–0.8 s apart, made a
   flash that `check` counts as one cut, so the planner weighed a rhythm `check` never saw. In the sixth new-user run,
@@ -68,6 +80,11 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- The guide splits a whole song among agents, as two songs (81 and 43 lines) were made from audio to finished videos
+  in about two hours: shared props first from one brief and palette, a template copy per section builder, then the
+  whole song checked after merging and a 9:16 sheet of every board. It reads Suno's timed lines (a subtitle track in
+  its downloads) as a second opinion on `check_by_ear`, and puts T into the ids of definitions that change with it on
+  a contact sheet, where every tile shares one page.
 - `bedPoint(x, y, s, head, p)` puts a point of a `Bed`'s sleeper coordinates on the stage: with
   `personEye("lie", 1, 0, T)` it is the sleeper's eye, to aim a framing at the face or draw on it from outside the bed.
   The sixth new-user run put a waking sleeper's eyes at the bed's place plus `s` × `personEye`, missing where the bed

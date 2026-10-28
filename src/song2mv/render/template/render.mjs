@@ -27,6 +27,9 @@
  * A finished video is capped at 8 Mbit/s (YouTube's figure for 1080p30): grain-heavy styles otherwise run near 14.
  * On a Mac, Chrome draws on the GPU (Remotion's --gl=angle, Metal): the style packs' filters render many times faster
  * and look the same. SONG2MV_GL=off draws in software, as on Linux and Windows; another value is passed to --gl.
+ * On a Mac and Linux, Remotion's own Chrome keeps V8's debug checks, and one of them stops some scenes' renders after a
+ * few hundred frames ("Page crashed!"). Renders use Google's build of the same Chrome instead, downloaded once into
+ * node_modules/.song2mv-chrome (105–125 MB). SONG2MV_BROWSER=PATH renders with another Chrome.
  */
 import { spawnSync } from "node:child_process";
 import { once } from "node:events";
@@ -43,6 +46,9 @@ const DRAFT_FPS = 10;
 // check measures at 320×180; below half size the paper pack's grain reads as motion
 const DRAFT_VIDEO = ["--scale=0.5", "--crf=23", "--x264-preset=veryfast"];
 const FINAL_VIDEO = ["--max-rate=8M", "--buffer-size=16M"];
+// Google's Chrome hands Remotion each frame as a JPEG (Remotion's own shares raw pixels): at Remotion's default quality
+// of 80 a final came out 36 % larger for its artifacts, at 100 it is as fast and within 8 % of a raw-pixel render
+const CAPTURE = ["--jpeg-quality=100"];
 const argv = process.argv.slice(2);
 if (!argv.length || argv[0].startsWith("-")) {
   console.error(fs.readFileSync(fileURLToPath(import.meta.url), "utf8").split("*/")[0]);
@@ -56,10 +62,10 @@ const opt = (name, dflt) => {
 const flag = (name) => argv.includes(`--${name}`);
 
 // Remotion's CLI runs in this node, not through npx: on Windows npx is npx.cmd, which node cannot start without a shell.
-let cli;
+let cli, cliPkg;
 try {
-  const pkg = createRequire(import.meta.url).resolve("@remotion/cli/package.json");
-  cli = path.join(path.dirname(pkg), JSON.parse(fs.readFileSync(pkg, "utf8")).bin.remotion);
+  cliPkg = createRequire(import.meta.url).resolve("@remotion/cli/package.json");
+  cli = path.join(path.dirname(cliPkg), JSON.parse(fs.readFileSync(cliPkg, "utf8")).bin.remotion);
 } catch {
   console.error(`Remotion is not installed in ${HERE}: run npm ci there (song2mv render does it for you)`);
   process.exit(1);
@@ -135,8 +141,36 @@ async function unusedRenderPort() {
 const rendererPort = flag("studio") ? [] : [`--port=${await unusedRenderPort()}`];
 const gl = process.env.SONG2MV_GL || (process.platform === "darwin" ? "angle" : "off");
 const glFlag = gl === "off" ? [] : [`--gl=${gl}`];
+
+const CHROME = "157.0.8080.0"; // the version @remotion/renderer pins (TESTED_VERSION)
+async function googleChrome() {
+  if (process.env.SONG2MV_BROWSER) return process.env.SONG2MV_BROWSER;
+  if (process.platform !== "darwin" && process.platform !== "linux") return null; // Remotion takes Google's build there
+  const { ensureBrowser } = createRequire(cliPkg)("@remotion/renderer");
+  // Remotion keeps a browser under the nearest package.json: this one keeps Google's apart from Remotion's own
+  const home = path.join(HERE, "node_modules", ".song2mv-chrome");
+  fs.mkdirSync(home, { recursive: true });
+  fs.writeFileSync(path.join(home, "package.json"), "{}\n");
+  const cwd = process.cwd();
+  process.chdir(home);
+  let shown = -1;
+  try {
+    const onProgress = ({ percent }) => {
+      const p = Math.floor(percent * 10) * 10;
+      if (p > shown) console.warn(`Downloading Chrome ${CHROME} ${(shown = p)}%`);
+    };
+    return (await ensureBrowser({ logLevel: "error", onBrowserDownload: () => ({ version: CHROME, onProgress }) })).path;
+  } catch (e) {
+    console.warn(`Google's Chrome ${CHROME} did not install (${e.message}): rendering with Remotion's, which can stop with "Page crashed!"`);
+    return null;
+  } finally {
+    process.chdir(cwd);
+  }
+}
+const browser = flag("studio") ? null : await googleChrome();
+const browserFlag = browser ? [`--browser-executable=${browser}`] : [];
 const remotion = (args) =>
-  run([...args, ...rendererPort, ...glFlag, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`]);
+  run([...args, ...rendererPort, ...glFlag, ...browserFlag, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`]);
 const probe = (file, entries) =>
   spawnSync(process.execPath, [cli, "ffprobe", "-v", "error", ...entries, "-of", "csv=p=0", file], { cwd: HERE, encoding: "utf8" })
     .stdout.trim();
@@ -197,7 +231,7 @@ if (flag("studio")) {
   for (const id of aspects) {
     const made = path.join(tmp, "video.mp4");
     const wav = path.join(tmp, "audio.wav");
-    remotion(["render", id, made, ...(draft ? DRAFT_VIDEO : FINAL_VIDEO), ...(song.audio ? [`--separate-audio-to=${wav}`] : [])]);
+    remotion(["render", id, made, ...(draft ? DRAFT_VIDEO : FINAL_VIDEO), ...CAPTURE, ...(song.audio ? [`--separate-audio-to=${wav}`] : [])]);
     if (fs.existsSync(made) && fs.existsSync(wav)) {
       const muxed = path.join(tmp, "muxed.mp4");
       run(["ffmpeg", "-y", "-v", "error", "-i", made, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy",

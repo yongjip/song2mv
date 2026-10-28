@@ -15,10 +15,10 @@ const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
  * the first frame is not washed white.
  */
 export const LyricVideo: React.FC<MvProps> = ({ song, from, to, hold }) => {
-  useFonts();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const ctx = useMemo(() => makeSongCtx(song), [song]);
+  useFonts(ctx.theme.font);
   const hide = useMemo(() => linesDrawnByScene(song), [song]);
   const end = to ?? song.duration;
   const T = Math.max(from + frame / fps, from + hold);

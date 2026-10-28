@@ -46,9 +46,9 @@ function sheet({ times, cols, vertical, crop }: ContactProps) {
 export const contactSize: CalculateMetadataFunction<ContactProps> = ({ props }) => ({ width: 1920, height: sheet(props).height });
 
 export const ContactSheet: React.FC<ContactProps> = (props) => {
-  useFonts();
   const { song, times, vertical = false, crop } = props;
   const ctx = useMemo(() => makeSongCtx(song), [song]);
+  useFonts(ctx.theme.font);
   const { perRow, w, h, cx, cy, cw, ch, k, frameW, frameH, rowH, label } = sheet(props);
   const clip = `inset(${[cy, w - cx - cw, h - cy - ch, cx].map((v) => `${Math.max(0, v)}px`).join(" ")})`;
   const frame = (T: number) => {

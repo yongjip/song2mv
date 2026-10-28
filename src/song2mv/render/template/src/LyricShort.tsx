@@ -22,10 +22,10 @@ export const BAND_CY = 670; // the band ends at y 1080, where the captions start
  * from / to / hold work as in LyricVideo; with hold > 0 the title is on from the first frame.
  */
 export const LyricShort: React.FC<MvProps> = ({ song, from, to, hold }) => {
-  useFonts();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const ctx = useMemo(() => makeSongCtx(song), [song]);
+  useFonts(ctx.theme.font);
   const hide = useMemo(() => linesDrawnByScene(song), [song]);
   const T = Math.max(from + frame / fps, from + hold);
   const { tint, glow, strength } = sectionLook(ctx, T);

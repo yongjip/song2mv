@@ -1,7 +1,7 @@
 """Render an mv.json with the bundled Remotion template (experimental).
 
 The template ships inside the package (render/template). It needs Node 18+ and npm; the first render installs
-Remotion and a headless Chrome (about 570 MB) into the shared copy of the template.
+Remotion and Google's headless Chrome (about 500 MB) into the shared copy of the template.
 
 - Without --template: the shared copy in the cache (~/.cache/song2mv/template-<version>, or $SONG2MV_CACHE) renders
   the plain lyric video. It is refreshed from the package on every render; do not edit it.
@@ -66,7 +66,7 @@ def _install(target: str) -> None:
     if _installed(target):
         return
     npm = _require("npm")
-    print(f"[render] installing Remotion into {target} (first run only, ~570 MB) …")
+    print(f"[render] installing Remotion into {target} (first run only, ~300 MB) …")
     cmd = [npm, "ci"] if os.path.exists(os.path.join(target, "package-lock.json")) else [npm, "install"]
     r = subprocess.run(cmd + ["--no-audit", "--no-fund"], cwd=target, stdout=sys.stderr)
     if r.returncode != 0:

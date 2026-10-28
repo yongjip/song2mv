@@ -14,9 +14,9 @@ import type { Kind, Line, Section, SongCtxValue } from "./song";
  *   <Camera T={T} shots={shots} hits={hits}>…the world…</Camera>
  *
  * The rules follow the section kinds and check's goals:
- * - every section starts on a cut (or on a board that starts sooner than its first shot could end); cuts sit on bar
- *   lines (or a bar's middle, when bars are long) or a 16th before a line's first word, where check counts the cut as
- *   that line's own;
+ * - every section starts on a cut (or on a board that starts sooner than its first shot could end, after its start or
+ *   before it, at a line sung into it); cuts sit on bar lines (or a bar's middle, when bars are long) or a 16th before
+ *   a line's first word, where check counts the cut as that line's own;
  * - mid sections cut unevenly (2, 1, 3, 1, 2 … bars; on dense lines, one every 1.6 s or less as in rap, every 2–3
  *   lines), with interval CV ≥ 0.42 where it can (`cuts.rhythm` wants 0.35), no shot over 5.2 s (`cuts.max_gap`), no
  *   cut inside a line shorter than 1.8 s and never two in one short line (`motion.max`);
@@ -335,7 +335,9 @@ export function planBoards(ctx: SongCtxValue, boards: BoardPlan[]): Plan[] {
   let before = -Infinity;
   const parts = partsOf(ctx, boards[0].from, boards[boards.length - 1].to).map((p) => {
     const inner = keys.filter((k) => k > p.start + 1e-6 && k < p.end - 1e-6);
-    const part = { ...p, open: opening(p, inner, before) };
+    // a board starting at a line sung into the section, sooner before it than the shortest shot, opens it
+    const pickup = keys.includes(before) && p.start - before > 1e-6 && p.start - before < RULES[p.sec.kind].min;
+    const part = { ...p, open: pickup ? before : opening(p, inner, before) };
     const opens = at(part.open);
     if (opens.pattern) patterned.add(opens);
     const cuts = cutsOf(ctx, part, opens.pattern, lines, inner);
@@ -354,6 +356,10 @@ export function planBoards(ctx: SongCtxValue, boards: BoardPlan[]): Plan[] {
       const first = o.reorder === false ? 0 : rep;
       hits.push(...on.filter((t) => times.includes(t)));
       times.forEach((t, j) => {
+        if (shots.length && Math.abs(shots[shots.length - 1].t - t) < 1e-6) {
+          shots.pop(); // the section opens on the cut the part before ended with
+          last = shots.length ? shots[shots.length - 1].framing : -1;
+        }
         let f = (j + first) % views.length;
         for (let k = 0; k < views.length && last >= 0 && alike(views[f], views[last]); k++) {
           skipped.set(f, last);

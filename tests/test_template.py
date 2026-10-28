@@ -534,6 +534,36 @@ def test_a_section_opens_on_the_board_at_its_first_line_and_cuts_in_its_pattern(
     assert seen["idle"] == [False, False, True, False, False, False]
 
 
+PICKUP_PROBE = """
+import { makeSongCtx } from "KIT/song";
+import { planBoards } from "KIT/plan";
+const song = SONG;
+const F = [{ x: 960, y: 540 }, { x: 700, y: 640, zoom: 2.2 }, { x: 1300, y: 420, zoom: 1.5, rotate: -3 }];
+const keys = ["in", "v1", "ch1-01", "v2", "ou"];
+const lead = (id: string) => song.lines.find((l: any) => l.id === id).words[0].t - 0.15;
+const starts = keys.map((k) => (k.includes("-") ? lead(k) : song.sections.find((s: any) => s.id === k).start));
+const plans = planBoards(makeSongCtx(song), starts.map((from: number, i: number) => ({ from: i ? from : 0, to: starts[i + 1] ?? song.duration, framings: F })));
+console.log(JSON.stringify({ key: starts[2], boards: plans.map((p: any) => p.shots.slice(0, -1).map((s: any) => s.t)) }));
+"""
+
+
+def test_a_board_at_a_line_sung_into_a_section_opens_it(tmp_path):
+    # The chorus's first line starts 0.45 s before the chorus: a board there cut at its start and again at the
+    # chorus's, 0.6 s later, which check counts as one cut (a bridge measured 16.96 on such a pair). The chorus now
+    # opens on the board, and the board's first shot is the chorus's.
+    song = _verse_song([4, 4, 5, 4, 6, 4, 4])
+    ch1 = next(s for s in song["sections"] if s["id"] == "ch1")
+    line = next(x for x in song["lines"] if x["id"] == "ch1-01")
+    shift = ch1["start"] - 0.45 - line["words"][0]["t"]
+    line.update(start=round(line["start"] + shift, 3), end=round(line["end"] + shift, 3),
+                words=[{**w, "t": round(w["t"] + shift, 3)} for w in line["words"]])
+    seen = _probe(tmp_path, PICKUP_PROBE, song)
+    key, cuts = seen["key"], sorted(t for b in seen["boards"] for t in b)
+    assert [t for t in cuts if key - 1e-6 <= t < key + 0.9] == [pytest.approx(key)], cuts
+    assert all(len(set(b)) == len(b) for b in seen["boards"]), seen["boards"]
+    assert seen["boards"][2][0] == pytest.approx(key)
+
+
 STORYBOARD_WARNINGS_PROBE = """
 import { makeSongCtx } from "KIT/song";
 import { planStoryboard } from "KIT/storyboard";
@@ -738,20 +768,43 @@ def test_a_font_from_load_font_is_on_every_frame_of_a_render_longer_than_the_tim
     assert np.abs(face - face[-1]).max() < 40 and np.abs(face[0] - mono[0]).mean() > 5
 
 
-def _opened_with(tmp_path, **env) -> str:
-    """The --gl backend Remotion opened Chrome with for a still through render.mjs ("null": Chrome's own choice)"""
+def test_a_render_log_names_a_theme_font_that_never_loaded(tmp_path):
+    # A song's fonts module that no scene imported loaded nothing, and its captions came out in a serif without a word.
+    # The log says it once, from the main tab of a video (a still's own page sends Remotion no logs).
+    song = json.loads(open(os.path.join(BUNDLED, "src", "sample-song.json"), encoding="utf-8").read())
+    song["theme"] = {"font": '"Song2mv Nowhere Sans", sans-serif'}
+    (tmp_path / "song.json").write_text(json.dumps(song), encoding="utf-8")
+    r = subprocess.run(["node", "render.mjs", str(tmp_path / "song.json"), "--from", "0", "--to", "1", "--draft", "--out", str(tmp_path)],
+                       cwd=BUNDLED, check=True, capture_output=True, text=True)
+    named = [line for line in (r.stdout + r.stderr).splitlines() if "theme.font" in line]
+    assert len(named) == 1 and '"Song2mv Nowhere Sans" is neither loaded nor installed' in named[0], named
+
+
+def _opened_with(tmp_path, **env) -> tuple[str, str]:
+    """The --gl backend ("null": Chrome's own choice) and the Chrome Remotion opened for a still through render.mjs"""
     base = {k: v for k, v in os.environ.items() if k != "SONG2MV_GL"}
     r = subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--still", "1", "--out", str(tmp_path),
                         "--manifest", str(tmp_path / "wrote.txt")],
                        cwd=BUNDLED, capture_output=True, text=True, env={**base, "SONG2MV_REMOTION_LOG": "verbose", **env})
-    opened = re.search(r"Opening browser: gl = ([\w-]+)", r.stdout + r.stderr)
+    opened = re.search(r"Opening browser: gl = ([\w-]+), executable = ([^,]+),", r.stdout + r.stderr)
     assert r.returncode == 0 and opened, r.stdout[-2000:] + r.stderr[-2000:]
-    return opened.group(1)
+    return opened.group(1), opened.group(2)
 
 
 def test_a_render_draws_on_the_gpu_on_a_mac_unless_turned_off(tmp_path):
-    assert _opened_with(tmp_path) == ("angle" if sys.platform == "darwin" else "null")
-    assert _opened_with(tmp_path, SONG2MV_GL="off") == "null"
+    assert _opened_with(tmp_path)[0] == ("angle" if sys.platform == "darwin" else "null")
+    assert _opened_with(tmp_path, SONG2MV_GL="off")[0] == "null"
+
+
+def test_a_render_opens_googles_build_of_the_chrome_remotion_pins(tmp_path):
+    # Remotion's own Chrome for a Mac and Linux keeps V8's debug checks: one stopped every whole-song render of two
+    # songs after a few hundred frames ("Page crashed!"), and Google's build of the same version leaves it out
+    pins = open(os.path.join(BUNDLED, "node_modules", "@remotion", "renderer", "dist", "browser", "get-chrome-download-url.js"),
+                encoding="utf-8").read()
+    tested = re.search(r"TESTED_VERSION = '([\d.]+)'", pins)
+    assert tested and f'const CHROME = "{tested.group(1)}"' in open(os.path.join(BUNDLED, "render.mjs"), encoding="utf-8").read()
+    if sys.platform in ("darwin", "linux"):
+        assert os.sep + ".song2mv-chrome" + os.sep in _opened_with(tmp_path)[1]
 
 
 def _gallery_tile(tmp_path, tile: int, gl: str | None) -> np.ndarray:
