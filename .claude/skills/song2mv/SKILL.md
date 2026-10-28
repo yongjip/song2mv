@@ -158,7 +158,7 @@ different central image. For each, write:
   file imported from `src/` (`song2mv render` ignores `public/`) and loaded with the kit's `loadFont` at the top of a
   module: `import lilita from "../fonts/LilitaOne-Regular.ttf"` and `export const DISPLAY = loadFont("Lilita One",
   lilita)` give `fontFamily` its value, and every frame waits for the file. Name the family in `theme.font` to set the
-  captions in it. Not a `delayRender()` of your own at the top of a module: Remotion drops its handle, and the timer
+  captions in it; the module loads only if a scene file imports it (one that nothing imported left captions in a serif). Not a `delayRender()` of your own at the top of a module: Remotion drops its handle, and the timer
   left behind failed one full render and stalled the next.
 - **Main character or motif,** and how it changes over the song.
 - **First chorus:** how it hits, the song's biggest moment.
@@ -247,13 +247,9 @@ song2mv render <work>/mv.json --template <work>/video --still 1      # first use
 Write the song's scenes in `<work>/video/src/scenes/` and export them from `src/scenes/index.ts` (`Scene` and
 `linesDrawnByScene`). Draw them in the chosen concept's style, and take what fits from the kit in `src/kit/`.
 
-**A whole song goes faster split among agents.** Two songs (81 and 43 lines) went from the audio to finished 16:9 and
-9:16 videos in about two hours: five agents first drew the props both songs share from one brief and one palette
-file, then seven agents built a quarter to two fifths of a song each. Each builder works in its own template copy
-(`--template <work>/video-<section>`), owns one scene file, reads the shared drawings only, and renders only its own
-copy: one half-edited file breaks every render that bundles it. After merging the files into `<work>/video`, check the
-whole song, not the builders' stretches (a check that starts inside a line misses it: one passed in its builder's
-stretch and failed in the song), and look at a 9:16 sheet of every board: builders forget `tall` framings.
+**A whole song goes faster split among agents** (two songs, audio to videos, in about two hours): shared props first
+from one brief and palette, then one builder per section in its own `--template` copy, rendering only that copy. After
+merging, check the whole song and a 9:16 sheet of every board: builders' stretches miss lines and `tall` framings.
 
 **Plan the cuts with the kit; don't write cut logic.** In five trial videos every agent wrote 750–1200 lines of scene
 code and rebuilt the same cut machinery, and one lost half an hour iterating cut plans against `check`. The kit has it:
@@ -320,8 +316,8 @@ scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` pu
 Look at it before you design anything (in `<work>/video`):
 
 ```bash
-node render.mjs --composition Kit-Gallery             # out/kit-Kit-Gallery.png: all 32 scenes
-node render.mjs --composition Kit-Gallery --frame 4   # out/kit-Kit-Gallery-4.png: one at full size (1–32)
+node render.mjs src/sample-song.json --composition Kit-Gallery             # out/src-Kit-Gallery.png: all 32 scenes
+node render.mjs src/sample-song.json --composition Kit-Gallery --frame 4   # out/src-Kit-Gallery-4.png: one (1–32)
 ```
 
 `src/Gallery.tsx` shows how each of those scenes is put together. Every piece is a pure function of `T`; its doc

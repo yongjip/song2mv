@@ -300,7 +300,7 @@ kit in `DIR/src/kit/`, and draw the rest. Besides `useSong()`, beat-grid helpers
   ([CONTRIBUTING.md](https://github.com/yongjip/song2mv/blob/main/CONTRIBUTING.md)).
 
 The people, places and objects are drawn in one flat style. To see everything, run
-`node render.mjs --composition Kit-Gallery` in DIR. Rules that held up: a scene is a pure
+`node render.mjs src/sample-song.json --composition Kit-Gallery` in DIR. Rules that held up: a scene is a pure
 function of song time `T`; text pops once and then holds still while it is read; lay out on the 1920×1080 stage. For
 9:16, a song can also export a `VerticalScene` that draws the whole 1080×1920 frame, instead of the stage shrunk into a
 band; the kit's `verticalView` films the 16:9 world for it, its subject above the captions and inside the apps' safe

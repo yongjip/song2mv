@@ -25,38 +25,15 @@ export function loadFont(family: string, url: string, o: { weight?: string; styl
   return `"${family}", ${o.fallback ?? "sans-serif"}`;
 }
 
-/**
- * Holds the composition's frames until every loadFont() file has loaded. Given the theme's `font`, it warns when none of
- * the families it names is loaded or installed: the text would fall back to the browser's default without a word.
- */
-export function useFonts(font?: string): void {
+/** Holds the composition's frames until every loadFont() file has loaded */
+export function useFonts(): void {
   const [handle] = useState(() => (loading.length ? delayRender("loadFont") : null));
   useEffect(() => {
-    if (handle === null) return warnUnloaded(font);
+    if (handle === null) return;
     Promise.all(loading).then((failed) => {
       const e = failed.find(Boolean);
-      if (e) return cancelRender(new Error(e));
-      warnUnloaded(font);
-      continueRender(handle);
+      if (e) cancelRender(new Error(e));
+      else continueRender(handle);
     });
   }, [handle]);
-}
-
-const GENERIC = new Set(["serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "emoji", "math"]);
-let warned = false;
-
-/** Logged by the main tab only, once per render, as the storyboard's warnings are */
-function warnUnloaded(font: string | undefined) {
-  const named = (font ?? "").split(",").map((f) => f.trim().replace(/^["']|["']$/g, "")).filter((f) => f && !GENERIC.has(f));
-  if (warned || !named.length || typeof document === "undefined" || window.remotion_isMainTab === false) return;
-  const g = document.createElement("canvas").getContext("2d");
-  if (!g) return;
-  const width = (f: string) => {
-    g.font = `40px ${f}`;
-    return g.measureText("Hamburgefonstiv 가나다 0123").width;
-  };
-  if (named.some((f) => ["serif", "monospace"].some((d) => width(`"${f}", ${d}`) !== width(d)))) return;
-  warned = true;
-  console.warn(`theme.font: ${named.map((f) => `"${f}"`).join(", ")} ${named.length > 1 ? "are" : "is"} neither loaded nor `
-    + "installed, so text falls back to the browser's default: import the module that calls loadFont()");
 }

@@ -45,7 +45,7 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    (reactions, faces in view, a frame that makes the everyday an event). The scene kit in `DIR/src/kit/` (people,
    places, sky, objects, effects; style packs such as `paper` that put any object in another art style) is optional:
    reuse what fits the concept, change it in DIR, draw the rest. See it with
-   `node render.mjs --composition Kit-Gallery` in DIR. When the video is done, offer the user
+   `node render.mjs src/sample-song.json --composition Kit-Gallery` in DIR. When the video is done, offer the user
    anything generic you drew as a pull request (`CONTRIBUTING.md`), and what the video taught (what the user found
    dull, what fixed it) as a change to the skill. Remotion is not MIT — tell company users about its
    license before they rely on it.

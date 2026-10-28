@@ -12,8 +12,8 @@ import * as concepts from "./scenes/concepts";
 const GAP = 12;
 
 export const ConceptBoard: React.FC<{ song: Song; T: number }> = ({ song, T }) => {
+  useFonts();
   const ctx = useMemo(() => makeSongCtx(song), [song]);
-  useFonts(ctx.theme.font);
   const list = Object.entries(concepts)
     .filter(([, C]) => typeof C === "function")
     .sort(([a], [b]) => (a < b ? -1 : 1)) as [string, FC<{ T: number }>][];

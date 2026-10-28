@@ -534,34 +534,20 @@ def test_a_section_opens_on_the_board_at_its_first_line_and_cuts_in_its_pattern(
     assert seen["idle"] == [False, False, True, False, False, False]
 
 
-PICKUP_PROBE = """
-import { makeSongCtx } from "KIT/song";
-import { planBoards } from "KIT/plan";
-const song = SONG;
-const F = [{ x: 960, y: 540 }, { x: 700, y: 640, zoom: 2.2 }, { x: 1300, y: 420, zoom: 1.5, rotate: -3 }];
-const keys = ["in", "v1", "ch1-01", "v2", "ou"];
-const lead = (id: string) => song.lines.find((l: any) => l.id === id).words[0].t - 0.15;
-const starts = keys.map((k) => (k.includes("-") ? lead(k) : song.sections.find((s: any) => s.id === k).start));
-const plans = planBoards(makeSongCtx(song), starts.map((from: number, i: number) => ({ from: i ? from : 0, to: starts[i + 1] ?? song.duration, framings: F })));
-console.log(JSON.stringify({ key: starts[2], boards: plans.map((p: any) => p.shots.slice(0, -1).map((s: any) => s.t)) }));
-"""
-
-
 def test_a_board_at_a_line_sung_into_a_section_opens_it(tmp_path):
     # The chorus's first line starts 0.45 s before the chorus: a board there cut at its start and again at the
-    # chorus's, 0.6 s later, which check counts as one cut (a bridge measured 16.96 on such a pair). The chorus now
-    # opens on the board, and the board's first shot is the chorus's.
+    # chorus's, 0.6 s later, which check counts as one cut. The chorus now opens on the board's cut.
     song = _verse_song([4, 4, 5, 4, 6, 4, 4])
     ch1 = next(s for s in song["sections"] if s["id"] == "ch1")
     line = next(x for x in song["lines"] if x["id"] == "ch1-01")
     shift = ch1["start"] - 0.45 - line["words"][0]["t"]
     line.update(start=round(line["start"] + shift, 3), end=round(line["end"] + shift, 3),
                 words=[{**w, "t": round(w["t"] + shift, 3)} for w in line["words"]])
-    seen = _probe(tmp_path, PICKUP_PROBE, song)
-    key, cuts = seen["key"], sorted(t for b in seen["boards"] for t in b)
+    key = line["words"][0]["t"] - 0.15
+    boards = [[s["t"] for s in b] for b in _boards(tmp_path, song, ["in", "v1", "ch1-01", "v2", "ou"])["boards"]]
+    cuts = sorted(t for b in boards for t in b)
     assert [t for t in cuts if key - 1e-6 <= t < key + 0.9] == [pytest.approx(key)], cuts
-    assert all(len(set(b)) == len(b) for b in seen["boards"]), seen["boards"]
-    assert seen["boards"][2][0] == pytest.approx(key)
+    assert all(len(set(b)) == len(b) for b in boards) and boards[2][0] == pytest.approx(key), boards
 
 
 STORYBOARD_WARNINGS_PROBE = """
@@ -768,18 +754,6 @@ def test_a_font_from_load_font_is_on_every_frame_of_a_render_longer_than_the_tim
     assert np.abs(face - face[-1]).max() < 40 and np.abs(face[0] - mono[0]).mean() > 5
 
 
-def test_a_render_log_names_a_theme_font_that_never_loaded(tmp_path):
-    # A song's fonts module that no scene imported loaded nothing, and its captions came out in a serif without a word.
-    # The log says it once, from the main tab of a video (a still's own page sends Remotion no logs).
-    song = json.loads(open(os.path.join(BUNDLED, "src", "sample-song.json"), encoding="utf-8").read())
-    song["theme"] = {"font": '"Song2mv Nowhere Sans", sans-serif'}
-    (tmp_path / "song.json").write_text(json.dumps(song), encoding="utf-8")
-    r = subprocess.run(["node", "render.mjs", str(tmp_path / "song.json"), "--from", "0", "--to", "1", "--draft", "--out", str(tmp_path)],
-                       cwd=BUNDLED, check=True, capture_output=True, text=True)
-    named = [line for line in (r.stdout + r.stderr).splitlines() if "theme.font" in line]
-    assert len(named) == 1 and '"Song2mv Nowhere Sans" is neither loaded nor installed' in named[0], named
-
-
 def _opened_with(tmp_path, **env) -> tuple[str, str]:
     """The --gl backend ("null": Chrome's own choice) and the Chrome Remotion opened for a still through render.mjs"""
     base = {k: v for k, v in os.environ.items() if k != "SONG2MV_GL"}
@@ -797,9 +771,7 @@ def test_a_render_draws_on_the_gpu_on_a_mac_unless_turned_off(tmp_path):
 
 
 def test_a_render_opens_googles_build_of_the_chrome_remotion_pins(tmp_path):
-    # Remotion's own Chrome for a Mac keeps V8's debug checks (its Linux builds turn them off): one stopped every
-    # whole-song render of two songs after a few hundred frames ("Page crashed!"); Google's build of the same version
-    # leaves it out
+    # Remotion's own Mac build keeps V8's debug checks, one of which stopped whole-song renders ("Page crashed!")
     pins = open(os.path.join(BUNDLED, "node_modules", "@remotion", "renderer", "dist", "browser", "get-chrome-download-url.js"),
                 encoding="utf-8").read()
     tested = re.search(r"TESTED_VERSION = '([\d.]+)'", pins)
@@ -807,26 +779,20 @@ def test_a_render_opens_googles_build_of_the_chrome_remotion_pins(tmp_path):
     assert (os.sep + ".song2mv-chrome" + os.sep in _opened_with(tmp_path)[1]) == (sys.platform == "darwin")
 
 
-def test_the_kit_gallery_renders_through_render_mjs_without_a_song(tmp_path):
-    # the guide shows the gallery with render.mjs: the Chrome a video gets, on the GPU on a Mac
-    r = subprocess.run(["node", "render.mjs", "--composition", "Kit-Gallery", "--frame", "4", "--out", str(tmp_path)],
-                       cwd=BUNDLED, check=True, capture_output=True, text=True)
-    png = tmp_path / "kit-Kit-Gallery-4.png"
+def _gallery_tile(tmp_path, tile: int, gl: str) -> np.ndarray:
+    """Tile `tile` of the kit gallery as the guide renders it, with SONG2MV_GL=gl ("off": in software)"""
+    r = subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--composition", "Kit-Gallery", "--frame", str(tile),
+                        "--out", str(tmp_path), "--name", gl], cwd=BUNDLED, check=True, capture_output=True, text=True,
+                       env={**os.environ, "SONG2MV_GL": gl})
+    png = tmp_path / f"{gl}-Kit-Gallery-{tile}.png"
     assert r.stdout.strip().splitlines()[-1] == str(png) and probe_size(str(png)) == (1920, 1080)
-
-
-def _gallery_tile(tmp_path, tile: int, gl: str | None) -> np.ndarray:
-    pkg = json.loads(open(os.path.join(BUNDLED, "node_modules", "@remotion", "cli", "package.json"), encoding="utf-8").read())
-    cli = os.path.join(BUNDLED, "node_modules", "@remotion", "cli", pkg["bin"]["remotion"])
-    png = tmp_path / f"tile-{tile}-{gl}.png"
-    with socket.socket() as listener:
-        listener.bind(("127.0.0.1", 0))
-        port = listener.getsockname()[1]
-    subprocess.run(["node", cli, "still", "src/index.ts", "Kit-Gallery", str(png), f"--frame={tile}", f"--port={port}", "--log=error",
-                    *([f"--gl={gl}"] if gl else [])], cwd=BUNDLED, check=True, capture_output=True)
     rgb = subprocess.run(["ffmpeg", "-v", "error", "-i", str(png), "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
                          check=True, capture_output=True).stdout
     return np.frombuffer(rgb, np.uint8).reshape(1080, 1920, 3).astype(np.int16)
+
+
+def test_the_kit_gallery_renders_through_render_mjs(tmp_path):
+    assert _gallery_tile(tmp_path, 4, "off").std() > 10
 
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="render.mjs draws on the GPU on a Mac only")
@@ -834,5 +800,5 @@ def _gallery_tile(tmp_path, tile: int, gl: str | None) -> np.ndarray:
 def test_the_line_and_paint_packs_look_the_same_on_the_gpu(tmp_path, tile):
     # Both trace edges from copies shifted by about a pixel; a shift on half a pixel rounded the other way on the GPU
     # and took line's inner lines (mean difference 2.27) and paint's pencil (2.09). Anti-aliasing alone stays under 1.
-    gap = np.abs(_gallery_tile(tmp_path, tile, None) - _gallery_tile(tmp_path, tile, "angle")).mean()
+    gap = np.abs(_gallery_tile(tmp_path, tile, "off") - _gallery_tile(tmp_path, tile, "angle")).mean()
     assert gap < 1.5, gap

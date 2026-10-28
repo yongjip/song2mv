@@ -9,8 +9,8 @@ import sample from "./sample-song.json";
 
 /**
  * The kit's people, places and objects in use, to see what there is before designing scenes:
- *   npx remotion still src/index.ts Kit-Gallery gallery.png --frame=0    every tile at once
- *   npx remotion still src/index.ts Kit-Gallery tile.png --frame=3       one tile at full size (1…)
+ *   node render.mjs src/sample-song.json --composition Kit-Gallery             every tile at once
+ *   node render.mjs src/sample-song.json --composition Kit-Gallery --frame 3   one tile at full size (1…)
  * Each tile is a small scene; read its code here for how the pieces combine.
  */
 

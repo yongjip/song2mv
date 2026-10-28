@@ -83,5 +83,6 @@ A song's own characters and scenes stay in that song's copy of the template; con
   - laid out on the 1920×1080 stage, with props named so that they need no comment.
 - **A gallery tile and a still.** Add a tile that uses it to `src/Gallery.tsx` (a style pack's tile draws a few
   everyday objects in the style). In the template folder, run `npx tsc --noEmit`, render the tile with
-  `node render.mjs --composition Kit-Gallery --frame N` and attach the PNG it writes (`out/kit-Kit-Gallery-N.png`) to
-  the pull request (`out/` is never committed). CI renders every tile too: they are in the run's `kit-gallery` artifact.
+  `node render.mjs src/sample-song.json --composition Kit-Gallery --frame N` and attach the PNG it writes
+  (`out/src-Kit-Gallery-N.png`) to the pull request (`out/` is never committed). CI renders every tile too: they are
+  in the run's `kit-gallery` artifact.

@@ -45,7 +45,7 @@ Set `SONG2MV_CACHE` to move the render cache. On a Mac, `render` has Chrome draw
 `--gl=angle`); `SONG2MV_GL=off` draws in software, as on Linux and Windows, and another value is passed to `--gl`.
 On a Mac, `render` uses Google's build of the Chrome version Remotion pins (`node_modules/.song2mv-chrome`) instead of
 Remotion's own, which keeps V8's debug checks (its Linux builds turn them off): one of them stopped long renders of
-some scenes with "Page crashed!". `SONG2MV_BROWSER=PATH` renders with another Chrome.
+some scenes with "Page crashed!". Final videos take its JPEG frames at quality 100 (at 80 they came out 36 % larger).
 
 ## Network access
 
