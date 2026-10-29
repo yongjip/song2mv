@@ -74,7 +74,7 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    the admission test in `docs/product-scope.md` and prefer extending an existing one.
 3. Every `--json` result and every output file in `docs/contract.md` is stamped by `song2mv.contract.stamp`. An
    incompatible change bumps `SCHEMA_VERSION`, updates `docs/contract.md` and gets a `CHANGELOG.md` entry.
-4. Add your `CHANGELOG.md` entry under `## Unreleased`. Do not bump the version outside a release-preparation change.
+4. Add your `CHANGELOG.md` entry under `## Unreleased` (until 0.1.0 is out, in `docs/pre-release-log.md`). Do not bump the version outside a release-preparation change.
 5. Heavy dependencies stay optional (extras `beats`, `sync`). `song2mv --help` and `song2mv check` must work with
    only numpy installed; import heavy modules inside the command that needs them.
 6. Before committing: `ruff check src tests` and `pytest -q` in the activated `.venv` (or `uv run --no-sync …`).
