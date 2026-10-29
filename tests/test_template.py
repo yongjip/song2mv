@@ -499,6 +499,27 @@ def test_drift_scales_every_shots_move_and_keeps_the_cuts(tmp_path):
     assert same >= 10, same
 
 
+def test_the_caption_band_stays_over_short_gaps_and_fades_round_long_ones(tmp_path):
+    def line(i, t0, t1, ws=None, sec="v1"):
+        ws = ws or [t0, (t0 + t1) / 2]
+        return {"id": f"{sec}-0{i}", "section": sec, "text": "", "start": t0, "end": t1,
+                "words": [{"w": "w", "t": t} for t in ws]}
+    song = {"lines": [line(1, 1.0, 2.0), line(2, 2.7, 3.4), line(3, 6.0, 7.0), line(1, 7.3, 8.0, sec="ch1"),
+                      line(4, 9.0, 10.0, [9.0, 9.5, 9.8])],
+            "captions": {"hide": ["ch1-01"], "from_word": {"v1-04": 1}}}
+    band = dict(zip(["on", "gap", "after", "gone", "before", "hidden", "late"], _probe(tmp_path, """
+import { captionBand } from "KIT/text";
+const song = SONG;
+const skip = new Set(song.captions.hide);
+console.log(JSON.stringify([1.5, 2.3, 3.7, 4.05, 5.6, 7.25, 9.0].map((T) => captionBand(song, T, skip))));
+""", song)))
+    assert band["on"] == 1 and band["gap"] > 0.95  # on through a line, barely dipping over a 0.53 s gap between two
+    assert band["after"] > 0.99 and band["gone"] == 0  # full 0.25 s after the last word, gone 0.6 s after
+    assert 0.5 < band["before"] < 1  # fading in before the next line
+    assert band["hidden"] == 0  # off while the scene draws a line itself
+    assert 0.3 < band["late"] < 0.9  # a line shown from its second word fades in for that word, not the first
+
+
 OPENING_PROBE = """
 import { makeSongCtx } from "KIT/song";
 import { planBoards } from "KIT/plan";

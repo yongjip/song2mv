@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { AbsoluteFill } from "remotion";
 import { clamp01, outCubic } from "./math";
-import { Line, VerticalCtx, useSong } from "./song";
+import { Line, Song, VerticalCtx, Word, useSong } from "./song";
 
 /**
  * Text. One rule: text appears with a single pop and then holds still while it is read. No wobble, bob
@@ -92,6 +92,37 @@ export function captionLine(lines: Line[], T: number, skip: Set<string>): Line |
   return lines.some((l) => skip.has(l.id) && l.words[0].t > last && T >= l.words[0].t - 0.12) ? undefined : line;
 }
 
+/** The words <Captions> shows at T (from the song's `from_word` on), once they are on screen: 0.12 s before the first */
+function captionWords(song: Song, T: number, skip: Set<string>): { line: Line; words: Word[] } | undefined {
+  const line = captionLine(song.lines, T, skip);
+  const words = line ? line.words.slice(song.captions?.from_word?.[line.id] ?? 0) : [];
+  return line && words.length && T >= words[0].t - 0.12 ? { line, words } : undefined;
+}
+
+/**
+ * How much of the captions' band shows at T, 0–1: all of it while a caption is on screen and for 0.25 s either side,
+ * easing to none over the 0.35 s beyond, so a short gap between captions dips it a little instead of blinking it,
+ * and it neither flashes onto the shot before a cut nor stays over a long gap. None while a line in `skip` is up:
+ * the scene draws that one, often where the band is.
+ */
+export function captionBand(song: Song, T: number, skip: Set<string>): number {
+  const shown = (t: number) => !!captionWords(song, t, skip);
+  if (shown(T)) return 1;
+  if (liveLine(song.lines.filter((l) => skip.has(l.id)), T, 0.12, song.lines)) return 0;
+  for (let k = 1; k <= 11; k++) {
+    const dir = shown(T - k * 0.05) ? -1 : shown(T + k * 0.05) ? 1 : 0;
+    if (!dir) continue;
+    let near = k * 0.05, far = (k - 1) * 0.05;
+    for (let i = 0; i < 4; i++) {
+      const mid = (near + far) / 2;
+      if (shown(T + dir * mid)) near = mid;
+      else far = mid;
+    }
+    return clamp01((0.6 - near) / 0.35);
+  }
+  return 0;
+}
+
 /** Rough rendered width in em: Hangul / CJK full width, Latin about half, spaces a third */
 const emWidth = (s: string) =>
   [...s].reduce((a, ch) => a + (/\s/.test(ch) ? 0.3 : /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch) ? 1 : 0.62), 0);
@@ -144,52 +175,61 @@ export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?:
 /**
  * Karaoke captions at the bottom: the current line, sung words bright. Fixed position. Lines in `hide`
  * (and in the song's captions.hide) are skipped — a scene draws them itself. `band` shades the picture under them in
- * `theme.bg`: true from the bottom edge up, "around" in a strip behind their two rows (over a 9:16 scene).
+ * `theme.bg` as `captionBand` says: true from the bottom edge up, "around" in a strip behind their two rows (over a
+ * 9:16 scene).
  */
 export const Captions: React.FC<{ T: number; hide?: Set<string>; size?: number; bottom?: number; padX?: number; band?: boolean | "around" }> = ({
   T, hide, size = 62, bottom = 86, padX = 100, band = true,
 }) => {
   const { song, theme } = useSong();
   const skip = new Set([...(song.captions?.hide ?? []), ...(hide ?? [])]);
-  const line = captionLine(song.lines, T, skip);
-  if (!line) return null;
-  const from = song.captions?.from_word?.[line.id] ?? 0;
-  const words = line.words.slice(from);
-  if (!words.length || T < words[0].t - 0.12) return null;
-  const whisper = (song.captions?.whisper ?? []).includes(line.id);
-  const shown = clamp01((T - (words[0].t - 0.12)) / 0.08);
+  const on = band ? captionBand(song, T, skip) : 0;
+  const shown = captionWords(song, T, skip);
+  if (!shown && on <= 0) return null;
   return (
     <>
-      {band === true && <AbsoluteFill style={{ background: `linear-gradient(to top, ${withAlpha(theme.bg, 0.82)} 0%, ${withAlpha(theme.bg, 0)} 27%)` }} />}
-      {band === "around" && (
+      {band === true && on > 0 && (
+        <AbsoluteFill style={{ opacity: on, background: `linear-gradient(to top, ${withAlpha(theme.bg, 0.82)} 0%, ${withAlpha(theme.bg, 0)} 27%)` }} />
+      )}
+      {band === "around" && on > 0 && (
         <div style={{
-          position: "absolute", left: 0, right: 0, bottom: bottom - 150, height: 2.4 * size + 300, opacity: shown,
+          position: "absolute", left: 0, right: 0, bottom: bottom - 150, height: 2.4 * size + 300, opacity: on,
           background: `linear-gradient(to top, ${withAlpha(theme.bg, 0)}, ${withAlpha(theme.bg, 0.8)} 33%, ${withAlpha(theme.bg, 0.8)} 67%, ${withAlpha(theme.bg, 0)})`,
         }} />
       )}
-      <div
-        style={{
-          position: "absolute", left: padX, right: padX, bottom, textAlign: "center", wordBreak: "keep-all",
-          fontSize: whisper ? Math.round(size * 0.7) : size, fontWeight: whisper ? 500 : 800,
-          letterSpacing: whisper ? "0.3em" : "-0.01em", lineHeight: 1.2,
-          opacity: shown,
-        }}
-      >
-        {words.map((w, i) => {
-          const sung = T >= w.t;
-          return (
-            <React.Fragment key={i}>
-              {i > 0 && " " /* a real space: the only place a long line may wrap */}
-              <span style={{
-                color: sung ? theme.sung : theme.unsung,
-                textShadow: sung ? `0 0 18px ${theme.sungGlow}` : theme.unsungShadow,
-              }}>
-                {w.w}
-              </span>
-            </React.Fragment>
-          );
-        })}
-      </div>
+      {shown && <CaptionText T={T} line={shown.line} words={shown.words} size={size} bottom={bottom} padX={padX} />}
     </>
+  );
+};
+
+const CaptionText: React.FC<{ T: number; line: Line; words: Word[]; size: number; bottom: number; padX: number }> = ({
+  T, line, words, size, bottom, padX,
+}) => {
+  const { song, theme } = useSong();
+  const whisper = (song.captions?.whisper ?? []).includes(line.id);
+  return (
+    <div
+      style={{
+        position: "absolute", left: padX, right: padX, bottom, textAlign: "center", wordBreak: "keep-all",
+        fontSize: whisper ? Math.round(size * 0.7) : size, fontWeight: whisper ? 500 : 800,
+        letterSpacing: whisper ? "0.3em" : "-0.01em", lineHeight: 1.2,
+        opacity: clamp01((T - (words[0].t - 0.12)) / 0.08),
+      }}
+    >
+      {words.map((w, i) => {
+        const sung = T >= w.t;
+        return (
+          <React.Fragment key={i}>
+            {i > 0 && " " /* a real space: the only place a long line may wrap */}
+            <span style={{
+              color: sung ? theme.sung : theme.unsung,
+              textShadow: sung ? `0 0 18px ${theme.sungGlow}` : theme.unsungShadow,
+            }}>
+              {w.w}
+            </span>
+          </React.Fragment>
+        );
+      })}
+    </div>
   );
 };

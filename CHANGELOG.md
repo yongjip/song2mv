@@ -21,6 +21,8 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   every section's boards empty.
 - A short drawn by a `VerticalScene` puts a strip of `theme.bg` behind its captions, as the 16:9 video has a band
   under them: over a light picture the white text did not read.
+- The band behind the captions stays on between lines and fades out and in round longer gaps, where it blinked at
+  every new line and flashed onto the shot before a cut; it stays off while the scene draws a line itself.
 
 ## 0.1.0 — 2026-10-29
 
