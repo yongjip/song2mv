@@ -4,6 +4,9 @@ The changelog kept while song2mv was built, up to its first release. Many entrie
 change. Changes from 0.1.0 on are in [CHANGELOG.md](https://github.com/yongjip/song2mv/blob/main/CHANGELOG.md).
 
 ## Fixed
+- The first `render` no longer says that npm blocked esbuild's install script: the template's `package.json` allows it.
+  npm 12 blocks install scripts a project does not list in `allowScripts` (npm 11.19 warned about them). Rendering
+  worked either way, as esbuild falls back to its platform package, but the message read like a failed install.
 - The first `sync` says when it downloads the whisper model (once; small is about 460 MB) instead of a silent minute
   with a Hugging Face Hub notice asking for a token, which it no longer shows. The first `render` puts Remotion at
   about 500 MB (it said 300), and the docs put Remotion and Chrome at about 700 MB (they said 500): a clean install on
