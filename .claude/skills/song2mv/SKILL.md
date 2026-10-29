@@ -600,7 +600,10 @@ word has landed: in one run the lines' middle frames showed the pictures of 26 o
   that holds two cuts reads frantic, and even spacing fails `cuts.rhythm`; cut every 2–3 lines, unevenly, and keep
   the fast cutting for hot sections (`planShots` does all this). Big type that changes on every line counts as a cut,
   and so does a large transform such as a flip; a reframe of a flat or dark set may not, so change the set or its
-  palette between shots. Cut a 16th before a line's first word or on it, not just after it: `check` counts that cut
+  palette between shots. `cuts.max_gap` names the sudden changes in each long stretch that did not count as a cut,
+  with their correlation (a cut is under 0.62) and difference (over 2.5): a high correlation is a reframe too alike to count, a
+  low difference one too dim. A thermal-camera board's two framings left one run 8.5 s without a cut; on a made-up
+  frame like it, a 10 px reframe measured correlation 0.85. Cut a 16th before a line's first word or on it, not just after it: `check` counts that cut
   as the line's own, not as motion in the line before.
 - **Fast change inside one shot** measures frantic without any cut. In one video a rewind gag that flipped between
   old frames measured 29.5 (goal ≤ 9) and one crossfade under a slow scan bar 4.7; a windmill spinning in a close

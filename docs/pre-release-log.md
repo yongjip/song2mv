@@ -80,6 +80,11 @@ change. Changes from 0.1.0 on are in [CHANGELOG.md](https://github.com/yongjip/s
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ## Added
+- `check`'s `cuts.max_gap` names the sudden changes in each long stretch without a cut that did not count as one, with
+  their correlation (a cut is under 0.62) and difference (over 2.5). A sudden change is a frame pair that changes at
+  least 1 more than both pairs beside it, as a cut or a reframe does; motion, a fade and a one-frame flash do not. The sixth new-user run lost 1.5 min on a thermal-camera
+  board whose two framings did not count as a cut (8.5 s without one): a reframe of a smooth picture can stay too
+  alike to count (a 10 px reframe of a made-up frame like it measured 0.85), and one of a dark picture too dim.
 - `docs/timing-layer.md` uses song2mv's timing in HyperFrames and in a Remotion project of your own: a short Python
   script turns `lyrics.json` and `grid.json` into HyperFrames' word list (`npx hyperframes transcribe words.json`)
   and beat file, and a few lines of TypeScript into `@remotion/captions` pages and beat times. Tried on a whole song

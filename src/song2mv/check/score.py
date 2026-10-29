@@ -40,6 +40,12 @@ DEFAULT_GOALS = os.path.join(HERE, "goals.json")
 # A full render measures each line's motion up to this much higher than its draft (half size, 10 fps), never lower:
 # it keeps more fine detail, such as grain (+0.27 on one grain-heavy video, +0.00–0.09 on a flat one)
 DRAFT_SPREAD = 0.3
+# A cut is a frame that correlates with the one before under CUT_CORR and differs from it by over CUT_DIFF on average:
+# real cuts measured under 0.6, changes within a shot 0.70 at their 5th percentile
+CUT_CORR, CUT_DIFF = 0.62, 2.5
+# A frame pair that changes this much more than both pairs beside it changes at once, as a cut or a reframe does;
+# motion, a fade and a one-frame flash change neighbouring pairs alike
+JUMP = 1.0
 
 
 def load_lines(song: dict) -> list[dict]:
@@ -115,13 +121,15 @@ def load_goals(path: str | None) -> dict:
 @dataclass
 class Video:
     """A video measured in song time, from its first frame (t0) to t_end, ten frames a second. Per frame: the gray
-    picture above the captions (body), its change from the frame before (diff) and its lit share (cover); the cut
-    frames; each sung line with its mean motion and coverage (per) and the frames it is measured on (span)."""
+    picture above the captions (body), its change from the frame before (diff), its correlation with it (corr) and its
+    lit share (cover); the cut frames; each sung line with its mean motion and coverage (per) and the frames it is
+    measured on (span)."""
     t0: float
     t_end: float
     size: tuple[int, int]
     body: np.ndarray
     diff: np.ndarray
+    corr: np.ndarray
     cover: np.ndarray
     raw_cuts: set[int]  # frames that look like a cut, before cuts within 0.3 s count once
     cut_idx: list[int]
@@ -162,8 +170,8 @@ def measure(mp4: str, song: dict, goals: dict, t0: float, t1: float | None, warn
     num = (small[1:] * small[:-1]).sum(axis=(1, 2))
     den = np.sqrt((small[1:] ** 2).sum(axis=(1, 2)) * (small[:-1] ** 2).sum(axis=(1, 2))) + 1e-6
     corr = num / den
-    # pair k is frames (k, k+1); the cut is at k+1. Thresholds: real cuts < 0.6, within-scene 5th percentile 0.70
-    raw = [k + 1 for k in range(len(diff)) if corr[k] < 0.62 and diff[k] > 2.5]
+    # pair k is frames (k, k+1); the cut is at k+1
+    raw = [k + 1 for k in range(len(diff)) if corr[k] < CUT_CORR and diff[k] > CUT_DIFF]
     cut_idx: list[int] = []
     for i in raw:  # cuts within 0.3 s count once
         if not cut_idx or i - cut_idx[-1] > 3:
@@ -197,7 +205,7 @@ def measure(mp4: str, song: dict, goals: dict, t0: float, t1: float | None, warn
     if not per:
         raise Song2mvError(f"no sung line lies inside song time {t0:g}–{t_end:.1f} s, so there is nothing to measure",
                            hint="--from is the song time of the video's first frame (the --from it was rendered with)")
-    return Video(t0, t_end, (vw, vh), body, diff, cover, raw_cuts, cut_idx, cut_t, lines, per, span)
+    return Video(t0, t_end, (vw, vh), body, diff, corr, cover, raw_cuts, cut_idx, cut_t, lines, per, span)
 
 
 # Every result: ok, value (the measured number), goal ({"min": x} or {"max": x}), msg. Per-line checks count the failing
@@ -369,8 +377,18 @@ def check_cuts(v: Video, song: dict, goals: dict, results: dict, skipped: dict) 
             longest = max(longest, hi - lo)
             if hi - lo > gk["max_gap_sec"]:
                 gaps.append((round(lo, 1), round(hi, 1)))
-    put(results, "cuts.max_gap", not gaps, round(longest, 1), {"max": gk["max_gap_sec"]},
-        f"{len(gaps)} stretches over {gk['max_gap_sec']} s without a cut {gaps[:10]}", gaps=gaps)
+    msg = f"{len(gaps)} stretches over {gk['max_gap_sec']} s without a cut {gaps[:10]}"
+    sudden = []  # a reframe of a smooth picture can stay too alike to count as a cut, one of a dark picture too dim
+    for lo, hi in gaps[:10]:
+        i0, i1 = max(0, v.idx(lo)), min(v.idx(hi), len(v.diff))
+        jumps = [(v.diff[k] - max(v.diff[k - 1], v.diff[k + 1]), k) for k in range(i0 + 1, i1 - 1) if k + 1 not in v.raw_cuts]
+        if jumps and max(jumps)[0] >= JUMP:
+            k = max(jumps)[1]
+            sudden.append(f"{v.song_t(k + 1):.1f} s (correlation {v.corr[k]:.2f}, difference {v.diff[k]:.1f})")
+    if sudden:
+        msg += (f"; sudden changes that did not count as a cut: {', '.join(sudden)}; a cut needs correlation under {CUT_CORR} "
+                f"and difference over {CUT_DIFF}")
+    put(results, "cuts.max_gap", not gaps, round(longest, 1), {"max": gk["max_gap_sec"]}, msg, gaps=gaps)
 
 
 def check_text(src_glob: str | None, goals: dict, results: dict, skipped: dict) -> None:

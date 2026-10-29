@@ -225,6 +225,8 @@ earlier. Checks that cannot run on a stretch (no repeated section in it, too few
 passed. It works on any mp4 that follows the song's timing, not only on song2mv renders. A failing line says where:
 the stretch measured, the cuts in it, and its still or empty part, or for a frantic line its biggest frame change and
 its motion without the cuts (without a cut: whether the whole frame changes, as under a camera drift over fine detail).
+A long stretch without a cut names the sudden changes in it that did not count as one, with their correlation and
+difference: a reframe of a smooth picture can stay too alike to count, and one of a dark picture too dim.
 
 The default [goals](https://github.com/yongjip/song2mv/blob/main/src/song2mv/check/goals.json) are a starting point
 measured on one video; your own goals file only needs the values you change. Passing is necessary, not proof of fun.

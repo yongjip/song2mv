@@ -56,6 +56,41 @@ def test_check_flags_a_still_line(tmp_path):
     assert set(res["skipped"]) >= {"variation.repeats", "text.min_font"}
 
 
+def test_a_long_stretch_without_a_cut_names_the_sudden_change_that_did_not_count(tmp_path):
+    # A dark ground with soft glowing blobs, reframed 10 px at 4.0 s: the two framings stay too alike to count as a
+    # cut, so the 8 s without one names that moment and the number that kept it from counting, not the disc that
+    # sweeps across at 1.5–2.5 s, whose frames change alike.
+    import re
+
+    import numpy as np
+
+    from song2mv.check.score import score
+
+    yy, xx = np.mgrid[0:180, 0:320]
+
+    def glow(shift):
+        img = np.full((180, 320), 29.0)
+        for cx, cy, r in [(80, 60, 14), (150, 90, 10), (220, 50, 18), (260, 110, 12)]:
+            img += 130 * np.exp(-((xx - cx - shift) ** 2 + (yy - cy) ** 2) / (2 * r * r))
+        return img
+
+    def frame(k):
+        img = glow(10 if k >= 40 else 0)
+        if 15 <= k < 25:
+            img = img + 120 * (((xx - 20 - 25 * (k - 15)) ** 2 + (yy - 120) ** 2) < 20 ** 2)
+        return img
+
+    frames = np.stack([frame(k) for k in range(80)]).clip(0, 255).astype(np.uint8)
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "gray", "-s", "320x180", "-r", "10", "-i", "-",
+                    "-pix_fmt", "yuv420p", str(mp4)], input=frames.tobytes(), check=True)
+    gap = score(str(mp4), str(write(tmp_path, "mv.json", SONG)), quiet=True)["results"]["cuts.max_gap"]
+    assert gap["gaps"] == [(0.0, 8.0)] and gap["msg"].endswith("a cut needs correlation under 0.62 and difference over 2.5")
+    said = re.search(r"sudden changes that did not count as a cut: 4\.0 s \(correlation ([\d.]+), difference ([\d.]+)\);", gap["msg"])
+    corr, diff = map(float, said.groups())
+    assert corr > 0.62 and diff > 2.5
+
+
 @pytest.mark.parametrize("name, tail, goals", [
     ("motion.min", "tpad=stop_mode=clone:stop_duration=5", {"motion": {"min_per_line": 3.0}}),
     ("coverage.min", "tpad=stop_mode=add:stop_duration=5:color=black", {"coverage": {"min_per_line": 0.5}}),
