@@ -58,6 +58,11 @@ Install only what you use — the parts differ a lot in size:
 | `sync` | `song2mv[sync]` | beats + faster-whisper (130 MB) + a whisper model on first run (small: 460 MB) |
 | `render` | Node 18+ | Remotion and a headless Chrome on first render (~700 MB) |
 
+**8 GB of RAM is plenty, and no GPU is needed.** On a 12-core M4 Pro, a 3-minute song's `sync` (whisper small, three
+runs on the CPU) took 160 s at 1.4 GB at most; a 15 s `render` at 1080p took 20 s at 2.3 GB, Chrome's tabs included,
+and a draft of the whole song 24 s. A slower CPU takes longer. Everything installed takes about 2.2 GB of disk, of
+which about 1.2 GB downloads on first use. Tested on macOS (Apple silicon) and Linux; not yet on Windows.
+
 ## Quick start
 
 ```bash

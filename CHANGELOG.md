@@ -4,6 +4,9 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 
 ## Unreleased
 
+### Added
+- The README says what a computer needs, as measured: memory, time, disk and the systems tested.
+
 ## 0.1.0 — 2026-10-29
 
 First release. The changes made while building it, with the measurements behind them, are in
