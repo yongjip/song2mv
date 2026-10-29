@@ -28,7 +28,7 @@ After the first PyPI release these become `uv tool install "song2mv[sync]"`, `pi
 | needed by | requirement |
 | --- | --- |
 | `sync`, `beats`, `click`, `check`, `sheet` | **ffmpeg** and **ffprobe** on PATH (`brew install ffmpeg`, `apt install ffmpeg`) |
-| `render` | **Node 18+** with npm. The first render installs Remotion (~300 npm packages) and downloads a headless Chrome (~500 MB in all) |
+| `render` | **Node 18+** with npm. The first render installs Remotion (~300 npm packages) and downloads a headless Chrome (~700 MB in all) |
 | Python | 3.10–3.14 (tested in CI). `sync` needs faster-whisper, whose ctranslate2 has no Python 3.15 wheels yet — use `--python 3.13`. `check`, `beats` and `render` also run on 3.15 |
 
 ## Disk use
@@ -39,7 +39,7 @@ After the first PyPI release these become `uv tool install "song2mv[sync]"`, `pi
 | librosa, scipy, numba, llvmlite (`beats`) | ~300 MB | install |
 | faster-whisper, ctranslate2, onnxruntime, PyAV (`sync`) | ~130 MB | install |
 | whisper model `small` | ~460 MB | first `sync` (Hugging Face cache); `--model base` is ~3× smaller, less accurate |
-| Remotion + Chrome (`render`) | ~500 MB | first `render`, in `~/.cache/song2mv/`; a `--template` folder links to it (it installs its own only when its `package-lock.json` differs) |
+| Remotion + Chrome (`render`) | ~700 MB | first `render`, in `~/.cache/song2mv/`; a `--template` folder links to it (it installs its own only when its `package-lock.json` differs) |
 
 Set `SONG2MV_CACHE` to move the render cache. On a Mac, `render` has Chrome draw on the GPU (Remotion's
 `--gl=angle`); `SONG2MV_GL=off` draws in software, as on Linux and Windows, and another value is passed to `--gl`.

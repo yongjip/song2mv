@@ -66,7 +66,7 @@ def _install(target: str) -> None:
     if _installed(target):
         return
     npm = _require("npm")
-    print(f"[render] installing Remotion into {target} (first run only, ~300 MB) …")
+    print(f"[render] installing Remotion into {target} (first run only, ~500 MB) …")
     cmd = [npm, "ci"] if os.path.exists(os.path.join(target, "package-lock.json")) else [npm, "install"]
     r = subprocess.run(cmd + ["--no-audit", "--no-fund"], cwd=target, stdout=sys.stderr)
     if r.returncode != 0:

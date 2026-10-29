@@ -23,7 +23,7 @@ song's rights, or a lyric only the user knows.
   folder (`song2mv-work/<song>/`).
 - **Setup**, once: `uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"` (not on
   PyPI yet; faster-whisper has no Python 3.15 wheels). Needs ffmpeg; `render` needs Node 18+ and installs Remotion
-  and a headless Chrome (~500 MB) on its first run.
+  and a headless Chrome (~700 MB) on its first run.
 - **What they want**: full 16:9 video, 9:16 short(s), LRC/SRT only, or all. Title text. Mood or references. If you
   make the song too (Suno and the like), name a BPM in the style prompt: it tends to give a steady tempo.
 

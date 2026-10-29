@@ -56,7 +56,7 @@ Install only what you use — the parts differ a lot in size:
 | `check`, `sheet` | `song2mv` | numpy (35 MB) |
 | `beats`, `click` | `song2mv[beats]` | librosa, scipy, numba (300 MB) |
 | `sync` | `song2mv[sync]` | beats + faster-whisper (130 MB) + a whisper model on first run (small: 460 MB) |
-| `render` | Node 18+ | Remotion and a headless Chrome on first render (~500 MB) |
+| `render` | Node 18+ | Remotion and a headless Chrome on first render (~700 MB) |
 
 ## Quick start
 
@@ -342,7 +342,7 @@ Where it is weaker today:
 - No generated imagery: out of the box you get a plain lyric video, and anything richer is scene code that you or
   your agent write.
 - No karaoke formats (CDG, karaoke ASS).
-- `render` needs Node and Remotion (a company license above 3 employees) and downloads ~500 MB on first use.
+- `render` needs Node and Remotion (a company license above 3 employees) and takes ~700 MB of disk on first use.
 
 ## Roadmap
 

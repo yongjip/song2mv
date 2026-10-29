@@ -34,6 +34,14 @@ def load_model(w: dict):
     key = (w["model"], w["device"], w["compute_type"], w["threads"])
     if key not in _models:
         from faster_whisper import WhisperModel
+        from faster_whisper.utils import download_model
+        from huggingface_hub.utils.logging import set_verbosity_error
+        set_verbosity_error()  # the Hub's notice asking anonymous downloads for a token
+        if not os.path.isdir(w["model"]):
+            try:
+                download_model(w["model"], local_files_only=True)
+            except Exception:
+                print(f"  downloading the whisper {w['model']} model (first run only) …", flush=True)
         _models[key] = WhisperModel(w["model"], device=w["device"], compute_type=w["compute_type"], cpu_threads=w["threads"])
     return _models[key]
 

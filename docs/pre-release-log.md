@@ -4,6 +4,10 @@ The changelog kept while song2mv was built, up to its first release. Many entrie
 change. Changes from 0.1.0 on are in [CHANGELOG.md](https://github.com/yongjip/song2mv/blob/main/CHANGELOG.md).
 
 ## Fixed
+- The first `sync` says when it downloads the whisper model (once; small is about 460 MB) instead of a silent minute
+  with a Hugging Face Hub notice asking for a token, which it no longer shows. The first `render` puts Remotion at
+  about 500 MB (it said 300), and the docs put Remotion and Chrome at about 700 MB (they said 500): a clean install on
+  a Mac measured 713 MB, Chrome 203 MB of it.
 - The template no longer carries `remotion.config.mjs`. Remotion 4 looks for only `remotion.config.ts` or `.js` (a
   verbose `remotion still` says "No config file loaded"), so the file never applied, and a setting added to it
   would have been ignored without a word. Its four settings are Remotion's defaults, so renders are unchanged;
