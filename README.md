@@ -15,6 +15,12 @@ Two songs made with Suno, each turned into a music video and a Short by Claude C
 | --- | --- |
 | **[Till Money Means Nothing](https://youtu.be/fSlrXXQt0Ik)** (4:55, [Short](https://youtube.com/shorts/dFQFAQ37S4w)): a launch broadcast that ends on Mars, inked with the `toon` style pack | **[Carry the Light](https://youtu.be/cGtjcGVv8XQ)** (4:48, [Short](https://youtube.com/shorts/ioBdb2K5TgA)): a child's crayon drawing of a launch tower that becomes real, in watercolour from the `paint` style pack |
 
+**How they were made:** one Claude Code session (Opus 5.5, max effort) split the work among agents, as
+[step 4 of the skill](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md#4-build-scenes)
+describes: five drew the shared pieces, then seven built the sections, in about two hours for both songs. One of these
+videos is about 12,000 lines of drawing code, where a single agent wrote 750–1,200 in our trial videos: expect a
+simpler video from one agent.
+
 > **Alpha (0.x).** Commands, flags and file formats may change between releases; every JSON file carries a
 > `schema_version` and every change is listed in [CHANGELOG.md](https://github.com/yongjip/song2mv/blob/main/CHANGELOG.md). `sync` and `beats` are the most
 > tested parts. `check` and `render` are **experimental**.
@@ -79,7 +85,7 @@ DaVinci Resolve? Stop after `sync` and import `song.srt` or `song.lrc`.
 ## With a coding agent
 
 Open this repository (or your own project with song2mv installed) in Claude Code, Codex or another agent and ask,
-for example: *"make a lyric video for ~/Music/my-song.mp3"* or *"give me word-timed LRC for this song"*.
+for example: *"make a music video for ~/Music/my-song.mp3"* or *"give me word-timed LRC for this song"*.
 
 - [`AGENTS.md`](https://github.com/yongjip/song2mv/blob/main/AGENTS.md) — the operating rules: which command to run when, what to check by ear, what never to
   commit. Codex reads it, and Claude Code reads it through `CLAUDE.md`, when this repository is open.
