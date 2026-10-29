@@ -6,6 +6,8 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 
 ### Added
 - The README says what a computer needs, as measured: memory, time, disk and the systems tested.
+- Two brief templates next to the skill for a video split among agents: `briefs/assets.md` for the painters of the
+  shared pieces, `briefs/section.md` for one builder per section. The skill says how to set up, split and merge.
 
 ### Fixed
 - A storyboard without boards draws nothing instead of failing the render: a video split among builders starts with

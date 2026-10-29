@@ -75,6 +75,7 @@ exclude = ["**/node_modules", "**/out", "**/__pycache__"]
 # the agent guide, copied into the package for `song2mv --help` (not symlinked: symlinks break on Windows checkouts)
 [tool.hatch.build.targets.wheel.force-include]
 ".claude/skills/song2mv/SKILL.md" = "song2mv/guide/SKILL.md"
+".claude/skills/song2mv/briefs" = "song2mv/guide/briefs"
 "AGENTS.md" = "song2mv/guide/AGENTS.md"
 
 [tool.hatch.build.targets.sdist]

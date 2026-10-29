@@ -247,9 +247,29 @@ song2mv render <work>/mv.json --template <work>/video --still 1      # first use
 Write the song's scenes in `<work>/video/src/scenes/` and export them from `src/scenes/index.ts` (`Scene` and
 `linesDrawnByScene`). Draw them in the chosen concept's style, and take what fits from the kit in `src/kit/`.
 
-**A whole song goes faster split among agents** (two songs, audio to videos, in about two hours): shared props first
-from one brief and palette, then one builder per section in its own `--template` copy, rendering only that copy. After
-merging, check the whole song and a 9:16 sheet of every board: builders' stretches miss lines and `tall` framings.
+**A whole song goes faster split among agents** (two songs, audio to videos, in about two hours: five agents drew the
+shared pieces, then seven built the sections). The README's two demo videos were made this way, with far more drawing
+than one agent does: about 12,000 lines of pieces and scenes for one song, where one agent alone wrote 750–1200
+(below). When you can start agents of your own, propose it to the user with the concepts. Their briefs are templates
+next to this guide, `briefs/assets.md` and `briefs/section.md`: copy them into the work folder, replace every `TODO`
+and `<work>`, and name each agent's group or section in its task.
+
+1. **Painters.** After step 3, put a palette in `<work>/video/src/scenes/assets/palette.ts` and group the shared
+   pieces (people, vehicles, places, effects). One painter per group, each in its own copy (below). Copy their pieces
+   into `<work>/video/src/scenes/assets/` and list each piece's props, size and origin in `<work>/ASSETS.md`.
+2. **The builders' frame.** In `<work>/video`: a section file per builder exporting an empty `Board[]`, a
+   `boards.tsx` that joins them in song order, `index.ts` exporting `Scene`, `VerticalScene` and `linesDrawnByScene`
+   from it, and the files every board shares (the look, an overlay). Typecheck it.
+3. **Builders,** three or four per song, each in its own copy made now, each owning one section file.
+4. **Merge** by copying each builder's section file into `<work>/video`; nothing else in its copy should have changed.
+   Then check the whole song, not stretch by stretch (a line that passed in a stretch starting mid-line failed in the
+   whole song), and look at a 9:16 sheet of every board: builders left out `tall` framings.
+
+A copy is `<work>/video` copied to `<work>/video-<name>/` without `node_modules` and `out`. Its first
+`song2mv render <work>/mv.json --template <work>/video-<name>` links it to the shared Remotion install (where its
+`package-lock.json` differs from this song2mv's, it installs its own, about 500 MB). Each agent renders only in its own
+copy, since one half-edited file breaks every render that bundles it. Copies may render at the same time while memory
+lasts: one render takes about 2.3 GB.
 
 **Plan the cuts with the kit; don't write cut logic.** In five trial videos every agent wrote 750–1200 lines of scene
 code and rebuilt the same cut machinery, and one lost half an hour iterating cut plans against `check`. The kit has it:

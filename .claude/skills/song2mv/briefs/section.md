@@ -1,0 +1,52 @@
+# Section brief: TODO song title
+
+You build one stretch of a music video in your own copy of the song's song2mv template, `<work>/video-<section>/`
+(named in your task): React components of song time `T` that draw SVG on the 1920×1080 stage, filmed by the kit's
+storyboard. Other builders work on the other stretches at the same time, each in a copy of its own. Your section
+file is merged into `<work>/video/` at the end. Read first, in this order:
+
+1. `<work>/lyrics-map.md`: what every line shows and the key word it happens on. This is the contract.
+2. `<work>/map.md`: the concept, the look, each section's energy, the hit points, how chorus 2 differs from chorus 1.
+3. Steps 4 ("Build scenes") and 5 ("Render and check") of the song2mv guide (`song2mv --help` prints its path).
+4. `src/kit/storyboard.tsx` and `src/kit/plan.ts` in your copy: boards, framings and planned cuts. Never write cut
+   logic.
+
+## Your files
+
+- Write only `src/scenes/<your section file>`. It exports `BOARDS_<NAME>: Board[]` and the worlds those boards film.
+  `boards.tsx` already joins every section's boards in song order (the others are empty in your copy). Don't edit
+  it, nor `index.ts`, the shared files or the assets.
+- Shared, read-only: `src/scenes/assets/` (`<work>/ASSETS.md` gives each piece's props, size and origin) and TODO:
+  each shared file, what it exports and how every board uses it, such as "wrap each piece in `<toon.Ink id={INK}>`
+  from `look.tsx`; the overlay is already over every board".
+- If a piece lacks something you need (a pose, a prop), draw it in your section file and say so in your report.
+- No logos, wordmarks or brand symbols, and no real person's face.
+
+## Boards
+
+- Start your first board where your stretch starts, at its first section: the song's first board also covers the
+  time before it, so in your copy a later start hides a gap.
+- Give every board `tall` framings for the 9:16 frame. They default to the 16:9 ones, and builders who left them out
+  put the subject under the captions or an overlay in the short.
+- TODO: what is special about this song, such as "the tempo drifts: time motion by line and word times, not
+  `grid.pulse` or bars".
+
+## Render and check your stretch
+
+Render only your copy: a half-edited file breaks every render that bundles it. A is the start of your first section
+and B the start of the next builder's (`sections` in `mv.json`): a check that starts inside a line misses that line's
+problem.
+
+```bash
+song2mv render <work>/mv.json --template <work>/video-<section> --from A --to B --draft --name <section> --json
+song2mv check <video> --song <work>/mv.json --from A --to B --src "<work>/video-<section>/src/scenes/**/*.tsx" --json > <work>/check-<section>.json
+song2mv sheet <video> --cuts <work>/check-<section>.json
+song2mv sheet <video> --song <work>/mv.json --lines <your lyric map ids, comma separated> --out <work>/renders/<section>-lines.png
+```
+
+`<video>` is the path under `outputs` in the render's result. Iterate until `check` passes and every row of the lines
+sheet shows its picture on its key word; look at every page. Stop only the processes you started; never `pkill`.
+
+## Report
+
+What you built (boards and worlds), the check result, the sheet paths, and anything you could not do.

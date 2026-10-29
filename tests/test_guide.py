@@ -38,7 +38,8 @@ def test_help_points_agents_to_the_guide(command, capsys):
     assert Path(lines[i + 1].strip()).read_text(encoding="utf-8") == SKILL.read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("guide", [SKILL, ROOT / "AGENTS.md", ROOT / "llms.txt"], ids=lambda p: p.name)
+@pytest.mark.parametrize("guide", [SKILL, *sorted(SKILL.parent.glob("briefs/*.md")), ROOT / "AGENTS.md", ROOT / "llms.txt"],
+                         ids=lambda p: p.name)
 def test_guide_names_only_real_commands_flags_and_choices(guide):
     options = _options()
     commands = [c for c in options if c]
