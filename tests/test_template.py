@@ -578,6 +578,15 @@ def test_the_storyboard_names_an_idle_pattern_and_copies_that_open_alike(tmp_pat
     assert len(alike) == 1 and "the boards at ch1-03 and ch2-03" in alike[0], warned
 
 
+def test_a_storyboard_without_boards_draws_nothing(tmp_path):
+    placed = _probe(tmp_path, """
+import { makeSongCtx } from "KIT/song";
+import { planStoryboard } from "KIT/storyboard";
+console.log(JSON.stringify(planStoryboard(makeSongCtx(SONG), [])));
+""", _verse_song([4]))
+    assert placed == []
+
+
 def _probe(tmp_path, code: str, song: dict) -> object:
     probe = tmp_path / "probe.tsx"
     probe.write_text(code.replace("KIT", os.path.join(BUNDLED, "src", "kit")).replace("SCENES", os.path.join(BUNDLED, "src", "scenes"))

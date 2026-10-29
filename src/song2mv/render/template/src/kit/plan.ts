@@ -328,6 +328,7 @@ export function planShots(ctx: SongCtxValue, from: number, to: number, framings:
  * no section takes says so (`idlePattern`).
  */
 export function planBoards(ctx: SongCtxValue, boards: BoardPlan[]): Plan[] {
+  if (!boards.length) return [];
   const lines = ctx.song.lines.filter((l) => l.words.length).sort((a, b) => a.words[0].t - b.words[0].t);
   const keys = boards.slice(1).map((b) => b.from);
   const at = (t: number) => boards.find((b) => t >= b.from - 1e-6 && t < b.to - 1e-6) ?? boards[0];
