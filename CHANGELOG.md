@@ -7,6 +7,10 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 First release (0.1.0).
 
 ### Fixed
+- The template no longer carries `remotion.config.mjs`. Remotion 4 looks for only `remotion.config.ts` or `.js` (a
+  verbose `remotion still` says "No config file loaded"), so the file never applied, and a setting added to it
+  would have been ignored without a word. Its four settings are Remotion's defaults, so renders are unchanged;
+  `render.mjs` passes the settings it changes on Remotion's command line.
 - Whole-song renders on a Mac no longer stop with "Page crashed!": Remotion's own Mac Chrome keeps V8's debug checks,
   and one ended every whole-song render of two songs. `render` uses Google's build of the same version there (a
   104 MB download, once), finals captured at JPEG quality 100. A `--template` copy keeps its old `render.mjs`: copy
