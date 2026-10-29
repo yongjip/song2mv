@@ -75,6 +75,7 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- The README opens with two music videos made with song2mv, each with its Short, on YouTube.
 - `node render.mjs … --composition ID --frame N` renders frame N of a composition. The docs show the kit gallery
   through it, with the Chrome and GPU a video gets, instead of `npx remotion still`.
 - The guide splits a whole song among agents, as two songs (81 and 43 lines) were made from audio to finished videos

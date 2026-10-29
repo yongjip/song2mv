@@ -9,6 +9,12 @@ song2mv turns an audio file and its lyrics into synced lyrics (LRC, SRT, word-ti
 then into a lyric or music video drawn entirely in code. Each step is its own command, so a coding agent such as
 Claude Code or Codex — or a person — can use just the part they need.
 
+Two songs made with Suno, each turned into a music video and a Short by Claude Code with song2mv:
+
+| [![Till Money Means Nothing, music video](https://img.youtube.com/vi/fSlrXXQt0Ik/maxresdefault.jpg)](https://youtu.be/fSlrXXQt0Ik) | [![Carry the Light, music video](https://img.youtube.com/vi/cGtjcGVv8XQ/maxresdefault.jpg)](https://youtu.be/cGtjcGVv8XQ) |
+| --- | --- |
+| **[Till Money Means Nothing](https://youtu.be/fSlrXXQt0Ik)** (4:55, [Short](https://youtube.com/shorts/dFQFAQ37S4w)): a launch broadcast that ends on Mars, inked with the `toon` style pack | **[Carry the Light](https://youtu.be/cGtjcGVv8XQ)** (4:48, [Short](https://youtube.com/shorts/ioBdb2K5TgA)): a child's crayon drawing of a launch tower that becomes real, in watercolour from the `paint` style pack |
+
 > **Alpha (0.x).** Commands, flags and file formats may change between releases; every JSON file carries a
 > `schema_version` and every change is listed in [CHANGELOG.md](https://github.com/yongjip/song2mv/blob/main/CHANGELOG.md). `sync` and `beats` are the most
 > tested parts. `check` and `render` are **experimental**.
@@ -342,7 +348,6 @@ Where it is weaker today:
 - A basic `render` without Node (Python + ffmpeg), so everyone gets a lyric video with no extra install.
 - `check` measured against the song itself (music energy vs. motion, chorus vs. verse) instead of fixed numbers.
 - An MCP server (`song2mv mcp`) for agents and apps without a terminal.
-- A demo song and video we have the rights to publish.
 
 ## Rights
 
