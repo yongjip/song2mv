@@ -19,7 +19,7 @@ Two songs made with Suno, each turned into a music video and a Short by Claude C
 [step 4 of the skill](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md#4-build-scenes)
 describes: five drew the shared pieces, then seven built the sections, in about two hours for both songs. One of these
 videos is about 12,000 lines of drawing code, where a single agent wrote 750–1,200 in our trial videos: expect a
-simpler video from one agent.
+simpler video from one agent, or give each brief to a session of its own.
 
 > **Alpha (0.x).** Commands, flags and file formats may change between releases; every JSON file carries a
 > `schema_version` and every change is listed in [CHANGELOG.md](https://github.com/yongjip/song2mv/blob/main/CHANGELOG.md). `sync` and `beats` are the most

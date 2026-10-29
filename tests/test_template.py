@@ -587,6 +587,29 @@ console.log(JSON.stringify(planStoryboard(makeSongCtx(SONG), [])));
     assert placed == []
 
 
+def test_a_limb_bends_toward_the_side_asked_on_either_side_of_the_body(tmp_path):
+    out = _probe(tmp_path, """
+import { limb } from "KIT/math";
+const r = (v: number[]) => v.map((x) => Math.round(x * 10) / 10 + 0);
+const a = limb([0, 0], [80, 0], 50, 50), b = limb([0, 0], [-80, 0], 50, 50), c = limb([0, 0], [200, 0], 50, 50);
+const knee = limb([0, 0], [0, 80], 50, 50, [1, 0]), root = limb([0, 0], [0, 0], 50, 50);
+const u = limb([0, 0], [60, 40], 54, 46);
+const sweep = Array.from({ length: 41 }, (_, i) => limb([0, 0], [-10 + i * 0.5, 85], 50, 45).joint);
+const steps = sweep.slice(1).map((j, i) => Math.hypot(j[0] - sweep[i][0], j[1] - sweep[i][1]));
+console.log(JSON.stringify({ a: { joint: r(a.joint), end: r(a.end), bend: Math.round(a.bend) }, b: r(b.joint),
+  c: { end: r(c.end), reach: c.reach, bend: Math.round(c.bend) }, knee: r(knee.joint), root: r(root.joint),
+  upper: Math.hypot(u.joint[0], u.joint[1]), lower: Math.hypot(u.end[0] - u.joint[0], u.end[1] - u.joint[1]),
+  step: Math.max(...steps) }));
+""", {})
+    assert out["a"] == {"joint": [40, 30], "end": [80, 0], "bend": 106}
+    assert out["b"] == [-40, 30]  # reaching across the body, the elbow still hangs down
+    assert out["c"] == {"end": [100, 0], "reach": 2, "bend": 180}
+    assert out["knee"] == [30, 40]  # a knee bends the way the figure faces
+    assert out["root"] == [0, 50]  # a hand at the shoulder folds the arm down, not into a point
+    assert abs(out["upper"] - 54) < 1e-6 and abs(out["lower"] - 46) < 1e-6
+    assert out["step"] < 2  # a hanging arm's elbow slides as the hand swings past straight down, never jumps
+
+
 def _probe(tmp_path, code: str, song: dict) -> object:
     probe = tmp_path / "probe.tsx"
     probe.write_text(code.replace("KIT", os.path.join(BUNDLED, "src", "kit")).replace("SCENES", os.path.join(BUNDLED, "src", "scenes"))

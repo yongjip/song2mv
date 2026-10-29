@@ -8,6 +8,10 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 - The README says what a computer needs, as measured: memory, time, disk and the systems tested.
 - Two brief templates next to the skill for a video split among agents: `briefs/assets.md` for the painters of the
   shared pieces, `briefs/section.md` for one builder per section. The skill says how to set up, split and merge.
+- A review step: `briefs/review.md` sends fresh agents over the finished render, a stretch each, to crop every figure
+  at 1:1 and report what a viewer would catch. In two videos it found about 70 defects after every check passed.
+- `limb()` in the kit solves an elbow or knee that bends toward a side you name, whichever side of the body the
+  target is on, and reports how far it reaches and how sharply it bends.
 
 ### Changed
 - The README says how its two demo videos were made, and its example asks for a music video, not a lyric video.
@@ -15,6 +19,13 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   washed the captions out.
 - The brief templates ask painters to run ground and sky on below the stage and never to name a prop `key` or `ref`,
   and builders to look at their stretch in 9:16 as well.
+- The guide opens with the steps to check before delivering, gives characters an age and the map a continuity table,
+  and adds fit tiles of every touch between characters before the builders start.
+- The painters' brief has proportions by age and rules for arms, legs and hands. The builders' brief has rules for
+  face crops, pose changes, continuity and who is drawn in front.
+- `AGENTS.md` tells an agent to read the skill before any scene work and to have the render reviewed before it
+  delivers. The skill and the README say what to do without agents of one's own: a session per brief, or the roles
+  in turn.
 
 ### Fixed
 - A storyboard without boards draws nothing instead of failing the render: a video split among builders starts with

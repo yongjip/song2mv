@@ -68,6 +68,7 @@ jobs:
           unzip -l dist/*.whl | grep -q 'song2mv/guide/SKILL.md'
           unzip -l dist/*.whl | grep -q 'song2mv/guide/briefs/assets.md'
           unzip -l dist/*.whl | grep -q 'song2mv/guide/briefs/section.md'
+          unzip -l dist/*.whl | grep -q 'song2mv/guide/briefs/review.md'
           unzip -l dist/*.whl | grep -q 'song2mv/guide/AGENTS.md'
           ! unzip -l dist/*.whl | grep -E 'node_modules|template/out/|__pycache__'
           ! tar tzf dist/*.tar.gz | grep -E 'node_modules|template/out/|__pycache__'
