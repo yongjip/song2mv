@@ -335,7 +335,7 @@ Where it is weaker today:
 
 - Timing: on the JamendoLyrics benchmark (79 songs in English, German, Spanish and French), 87 % of a song's words
   land within 0.3 s of where people put them, on average; the best dedicated aligner reaches 94 %
-  ([docs/benchmark.md](docs/benchmark.md)). Most wrong line starts are a line's first word alone, early or late by a
+  ([docs/benchmark.md](https://github.com/yongjip/song2mv/blob/main/docs/benchmark.md)). Most wrong line starts are a line's first word alone, early or late by a
   fraction of a second, and lines whisper hears badly (vocalisations, shouts, chants) can still be far off and need
   a few `manual` values. Separating the vocals first, as karaoke tools do, made the timing worse on our Korean test
   song.
