@@ -24,16 +24,18 @@ Section builders then film your pieces all through the song, so a weak piece sho
    SVG for the kit's `<Svg>` (the 1920×1080 stage). The origin is the bottom middle, where the piece meets the
    ground, unless its doc comment says otherwise (a planet: its centre); `s` scales about it. A pure function of `T`
    and its props, with `rng` from `../../kit/math` for randomness. `id` names every gradient, clip path and filter,
-   so two copies don't clash.
+   so two copies don't clash. No prop is called `key` or `ref`: React keeps those, and the piece never gets them.
 5. **Motion through props** (`legs` 0–1, `flame` 0–1, `distance` for wheels, `pose` and `phase` for a character),
    plus small idle motion from `T` where it helps (a blinking light, a flickering flame).
 6. **Sizes at s = 1**, in each doc comment. People match the kit's `Person`, about 300 px tall at s = 1.
-7. **Colours** from the palette by default, and props where a scene may want another.
-8. **Every look the video uses.** Each piece reads well in each of them. TODO: the looks, such as plain, toon
+7. **Past the stage's bottom edge.** Ground, floors, walls and sky run on down to about y 3000: the 9:16 frame shows
+   below y 1080, the further the wider its shot.
+8. **Colours** from the palette by default, and props where a scene may want another.
+9. **Every look the video uses.** Each piece reads well in each of them. TODO: the looks, such as plain, toon
    (`<toon.Ink id>` round each piece, one `<toon.Defs id>` in the Svg) and neon (`<line.Lines id look="neon">`), with
    `import { toon, line } from "../../kit"`.
-9. **Look at your renders** at full size and in 1:1 crops (`ffmpeg -i in.png -vf crop=W:H:X:Y out.png`), and fix
-   rough edges, gaps, wrong overlaps and floating parts before you report. Compare each piece with the real thing.
+10. **Look at your renders** at full size and in 1:1 crops (`ffmpeg -i in.png -vf crop=W:H:X:Y out.png`), and fix
+    rough edges, gaps, wrong overlaps and floating parts before you report. Compare each piece with the real thing.
 
 ## Render, in your workspace only
 

@@ -17,8 +17,8 @@ export const BAND_CY = 670; // the band ends at y 1080, where the captions start
  * only sky. Scenes that read VerticalCtx can stack side-by-side layouts.
  * When scenes/index.ts exports a VerticalScene component (the default exports null), that component
  * draws the whole 1080×1920 frame instead, so the concept's own look reaches the edges: no band, sky,
- * beat glow, title or vignette. Only the captions of lines the scenes don't draw, the flashes and the
- * fade-out go on top. Its text keeps to the same box; its picture can fill the rest, the bottom too.
+ * beat glow, title or vignette. Only the captions of lines the scenes don't draw (on a strip of theme.bg), the
+ * flashes and the fade-out go on top. Its text keeps to the same box; its picture can fill the rest, the bottom too.
  * from / to / hold work as in LyricVideo; with hold > 0 the title is on from the first frame.
  */
 export const LyricShort: React.FC<MvProps> = ({ song, from, to, hold }) => {
@@ -72,7 +72,7 @@ export const LyricShort: React.FC<MvProps> = ({ song, from, to, hold }) => {
             </>
           )}
           {/* lyrics the scenes don't draw, under the band, inside the safe box: up to two rows end at y 1240 */}
-          <Captions T={T} hide={hide} size={66} bottom={680} padX={150} band={false} />
+          <Captions T={T} hide={hide} size={66} bottom={680} padX={150} band={VerticalScene !== null && "around"} />
           <Flash T={T} flashes={flashes} />
           <AbsoluteFill style={{ background: "#000", opacity: 1 - fade(frame) }} />
         </AbsoluteFill>

@@ -42,10 +42,14 @@ song2mv render <work>/mv.json --template <work>/video-<section> --from A --to B 
 song2mv check <video> --song <work>/mv.json --from A --to B --src "<work>/video-<section>/src/scenes/**/*.tsx" --json > <work>/check-<section>.json
 song2mv sheet <video> --cuts <work>/check-<section>.json
 song2mv sheet <video> --song <work>/mv.json --lines <your lyric map ids, comma separated> --out <work>/renders/<section>-lines.png
+song2mv render <work>/mv.json --template <work>/video-<section> --from A --to B --aspect 9x16 --draft --name <section> --json
+song2mv sheet <tall video> --song <work>/mv.json --every 2 --out <work>/renders/<section>-tall.png
 ```
 
-`<video>` is the path under `outputs` in the render's result. Iterate until `check` passes and every row of the lines
-sheet shows its picture on its key word; look at every page. Stop only the processes you started; never `pkill`.
+`<video>` and `<tall video>` are the paths under `outputs` in the renders' results. Iterate until `check` passes and
+every row of the lines sheet shows its picture on its key word, and until the tall sheet shows each subject above the
+captions' dashed line and the picture down to the frame's bottom edge; look at every page. Stop only the processes
+you started; never `pkill`.
 
 ## Report
 

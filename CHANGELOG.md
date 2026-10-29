@@ -11,10 +11,16 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 
 ### Changed
 - The README says how its two demo videos were made, and its example asks for a music video, not a lyric video.
+- The guide says `theme.bg` also shades the picture behind the captions: a light `bg` under the default white text
+  washed the captions out.
+- The brief templates ask painters to run ground and sky on below the stage and never to name a prop `key` or `ref`,
+  and builders to look at their stretch in 9:16 as well.
 
 ### Fixed
 - A storyboard without boards draws nothing instead of failing the render: a video split among builders starts with
   every section's boards empty.
+- A short drawn by a `VerticalScene` puts a strip of `theme.bg` behind its captions, as the 16:9 video has a band
+  under them: over a light picture the white text did not read.
 
 ## 0.1.0 — 2026-10-29
 

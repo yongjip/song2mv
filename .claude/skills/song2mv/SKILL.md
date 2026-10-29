@@ -326,10 +326,11 @@ line instead, so the line stays on screen to its last word.
 captions in `theme`'s colours and font; in 9:16 its starry sky fills the screen above and below the stage. Over the
 scenes it lays a dark vignette, and a white flash at the start of each hot section, placed on the one-tempo grid.
 Left at the defaults, they put the kit's neon night around every concept, and the title is the file name. Set `title`
-and `theme` (`bg`, `stars`, the text colours, `font`; `unsungShadow: "none"` on a light `bg`) in `song.json` to fit
-the concept; `"vignette": false` keeps the
-scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` puts the flashes on the song's real hits
-(`[]` when the scenes flash themselves). Then run `song2mv sync <work>/song.json --from build`.
+and `theme` (`bg`, `stars`, the text colours, `font`) in `song.json` to fit the concept. `bg` also shades the
+picture behind the captions, so keep it dark under the default white text; a light `bg` takes dark text colours
+and `unsungShadow: "none"`, or the captions fade into the band. `"vignette": false` keeps the scene's corners as
+drawn, and `"flashes": [[song time, strength 0–1], …]` puts the flashes on the song's real hits (`[]` when the
+scenes flash themselves). Then run `song2mv sync <work>/song.json --from build`.
 
 ### The scene kit
 
@@ -649,7 +650,8 @@ By default the short shows `Scene` shrunk into a band, with the template's sky a
 top. That frame puts the template's look around every concept, and a scene that draws its own lyrics leaves the
 bottom of the screen empty. To fill the phone screen instead, export a `VerticalScene` from `src/scenes/index.ts`:
 a component of `T` that draws the whole 1080×1920 frame. The template then adds only the captions of lines the
-scenes don't draw, the flashes and the fade-out; the background and any title are the scene's. It is usually the
+scenes don't draw (on a strip of `theme.bg`), the flashes and the fade-out; the background and any title are the
+scene's. It is usually the
 same world and timing filmed for a tall frame, which `verticalView` in the kit does:
 
 ```tsx

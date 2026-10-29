@@ -143,9 +143,10 @@ export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?:
 
 /**
  * Karaoke captions at the bottom: the current line, sung words bright. Fixed position. Lines in `hide`
- * (and in the song's captions.hide) are skipped — a scene draws them itself.
+ * (and in the song's captions.hide) are skipped — a scene draws them itself. `band` shades the picture under them in
+ * `theme.bg`: true from the bottom edge up, "around" in a strip behind their two rows (over a 9:16 scene).
  */
-export const Captions: React.FC<{ T: number; hide?: Set<string>; size?: number; bottom?: number; padX?: number; band?: boolean }> = ({
+export const Captions: React.FC<{ T: number; hide?: Set<string>; size?: number; bottom?: number; padX?: number; band?: boolean | "around" }> = ({
   T, hide, size = 62, bottom = 86, padX = 100, band = true,
 }) => {
   const { song, theme } = useSong();
@@ -156,15 +157,22 @@ export const Captions: React.FC<{ T: number; hide?: Set<string>; size?: number; 
   const words = line.words.slice(from);
   if (!words.length || T < words[0].t - 0.12) return null;
   const whisper = (song.captions?.whisper ?? []).includes(line.id);
+  const shown = clamp01((T - (words[0].t - 0.12)) / 0.08);
   return (
     <>
-      {band && <AbsoluteFill style={{ background: `linear-gradient(to top, ${withAlpha(theme.bg, 0.82)} 0%, ${withAlpha(theme.bg, 0)} 27%)` }} />}
+      {band === true && <AbsoluteFill style={{ background: `linear-gradient(to top, ${withAlpha(theme.bg, 0.82)} 0%, ${withAlpha(theme.bg, 0)} 27%)` }} />}
+      {band === "around" && (
+        <div style={{
+          position: "absolute", left: 0, right: 0, bottom: bottom - 150, height: 2.4 * size + 300, opacity: shown,
+          background: `linear-gradient(to top, ${withAlpha(theme.bg, 0)}, ${withAlpha(theme.bg, 0.8)} 33%, ${withAlpha(theme.bg, 0.8)} 67%, ${withAlpha(theme.bg, 0)})`,
+        }} />
+      )}
       <div
         style={{
           position: "absolute", left: padX, right: padX, bottom, textAlign: "center", wordBreak: "keep-all",
           fontSize: whisper ? Math.round(size * 0.7) : size, fontWeight: whisper ? 500 : 800,
           letterSpacing: whisper ? "0.3em" : "-0.01em", lineHeight: 1.2,
-          opacity: clamp01((T - (words[0].t - 0.12)) / 0.08),
+          opacity: shown,
         }}
       >
         {words.map((w, i) => {
