@@ -34,6 +34,9 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    there are saved to song.json). A `manual` pin only constrains: re-heard lines around it keep their times while
    they still fit between the pins, so pin only what is wrong.
 4. **Subtitles only?** Stop after `sync` and hand over `song.srt` (video editors) or `song.lrc` / `song.words.lrc`.
+   For a video made in HyperFrames or in the user's own Remotion project,
+   https://github.com/yongjip/song2mv/blob/main/docs/timing-layer.md maps `lyrics.json` and `grid.json` to their
+   formats.
 5. **Video.** `song2mv render WORK/mv.json --still T --aspect both` writes PNGs you can look at; render short stretches
    as drafts (`--from A --to B --draft`, 10 fps at half size) while working, and the finished video once without it. For
    the user's own scenes use `--template DIR` and write them in `DIR/src/scenes/`: a scene is a pure function of song

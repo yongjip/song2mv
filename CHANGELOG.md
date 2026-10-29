@@ -79,6 +79,10 @@ First release (0.1.0).
   Studio on the renderer's IPv4 port could supply the wrong project's compositions through `localhost`.
 
 ### Added
+- `docs/timing-layer.md` uses song2mv's timing in HyperFrames and in a Remotion project of your own: a short Python
+  script turns `lyrics.json` and `grid.json` into HyperFrames' word list (`npx hyperframes transcribe words.json`)
+  and beat file, and a few lines of TypeScript into `@remotion/captions` pages and beat times. Tried on a whole song
+  with HyperFrames 0.8.214. The README's comparison lists HyperFrames; AGENTS.md and llms.txt point to the page.
 - The README opens with two music videos made with song2mv, each with its Short, on YouTube.
 - `node render.mjs … --composition ID --frame N` renders frame N of a composition. The docs show the kit gallery
   through it, with the Chrome and GPU a video gets, instead of `npx remotion still`.

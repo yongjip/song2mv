@@ -317,7 +317,7 @@ company license ([remotion.dev/license](https://www.remotion.dev/license)). Only
 
 ## How it compares
 
-Other open-source projects turn songs into videos in four broad ways:
+Other open-source projects turn songs into videos in five broad ways:
 
 | kind of project | examples | what song2mv does differently |
 | --- | --- | --- |
@@ -325,6 +325,7 @@ Other open-source projects turn songs into videos in four broad ways:
 | Karaoke and synced-lyrics tools | [karaoke-gen](https://github.com/nomadkaraoke/karaoke-gen), [python-lyrics-transcriber](https://github.com/nomadkaraoke/python-lyrics-transcriber) | They have more lyric-sync tooling (online lyric lookup, a review UI, a choice of transcription engines) and karaoke formats. Their focus is the lyric display; song2mv also puts every word on the song's beat grid and every section on a bar line, so cuts and effects can follow the music. |
 | Remotion lyric-video templates | [Lyrics-Video-Generator](https://github.com/c0ze/Lyrics-Video-Generator), [lyric-motion-studio](https://github.com/junksidetm/lyric-motion-studio) | They render timing you already have (an LRC or SRT file) or a forced alignment, in a fixed set of styles. song2mv makes the timing itself, and its template gives your own scenes beat-grid helpers and a scene kit. |
 | Remotion skills for coding agents | [remotion-video-skill](https://github.com/wshuyi/remotion-video-skill), [remotion-dev/skills](https://github.com/remotion-dev/skills) | General video-making skills, without beat detection or lyric alignment. song2mv's skill works from measured timing, with `click` and `check` for what an agent cannot hear or watch. |
+| Agent video frameworks | [HyperFrames](https://github.com/heygen-com/hyperframes) | It renders HTML to video for coding agents and times a song's words by transcribing it, or takes a word list from another tool. song2mv can be that tool: [docs/timing-layer.md](https://github.com/yongjip/song2mv/blob/main/docs/timing-layer.md) turns its timing into HyperFrames' word list and beat file, and into Remotion captions. |
 
 In short, song2mv is a timing layer — word-timed lyrics on the beat grid, as plain files — plus a code-drawn video
 that an agent can measure and fix. `grid.json` and `lyrics.json` can drive cuts in other tools too, generative ones
