@@ -37,7 +37,9 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    For a video made in HyperFrames or in the user's own Remotion project,
    https://github.com/yongjip/song2mv/blob/main/docs/timing-layer.md maps `lyrics.json` and `grid.json` to their
    formats.
-5. **Video.** `song2mv render WORK/mv.json --still T --aspect both` writes PNGs you can look at; render short stretches
+5. **Video.** Read the skill before any scene work (`song2mv --help` prints its path): it has this order in full,
+   brief templates for splitting the work among agents (`briefs/`), and the rules that keep the characters' arms,
+   hands, faces and props right. `song2mv render WORK/mv.json --still T --aspect both` writes PNGs you can look at; render short stretches
    as drafts (`--from A --to B --draft`, 10 fps at half size) while working, and the finished video once without it. For
    the user's own scenes use `--template DIR` and write them in `DIR/src/scenes/`: a scene is a pure function of song
    time `T`; text pops once and then holds still; lay out on the 1920×1080 stage. First read the lyrics line by line
@@ -59,7 +61,11 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    labelled with its song time and line; `--lines` with the lyric map's ids shows whether each joke made it on screen.
    Passing is necessary, not proof of fun — send a clip and ask what is
    boring. The user's answer outranks the numbers.
-7. **Every command takes `--json`.** Progress goes to stderr, stdout carries one object with `schema_version` and
+7. **Review before you deliver.** `check` does not see an arm folded into a V or a face cut at the eyes. Give the
+   finished render to fresh agents with the skill's `briefs/review.md`, a stretch each, or review it yourself with
+   that brief, crop by crop, when you cannot start agents. Fix every high and medium finding and have the fixed
+   stretches looked at again. In two videos this found about 70 defects after every check had passed.
+8. **Every command takes `--json`.** Progress goes to stderr, stdout carries one object with `schema_version` and
    `ok`. Exit code 2 is an error: read `error.message` and do what `error.hint` says. Exit code 1 only means `check`
    found a failing check. Check `schema_version` before relying on field names (docs/contract.md).
 

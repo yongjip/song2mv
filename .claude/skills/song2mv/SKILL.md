@@ -11,6 +11,17 @@ beat and lyrics. `song2mv` has the tools; this file is the order to use them in 
 The loop is: **timing → reading the lyrics → scene design → render → check → fix**. You cannot hear the song, so
 every judgement that needs ears goes to the user as a short clip or click track that makes it a ten-second check.
 
+**Before you deliver, check that the video went through these steps.** Each one missing showed in a trial video:
+
+1. Ear-check clips for the lines `sync` flags, sent to the user (step 1).
+2. A lyric map with something happening on the key word of each line (step 3).
+3. Two or three concept stills, one chosen (step 3).
+4. Characters with an age and its proportions, and a continuity table (step 3).
+5. Every piece in a gallery at 1:1, and every touch between characters in a fit tile, fixed before the scenes
+   (step 4).
+6. `check` passing on the whole song (step 5).
+7. A review by fresh eyes with no high or medium finding left (steps 5 and 6).
+
 **Checkpoints don't block.** At each one, show the user what you have, with your pick and the reason in one line,
 and keep going; they can redirect you at any time. Decide timing by measurement, send the ear-check clips anyway and
 list the spots nobody has heard when you deliver. Wait only for what you can neither measure nor recommend: the
@@ -109,12 +120,13 @@ choruses big. Show it to the user early — sometimes it is all they need.
 
 ## 3. Lyrics, concept, then the song map
 
-**Read the lyrics first, line by line,** into `<work>/lyrics-map.md`: a row per line id from `mv.json`, with what the
-line says and what it does. Most lines just say something. The lines that do something (a pun, a metaphor, a parody)
-are the jokes and images the song is made of, and drawing their nouns misses them. One trial's first take gave each
-line a prop for its nouns: 6 of its 17 wordplay lines never reached the screen, 4 showed one of their two meanings,
-and its on-screen tags read out what the picture already showed. The user's first note was that the jokes were
-missing. For each line that does something, write the device, the picture and the text it needs:
+**Read the lyrics first, line by line,** into `<work>/lyrics-map.md`: a row per line id from `mv.json`, with the line
+(its key word in bold), what it does (a device, or "says it"), the picture on the key word and any text. Most lines
+just say something. The lines that do something (a pun, a metaphor, a parody) are the jokes and images the song is
+made of, and drawing their nouns misses them. One trial's first take gave each line a prop for its nouns: 6 of its 17
+wordplay lines never reached the screen, 4 showed one of their two meanings, and its on-screen tags read out what the
+picture already showed. The user's first note was that the jokes were missing. For each line that does something,
+write the device, the picture and the text it needs:
 
 | The line … | Show |
 |---|---|
@@ -199,18 +211,22 @@ and any kit changes into it.
 **Then the song map** for the chosen concept, `<work>/map.md`. Show it to the user and carry on:
 
 - Per section (from `mv.json` sections; `<work>/music.json` has the loudness curve and likely boundaries): bars,
-  energy (rising / peak / falling), what the lyrics say, **one visual idea**, colour, and where the lyric map's
-  pictures go in it.
+  energy (rising / peak / falling), what the lyrics say, **one visual idea**, colour and light (the time of day), and
+  where the lyric map's pictures go in it.
 - **One main character or motif** that carries through the whole song and changes with it. A video with a
   protagonist is more watchable than a slideshow of effects.
+- **Characters and continuity.** Give each character an age, and draw its proportions from it (`briefs/assets.md`
+  lists them: a toddler is about half an adult's height, with about 2 heads fewer). Then a table, section by section:
+  what each one wears and carries (a bag, a toy, shoes on or off), where they are, the time of day. Builders and
+  reviewers check every board against it.
 - **Hit points**: the first beat of each chorus, drops, the last word. These get the biggest moment (cut, flash,
   slam). Use `grid.bar(k)` and line/word times — never hand-typed seconds.
 - **Breaks**: list every stretch of 4 s or more without a sung line in `mv.json` (an intro, an instrumental, an
   "oh-oh" that `off_sheet` names) and give each an event of its own: everything dances, someone joins in, a new
   world. One world held through a break is the dullest part of a chorus clip.
-- **Contrast**: chorus 2 must not look like chorus 1 (the check measures it). The same words in the same place
-  look alike to it even over another sky: move or restyle chorus 2's big type and boxes too. Verses cut on an uneven
-  rhythm (2 bars, 1 bar, 3 bars …), not every bar.
+- **Contrast**: no chorus may look like another (the check measures each against the first). The same words in the
+  same place look alike to it even over another sky: move or restyle chorus 2's big type and boxes too. Verses cut on
+  an uneven rhythm (2 bars, 1 bar, 3 bars …), not every bar.
 - **Text**: which lines become big type in the scene (`Slam`, `BigLine`), which stay as bottom captions.
 
 **Then get the pieces, in this order:**
@@ -247,23 +263,33 @@ song2mv render <work>/mv.json --template <work>/video --still 1      # first use
 Write the song's scenes in `<work>/video/src/scenes/` and export them from `src/scenes/index.ts` (`Scene` and
 `linesDrawnByScene`). Draw them in the chosen concept's style, and take what fits from the kit in `src/kit/`.
 
-**A whole song goes faster split among agents** (two songs, audio to videos, in about two hours: five agents drew the
-shared pieces, then seven built the sections). The README's two demo videos were made this way, with far more drawing
-than one agent does: about 12,000 lines of pieces and scenes for one song, where one agent alone wrote 750–1200
-(below). When you can start agents of your own, propose it to the user with the concepts. Their briefs are templates
-next to this guide, `briefs/assets.md` and `briefs/section.md`: copy them into the work folder, replace every `TODO`
-and `<work>`, and name each agent's group or section in its task.
+**A whole song is more drawing than one agent's context holds: split it among agents** (two songs, audio to videos,
+in about two hours: five agents drew the shared pieces, then seven built the sections). The README's two demo videos
+were made this way, with far more drawing than one agent does: about 12,000 lines of pieces and scenes for one song,
+where one agent alone wrote 750–1200 (below). When you can start agents of your own, propose it to the user with the
+concepts. Their briefs are templates next to this guide, `briefs/assets.md`, `briefs/section.md` and
+`briefs/review.md`: copy them into the work folder, replace every `TODO` and `<work>`, and name each agent's group,
+section or stretch in its task. Without agents of your own, ask the user to give each brief to a session of its own;
+in one session, take the roles in turn with the same briefs (each group, the fit tiles, a section at a time, a
+review a stretch at a time) and expect less drawing.
 
 1. **Painters.** After step 3, put a palette in `<work>/video/src/scenes/assets/palette.ts` and group the shared
    pieces (people, vehicles, places, effects). One painter per group, each in its own copy (below). Copy their pieces
    into `<work>/video/src/scenes/assets/` and list each piece's props, size and origin in `<work>/ASSETS.md`.
-2. **The builders' frame.** In `<work>/video`: a section file per builder exporting an empty `Board[]`, a
+2. **Fit tiles.** Before any builder starts, draw every touch the lyric map has (hand in hand, a hug, a carry, two at
+   a table, hands on a wheel) with the painters' pieces at the scenes' scale, as tiles in
+   `<work>/video/src/scenes/concepts/` rendered with step 3's `Concepts` command, and look at the hands at 1:1. A
+   pose that fails here fails in every board that uses it: send it back to its painter now. Name in
+   `<work>/ASSETS.md` the anchor function each touch uses (where a hand grips, where a child sits on a hip).
+3. **The builders' frame.** In `<work>/video`: a section file per builder exporting an empty `Board[]`, a
    `boards.tsx` that joins them in song order, `index.ts` exporting `Scene`, `VerticalScene` and `linesDrawnByScene`
    from it, and the files every board shares (the look, an overlay). Typecheck it.
-3. **Builders,** three or four per song, each in its own copy made now, each owning one section file.
-4. **Merge** by copying each builder's section file into `<work>/video`; nothing else in its copy should have changed.
+4. **Builders,** three or four per song, each in its own copy made now, each owning one section file.
+5. **Merge** by copying each builder's section file into `<work>/video`; nothing else in its copy should have changed.
    Then check the whole song, not stretch by stretch (a line that passed in a stretch starting mid-line failed in the
-   whole song), and look at a 9:16 sheet of every board: builders left out `tall` framings.
+   whole song), and look at a 9:16 sheet of every board (builders left out `tall` framings), a sheet every 3 s, a
+   `--lines` sheet of every line id, and the seams between builders' stretches against the continuity table.
+6. **Review** the full render with fresh agents, then fix (step 5).
 
 A copy is `<work>/video` copied to `<work>/video-<name>/` without `node_modules` and `out`. Its first
 `song2mv render <work>/mv.json --template <work>/video-<name>` links it to the shared Remotion install (where its
@@ -306,13 +332,13 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   a framing too alike to the one before it (a close-up at 2.4 after one at 1.8 never showed), and a draft's render
   log names one it skipped that never shows (`storyboard: the board at v2-08 never shows framing 2 …`). The 9:16
   frame skips a `tall` framing too alike to the one before it the same way.
-- **Point a framing at its subject's middle**: the character or the thing the line is about. Both frames put the
-  point in the middle of their picture, above the captions and big type: y 0–840 of the 16:9 frame (`WIDE` in the
-  kit), y 269–1080 of the 9:16 one (`VERTICAL`). Zoom so the subject fits the picture, also when the shot's drift
-  pushes in by up to 15 %: a `Person` 300·s px tall fits up to zoom 2.3 / s. A closer shot runs on behind the
-  captions; let that be the ground, never a face or the line's prop. Both frames show the world past the stage's
-  bottom edge (16:9 by 120 px at zoom 1): draw the ground on below y 1080. A contact sheet draws the captions' top as
-  a dashed line.
+- **Point a framing at its subject's middle**: the character or the thing the line is about; for a person in a close
+  shot, the face, with room above it. Both frames put the point in the middle of their picture, above the captions
+  and big type: y 0–840 of the 16:9 frame (`WIDE` in the kit), y 269–1080 of the 9:16 one (`VERTICAL`). Zoom so the
+  subject fits the picture, also when the shot's drift pushes in by up to 15 %: a `Person` 300·s px tall fits up to
+  zoom 2.3 / s, and no frame edge may cross a face. A closer shot runs on behind the captions; let that be the
+  ground, never a face or the line's prop. Both frames show the world past the stage's bottom edge (16:9 by 120 px at
+  zoom 1): draw the ground on below y 1080. A contact sheet draws the captions' top as a dashed line.
 
 **The starter** (`src/scenes/Starter.tsx`) is a whole video built that way from kit worlds (a street, a room, a stage,
 fireworks, a beach, hills) that passes `check` on any song as it is. To start from it, put the line given in
@@ -632,6 +658,19 @@ word has landed: in one run the lines' middle frames showed the pictures of 26 o
   stack still with one burger held up per line (`drift: 0.5`) 6.8. Keep the gag and slow its motion: the line still
   needs its event.
 
+**Review it like a viewer, with fresh eyes.** `check` measures motion, cuts and coverage; it does not see an arm
+folded into a V. In the two videos that taught this, six reviewer agents, about 20 minutes each, found about 70
+defects after every check had passed, such as arms folded into a V and faces cut at the eyes by the frame's edge
+(`briefs/review.md` lists what they look for). Before you deliver a full render:
+
+- Start fresh agents with `briefs/review.md` (copy it into the work folder and fill in its `TODO`s): one per minute
+  or two of video, one for the characters (every pose and prop the scenes use, at 1:1) and one per short. Each crops
+  every figure at 1:1, edits nothing and reports with severities.
+- Fix every high and medium finding, render again, and give the changed stretches to a new reviewer. A pose a
+  reviewer flags is usually its piece's fault: fix it in the piece, and every board that uses it is fixed.
+- Without agents of your own, review it yourself with the same brief once the build is done, a stretch at a time,
+  every crop as if someone else had drawn it, or ask the user to give the brief to a second session.
+
 **Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip of the full render and ask
 what is boring. Their answer outranks the check.
 
@@ -644,7 +683,8 @@ on the hit and use `--hold` so the first frame shows the payoff fully drawn; che
 song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --aspect 9x16 --hold <s>
 ```
 
-While you fix the short, render and check it as a draft (`--draft`), as in step 5.
+While you fix the short, render and check it as a draft (`--draft`), as in step 5. Review the finished short with
+`briefs/review.md` as in step 5, too.
 
 By default the short shows `Scene` shrunk into a band, with the template's sky above and below it and the title on
 top. That frame puts the template's look around every concept, and a scene that draws its own lyrics leaves the
