@@ -2,22 +2,23 @@
 
 song2mv is a command-line tool; a global tool install is the natural fit. Install only the parts you use.
 
-song2mv is **not on PyPI yet**. Until it is, install from GitHub with [uv](https://docs.astral.sh/uv/):
+Install it from PyPI with [uv](https://docs.astral.sh/uv/):
 
 ```sh
-uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"    # sync + beats + check
-uv tool install --python 3.13 "song2mv[beats] @ git+https://github.com/yongjip/song2mv"   # beats + click + check
-uv tool install "song2mv @ git+https://github.com/yongjip/song2mv"                        # check, sheet (and render)
+uv tool install --python 3.13 "song2mv[sync]"     # sync + beats + check
+uv tool install --python 3.13 "song2mv[beats]"    # beats + click + check
+uv tool install song2mv                           # check, sheet (and render)
 ```
 
 Try it without installing:
 
 ```sh
-uvx --python 3.13 --from "song2mv[sync] @ git+https://github.com/yongjip/song2mv" song2mv sync song.mp3 --language en
+uvx --python 3.13 --from "song2mv[sync]" song2mv sync song.mp3 --language en
 ```
 
-Inside an existing virtual environment, `python -m pip install "song2mv[sync] @ git+https://github.com/yongjip/song2mv"`
-works too. On Homebrew or Debian-managed Pythons a bare `pip install` outside a virtualenv is rejected (PEP 668); use
+Inside an existing virtual environment, `python -m pip install "song2mv[sync]"` works too. The latest `main`, before
+its next release, installs from GitHub: `uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"`.
+On Homebrew or Debian-managed Pythons a bare `pip install` outside a virtualenv is rejected (PEP 668); use
 `uv tool` there. To add an extra later, run `uv tool install --force` with the extra.
 
 After the first PyPI release these become `uv tool install "song2mv[sync]"`, `pipx install "song2mv[sync]"` and

@@ -30,19 +30,19 @@ Two songs made with Suno, each turned into a music video and a Short by Claude C
 
 ## Install
 
-song2mv is not on PyPI yet, so install it from GitHub with [uv](https://docs.astral.sh/uv/):
+Install it with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv tool install --python 3.13 "song2mv[sync] @ git+https://github.com/yongjip/song2mv"
+uv tool install --python 3.13 "song2mv[sync]"
 ```
 
 Or run it once without installing anything:
 
 ```bash
-uvx --python 3.13 --from "song2mv[sync] @ git+https://github.com/yongjip/song2mv" song2mv --help
+uvx --python 3.13 --from "song2mv[sync]" song2mv --help
 ```
 
-Inside a virtual environment, `pip install "song2mv[sync] @ git+https://github.com/yongjip/song2mv"` works too.
+Inside a virtual environment, `pip install "song2mv[sync]"` works too.
 
 You also need **ffmpeg** (`brew install ffmpeg`, `apt install ffmpeg`). `render` also needs **Node 18+**.
 

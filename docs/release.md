@@ -12,7 +12,7 @@ workflows. This checks archive transfer without running Trusted Publishing or cr
 Merging to `main` is not a reason to release. Every published version is immutable, gets mirrored, and asks every
 user to upgrade.
 
-- Feature and fix changes add their `CHANGELOG.md` entry under `## Unreleased` (until 0.1.0 is out, in `docs/pre-release-log.md`) and leave the version alone.
+- Feature and fix changes add their `CHANGELOG.md` entry under `## Unreleased` and leave the version alone.
 - Ship a patch release promptly only for a regression in the latest release, a broken install path (PyPI, `uvx`,
   extras), or a security fix. Fold everything else into the next release.
 - At most one feature (minor) release per week.

@@ -4,7 +4,9 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 
 ## Unreleased
 
-First release (0.1.0). The changes made while building it, with the measurements behind them, are in
+## 0.1.0 — 2026-10-29
+
+First release. The changes made while building it, with the measurements behind them, are in
 [docs/pre-release-log.md](https://github.com/yongjip/song2mv/blob/main/docs/pre-release-log.md).
 
 - `song2mv sync`: a song and its lyrics in; a beat grid, word-timed lyrics, LRC, SRT and `mv.json` for the video

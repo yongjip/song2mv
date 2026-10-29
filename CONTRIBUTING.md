@@ -41,7 +41,7 @@ rendered SVG and mutation checks when changing this harness.
 ## Pull requests
 
 - Keep changes small and focused; one behaviour per pull request.
-- Add a `CHANGELOG.md` entry under `## Unreleased` (until 0.1.0 is out, in `docs/pre-release-log.md`). Do not bump the version.
+- Add a `CHANGELOG.md` entry under `## Unreleased`. Do not bump the version.
 - A change to a JSON output follows `docs/contract.md` (new fields are fine; renames bump `schema_version`).
 - New commands, flags, config keys or output files explain the workflow they serve (`docs/product-scope.md`).
 - English only: code, docs, test data and commit messages.
