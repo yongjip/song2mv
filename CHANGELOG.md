@@ -8,6 +8,7 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 - The README identifies the model and effort setting next to the video examples and notes that results can vary.
 
 ### Added
+- A layered SVG brand kit with color, single-ink and reversed logos, icons, transparent raster exports, and a rebuild script. The README shows the logo in light and dark themes.
 - Quality levels in the skill: medium, high (the default) and max set, phase by phase, how many agents draw, how
   many review, for how many rounds (one, two, up to four), and at max a verifier for each report's high-severity
   findings and a first round with one reviewer per lens (bodies, framing, continuity, motion, story, text and 9:16).

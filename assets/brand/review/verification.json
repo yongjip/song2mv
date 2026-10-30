@@ -1,0 +1,134 @@
+{
+  "reference_size": [
+    1254,
+    1254
+  ],
+  "comparison_crop": [
+    160,
+    280,
+    1210,
+    1010
+  ],
+  "foreground_overlap_iou": 0.98258,
+  "required_layers": [
+    "body",
+    "eye-left",
+    "eye-right",
+    "pupil-left",
+    "pupil-right",
+    "mouth",
+    "drawing-arm",
+    "brush",
+    "painted-line",
+    "wordmark"
+  ],
+  "svg_files": 10,
+  "png_dimensions_and_transparency": {
+    "song2mv-avatar-512.png": {
+      "size": [
+        512,
+        512
+      ],
+      "transparent": false
+    },
+    "song2mv-icon-1024.png": {
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true
+    },
+    "song2mv-icon-128.png": {
+      "size": [
+        128,
+        128
+      ],
+      "transparent": true
+    },
+    "song2mv-icon-16.png": {
+      "size": [
+        16,
+        16
+      ],
+      "transparent": true
+    },
+    "song2mv-icon-256.png": {
+      "size": [
+        256,
+        256
+      ],
+      "transparent": true
+    },
+    "song2mv-icon-32.png": {
+      "size": [
+        32,
+        32
+      ],
+      "transparent": true
+    },
+    "song2mv-icon-48.png": {
+      "size": [
+        48,
+        48
+      ],
+      "transparent": true
+    },
+    "song2mv-icon-512.png": {
+      "size": [
+        512,
+        512
+      ],
+      "transparent": true
+    },
+    "song2mv-icon-64.png": {
+      "size": [
+        64,
+        64
+      ],
+      "transparent": true
+    },
+    "song2mv-logo-horizontal.png": {
+      "size": [
+        1920,
+        408
+      ],
+      "transparent": true
+    },
+    "song2mv-logo-monochrome.png": {
+      "size": [
+        1600,
+        1113
+      ],
+      "transparent": true
+    },
+    "song2mv-logo-reversed.png": {
+      "size": [
+        1600,
+        1113
+      ],
+      "transparent": true
+    },
+    "song2mv-logo-stacked.png": {
+      "size": [
+        1600,
+        1113
+      ],
+      "transparent": true
+    },
+    "song2mv-mascot.png": {
+      "size": [
+        1600,
+        833
+      ],
+      "transparent": true
+    },
+    "song2mv-wordmark.png": {
+      "size": [
+        1600,
+        410
+      ],
+      "transparent": true
+    }
+  },
+  "source_sha256": "20e81933be434737fe9b78e766b62154f9763c360ee270306b97e514cd25f67a"
+}
