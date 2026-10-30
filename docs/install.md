@@ -44,6 +44,11 @@ After the first PyPI release these become `uv tool install "song2mv[sync]"`, `pi
 
 Set `SONG2MV_CACHE` to move the render cache. On a Mac, `render` has Chrome draw on the GPU (Remotion's
 `--gl=angle`); `SONG2MV_GL=off` draws in software, as on Linux and Windows, and another value is passed to `--gl`.
+`render` renders a video in chunks of `SONG2MV_CHUNK` frames (900; 0 renders it in one piece), each with a Chrome
+of its own, and joins them without encoding them again. A chunk is rendered again after the computer slept (sleep
+kills Chrome's tabs mid-render, and Remotion can then wait for them forever), after Chrome crashed, or when no frame
+has come for `SONG2MV_STALL` seconds (180; 0 never). On a Mac, `render` keeps the computer awake while it runs, and
+awake with the lid closed while it is on power; on battery, closing the lid still puts it to sleep.
 On a Mac, `render` uses Google's build of the Chrome version Remotion pins (`node_modules/.song2mv-chrome`) instead of
 Remotion's own, which keeps V8's debug checks (its Linux builds turn them off): one of them stopped long renders of
 some scenes with "Page crashed!". Final videos take its JPEG frames at quality 100 (at 80 they came out 36 % larger).

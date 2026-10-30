@@ -3,10 +3,12 @@ import json
 import os
 import re
 import shutil
+import signal
 import socket
 import subprocess
 import sys
 import threading
+import time
 import wave
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -34,8 +36,8 @@ def test_check_measures_a_draft_on_as_many_frames_as_its_full_render(tmp_path, t
     assert len(decode_gray(draft, 64, 36)) == len(decode_gray(full, 64, 36)) == -(-round(float(to) * 30) // 3)
 
 
-def test_the_rendered_audio_starts_with_the_picture(tmp_path):
-    sr = 48000
+def click_track(tmp_path, sr: int = 48000):
+    """3 s of silence with clicks at 1, 1.5 and 2.25 s: the samples, and the WAV they are written to"""
     x = np.zeros(3 * sr)
     for t in (1.0, 1.5, 2.25):
         i = round(t * sr)
@@ -46,6 +48,12 @@ def test_the_rendered_audio_starts_with_the_picture(tmp_path):
         w.setsampwidth(2)
         w.setframerate(sr)
         w.writeframes((x * 32767).astype("<i2").tobytes())
+    return x, wav
+
+
+def test_the_rendered_audio_starts_with_the_picture(tmp_path):
+    sr = 48000
+    x, wav = click_track(tmp_path, sr)
     manifest = tmp_path / "wrote.txt"
     subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--audio", str(wav), "--from", "0",
                     "--to", "3", "--out", str(tmp_path), "--manifest", str(manifest)],
@@ -58,6 +66,72 @@ def test_the_rendered_audio_starts_with_the_picture(tmp_path):
     c = np.fft.irfft(np.fft.rfft(y[:n], 2 * n) * np.conj(np.fft.rfft(x[:n], 2 * n)))
     lag = int(np.argmax(c))
     assert min(lag, 2 * n - lag) <= 2
+
+
+def every_frame(mp4: str) -> np.ndarray:
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", mp4, "-fps_mode", "passthrough", "-vf", "scale=64:36,format=gray",
+                          "-f", "rawvideo", "-"], check=True, capture_output=True).stdout
+    return np.frombuffer(raw, dtype=np.uint8).reshape(-1, 36, 64).astype(float)
+
+
+def samples(mp4: str) -> np.ndarray:
+    return np.frombuffer(subprocess.run(["ffmpeg", "-v", "error", "-i", mp4, "-f", "s16le", "-"], check=True,
+                                        capture_output=True).stdout, dtype="<i2")
+
+
+def test_a_video_rendered_in_chunks_matches_one_rendered_in_one_piece(tmp_path):
+    _, wav = click_track(tmp_path)
+    made = {}
+    for chunk in ("0", "40"):  # 90 frames in one piece, and as 40 + 40 + 10
+        manifest = tmp_path / f"wrote-{chunk}.txt"
+        subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--audio", str(wav), "--from", "0",
+                        "--to", "3", "--out", str(tmp_path / chunk), "--manifest", str(manifest)],
+                       cwd=BUNDLED, check=True, capture_output=True, env={**os.environ, "SONG2MV_CHUNK": chunk})
+        made[chunk] = manifest.read_text(encoding="utf-8").split()[0]
+    one, chunks = every_frame(made["0"]), every_frame(made["40"])
+    assert len(one) == len(chunks) == 90
+    assert np.abs(one - chunks).mean(axis=(1, 2)).max() < 2  # encoded apart, so close rather than equal
+    # the same samples, joins included, but for rounding in Remotion's mix (±1 of 32768, by the first click)
+    assert np.abs(samples(made["0"]).astype(int) - samples(made["40"]).astype(int)).max() <= 1
+
+
+def family(pid: int) -> list[int]:
+    rows = [r.split() for r in subprocess.run(["ps", "-A", "-o", "pid=,ppid="], capture_output=True, text=True).stdout.splitlines()]
+    tree, todo = [], [pid]
+    while todo:
+        tree.append(todo.pop())
+        todo += [int(c) for c, parent in rows if int(parent) == tree[-1]]
+    return tree
+
+
+def test_a_chunk_is_rendered_again_after_the_computer_slept(tmp_path):
+    # as sleep does, render.mjs, Remotion and Chrome all stop for 20 s mid-chunk; render.mjs's watch timer fires late
+    p = subprocess.Popen(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--from", "0", "--to", "3",
+                          "--out", str(tmp_path)], cwd=BUNDLED, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    err = []
+    for line in p.stderr:
+        err.append(line)
+        if line.startswith("Rendered"):
+            frozen = family(p.pid)
+            for pid in frozen:
+                os.kill(pid, signal.SIGSTOP)
+            time.sleep(20)
+            for pid in frozen:
+                os.kill(pid, signal.SIGCONT)
+            break
+    err += p.stderr.readlines()
+    assert p.wait(timeout=300) == 0
+    assert any(line.startswith("the computer slept for") and "rendering it again" in line for line in err)
+    assert len(every_frame(str(next(tmp_path.glob("*.mp4"))))) == 90
+
+
+def test_a_chunk_that_shows_no_frame_is_rendered_again_then_given_up(tmp_path):
+    r = subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--from", "0", "--to", "1",
+                        "--out", str(tmp_path)], cwd=BUNDLED, capture_output=True, text=True, timeout=300,
+                       env={**os.environ, "SONG2MV_STALL": "0.001"})
+    assert r.returncode == 1
+    assert "rendering it again (try 3 of 3)" in r.stderr and "3 times: giving up" in r.stderr
+    assert not list(tmp_path.glob("*.mp4"))
 
 
 def test_a_render_does_not_connect_to_an_ipv6_only_studio_on_the_default_port(tmp_path):

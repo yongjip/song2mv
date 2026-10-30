@@ -15,13 +15,17 @@ Remotion is not MIT: free for individuals and companies with up to 3 employees, 
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import os
+import queue
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 from .. import __version__
@@ -34,6 +38,10 @@ NOT_COPIED = shutil.ignore_patterns("node_modules", "out", "__pycache__")
 RENDERED = re.compile(r"(Rendered|Encoded) (\d+)/(\d+)")
 PROGRESS = re.compile(r"(Bundling \d+%|Getting composition|Stitching|Downloading .*\d+%)")
 HEARTBEAT = 30.0  # seconds: a slow render or encode still says where it is
+STALL = 180.0  # seconds without a new frame before render.mjs renders a chunk again (SONG2MV_STALL; 0: never)
+RESTART = 120.0  # more seconds for that chunk's new Chrome to finish a frame, before the whole render is stopped
+STOP_WAIT = 10.0  # seconds for a stopped render to quit before what is left of it is killed
+TAB_CLOSED = re.compile(r"Session closed|Target closed")
 
 
 def cache_root() -> str:
@@ -115,21 +123,108 @@ def _audio_found(mv: dict, mv_json: str, tpl: str, audio: str | None) -> bool:
     return any(c and os.path.isfile(c) for c in candidates)
 
 
+def _stall_seconds() -> float:
+    raw = os.environ.get("SONG2MV_STALL", "")
+    try:
+        return float(raw) if raw else STALL
+    except ValueError:
+        raise Song2mvError(f"SONG2MV_STALL is {raw!r}: give it a number of seconds (0 never stops a render)") from None
+
+
+def _family(pid: int) -> list[int]:
+    """pid and everything it started, Chrome too (Remotion gives Chrome a process group of its own)"""
+    try:
+        rows = subprocess.run(["ps", "-A", "-o", "pid=,ppid="], capture_output=True, text=True).stdout.splitlines()
+    except OSError:
+        return [pid]
+    kids: dict[int, list[int]] = {}
+    for row in rows:
+        if row.strip():
+            child, parent = map(int, row.split())
+            kids.setdefault(parent, []).append(child)
+    family, todo = [], [pid]
+    while todo:
+        family.append(todo.pop())
+        todo += kids.get(family[-1], [])
+    return family
+
+
+def _alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except (ProcessLookupError, PermissionError):  # gone, or the number now belongs to someone else's process
+        return False
+    return True
+
+
+def _stop(p: subprocess.Popen) -> None:
+    """Ctrl-C to the render and all it started (on which Remotion kills its Chrome and quits), then SIGKILL to
+    whatever is still there after STOP_WAIT seconds."""
+    if os.name == "nt":
+        p.kill()
+        p.wait()
+        return
+    family = _family(p.pid)
+    for sig in (signal.SIGINT, signal.SIGKILL):
+        for pid in family:
+            with contextlib.suppress(ProcessLookupError, PermissionError):
+                os.kill(pid, sig)
+        deadline = time.monotonic() + STOP_WAIT
+        while time.monotonic() < deadline:
+            p.poll()  # reaps the render's own process
+            if not any(_alive(pid) for pid in family):
+                return
+            time.sleep(0.1)
+    p.wait()
+
+
+def _asleep(since: float) -> float:
+    """Seconds the computer slept since `since`, a time.time() - time.monotonic() read earlier: the monotonic clock
+    stops during sleep."""
+    return time.time() - time.monotonic() - since
+
+
+def _pump(stream, lines: queue.Queue) -> None:
+    for raw in stream:
+        lines.put(raw)
+    lines.put(None)
+
+
 def _run_filtered(args: list[str], cwd: str) -> int:
     """Run the Remotion render with its output on stderr (with --json, stdout carries only the JSON result).
     Without a terminal, Remotion prints a line per frame — thousands per song — so rendering and encoding each become
-    a line per 25%, and one at least every HEARTBEAT seconds."""
+    a line per 25%, and one at least every HEARTBEAT seconds; a line repeated word for word shows once.
+    When Chrome dies mid-render, Remotion can wait for its frames forever: render.mjs renders such a chunk again after
+    SONG2MV_STALL seconds, and a render whose frames stop for RESTART seconds more is stopped here with an error (a
+    template copied before render.mjs did that, or a chunk that never comes back)."""
     if sys.stderr.isatty():
         return subprocess.run(args, cwd=cwd, stdout=sys.stderr).returncode
+    stall = _stall_seconds()
+    stall = stall + RESTART if stall > 0 else 0
     p = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
-    assert p.stdout
+    lines: queue.Queue[str | None] = queue.Queue()
+    threading.Thread(target=_pump, args=(p.stdout, lines), daemon=True).start()
     shown: dict[str, int] = {}
-    last = time.monotonic()
-    for raw in p.stdout:
+    counts: dict[str, tuple[int, int]] = {}
+    said: set[str] = set()
+    repeats = 0
+    closed = False
+    last = moved = time.monotonic()
+    wall = time.time() - last
+    while True:
+        try:
+            raw = lines.get(timeout=min(5.0, stall / 4) if stall > 0 else None)
+        except queue.Empty:
+            raw = ""
+        if raw is None:
+            break
         line = raw.rstrip()
         m = RENDERED.match(line)
         if m:
             what, done, total = m.group(1).lower(), int(m.group(2)), max(1, int(m.group(3)))
+            if counts.get(what, (-1, 0))[0] != done:
+                moved = time.monotonic()
+            counts[what] = (done, total)
             quarter = 4 * done // total
             if quarter > shown.get(what, -1) or time.monotonic() - last >= HEARTBEAT:
                 shown[what] = max(quarter, shown.get(what, -1))
@@ -137,9 +232,24 @@ def _run_filtered(args: list[str], cwd: str) -> int:
                 print(f"  {what} {done}/{total} frames", file=sys.stderr)
             if done >= total:
                 shown[what] = -1  # the next aspect starts over
-            continue
-        if line and not PROGRESS.match(line):
+        elif line in said:
+            repeats += 1
+        elif line and not PROGRESS.match(line):
+            said.add(line)
+            closed = closed or bool(TAB_CLOSED.search(line))
             print(line, file=sys.stderr)
+        due = [f"{what} {done}/{total}" for what, (done, total) in counts.items() if done < total]
+        if stall > 0 and due and time.monotonic() - moved > stall:
+            _stop(p)
+            slept = _asleep(wall)
+            raise Song2mvError(
+                f"the render stalled at {', '.join(due)} frames: none finished for {stall:g} s"
+                + (f"; the computer slept for {slept:.0f} s during it" if slept > 10 else "")
+                + ("; Chrome had closed one of its tabs" if closed else ""),
+                hint="a computer that sleeps mid-render (a laptop's lid closed on battery) stops Chrome: keep it awake "
+                     "and plugged in, then render again (SONG2MV_STALL sets the wait in seconds)")
+    if repeats:
+        print(f"  ({repeats} repeated line{'s' if repeats > 1 else ''} not shown)", file=sys.stderr)
     return p.wait()
 
 

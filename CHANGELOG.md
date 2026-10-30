@@ -2,6 +2,17 @@
 
 All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.md for what changes may break.
 
+## Unreleased
+
+### Fixed
+- A long render no longer hangs when the computer sleeps or Chrome crashes. Two final renders here stopped the
+  minute a laptop's lid was closed on battery: sleep killed Chrome's tabs, and Remotion's recovery then waited
+  forever. `render` now keeps a Mac awake while it runs (with the lid closed too, on power), renders a video in
+  chunks of 900 frames (`SONG2MV_CHUNK`), each with a Chrome of its own, joined without encoding them again, and
+  renders a chunk again after the computer slept, after Chrome crashed, or when no frame has come for 180 s
+  (`SONG2MV_STALL`). Whatever stops anyway fails with the frame it stopped at instead of waiting. A line Remotion
+  repeats word for word shows once.
+
 ## 0.2.0 — 2026-10-30
 
 ### Added

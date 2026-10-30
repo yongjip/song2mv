@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 
 import pytest
 
@@ -153,6 +154,78 @@ def test_a_slow_encode_still_prints_a_line_every_heartbeat(capsys, monkeypatch):
     runner._run_filtered([sys.executable, "-c", f"print({child!r})"], ".")
     assert capsys.readouterr().err.splitlines() == ["  encoded 40/100 frames", "  encoded 41/100 frames",
                                                    "  encoded 42/100 frames"]
+
+
+def test_a_render_whose_frames_stop_is_stopped_with_an_error(tmp_path, monkeypatch):
+    monkeypatch.setenv("SONG2MV_STALL", "1")
+    monkeypatch.setattr(runner, "RESTART", 0.0)
+    pid = tmp_path / "pid"
+    # as Remotion hung: a tab closed, then the same frame count and error over and over; its own child must go too
+    child = ("import subprocess, sys, time\n"
+             "kid = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+             f"open({str(pid)!r}, 'w').write(str(kid.pid))\n"
+             "print('Rendered 1/10', flush=True)\n"
+             "while True:\n"
+             "    print('Rendered 2/10', flush=True)\n"
+             "    print('Error: Protocol error (Page.bringToFront): Session closed.', flush=True)\n"
+             "    time.sleep(0.1)\n")
+    t = time.monotonic()
+    with pytest.raises(runner.Song2mvError) as e:
+        runner._run_filtered([sys.executable, "-c", child], ".")
+    assert time.monotonic() - t < 10
+    assert e.value.message == "the render stalled at rendered 2/10 frames: none finished for 1 s; Chrome had closed one of its tabs"
+    assert gone(int(pid.read_text()))
+
+
+def gone(pid: int) -> bool:
+    for _ in range(50):
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return True
+        time.sleep(0.1)
+    return False
+
+
+def test_a_stalled_render_that_ignores_ctrl_c_is_killed_with_its_chrome(tmp_path, monkeypatch):
+    monkeypatch.setenv("SONG2MV_STALL", "0.5")
+    monkeypatch.setattr(runner, "RESTART", 0.0)
+    monkeypatch.setattr(runner, "STOP_WAIT", 0.5)
+    pid = tmp_path / "pid"
+    # silent once stuck; its child in a session of its own, as Remotion starts Chrome
+    child = ("import signal, subprocess, sys, time\n"
+             "signal.signal(signal.SIGINT, signal.SIG_IGN)\n"
+             "kid = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], start_new_session=True)\n"
+             f"open({str(pid)!r}, 'w').write(str(kid.pid))\n"
+             "print('Rendered 1/10', flush=True)\n"
+             "time.sleep(60)\n")
+    with pytest.raises(runner.Song2mvError):
+        runner._run_filtered([sys.executable, "-c", child], ".")
+    assert gone(int(pid.read_text()))
+
+
+def test_a_render_that_stalled_after_the_computer_slept_says_so(monkeypatch):
+    monkeypatch.setenv("SONG2MV_STALL", "0.5")
+    monkeypatch.setattr(runner, "RESTART", 0.0)
+    monkeypatch.setattr(runner, "_asleep", lambda since: 600.0)
+    with pytest.raises(runner.Song2mvError) as e:
+        runner._run_filtered([sys.executable, "-c", "import time\nprint('Rendered 1/10', flush=True)\ntime.sleep(60)"], ".")
+    assert "the computer slept for 600 s during it" in e.value.message and "lid" in e.value.hint
+
+
+def test_a_slow_render_and_its_quiet_finish_are_not_stopped(capsys, monkeypatch):
+    monkeypatch.setenv("SONG2MV_STALL", "0.8")
+    monkeypatch.setattr(runner, "RESTART", 0.0)
+    child = ("import time\n"
+             "for k in range(5):\n"
+             "    print(f'Rendered {k}/4', flush=True)\n"
+             "    print('a warning repeated for every frame', flush=True)\n"
+             "    time.sleep(0.3)\n"
+             "print('Encoded 4/4', flush=True)\n"
+             "time.sleep(1.2)\n")  # muxing the audio: no frames left to count
+    assert runner._run_filtered([sys.executable, "-c", child], ".") == 0
+    err = capsys.readouterr().err.splitlines()
+    assert err.count("a warning repeated for every frame") == 1 and err[-1] == "  (4 repeated lines not shown)"
 
 
 def capture_render(tmp_path, monkeypatch, render_mjs):

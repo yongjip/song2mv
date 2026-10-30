@@ -615,8 +615,13 @@ measured 9.20 at full size). When the stretch passes, render it once without `--
 only ever sees full renders, since a draft looks choppy and soft.
 Before that full render, look at a few frames at full size (`--still T` renders one): a contact sheet's small tiles
 hid a scene drawn twice, a band across the picture that cost one trial its final render.
-Run one full-size render, still or sync at a time: each uses every core, and two at once have hung, in one template
-copy and in two (two songs' final videos both stopped about ten minutes in, their pages closed).
+Run one full-size render, still or sync at a time: each uses every core, so two at once each take about twice as
+long. Keep the computer awake through a render: both final renders that hung here (two songs at once, ten minutes
+in; one alone, at 79 % after half an hour) stopped the minute a laptop's lid was closed on battery, and the Mac's sleep
+killed Chrome's tabs. `render` now keeps a Mac awake (with the lid closed too, on power), renders a video in chunks
+of 900 frames, each with a Chrome of its own, and renders a chunk again after the computer slept, after Chrome
+crashed, or when no frame has come for `SONG2MV_STALL` seconds (180); it says which. A render that stops anyway
+fails with an error naming the frame, instead of waiting.
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
 work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
 contact sheets outside `src/scenes/`. Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`
