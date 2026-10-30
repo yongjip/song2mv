@@ -37,6 +37,9 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   doorway.
 
 ### Fixed
+- `render --json` lists the storyboard's warnings (`storyboard: …`) under `warnings` too, once each, as it does the
+  kit's `arm:` faults. The guide no longer says a still prints arm faults: Remotion's stills print nothing the page
+  logs, so painters write each arm's `faults` on their test tiles.
 - A chunk whose Chrome browser process died mid-render is rendered again after `SONG2MV_STALL` seconds. Remotion
   then waits forever for the frames the dead browser had and repeats its last frame count every half second, and each
   repeat restarted the wait, so the render failed with an error 300 s later instead. With the browser killed in the

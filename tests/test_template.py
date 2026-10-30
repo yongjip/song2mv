@@ -271,6 +271,7 @@ import { arm, Song } from "../kit";
 export const Scene: React.FC<{ T: number }> = ({ T }) => {
   arm([0, 0], [T > 1.25 ? 150 : 60, 40], 50, 50, undefined, { holds: true, who: "probe right", T });
   arm([0, 0], [10, -20], 50, 50, [0, -1], { who: "probe left", T });
+  console.warn("storyboard: the probe's board never cuts");
   return <rect width={1920} height={1080} fill="#203040" />;
 };
 export const VerticalScene = null;
@@ -278,20 +279,27 @@ export const linesDrawnByScene = (_song: Song) => new Set<string>();
 """
 
 
-def test_each_arm_fault_is_listed_once_from_every_tab_and_chunk(tmp_path):
+def _arm_template(tmp_path):
     template = tmp_path / "video"
     shutil.copytree(BUNDLED, template, ignore=shutil.ignore_patterns("node_modules", "out"))
     os.symlink(os.path.join(BUNDLED, "node_modules"), template / "node_modules")
     (template / "src" / "scenes" / "index.ts").unlink()
     (template / "src" / "scenes" / "index.tsx").write_text(ARM_SCENES, encoding="utf-8")
+    return template
+
+
+def test_each_kit_warning_is_listed_once_from_every_tab_and_chunk(tmp_path):
     seen = tmp_path / "warnings.txt"
     r = subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--from", "0", "--to", "2", "--draft",
                         "--out", str(tmp_path), "--warnings", str(seen)],
-                       cwd=template, env={**os.environ, "SONG2MV_CHUNK": "10"}, check=True, capture_output=True, text=True)
-    left, right = seen.read_text(encoding="utf-8").splitlines()
+                       cwd=_arm_template(tmp_path), env={**os.environ, "SONG2MV_CHUNK": "10"}, check=True, capture_output=True, text=True)
+    arms = [line for line in seen.read_text(encoding="utf-8").splitlines() if line.startswith("arm:")]
+    left, right = sorted(arms)
     assert re.fullmatch(r"arm: probe left: folded into a V, elbow up at 0\.\d0 s", left), left
     assert re.fullmatch(r"arm: probe right: out of reach at 1\.[3-9]0 s", right), right
-    assert r.stderr.count("probe left") == 1 and r.stderr.count("probe right") == 1, r.stderr
+    assert "storyboard: the probe's board never cuts" in seen.read_text(encoding="utf-8").splitlines()
+    for said in ("probe left", "probe right", "probe's board"):
+        assert r.stderr.count(said) == 1, r.stderr
 
 
 WIDE_SCENES = """

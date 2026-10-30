@@ -308,14 +308,13 @@ section at a time, a review a stretch at a time) and expect less drawing.
    into `<work>/video/src/scenes/assets/` and list each piece's props, size and origin in `<work>/ASSETS.md`.
 2. **Fit tiles.** Before any builder starts, draw every touch the lyric map has (hand in hand, a hug, a carry, two at
    a table, hands on a wheel) with the painters' pieces at the scenes' scale, as tiles in
-   `<work>/video/src/scenes/concepts/` rendered with step 3's `Concepts` command, and look at the hands at 1:1 and
-   at every `arm:` line the render prints. A pose that fails here fails in every board that uses it: send it back to
-   its painter now. At high and max, give
-   the galleries and fit tiles to a fresh reviewer too (`briefs/review.md`, "the pieces") before any builder
-   starts. Name in
-   `<work>/ASSETS.md` the anchor function each touch uses (where a hand grips, where a child sits on a hip). Give
-   the pieces now, as props, the variants the continuity table asks for (shoes off, a coat off, a bag on): in one
-   video the child piece had no socks, and four builders each faked them their own way.
+   `<work>/video/src/scenes/concepts/` rendered with step 3's `Concepts` command, and look at the hands at 1:1 and at
+   each arm's `faults`, printed on its tile: a still shows nothing the page logs. A pose that fails here fails in
+   every board that uses it: send it back to its painter now. At high and max, give the galleries and fit tiles to a
+   fresh reviewer too (`briefs/review.md`, "the pieces") before any builder starts. Name in `<work>/ASSETS.md` the
+   anchor function each touch uses (where a hand grips, where a child sits on a hip). Give the pieces now, as props,
+   the variants the continuity table asks for (shoes off, a coat off, a bag on): in one video the child piece had no
+   socks, and four builders each faked them their own way.
 3. **The builders' frame.** In `<work>/video`: a section file per builder exporting an empty `Board[]`, a
    `boards.tsx` that joins them in song order, `index.ts` exporting `Scene`, `VerticalScene` and `linesDrawnByScene`
    from it, and the files every board shares (the look, an overlay). Typecheck it.
@@ -651,9 +650,9 @@ killed Chrome's tabs. `render` now keeps a Mac awake (with the lid closed too, o
 of 900 frames, each with a Chrome of its own, and renders a chunk again after the computer slept, after Chrome
 crashed, or when no frame has come for `SONG2MV_STALL` seconds (180); it says which. A render that stops anyway
 fails with an error naming the frame, instead of waiting.
-Arms drawn with the kit's `arm()` print the first time each arm shows a fault a viewer would see
-(`arm: WHO: FAULT at T s`), and a video's `render --json` lists them under `warnings` (a still only prints them). Fix
-each and render again until none is left, or tell the reviewers why it looks right.
+A video render prints the first time each arm drawn with the kit's `arm()` shows a fault a viewer would see
+(`arm: WHO: FAULT at T s`), and `render --json` lists them, with the storyboard's warnings, under `warnings`; a
+still prints neither. Fix each and render again until none is left, or tell the reviewers why it looks right.
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
 work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
 contact sheets outside `src/scenes/`. Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`

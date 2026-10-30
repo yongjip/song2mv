@@ -45,16 +45,17 @@ Section builders then film your pieces all through the song, so a weak piece sho
    something there (another hand, a prop), so that a target out of reach is reported; a hanging or outstretched arm is
    straight anyway. Pass `who` (the `id` and which arm) and `T` on every arm, and `head: { c: [x, y], r }` (the skull,
    with the hair above the ears) on an arm drawn in front of the head, except in a pose that puts the hand at the face
-   on purpose (a phone, a microphone, a hand on a cheek). A render then prints what a viewer would see wrong, the
-   first time each arm shows it (`arm: WHO: FAULT at T s`): out of reach, folded into a V with the elbow up, squashed
-   short, a hand on its own head. A hand target a scene passes in (a `hand` prop) is a stage point: turn it into the
-   piece's own drawing with `toLocal(hand, { x, y, s, flip })`, and export each hand's spot at s = 1 (a function of
-   the pose) for scenes to place with `toStage`. Hand in hand with a child, an adult's anchor puts the child where the
-   joined hands sit out to her side, clear of her head and within her reach. A standing adult's hanging hand is level
-   with a toddler's head and bigger than hers, so the joined hands touch her hair unless the adult bends to bring them
-   down to her shoulder: in one video they sat on the toddler's temple in every scene. Reaching round someone, the
-   hands go to their back or under them, never to their shoulders or head, and a hug or carry splits the figure into
-   back and front layers so the far arm passes behind the other figure.
+   on purpose (a phone, a microphone, a hand on a cheek). A video render then prints what a viewer would see wrong,
+   the first time each arm shows it (`arm: WHO: FAULT at T s`): out of reach, folded into a V with the elbow up,
+   squashed short, a hand on its own head. A still prints nothing the page logs, so in your test tiles write each
+   arm's `faults` (what `arm()` returns) beside the figure. A hand target a scene passes in (a `hand` prop) is a stage
+   point: turn it into the piece's own drawing with `toLocal(hand, { x, y, s, flip })`, and export each hand's spot at
+   s = 1 (a function of the pose) for scenes to place with `toStage`. Hand in hand with a child, an adult's anchor
+   puts the child where the joined hands sit out to her side, clear of her head and within her reach. A standing
+   adult's hanging hand is level with a toddler's head and bigger than hers, so the joined hands touch her hair unless
+   the adult bends to bring them down to her shoulder: in one video they sat on the toddler's temple in every scene.
+   Reaching round someone, the hands go to their back or under them, never to their shoulders or head, and a hug or
+   carry splits the figure into back and front layers so the far arm passes behind the other figure.
 7. **Hands read as hands:** a mitten with a thumb at least, never a plain disc or a cuff over a blob, and a hand that
    holds something closes on it. A hand drawn on a front layer takes its forearm with it, never a hand alone, and a
    forearm seen edge-on keeps at least half its width.

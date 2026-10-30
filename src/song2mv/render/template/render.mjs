@@ -23,7 +23,8 @@
  *          and the JSON object in FILE, such as {"T": 33.1} for Concepts or {"times": [12, 33.1]} for Contact;
  *          --frame N takes frame N, written as BASE-ID-N.png)
  *          --manifest FILE (append the path of every file written, one per line; else they are printed)
- *          --warnings FILE (append each fault the kit's arm() printed, `arm: WHO: FAULT at T s`, as first seen)
+ *          --warnings FILE (append each warning the kit printed in a video render, its `arm:` and `storyboard:`
+ *          lines, once, as first seen; Remotion's stills print nothing from the page)
  *
  * The audio is never copied into this folder: a temporary public folder outside it holds a link to it.
  * Remotion mixes the audio to WAV and its ffmpeg writes the AAC: Remotion's own AAC starts 2048 samples late.
@@ -230,7 +231,10 @@ function family(pid) {
   return all;
 }
 
-const arms = new Map();
+const warned = new Map();
+const KIT_LINE = /\b((?:arm|storyboard): .+?)(?: at \d+(?:\.\d+)? s)?$/;
+const kitLine = (line) => KIT_LINE.exec(line.replace(/\x1b\[[0-9;]*m/g, ""));
+const warnOnce = (kit) => warned.has(kit[1]) || (warned.set(kit[1], kit[0]), console.warn(kit[0]));
 
 /**
  * One Remotion run in the background. Its frame counts become the whole video's (`at` frames come before it); its
@@ -247,8 +251,8 @@ function remotionRun(args, at, total) {
     let quiet = 0, slept = 0, stalled = false, crashed = false, kill = null;
     const counts = {};
     const said = (line) => {
-      const fault = /\b(arm: .+?)(?: at \d+(?:\.\d+)? s)?$/.exec(line.replace(/\x1b\[[0-9;]*m/g, ""));
-      if (fault) return arms.has(fault[1]) || (arms.set(fault[1], fault[0]), console.warn(fault[0]));
+      const kit = kitLine(line);
+      if (kit) return warnOnce(kit);
       const m = /^(Rendered|Encoded) (\d+)\/\d+/.exec(line);
       crashed ||= /crashed|Target closed|Session closed|timed out/i.test(line);
       if (!m) return line && console.error(line);
@@ -384,6 +388,6 @@ if (flag("studio")) {
     if (maxMb && !draft && fs.existsSync(made)) fit(made, maxMb);
     place(made, path.join(outDir, `${base}-${id.slice(6)}${range}${draft ? "-draft" : ""}.mp4`));
   }
-  if (opt("warnings")) fs.appendFileSync(opt("warnings"), [...arms.values()].map((line) => line + "\n").join(""));
 }
+if (opt("warnings")) fs.appendFileSync(opt("warnings"), [...warned.values()].map((line) => line + "\n").join(""));
 cleanup();
