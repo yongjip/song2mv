@@ -9,11 +9,15 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 - Two brief templates next to the skill for a video split among agents: `briefs/assets.md` for the painters of the
   shared pieces, `briefs/section.md` for one builder per section. The skill says how to set up, split and merge.
 - A review step: `briefs/review.md` sends fresh agents over the finished render, a stretch each, to crop every figure
-  at 1:1 and report what a viewer would catch. In two videos it found about 70 defects after every check passed.
+  at 1:1 and report what a viewer would catch. In two videos it found about 120 defects after every check passed.
 - `limb()` in the kit solves an elbow or knee that bends toward a side you name, whichever side of the body the
   target is on, and reports how far it reaches and how sharply it bends.
 
 ### Changed
+- The guide and briefs add what a character redesign taught: the variants the continuity table needs go into the
+  pieces before the builders start, pictures of a character draw from its face, a turn needs an in-between
+  pose, how many agents render at once, and asking for a photo or clip of the real people a song is about,
+  kept out of repositories.
 - The guide runs full-size renders one at a time, two template copies included: two final videos rendered at once
   both stopped about ten minutes in. Drafts may still render side by side.
 - The README says how its two demo videos were made, and its example asks for a music video, not a lyric video.

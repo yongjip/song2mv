@@ -64,7 +64,7 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
 7. **Review before you deliver.** `check` does not see an arm folded into a V or a face cut at the eyes. Give the
    finished render to fresh agents with the skill's `briefs/review.md`, a stretch each, or review it yourself with
    that brief, crop by crop, when you cannot start agents. Fix every high and medium finding and have the fixed
-   stretches looked at again. In two videos this found about 70 defects after every check had passed.
+   stretches looked at again. In two videos this found about 120 defects after every check had passed.
 8. **Every command takes `--json`.** Progress goes to stderr, stdout carries one object with `schema_version` and
    `ok`. Exit code 2 is an error: read `error.message` and do what `error.hint` says. Exit code 1 only means `check`
    found a failing check. Check `schema_version` before relying on field names (docs/contract.md).

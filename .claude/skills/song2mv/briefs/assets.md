@@ -20,7 +20,9 @@ Section builders then film your pieces all through the song, so a weak piece sho
    height beside that adult at the same s: a toddler of one to two about half, a child of four or five about 0.6.
    Count heads against the style's adult (the kit's is about 6 heads tall): a toddler about 2 fewer, with short,
    chubby limbs, arms that reach just over the head and a round belly; a child of four or five 1 to 1.5 fewer. Size
-   alone does not make a child younger: drawn with a 5-year-old's long legs, a small child still reads as five.
+   alone does not make a child younger: drawn with a 5-year-old's long legs, a small child still reads as five. A
+   piece that pictures a character (a photo, a drawing, a face on a screen) draws it from that character's face, so
+   a redesign reaches it too: one desk photo kept the old child after she was redrawn.
 3. **No logos, wordmarks, letters or brand symbols** on anything, and no real person's face. Shapes and colours
    only.
 4. **One look for every painter.** TODO: the concept's style in two or three rules. For flat illustration: two or
@@ -46,7 +48,8 @@ Section builders then film your pieces all through the song, so a weak piece sho
 8. **Motion through props** (`legs` 0–1, `flame` 0–1, `distance` for wheels, `pose` and `phase` for a character),
    plus small idle motion from `T` where it helps (a blinking light, a flickering flame). Where a scene moves a
    person from one pose to another inside a shot (sits down, reaches up), give the change a 0–1 prop or a hand
-   target, so it can take 0.2–0.6 s instead of snapping in one frame.
+   target, so it can take 0.2–0.6 s instead of snapping in one frame. A turn from facing us to side-on needs a
+   three-quarter pose between them, or it snaps however smoothly the arms move.
 9. **Sizes at s = 1**, in each doc comment. People match the kit's `Person`, about 300 px tall at s = 1.
 10. **Past the stage's bottom edge.** Ground, floors, walls and sky run on down to about y 3000: the 9:16 frame shows
     below y 1080, the further the wider its shot.

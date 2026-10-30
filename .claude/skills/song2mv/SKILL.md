@@ -36,7 +36,11 @@ song's rights, or a lyric only the user knows.
   wheels). Needs ffmpeg; `render` needs Node 18+ and installs Remotion
   and a headless Chrome (~700 MB) on its first run.
 - **What they want**: full 16:9 video, 9:16 short(s), LRC/SRT only, or all. Title text. Mood or references. If you
-  make the song too (Suno and the like), name a BPM in the style prompt: it tends to give a steady tempo.
+  make the song too (Suno and the like), name a BPM in the style prompt: it tends to give a steady tempo. If the song
+  is about real people (a family, a couple), ask whether they would share a photo or a short clip: one user's family
+  photo and a clip of their toddler running gave the characters their hair and clothes and the run into the reunion,
+  and made the video theirs. Take the look and the movement in the video's own style, not a portrait, and leave the
+  files where the user put them: never in a repository or anything published.
 
 ## 1. Timing
 
@@ -280,7 +284,9 @@ review a stretch at a time) and expect less drawing.
    a table, hands on a wheel) with the painters' pieces at the scenes' scale, as tiles in
    `<work>/video/src/scenes/concepts/` rendered with step 3's `Concepts` command, and look at the hands at 1:1. A
    pose that fails here fails in every board that uses it: send it back to its painter now. Name in
-   `<work>/ASSETS.md` the anchor function each touch uses (where a hand grips, where a child sits on a hip).
+   `<work>/ASSETS.md` the anchor function each touch uses (where a hand grips, where a child sits on a hip). Give
+   the pieces now, as props, the variants the continuity table asks for (shoes off, a coat off, a bag on): in one
+   video the child piece had no socks, and four builders each faked them their own way.
 3. **The builders' frame.** In `<work>/video`: a section file per builder exporting an empty `Board[]`, a
    `boards.tsx` that joins them in song order, `index.ts` exporting `Scene`, `VerticalScene` and `linesDrawnByScene`
    from it, and the files every board shares (the look, an overlay). Typecheck it.
@@ -295,7 +301,8 @@ A copy is `<work>/video` copied to `<work>/video-<name>/` without `node_modules`
 `song2mv render <work>/mv.json --template <work>/video-<name>` links it to the shared Remotion install (where its
 `package-lock.json` differs from this song2mv's, it installs its own, about 500 MB). Each agent renders only in its own
 copy, since one half-edited file breaks every render that bundles it. Their drafts may render at the same time while
-memory lasts (one render takes about 2.3 GB); a full-size render runs alone (step 5).
+memory lasts (one render takes about 2.3 GB); a full-size render runs alone (step 5). Nine agents rendering at once
+on a 12-core, 24 GB Mac stretched one minute-long draft to 25 minutes: run that many in two waves.
 
 **Plan the cuts with the kit; don't write cut logic.** In five trial videos every agent wrote 750–1200 lines of scene
 code and rebuilt the same cut machinery, and one lost half an hour iterating cut plans against `check`. The kit has it:
@@ -660,7 +667,7 @@ word has landed: in one run the lines' middle frames showed the pictures of 26 o
   needs its event.
 
 **Review it like a viewer, with fresh eyes.** `check` measures motion, cuts and coverage; it does not see an arm
-folded into a V. In the two videos that taught this, six reviewer agents, about 20 minutes each, found about 70
+folded into a V. In the two videos that taught this, six reviewer agents, about 20 minutes each, found about 120
 defects after every check had passed, such as arms folded into a V and faces cut at the eyes by the frame's edge
 (`briefs/review.md` lists what they look for). Before you deliver a full render:
 
