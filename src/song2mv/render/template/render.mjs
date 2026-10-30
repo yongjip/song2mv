@@ -233,21 +233,27 @@ function family(pid) {
  * One Remotion run in the background. Its frame counts become the whole video's (`at` frames come before it); its
  * other lines pass through. It is stopped when the computer has slept (Chrome's tabs die with the GPU; the watch
  * timer then fires late, as nothing runs during sleep: Node's own clocks run on through it on a Mac) or when no
- * frame has come for STALL seconds awake: Ctrl-C, on which Remotion kills its Chrome and quits, then SIGKILL to all
- * it started if it is still there 10 s later. Resolves to { how: ok, slept, stalled, crashed (it failed after Chrome
- * crashed or a frame timed out) or failed, slept: seconds asleep }.
+ * frame has come for STALL seconds awake (a Remotion waiting for the frames of a Chrome that died repeats its last
+ * count): Ctrl-C, on which Remotion kills its Chrome and quits, then SIGKILL to all it started if it is still there
+ * 10 s later. Resolves to { how: ok, slept, stalled, crashed (it failed after Chrome crashed or a frame timed out) or
+ * failed, slept: seconds asleep }.
  */
 function remotionRun(args, at, total) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [cli, ...args], { cwd: HERE, stdio: ["ignore", "pipe", "pipe"] });
     let quiet = 0, slept = 0, stalled = false, crashed = false, kill = null;
+    const counts = {};
     const said = (line) => {
       const m = /^(Rendered|Encoded) (\d+)\/\d+/.exec(line);
       crashed ||= /crashed|Target closed|Session closed|timed out/i.test(line);
       if (!m) return line && console.error(line);
-      quiet = 0;
-      if (process.stderr.isTTY) process.stderr.write(`\r${m[1]} ${at + Number(m[2])}/${total}  `);
-      else console.error(`${m[1]} ${at + Number(m[2])}/${total}`);
+      const n = Number(m[2]);
+      if (n > (counts[m[1]] ?? -1)) {
+        counts[m[1]] = n;
+        quiet = 0;
+      }
+      if (process.stderr.isTTY) process.stderr.write(`\r${m[1]} ${at + n}/${total}  `);
+      else console.error(`${m[1]} ${at + n}/${total}`);
     };
     for (const stream of [child.stdout, child.stderr]) {
       let rest = "";

@@ -12,6 +12,13 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   117 recorded, 54 % were framing, 46 % continuity, 44 % bodies. At high and max a fresh reviewer looks at the
   painters' pieces before the build. `briefs/review.md` groups what a viewer finds wrong by lens.
 
+### Fixed
+- A chunk whose Chrome browser process died mid-render is rendered again after `SONG2MV_STALL` seconds. Remotion
+  then waits forever for the frames the dead browser had and repeats its last frame count every half second, and each
+  repeat restarted the wait, so the render failed with an error 300 s later instead. With the browser killed in the
+  second of three chunks (`SONG2MV_STALL=30`), a 10 s render now finishes with all 300 frames 41 s after the kill;
+  before, it failed 150 s after it.
+
 ## 0.2.1 — 2026-10-30
 
 ### Fixed
