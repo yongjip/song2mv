@@ -8,12 +8,15 @@ did not make it, so look at it fresh. Fix nothing. Other reviewers have the othe
 - **Your stretch:** TODO: the video file, the song time at its 0 s (0 for a full render; a short's `--from`, with or
   without `--hold`), your range in the video's own seconds (A to B), and what happens in it. Or: "the characters",
   every pose and prop the scenes use, wherever they appear, with the paths of the painters' galleries and the fit
-  tiles.
+  tiles. Or: "the pieces", before the build: the galleries and fit tiles only, at 1:1 (skip steps 1 and 3 below).
+- **Your lens:** TODO: "every lens", or one of bodies, framing, continuity, motion, story, text and 9:16 (at the max
+  quality level, in the first round, one reviewer per lens over the whole video). With one lens, report only what it
+  covers, and look at every frame that matters to it.
 - **Read first:** `<work>/lyrics-map.md` (what each line shows, on which word), `<work>/map.md` (the concept and the
   continuity table: who wears and carries what, where, at what time of day). Line times are in `<work>/mv.json`.
 - **Meant to look like that:** TODO: what is odd on purpose, or "nothing".
 
-## What a viewer finds wrong
+## What a viewer finds wrong, by lens
 
 1. **Bodies.**
    - An arm folded into a V, its elbow pointing up or across a face.
@@ -23,18 +26,19 @@ did not make it, so look at it fresh. Fix nothing. Other reviewers have the othe
    - Feet above or sunk into the floor.
    - In a hug or a carry, the wrong figure in front: an arm across a face.
    - A character who doesn't look their age: a toddler drawn like a school child.
-2. **Faces.** Cut by the frame's edge (at the eyes is the worst), under the captions, hidden behind a prop; an
-   expression against the line.
+2. **Framing.** A face cut by the frame's edge (at the eyes is the worst) or behind a prop; a face or the line's
+   prop under the captions; an empty or dull frame (half of it floor or sky), a subject too small to read, an awkward
+   crop; seams and odd colour patches.
 3. **Continuity.**
-   - A pose that snaps in one frame.
    - A prop that appears or vanishes inside a shot (a toy, a bag, shoes).
    - Clothes, props or the time of day against the continuity table or the shot before.
-   - A hand-over nobody sees.
-4. **Lyric fit.** The picture `lyrics-map.md` promises, on its key word: missing, late, small, or off screen.
-5. **Composition.** An empty or dull frame (half of it floor or sky), a subject too small to read, a subject under the
-   captions, an awkward crop.
-6. **Text and glitches.** Captions hard to read, text cut off or outside a short's safe box, flicker, seams, odd colour
-   patches.
+   - A hand-over nobody sees; a prop in front of the wrong figure.
+4. **Motion.** A pose that snaps in one frame; a turn from facing us to side-on with no in-between; a figure that
+   jumps across the stage between two frames of one shot; flicker.
+5. **Story.** The picture `lyrics-map.md` promises, on its key word: missing, late, small or off screen; an
+   expression against the line; a joke that is only in the sound, nowhere in the picture.
+6. **Text and 9:16.** Captions hard to read, text cut off or outside a short's safe box, a short's subject under the
+   captions or the apps' buttons.
 
 ## How
 
@@ -57,6 +61,14 @@ Use your own folder for every file, `<work>/review/<your stretch>/` (called `DIR
    `ffmpeg -ss T -t 1 -i VIDEO DIR/s_T_%03d.png`.
 4. Only then read the scenes, without changing them, to name the culprit: `<work>/video/src/scenes/`.
 
+With one lens, take the whole video instead of a stretch, and spend the time where the lens needs it:
+- **bodies** and **framing:** step 2 in every shot, at its first and its tightest frame (a shot's drift pushes in);
+- **continuity:** a list of what each character wears and carries in every shot, against the table;
+- **motion:** step 3 at every cut, pose change and hand-over;
+- **story:** a `--lines` sheet of every line id (a frame in each line's last word), then `--times` at a key word's
+  time from `<work>/mv.json` where the picture looks missing or late;
+- **text and 9:16:** every captioned line in the 16:9 video and in each short.
+
 Edit nothing, render nothing (others may be rendering), stop only the processes you started, and stay on this
 machine. Report within about 20 minutes, finished or not.
 
@@ -68,3 +80,11 @@ Findings, the worst first, each with:
 - the path of a crop that shows it, and the scene or piece that draws it if you can tell.
 
 Then what you checked and found fine, and what you did not cover.
+
+## Verifying a finding
+
+At the max quality level a verifier checks one report's high-severity findings before anyone fixes them. If that is
+your task, for each finding (its time, place in the frame and crop) cut its frames again yourself at full size, from
+the video, not from the reviewer's files, and step through one second around it. Then report three lines per
+finding: **real**, **not real** or **something else** (what is there instead); the piece or board that draws it; its
+severity (high, med or low). When the frames don't show it, it is not real.

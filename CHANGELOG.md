@@ -2,6 +2,16 @@
 
 All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.md for what changes may break.
 
+## Unreleased
+
+### Added
+- Quality levels in the skill: medium, high (the default) and max set, phase by phase, how many agents draw, how
+  many review, for how many rounds (one, two, up to four), and at max a verifier for each report's high-severity
+  findings and a first round with one reviewer per lens (bodies, framing, continuity, motion, story, text and 9:16).
+  In two videos, reviews found about 120 defects after every check had passed and a second round about 60 more; of
+  117 recorded, 54 % were framing, 46 % continuity, 44 % bodies. At high and max a fresh reviewer looks at the
+  painters' pieces before the build. `briefs/review.md` groups what a viewer finds wrong by lens.
+
 ## 0.2.1 — 2026-10-30
 
 ### Fixed

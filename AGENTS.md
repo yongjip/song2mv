@@ -45,7 +45,9 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    time `T`; text pops once and then holds still; lay out on the 1920×1080 stage. First read the lyrics line by line
    into `WORK/lyrics-map.md`: every line that does something (a pun, a sound-alike, a metaphor, a parody, a list)
    gets an event on its key word and, for a sound-alike, both words as text ("knead → need"); a picture of the line's
-   noun misses the joke. Show the user your reading and carry on. Then start from a concept: propose two or three, in
+   noun misses the joke. Show the user your reading and carry on. The skill's quality level (medium, high, max) sets
+   how many agents draw and review: high unless the user asks for another (with a weaker model, max); say which with
+   the concepts and don't wait. Then start from a concept: propose two or three, in
    different art styles, as stills side by side, and pick one; the skill's step 3 lists what the user judged fun
    (reactions, faces in view, a frame that makes the everyday an event). The scene kit in `DIR/src/kit/` (people,
    places, sky, objects, effects; style packs such as `paper` that put any object in another art style) is optional:
@@ -62,9 +64,10 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    Passing is necessary, not proof of fun — send a clip and ask what is
    boring. The user's answer outranks the numbers.
 7. **Review before you deliver.** `check` does not see an arm folded into a V or a face cut at the eyes. Give the
-   finished render to fresh agents with the skill's `briefs/review.md`, a stretch each, or review it yourself with
-   that brief, crop by crop, when you cannot start agents. Fix every high and medium finding and have the fixed
-   stretches looked at again. In two videos this found about 120 defects after every check had passed.
+   finished render to fresh agents with the skill's `briefs/review.md`, a stretch or a lens each, as many as the
+   quality level says, or review it yourself with that brief, crop by crop, when you cannot start agents. Fix every
+   high- and medium-severity finding and have the fixed stretches looked at again, for as many rounds as the level
+   says. In two videos this found about 120 defects after every check had passed.
 8. **Every command takes `--json`.** Progress goes to stderr, stdout carries one object with `schema_version` and
    `ok`. Exit code 2 is an error: read `error.message` and do what `error.hint` says. Exit code 1 only means `check`
    found a failing check. Check `schema_version` before relying on field names (docs/contract.md).

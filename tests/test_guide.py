@@ -13,7 +13,7 @@ SHELL_SEPARATOR = re.compile(r"&&|\|\||;|\s\|\s")
 
 def _code(text: str):
     """Every line of the fenced blocks, every inline code span and every flag named in prose."""
-    fence = re.compile(r"^```[^\n]*\n(.*?)^```", re.M | re.S)
+    fence = re.compile(r"^[ \t]*```[^\n]*\n(.*?)^[ \t]*```", re.M | re.S)
     for block in fence.findall(text):
         for line in block.replace("\\\n", " ").splitlines():
             yield re.sub(r"\s#.*", "", line).strip()

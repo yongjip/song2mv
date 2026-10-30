@@ -20,7 +20,28 @@ every judgement that needs ears goes to the user as a short clip or click track 
 5. Every piece in a gallery at 1:1, and every touch between characters in a fit tile, fixed before the scenes
    (step 4).
 6. `check` passing on the whole song (step 5).
-7. A review by fresh eyes with no high or medium finding left (steps 5 and 6).
+7. A review by fresh eyes at the quality level below, with no high- or medium-severity finding left (steps 5 and 6).
+
+**The quality level sets how many agents draw and how many review: high, unless the user asks for another** (step
+0). Every level runs the steps above. Of 117 findings that reviewers recorded in two videos after every check had
+passed, 54 % were framing (faces cut by the frame), 46 % continuity (props, clothes, time of day), 44 % bodies (hands,
+arms, poses), 22 % motion (snaps), 18 % text and 9:16 and 15 % story (a line's picture missing); one finding can count
+in several. A second round, after the fixes and a redesign of one character, found about 60 more.
+
+| | medium | high | max |
+| --- | --- | --- | --- |
+| For | a draft only the user watches | a video to post | a release, a client |
+| Concepts (step 3) | two stills | three stills | three stills |
+| Pieces (step 4) | you draw them | one painter per group, then a fresh reviewer on the galleries and fit tiles | as high |
+| Sections (step 4) | you, a section at a time | three or four builders, each a stretch of sections | as high |
+| Review (step 5) | one reviewer per two minutes of video | one per minute or two, one for the characters, one per short | as high, and in the first round one per lens over the whole video |
+| Rounds | one | two: a new reviewer on every changed stretch | up to four, until a round finds no high-severity finding and at most three medium-severity ones |
+| High-severity findings | fixed without a second check | fixed without a second check | confirmed from the frames by a verifier, one per report, before anyone fixes them |
+
+The six lenses (`briefs/review.md`) are **bodies**, **framing**, **continuity**, **motion**, **story**, and **text and
+9:16**; whether a reviewer with one lens finds more than one with all six is not measured yet. If you can choose
+models, give painters, reviewers and verifiers the strongest one: the painters' pieces cause most pose faults, and a
+weak reviewer catches less. With a weaker model, pick max.
 
 **Checkpoints don't block.** At each one, show the user what you have, with your pick and the reason in one line,
 and keep going; they can redirect you at any time. Decide timing by measurement, send the ear-check clips anyway and
@@ -41,6 +62,8 @@ song's rights, or a lyric only the user knows.
   photo and a clip of their toddler running gave the characters their hair and clothes and the run into the reunion,
   and made the video theirs. Take the look and the movement in the video's own style, not a portrait, and leave the
   files where the user put them: never in a repository or anything published.
+- **The quality level** (the table at the top): high, unless the user asks for another. Say which with the concepts;
+  don't wait for an answer.
 
 ## 1. Timing
 
@@ -270,12 +293,12 @@ Write the song's scenes in `<work>/video/src/scenes/` and export them from `src/
 **A whole song is more drawing than one agent's context holds: split it among agents** (two songs, audio to videos,
 in about two hours: five agents drew the shared pieces, then seven built the sections). The README's two demo videos
 were made this way, with far more drawing than one agent does: about 12,000 lines of pieces and scenes for one song,
-where one agent alone wrote 750–1200 (below). When you can start agents of your own, propose it to the user with the
-concepts. Their briefs are templates next to this guide, `briefs/assets.md`, `briefs/section.md` and
-`briefs/review.md`: copy them into the work folder, replace every `TODO` and `<work>`, and name each agent's group,
-section or stretch in its task. Without agents of your own, ask the user to give each brief to a session of its own;
-in one session, take the roles in turn with the same briefs (each group, the fit tiles, a section at a time, a
-review a stretch at a time) and expect less drawing.
+where one agent alone wrote 750–1200 (below). At high and max (the table at the top), split it when you can start
+agents of your own, and say so with the concepts. Their briefs are templates next to this guide, `briefs/assets.md`,
+`briefs/section.md` and `briefs/review.md`: copy them into the work folder, replace every `TODO` and `<work>`, and
+name each agent's group, section or stretch in its task. Without agents of your own, ask the user to give each brief
+to a session of its own; in one session, take the roles in turn with the same briefs (each group, the fit tiles, a
+section at a time, a review a stretch at a time) and expect less drawing.
 
 1. **Painters.** After step 3, put a palette in `<work>/video/src/scenes/assets/palette.ts` and group the shared
    pieces (people, vehicles, places, effects). One painter per group, each in its own copy (below). Copy their pieces
@@ -283,7 +306,9 @@ review a stretch at a time) and expect less drawing.
 2. **Fit tiles.** Before any builder starts, draw every touch the lyric map has (hand in hand, a hug, a carry, two at
    a table, hands on a wheel) with the painters' pieces at the scenes' scale, as tiles in
    `<work>/video/src/scenes/concepts/` rendered with step 3's `Concepts` command, and look at the hands at 1:1. A
-   pose that fails here fails in every board that uses it: send it back to its painter now. Name in
+   pose that fails here fails in every board that uses it: send it back to its painter now. At high and max, give
+   the galleries and fit tiles to a fresh reviewer too (`briefs/review.md`, "the pieces") before any builder
+   starts. Name in
    `<work>/ASSETS.md` the anchor function each touch uses (where a hand grips, where a child sits on a hip). Give
    the pieces now, as props, the variants the continuity table asks for (shoes off, a coat off, a bag on): in one
    video the child piece had no socks, and four builders each faked them their own way.
@@ -676,11 +701,16 @@ folded into a V. In the two videos that taught this, six reviewer agents, about 
 defects after every check had passed, such as arms folded into a V and faces cut at the eyes by the frame's edge
 (`briefs/review.md` lists what they look for). Before you deliver a full render:
 
-- Start fresh agents with `briefs/review.md` (copy it into the work folder and fill in its `TODO`s): one per minute
-  or two of video, one for the characters (every pose and prop the scenes use, at 1:1) and one per short. Each crops
-  every figure at 1:1, edits nothing and reports with severities.
-- Fix every high and medium finding, render again, and give the changed stretches to a new reviewer. A pose a
-  reviewer flags is usually its piece's fault: fix it in the piece, and every board that uses it is fixed.
+- Start fresh agents with `briefs/review.md` (copy it into the work folder and fill in its `TODO`s), as many as the
+  quality level says (the table at the top). At medium, one per two minutes of video. At high and max, one per minute
+  or two, one for the characters (every pose and prop the scenes use, at 1:1) and one per short; at max, in the first
+  round, also one per lens over the whole video. Each crops every figure at 1:1, edits nothing and reports with
+  severities. Give whatever a reviewer did not cover to a new reviewer before you fix.
+- At max, give each report's high-severity findings to a verifier (`briefs/review.md`, "Verifying a finding") before
+  anyone fixes them.
+- Fix every high- and medium-severity finding and render again. At high, give the changed stretches to a new
+  reviewer once; at max, again each round, up to four. List what is left when you deliver. A pose a reviewer flags is
+  usually its piece's fault: fix it in the piece, and every board that uses it is fixed.
 - Without agents of your own, review it yourself with the same brief once the build is done, a stretch at a time,
   every crop as if someone else had drawn it, or ask the user to give the brief to a second session.
 
