@@ -36,6 +36,7 @@ weaker model, pick max.
 | `song2mv click` | a stretch of the song with clicks on the beat grid and ticks on the lyric words, to check the timing by ear | alpha |
 | `song2mv check` | measures a rendered video per sung line: frozen picture, empty screen, repeated chorus, cut rhythm | experimental |
 | `song2mv sheet` | a contact sheet of a rendered video: frames at song times (or one per shot), labelled with the time and line | alpha |
+| `song2mv diff` | what changed between two renders of the same video: every stretch that differs, shown before and after | alpha |
 | `song2mv render` | renders `mv.json` as a 16:9 and/or 9:16 lyric video with a [Remotion](https://www.remotion.dev) template | experimental |
 
 ## Install
@@ -63,7 +64,7 @@ Install only what you use — the parts differ a lot in size:
 
 | you run | install | adds roughly |
 | --- | --- | --- |
-| `check`, `sheet` | `song2mv` | numpy (35 MB) |
+| `check`, `sheet`, `diff` | `song2mv` | numpy (35 MB) |
 | `beats`, `click` | `song2mv[beats]` | librosa, scipy, numba (300 MB) |
 | `sync` | `song2mv[sync]` | beats + faster-whisper (130 MB) + a whisper model on first run (small: 460 MB) |
 | `render` | Node 18+ | Remotion and a headless Chrome on first render (~700 MB) |
@@ -268,6 +269,32 @@ line's end in `--song` (the line's middle without word times).
 sets the zoom; the label shows it). The sheet is a PNG 1920 px wide, `video-sheet.png` next to `video.mp4` unless
 `--out` names it; frames that do not fit on one page, about 2400 px tall, continue on `video-sheet-2.png` and so on.
 The labels come from a built-in bitmap font, so it needs nothing but ffmpeg and numpy: no `drawtext`, no image library.
+
+## `song2mv diff`
+
+```bash
+song2mv render mv.json --draft --name before    # a draft of the whole video, before a fix
+song2mv render mv.json --draft --name after     # the same, after it
+song2mv diff renders/before-16x9-draft.mp4 renders/after-16x9-draft.mp4 --song mv.json
+```
+
+What changed between two renders of the same video, frame by frame. A fix to one character piece also moves whatever
+its anchors place, in every shot that uses it: in one video, a fix to a toddler's hand-hold moved her teacher out of a
+doorway in three other shots. `diff` lists every stretch that changed, in song time, with the share of the frame
+changed at its peak, the box round every change in it (x,y,w,h in the video's pixels, as `sheet --crop` takes it) and,
+with `--song`, the lines sung. A stretch ends at a cut (`check`'s test for one), so each shot that changed is listed on
+its own. The sheet, `after-16x9-draft-diff.png` next to the second video unless `--out` names a folder, shows the peak
+frame of each stretch before and after, side by side, the box outlined. Look at every stretch the fix was not meant
+to touch.
+
+Render both with the same options (`--from`, `--to`, `--aspect`, `--draft`): `diff` refuses videos of other sizes,
+frame rates or lengths. It reads them in grey at 480 px on their long side, and a pixel counts as changed when it
+differs by more than 24 levels. Frames with a changed pixel and less than 0.15 s of unchanged frames between them make
+one stretch; a stretch whose frames change fewer pixels in all than 0.02 % of one frame, a stray pixel or two, is left
+out. A hand moved by a few pixels for a whole shot still counts: in one video, 12 to 19 changed pixels a frame for
+2.9 s. Two GPU renders of the same code came out slightly different in 16 frames of 100 (pixels up to 44 grey levels
+apart at 960×540), and none of it passed the threshold at 480 px. `--from` is the song time of the first frame, as
+for `sheet`, and defaults to the start in either video's name. Two drafts of a 3.6-minute song take about 3 s.
 
 ## `song2mv render` (experimental)
 

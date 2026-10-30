@@ -717,10 +717,13 @@ defects after every check had passed, such as arms folded into a V and faces cut
   anyone fixes them.
 - Fix every high- and medium-severity finding and render again. At high, give the changed stretches to a new reviewer
   once; at max, again each round, up to four. List what is left when you deliver. A pose a reviewer flags is usually
-  its piece's fault: fix it in the piece, and every board that uses it is fixed, and changed: render a draft of the
-  whole video before and after the fix and compare them shot by shot (`song2mv sheet` of each, side by side), since a
-  piece's anchors place other figures too. In one video, a fix that moved a toddler's hand-hold out to her side moved
-  her teacher out of the doorway in three other shots.
+  its piece's fault: fix it in the piece, and every board that uses it is fixed, and changed, since a piece's anchors
+  place other figures too. In one video, a fix that moved a toddler's hand-hold out to her side moved her teacher out
+  of the doorway in three other shots. So render a draft of the whole video before you fix
+  (`song2mv render <work>/mv.json --template <work>/video --draft --name before`) and again after (`--name after`),
+  and run `song2mv diff <work>/renders/before-16x9-draft.mp4 <work>/renders/after-16x9-draft.mp4 --song <work>/mv.json`:
+  it lists every stretch that changed, a shot at a time, and draws each before and after on a sheet, the change
+  outlined. Look at every stretch the fix was not meant to touch; these are the changed stretches to give the reviewer.
 - Without agents of your own, review it yourself with the same brief once the build is done, a stretch at a time,
   every crop as if someone else had drawn it, or ask the user to give the brief to a second session.
 

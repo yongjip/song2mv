@@ -1,4 +1,4 @@
-"""song2mv command line: sync, beats, click, check, sheet, render.
+"""song2mv command line: sync, beats, click, check, sheet, diff, render.
 
 Every command prints progress for people. With --json, progress goes to stderr and stdout carries exactly one
 JSON object (with schema_version) for scripts and coding agents — also when the command fails.
@@ -208,6 +208,15 @@ def cmd_sheet(a) -> dict:
     return sheet(a.video, a.song, a.every, a.times, a.cuts, a.start, a.cols, a.crop, a.out, a.lines)
 
 
+def cmd_diff(a) -> dict:
+    _need_ffmpeg()
+    _existing_file(a.before, "video")
+    _existing_file(a.after, "video")
+    _existing_file(a.song, "mv.json")
+    from .check.diff import diff
+    return diff(a.before, a.after, a.song, a.start, a.out)
+
+
 def cmd_render(a) -> dict:
     _existing_file(a.mv, "mv.json")
     _existing_file(a.audio, "audio file")
@@ -288,6 +297,17 @@ def build_parser() -> argparse.ArgumentParser:
                    "page go on OUT-2.png, OUT-3.png …")
     h.add_argument("--json", action="store_true")
     h.set_defaults(func=cmd_sheet)
+
+    d = sub.add_parser("diff", help="what changed between two renders of the same video: the stretches that differ, "
+                       "and a sheet of each before and after")
+    d.add_argument("before", help="a render from before a change")
+    d.add_argument("after", help="the same render, with the same options, from after it")
+    d.add_argument("--song", help="the mv.json the videos were rendered from: each stretch then names the lines sung in it")
+    d.add_argument("--from", dest="start", type=float, help="song time of the videos' first frame (default: the start in "
+                   "either video's name as render writes it, NAME-ASPECT-FROM-TO.mp4, else 0)")
+    d.add_argument("--out", help="folder for the sheet, AFTER-diff.png (default: AFTER's folder)")
+    d.add_argument("--json", action="store_true")
+    d.set_defaults(func=cmd_diff)
 
     r = sub.add_parser("render", help="[experimental] render mv.json with the Remotion template (needs Node)")
     r.add_argument("mv", help="mv.json from `song2mv sync`")

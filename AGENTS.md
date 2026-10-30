@@ -1,8 +1,8 @@
 # AGENTS.md
 
 This repository ships `song2mv`: song in, beat-synced lyric timing (LRC, SRT, word-timed JSON) and a code-drawn
-music video out. It is a command-line tool built for coding agents. Six commands: `sync`, `beats`, `click`, `check`,
-`sheet`, `render`.
+music video out. It is a command-line tool built for coding agents. Seven commands: `sync`, `beats`, `click`, `check`,
+`sheet`, `diff`, `render`.
 The full music-video loop, scene design included, is the skill `.claude/skills/song2mv/SKILL.md`. An installed song2mv
 carries the skill and this file in its package folder `song2mv/guide/`; `song2mv --help` prints the skill's path.
 
@@ -68,7 +68,9 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    finished render to fresh agents with the skill's `briefs/review.md`, a stretch or a lens each, as many as the
    quality level says, or review it yourself with that brief, crop by crop, when you cannot start agents. Fix every
    high- and medium-severity finding and have the fixed stretches looked at again, for as many rounds as the level
-   says. In two videos this found about 120 defects after every check had passed.
+   says. In two videos this found about 120 defects after every check had passed. A fix in a character piece moves
+   every shot that uses it: render a draft of the whole video before and after each round of fixes and look at every
+   stretch `song2mv diff BEFORE AFTER` lists.
 8. **Every command takes `--json`.** Progress goes to stderr, stdout carries one object with `schema_version` and
    `ok`. Exit code 2 is an error: read `error.message` and do what `error.hint` says. Exit code 1 only means `check`
    found a failing check. Check `schema_version` before relying on field names (docs/contract.md).
@@ -80,7 +82,7 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    where an agent will need it, and in short into "Using song2mv for a user" above when every agent must follow it; a
    pattern that several songs repeat becomes kit code. Give the evidence (the runs compared, the numbers), describe the
    song only in general terms and make up the examples: never its lyrics.
-2. Keep the public grammar small: six commands. Before adding a command, flag, config key or output file, apply
+2. Keep the public grammar small: seven commands. Before adding a command, flag, config key or output file, apply
    the admission test in `docs/product-scope.md` and prefer extending an existing one.
 3. Every `--json` result and every output file in `docs/contract.md` is stamped by `song2mv.contract.stamp`. An
    incompatible change bumps `SCHEMA_VERSION`, updates `docs/contract.md` and gets a `CHANGELOG.md` entry.

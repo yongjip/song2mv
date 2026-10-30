@@ -24,6 +24,7 @@ an error.
 | `click` | `outputs` (the wav), `from`, `to`, `bpm`, `downbeat_mod4`, `ask_the_listener` (the question to put to the person listening) |
 | `check` | `video`, `song`, `goals`, `from`, `to` (the stretch measured, in song time), `passed`, `total`, `results` (check → `{ok, value, goal, msg}`, see below), `skipped` (check → why it could not run on this stretch), `per_line` (`{id, motion, coverage}`), `cuts` (song times), `warnings` |
 | `sheet` | `video`, `song` (`null` without one), `from`, `to` (the song times of the video's first frame and its end), `times` (the song time of each frame on the sheet, in order), `outputs` (the sheet's pages, the first at `--out`), `warnings` |
+| `diff` | `before`, `after`, `song` (`null` without one), `from`, `to` (the song times of the videos' first frame and their end), `frames` (the number compared), `faint` (frames with a changed pixel that were left out, see below), `stretches` (see below), `outputs` (the sheet's pages; none when nothing changed), `warnings` |
 | `render` | `template`, `outputs`, `seconds`, `warnings` (for a video, also each fault the kit's `arm()` printed, once per arm and fault as first seen: `arm: WHO: FAULT at T s`) |
 
 `check` results: `value` is the measured number and `goal` is `{"min": x}` or `{"max": x}`. Per-line checks
@@ -42,6 +43,17 @@ as a cut (a frame pair that changes at least 1 more than both pairs beside it), 
 that is higher. A check in `skipped` neither passed nor failed and is not counted in `total`. On a draft (a video at
 half size), `warnings` names the lines that pass `motion.max` by less than 0.3: a full render measures up to that much
 higher than its draft.
+
+`diff` stretches: each is `{from, to, peak, at, box, lines}`. `from` and `to` are song times, from the start of its
+first changed frame to the end of its last; `peak` is the largest share of the frame (0–1) changed in one of its
+frames, and `at` the song time of that frame's middle, the frame both sides of the sheet show; `box` is `[x, y, w, h]`
+round every changed pixel of the stretch, in the video's pixels, as `sheet --crop` takes it; `lines` are the ids of
+the lines sung in it, or of the sections there when no line is (empty without `--song`). Both videos are read in grey
+at 480 px on their long side, and a pixel changed when it differs by more than 24 levels. Frames with a changed pixel
+and less than 0.15 s of unchanged frames between them make one stretch, which ends at a cut in either video (`check`'s
+test for one); a stretch whose frames change fewer pixels in all than 0.02 % of one frame is left out, and its frames
+are counted in `faint`. Two videos of different size, frame rate or length are an error; otherwise `diff` exits 0,
+whether or not anything changed.
 
 `off_sheet` lists the stretches of at least 1.5 s where two or more whisper runs agree on two or more words that no
 line of the lyric sheet matched: a chant or an ad-lib the sheet leaves out, a line sung differently, a repeat the

@@ -19,6 +19,14 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   prints the first time an arm shows it, as `arm: WHO: FAULT at T s`, and a video's `render --json` lists them under
   `warnings`. `toStage` and `toLocal` place hand targets as stage points. In the two videos that taught this, about 20
   of the 117 defects reviewers recorded were arms or hands, four of them a hand on its own head or cheek.
+- `song2mv diff BEFORE AFTER` says what changed between two renders of the same video, frame by frame: every stretch
+  that differs, in song time, with the share of the frame changed at its peak, the box round the change (as
+  `sheet --crop` takes it) and, with `--song`, the lines sung; and a sheet of each stretch's peak frame before and
+  after, the change outlined. A stretch ends at a cut, so each shot that changed shows on its own, and a hand moved by
+  a few pixels through a whole shot counts. Renders made with other options are refused. The skill runs it on drafts
+  of the whole video from before and after a fix in a piece, in place of two contact sheets compared by eye: on the
+  drafts that taught this it showed, in about 3 s, the hand-hold fix and the three shots where it had moved the teacher
+  out of her doorway.
 
 ### Changed
 - The painters' brief asks for `arm()` on every arm that reaches for something, `toward` down for a hand at the face,

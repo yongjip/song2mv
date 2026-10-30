@@ -4,11 +4,11 @@ song2mv's job is narrow: take a song and its lyrics, place every sung word on th
 into subtitles or a video drawn in code. The internals may be detailed (several whisper runs, alignment, grid
 fitting); the surface people and agents learn must stay small.
 
-## Surface baseline (0.1)
+## Surface baseline
 
 | Surface | Count |
 | --- | ---: |
-| Top-level commands | **6** — `sync`, `beats`, `click`, `check`, `sheet`, `render` |
+| Top-level commands | **7** — `sync`, `beats`, `click`, `check`, `sheet`, `diff`, `render` |
 | Output files of `sync` | 7 — `grid.json`, `lyrics.json`, `mv.json`, `song.lrc`, `song.words.lrc`, `song.srt`, `music.json` |
 | Extras | 2 — `beats`, `sync` (plus `dev` for contributors) |
 | MCP tools | 0 (planned: one per command) |
@@ -42,6 +42,21 @@ Both started as `python -m song2mv.timing.<module>` helpers.
 3. **Cost.** One subcommand with eight flags besides `--json` and one output file (a PNG, more pages when it is
    long). No new dependency: ffmpeg grabs the frames, numpy tiles them, a bitmap font of about a hundred glyphs draws
    the labels and zlib writes the PNG.
+
+### Why `diff` became a command (after 0.2.1)
+
+1. **Workflow.** At the high and max quality levels a video goes through several rounds of review and fixes, and a
+   fix to a character piece moves what its anchors place in every shot that uses it. In one demo, a fix to a
+   toddler's hand-hold also moved her teacher out of a doorway in three other shots. A one-off script caught it,
+   comparing drafts of the whole video from before and after frame by frame; the guide's advice until then, a
+   contact sheet of each compared by eye, shows one frame per shot and nothing of what moved within it.
+2. **Why not an existing surface.** `sheet` shows frames of one video at times chosen beforehand; here the times are
+   the answer. A `sheet --against BEFORE` would read every frame of two videos, refuse a pair rendered with other
+   options and return a list of stretches, and `--every`, `--times`, `--lines` and `--cuts` would mean nothing beside
+   it. `check` measures one video against goals and needs sung lines.
+3. **Cost.** One subcommand with three flags besides `--json` and one output file (a PNG, more pages when many
+   stretches changed). No new dependency: ffmpeg streams both videos at 480 px, and `diff` reuses `sheet`'s frame
+   grabs, tiles, font and PNG writer and `check`'s test for a cut. Two drafts of a 3.6-minute song take about 3 s.
 
 ## Admission test
 
