@@ -1,6 +1,6 @@
 {
   "name": "song2mv-template",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Remotion lyric-video template driven by one song config JSON (lyrics + beat grid + colors).",
   "license": "MIT",

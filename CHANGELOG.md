@@ -2,7 +2,7 @@
 
 All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.md for what changes may break.
 
-## Unreleased
+## 0.2.1 — 2026-10-30
 
 ### Fixed
 - A long render no longer hangs when the computer sleeps or Chrome crashes. Two final renders here stopped the
