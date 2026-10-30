@@ -239,6 +239,36 @@ def test_vertical_view_puts_the_subject_in_the_picture_area_and_keeps_the_frame_
         assert abs(x - ex) < 3 and abs(y - ey) < 3, found
 
 
+ARM_SCENES = """
+import React from "react";
+import { arm, Song } from "../kit";
+
+export const Scene: React.FC<{ T: number }> = ({ T }) => {
+  arm([0, 0], [T > 1.25 ? 150 : 60, 40], 50, 50, undefined, { holds: true, who: "probe right", T });
+  arm([0, 0], [10, -20], 50, 50, [0, -1], { who: "probe left", T });
+  return <rect width={1920} height={1080} fill="#203040" />;
+};
+export const VerticalScene = null;
+export const linesDrawnByScene = (_song: Song) => new Set<string>();
+"""
+
+
+def test_each_arm_fault_is_listed_once_from_every_tab_and_chunk(tmp_path):
+    template = tmp_path / "video"
+    shutil.copytree(BUNDLED, template, ignore=shutil.ignore_patterns("node_modules", "out"))
+    os.symlink(os.path.join(BUNDLED, "node_modules"), template / "node_modules")
+    (template / "src" / "scenes" / "index.ts").unlink()
+    (template / "src" / "scenes" / "index.tsx").write_text(ARM_SCENES, encoding="utf-8")
+    seen = tmp_path / "warnings.txt"
+    r = subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--from", "0", "--to", "2", "--draft",
+                        "--out", str(tmp_path), "--warnings", str(seen)],
+                       cwd=template, env={**os.environ, "SONG2MV_CHUNK": "10"}, check=True, capture_output=True, text=True)
+    left, right = seen.read_text(encoding="utf-8").splitlines()
+    assert re.fullmatch(r"arm: probe left: folded into a V, elbow up at 0\.\d0 s", left), left
+    assert re.fullmatch(r"arm: probe right: out of reach at 1\.[3-9]0 s", right), right
+    assert r.stderr.count("probe left") == 1 and r.stderr.count("probe right") == 1, r.stderr
+
+
 WIDE_SCENES = """
 import React from "react";
 import { Board, Song, Storyboard } from "../kit";
@@ -703,6 +733,36 @@ console.log(JSON.stringify({ a: { joint: r(a.joint), end: r(a.end), bend: Math.r
     assert out["root"] == [0, 50]  # a hand at the shoulder folds the arm down, not into a point
     assert abs(out["upper"] - 54) < 1e-6 and abs(out["lower"] - 46) < 1e-6
     assert out["step"] < 2  # a hanging arm's elbow slides as the hand swings past straight down, never jumps
+
+
+def test_an_arm_says_what_a_viewer_would_see_wrong_and_only_that(tmp_path):
+    out = _probe(tmp_path, """
+import { arm, toLocal, toStage } from "KIT/math";
+const said: string[] = [];
+console.warn = (m: string) => said.push(m);
+const head = { c: [-5, -45] as [number, number], r: 25 };
+const f = (t: number[], toward?: number[], o = {}) => arm([0, 0], t as [number, number], 50, 50, toward as [number, number], o).faults;
+const far = arm([0, 0], [150, 0], 50, 50, undefined, { holds: true, who: "kid right", T: 1.5 });
+arm([0, 0], [160, 0], 50, 50, undefined, { holds: true, who: "kid right", T: 2 });
+const near = arm([0, 0], [96, 0], 50, 50);
+arm([0, 0], [101, 0], 50, 50, undefined, { holds: true, T: 3 });
+const at = { x: 700, y: 800, s: 1.6, flip: true };
+console.log(JSON.stringify({
+  natural: f([60, 40]), near: { faults: near.faults, end: Math.round(Math.hypot(...near.end)) },
+  far: { faults: far.faults, end: Math.round(Math.hypot(...far.end)), reach: far.reach, bend: Math.round(far.bend) },
+  edge: f([100, 0], undefined, { holds: true }), past: f([101, 0], undefined, { holds: true }), hanging: f([0, 150]),
+  v: f([10, -20], [0, -1]), chin: f([10, -20]), squashed: f([0, 30]), tummy: f([0, 30], [1, 1]),
+  head: f([-5, -50], [1, 1], { head }), cheek: f([12, -45], [1, 1], { head }), beside: f([30, -45], [1, 1], { head }),
+  said, stage: toStage([30, -100], at), back: toLocal(toStage([30, -100], at), at) }));
+""", {})
+    assert out["natural"] == [] and out["near"] == {"faults": [], "end": 96}
+    assert out["far"] == {"faults": ["out of reach"], "end": 100, "reach": 1.5, "bend": 180}  # as limb() draws it
+    assert out["edge"] == [] and out["past"] == ["out of reach"] and out["hanging"] == []  # a hanging arm holds nothing
+    assert out["v"] == ["folded into a V, elbow up"] and out["chin"] == []  # a hand at the chin folds the arm, elbow down
+    assert out["squashed"] == ["squashed short"] and out["tummy"] == []  # straight below, toward [0, 1] slides the elbow onto the line
+    assert out["head"] == out["cheek"] == ["hand on its own head"] and out["beside"] == []
+    assert out["said"] == ["arm: kid right: out of reach at 1.50 s", "arm: unnamed: out of reach at 3.00 s"]  # silent without who and T
+    assert out["stage"] == [652, 640] and [round(v, 6) for v in out["back"]] == [30, -100]
 
 
 def _probe(tmp_path, code: str, song: dict) -> object:

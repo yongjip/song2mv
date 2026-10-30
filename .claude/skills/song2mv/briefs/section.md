@@ -21,7 +21,14 @@ file is merged into `<work>/video/` at the end. Read first, in this order:
   from `look.tsx`; the overlay is already over every board".
 - If a piece lacks something you need (a pose, a prop), draw it in your section file and say so in your report, so
   the lead can move it into the piece. Place people against each other with the pieces' anchors (where a hand grips,
-  where a child sits), never typed coordinates, and draw any arm of your own with the kit's `limb()`.
+  where a child sits), never typed coordinates: a typed hand target, kept after the child was redrawn smaller, put her
+  hand in her own hair. A hand target is the other figure's anchor at s = 1 (`personHand(pose)`, not
+  `personHand(pose, s)`) placed with `toStage(anchor, { x, y, s, flip })`, and passed as the stage point it is. An
+  adult's hand at an adult's height is out of a toddler's reach: bring it down to her. A hand that rises to its target
+  in a straight line can cross the face on the way: move it out first. No hand or arm passes behind or over another
+  figure's head: move them apart. Draw any arm of your own with the kit's `arm()`. Renders print the first time each
+  arm shows a fault (`arm: WHO: FAULT at T s`): fix it and render again until no `arm:` line is left, or say in your
+  report why it looks right.
 - No logos, wordmarks or brand symbols, and no real person's face.
 
 ## Boards

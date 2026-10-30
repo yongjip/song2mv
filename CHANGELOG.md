@@ -14,6 +14,18 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   In two videos, reviews found about 120 defects after every check had passed and a second round about 60 more; of
   117 recorded, 54 % were framing, 46 % continuity, 44 % bodies. At high and max a fresh reviewer looks at the
   painters' pieces before the build. `briefs/review.md` groups what a viewer finds wrong by lens.
+- The kit's `arm()` draws an arm exactly as `limb()` does and says what a viewer would see wrong: a hand that holds
+  something out of reach, an arm folded into a V with the elbow up, squashed short, a hand on its own head. Each
+  prints the first time an arm shows it, as `arm: WHO: FAULT at T s`, and a video's `render --json` lists them under
+  `warnings`. `toStage` and `toLocal` place hand targets as stage points. In the two videos that taught this, about 20
+  of the 117 defects reviewers recorded were arms or hands, four of them a hand on its own head or cheek.
+
+### Changed
+- The painters' brief asks for `arm()` on every arm that reaches for something, `toward` down for a hand at the face,
+  a hand's forearm on its layer, and joined hands out to a child's side; the builders' brief takes hand targets from
+  anchors with `toStage` and clears every `arm:` line. After a fix in a piece, the skill compares a draft of the whole
+  video before and after: a piece's anchors place other figures too, and one hand-hold fix moved a teacher out of her
+  doorway.
 
 ## 0.2.1 — 2026-10-30
 

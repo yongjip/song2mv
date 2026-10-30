@@ -264,6 +264,14 @@ def test_max_mb_reaches_the_template_for_finished_videos_only(tmp_path, capsys, 
     assert code == 0 and ("--max-mb" in calls[0]) is passed
 
 
+def test_arm_faults_the_scenes_reported_are_listed_with_the_warnings(tmp_path, capsys, monkeypatch):
+    mv, calls = capture_render(tmp_path, monkeypatch, "")
+    said = "arm: kid right: out of reach at 1.50 s"
+    monkeypatch.setattr(runner, "_run_filtered", lambda args, cwd: open(args[args.index("--warnings") + 1], "a").write(said + "\n") and 0)
+    code, res = run_json(capsys, ["render", str(mv), "--from", "1", "--to", "2", "--draft"])
+    assert code == 0 and said in res["warnings"]
+
+
 @pytest.mark.skipif(not shutil.which("ffmpeg"), reason="needs ffmpeg")
 def test_cover_turns_the_16x9_frame_into_a_square_and_keeps_only_the_cover(tmp_path, monkeypatch):
     tpl = tmp_path / "tpl"
