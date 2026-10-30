@@ -306,7 +306,9 @@ def render(mv_json: str, out: str | None = None, template: str | None = None, st
     os.makedirs(out, exist_ok=True)
     fd, manifest = tempfile.mkstemp(prefix="song2mv-", suffix=".txt")
     os.close(fd)
-    args = [node, "render.mjs", mv_json, "--aspect", aspect, "--out", out, "--manifest", manifest]
+    fd, faults = tempfile.mkstemp(prefix="song2mv-", suffix=".txt")
+    os.close(fd)
+    args = [node, "render.mjs", mv_json, "--aspect", aspect, "--out", out, "--manifest", manifest, "--warnings", faults]
     for flag, val in (("--from", start), ("--to", end), ("--hold", hold), ("--still", still),
                       ("--audio", os.path.abspath(audio) if audio else None), ("--name", name),
                       ("--max-mb", max_mb if still is None and not draft else None)):
@@ -319,8 +321,10 @@ def render(mv_json: str, out: str | None = None, template: str | None = None, st
     try:
         code = _run_filtered(args, tpl)
         written = [line.strip() for line in open(manifest, encoding="utf-8") if line.strip()]
+        warnings += [line.strip() for line in open(faults, encoding="utf-8") if line.strip()]
     finally:
         os.unlink(manifest)
+        os.unlink(faults)
     if code != 0:
         raise Song2mvError(f"the Remotion render failed (exit {code}) — see the output above")
     if not written:  # a template copied before --manifest existed: whatever is new or rewritten in the out folder

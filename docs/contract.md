@@ -24,7 +24,7 @@ an error.
 | `click` | `outputs` (the wav), `from`, `to`, `bpm`, `downbeat_mod4`, `ask_the_listener` (the question to put to the person listening) |
 | `check` | `video`, `song`, `goals`, `from`, `to` (the stretch measured, in song time), `passed`, `total`, `results` (check → `{ok, value, goal, msg}`, see below), `skipped` (check → why it could not run on this stretch), `per_line` (`{id, motion, coverage}`), `cuts` (song times), `warnings` |
 | `sheet` | `video`, `song` (`null` without one), `from`, `to` (the song times of the video's first frame and its end), `times` (the song time of each frame on the sheet, in order), `outputs` (the sheet's pages, the first at `--out`), `warnings` |
-| `render` | `template`, `outputs`, `seconds`, `warnings` |
+| `render` | `template`, `outputs`, `seconds`, `warnings` (for a video, also each fault the kit's `arm()` printed, once per arm and fault as first seen: `arm: WHO: FAULT at T s`) |
 
 `check` results: `value` is the measured number and `goal` is `{"min": x}` or `{"max": x}`. Per-line checks
 (`motion.min`, `motion.max`, `coverage.min`) count the failing lines in `value` (goal `{"max": 0}`) and list them in

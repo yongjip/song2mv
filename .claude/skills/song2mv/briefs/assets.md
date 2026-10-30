@@ -29,22 +29,35 @@ Section builders then film your pieces all through the song, so a weak piece sho
    three tones per material (base, shade, highlight), smooth curves (no jagged polylines), one light from the top
    left, panel lines in a darker tone of the material, and no outline baked in, so that a style pack can add one.
 5. **Component shape.** `export const Name: React.FC<{ T: number; x: number; y: number; s?: number; id?: string; … }>`,
-   SVG for the kit's `<Svg>` (the 1920×1080 stage). The origin is the bottom middle, where the piece meets the
-   ground, unless its doc comment says otherwise (a planet: its centre); `s` scales about it. A pure function of `T`
-   and its props, with `rng` from `../../kit/math` for randomness. `id` names every gradient, clip path and filter,
-   so two copies don't clash. No prop is called `key` or `ref`: React keeps those, and the piece never gets them.
-6. **Arms and legs bend like arms and legs.** Solve every elbow and knee with the kit's `limb(root, target, upper,
-   lower, toward)` (`../../kit`): it bends the joint toward `toward` whichever side of the body the target is on,
-   where a fixed bend sign flips the elbow across the chest. For an elbow pass down and out from the body's side
-   (`[-1, 1]` for an arm on the picture's left, `[1, 1]` on its right), so the elbow stays put as the hand rises over
-   the head; for a knee, the way the figure faces. In a held pose keep `reach` under 1, or the arm locks straight
-   like a strap, and `bend` over about 80°, or it folds into a V, except with the hand at the face (a phone, a
-   microphone, a hand at the temple: 40–60° is right there). The V that looks wrong points its elbow up or across a
-   face. Reaching round someone, the hands
-   go to their back or under them, never to their shoulders, and a hug or carry splits the figure into back and front
-   layers so the far arm passes behind the other figure.
+   SVG for the kit's `<Svg>` (the 1920×1080 stage). The origin is the bottom middle, where the piece meets the ground,
+   unless its doc comment says otherwise (a planet: its centre); `s` scales about it and a figure's `flip` mirrors it. A
+   pure function of `T` and its props, with `rng` from `../../kit/math` for randomness. `id` names every gradient, clip
+   path and filter, so two copies don't clash. No prop is called `key` or `ref`: React keeps those, and the piece never
+   gets them.
+6. **Arms and legs bend like arms and legs.** Draw every arm that reaches for something (a hand to hold, a prop, the
+   face) with the kit's `arm(shoulder, target, upper, lower, toward, { holds, head, who, T })` (`../../kit`), never
+   with a solver of your own, and every knee with `limb(hip, foot, upper, lower, toward)`, `toward` the way the figure
+   faces. For an arm, `toward` is where the elbow goes: down and out from the body's side (`[-1, 1]` on the picture's
+   left, `[1, 1]` on its right), or straight down (`[0, 1]`) for a hand in front of the mouth or face. With the hand
+   almost along `toward` or against it (a phone at the ear and `[0, 1]`), the elbow has no side to go to and the arm
+   is drawn squashed short: point `toward` elsewhere. Draw the hand, and whatever it holds, at the `end` `arm()`
+   returns: a target beyond the arm's length leaves it short, the arm straight. Pass `holds: true` when the hand meets
+   something there (another hand, a prop), so that a target out of reach is reported; a hanging or outstretched arm is
+   straight anyway. Pass `who` (the `id` and which arm) and `T` on every arm, and `head: { c: [x, y], r }` (the skull,
+   with the hair above the ears) on an arm drawn in front of the head, except in a pose that puts the hand at the face
+   on purpose (a phone, a microphone, a hand on a cheek). A render then prints what a viewer would see wrong, the
+   first time each arm shows it (`arm: WHO: FAULT at T s`): out of reach, folded into a V with the elbow up, squashed
+   short, a hand on its own head. A hand target a scene passes in (a `hand` prop) is a stage point: turn it into the
+   piece's own drawing with `toLocal(hand, { x, y, s, flip })`, and export each hand's spot at s = 1 (a function of
+   the pose) for scenes to place with `toStage`. Hand in hand with a child, an adult's anchor puts the child where the
+   joined hands sit out to her side, clear of her head and within her reach. A standing adult's hanging hand is level
+   with a toddler's head and bigger than hers, so the joined hands touch her hair unless the adult bends to bring them
+   down to her shoulder: in one video they sat on the toddler's temple in every scene. Reaching round someone, the
+   hands go to their back or under them, never to their shoulders or head, and a hug or carry splits the figure into
+   back and front layers so the far arm passes behind the other figure.
 7. **Hands read as hands:** a mitten with a thumb at least, never a plain disc or a cuff over a blob, and a hand that
-   holds something closes on it.
+   holds something closes on it. A hand drawn on a front layer takes its forearm with it, never a hand alone, and a
+   forearm seen edge-on keeps at least half its width.
 8. **Motion through props** (`legs` 0–1, `flame` 0–1, `distance` for wheels, `pose` and `phase` for a character),
    plus small idle motion from `T` where it helps (a blinking light, a flickering flame). Where a scene moves a
    person from one pose to another inside a shot (sits down, reaches up), give the change a 0–1 prop or a hand

@@ -271,6 +271,9 @@ and any kit changes into it.
    motion code works in any style:
    - `useSong()` and `grid`;
    - `Camera` and `cameraAt()`, `Drift`, `liveLine`, and the easing and `rng` helpers in `math`;
+   - `arm()` for every arm that reaches for something, and `toStage` and `toLocal` for hand targets (`briefs/assets.md`, rule 6).
+     A copy made by an older song2mv lacks them: copy `src/kit/math.ts` from a new `--template` folder (it imports
+     nothing);
    - the helpers that take their colours and shapes as props: `Hit`, `Flames`, `Lightning` and `Storm`, `Tears`,
      `Cash`;
    - how `effects.tsx` times its particles.
@@ -305,8 +308,9 @@ section at a time, a review a stretch at a time) and expect less drawing.
    into `<work>/video/src/scenes/assets/` and list each piece's props, size and origin in `<work>/ASSETS.md`.
 2. **Fit tiles.** Before any builder starts, draw every touch the lyric map has (hand in hand, a hug, a carry, two at
    a table, hands on a wheel) with the painters' pieces at the scenes' scale, as tiles in
-   `<work>/video/src/scenes/concepts/` rendered with step 3's `Concepts` command, and look at the hands at 1:1. A
-   pose that fails here fails in every board that uses it: send it back to its painter now. At high and max, give
+   `<work>/video/src/scenes/concepts/` rendered with step 3's `Concepts` command, and look at the hands at 1:1 and
+   at every `arm:` line the render prints. A pose that fails here fails in every board that uses it: send it back to
+   its painter now. At high and max, give
    the galleries and fit tiles to a fresh reviewer too (`briefs/review.md`, "the pieces") before any builder
    starts. Name in
    `<work>/ASSETS.md` the anchor function each touch uses (where a hand grips, where a child sits on a hip). Give
@@ -647,6 +651,9 @@ killed Chrome's tabs. `render` now keeps a Mac awake (with the lid closed too, o
 of 900 frames, each with a Chrome of its own, and renders a chunk again after the computer slept, after Chrome
 crashed, or when no frame has come for `SONG2MV_STALL` seconds (180); it says which. A render that stops anyway
 fails with an error naming the frame, instead of waiting.
+Arms drawn with the kit's `arm()` print the first time each arm shows a fault a viewer would see
+(`arm: WHO: FAULT at T s`), and a video's `render --json` lists them under `warnings` (a still only prints them). Fix
+each and render again until none is left, or tell the reviewers why it looks right.
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
 work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
 contact sheets outside `src/scenes/`. Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`
@@ -708,9 +715,12 @@ defects after every check had passed, such as arms folded into a V and faces cut
   severities. Give whatever a reviewer did not cover to a new reviewer before you fix.
 - At max, give each report's high-severity findings to a verifier (`briefs/review.md`, "Verifying a finding") before
   anyone fixes them.
-- Fix every high- and medium-severity finding and render again. At high, give the changed stretches to a new
-  reviewer once; at max, again each round, up to four. List what is left when you deliver. A pose a reviewer flags is
-  usually its piece's fault: fix it in the piece, and every board that uses it is fixed.
+- Fix every high- and medium-severity finding and render again. At high, give the changed stretches to a new reviewer
+  once; at max, again each round, up to four. List what is left when you deliver. A pose a reviewer flags is usually
+  its piece's fault: fix it in the piece, and every board that uses it is fixed, and changed: render a draft of the
+  whole video before and after the fix and compare them shot by shot (`song2mv sheet` of each, side by side), since a
+  piece's anchors place other figures too. In one video, a fix that moved a toddler's hand-hold out to her side moved
+  her teacher out of the doorway in three other shots.
 - Without agents of your own, review it yourself with the same brief once the build is done, a stretch at a time,
   every crop as if someone else had drawn it, or ask the user to give the brief to a second session.
 
