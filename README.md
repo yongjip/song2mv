@@ -9,13 +9,15 @@ song2mv turns an audio file and its lyrics into synced lyrics (LRC, SRT, word-ti
 then into a lyric or music video drawn entirely in code. Each step is its own command, so a coding agent such as
 Claude Code or Codex — or a person — can use just the part they need.
 
-Two songs made with Suno, each turned into a music video and a Short by Claude Code with song2mv:
+Two songs made with Suno, each turned into a music video and a Short with song2mv.
+**Video production:** Claude Code with **Opus 5.5 at max effort**. Results can vary with the model, effort setting,
+and instructions.
 
 | [![Till Money Means Nothing, music video](https://img.youtube.com/vi/fSlrXXQt0Ik/maxresdefault.jpg)](https://youtu.be/fSlrXXQt0Ik) | [![Carry the Light, music video](https://img.youtube.com/vi/cGtjcGVv8XQ/maxresdefault.jpg)](https://youtu.be/cGtjcGVv8XQ) |
 | --- | --- |
 | **[Till Money Means Nothing](https://youtu.be/fSlrXXQt0Ik)** (4:55, [Short](https://youtube.com/shorts/dFQFAQ37S4w)): a launch broadcast that ends on Mars, inked with the `toon` style pack | **[Carry the Light](https://youtu.be/cGtjcGVv8XQ)** (4:48, [Short](https://youtube.com/shorts/ioBdb2K5TgA)): a child's crayon drawing of a launch tower that becomes real, in watercolour from the `paint` style pack |
 
-**How they were made:** one Claude Code session (Opus 5.5, max effort) split the work among agents, as
+**How they were made:** one Claude Code session split the work among agents, as
 [step 4 of the skill](https://github.com/yongjip/song2mv/blob/main/.claude/skills/song2mv/SKILL.md#4-build-scenes)
 describes: five drew the shared pieces, then seven built the sections, in about two hours for both songs. One of these
 videos is about 12,000 lines of drawing code, where a single agent wrote 750–1,200 in our trial videos: expect a
