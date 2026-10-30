@@ -1,5 +1,10 @@
 # song2mv
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/svg/song2mv-logo-reversed.svg">
+  <img src="assets/brand/svg/song2mv-logo-stacked.svg" alt="song2mv waveform character painting a rhythm" width="420">
+</picture>
+
 [![CI](https://github.com/yongjip/song2mv/actions/workflows/ci.yml/badge.svg)](https://github.com/yongjip/song2mv/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/yongjip/song2mv/blob/main/LICENSE)
 

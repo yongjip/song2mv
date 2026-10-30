@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" viewBox="196 196 680 680" role="img" aria-labelledby="title description" width="680" height="680">
+  <title id="title">song2mv — icon-small</title>
+  <desc id="description">The song2mv waveform character and original outlined lettering.</desc>
+  <defs>
+    <clipPath id="eye-left-clip">
+      <path d="M 585 527 C 611 526 634 553 635 587 C 636 620 619 646 595 650 C 565 656 543 628 542 590 C 541 556 559 528 585 527 Z" />
+    </clipPath>
+    <clipPath id="eye-right-clip">
+      <path d="M 715 509 C 740 508 757 533 759 565 C 761 597 745 623 719 624 C 695 625 676 600 675 568 C 674 536 690 510 715 509 Z" />
+    </clipPath>
+  </defs>
+  <g id="mascot" inkscape:groupmode="layer" inkscape:label="Mascot">
+    <g id="body" inkscape:groupmode="layer" inkscape:label="Waveform body">
+      <path id="body-shape" fill="#0249DC" d="M 558.00 316.02 C 615.22 313.23 607.46 424.56 647.01 442.99 C 683.68 460.08 693.00 363.93 742.96 396.04 C 764.73 410.02 774.78 430.41 782.36 454.64 C 785.28 463.95 787.75 488.84 797.28 499.72 C 814.00 520.00 824.00 548.00 828.97 580.97 C 825.45 592.80 827.06 605.75 823.60 617.60 C 811.80 657.97 784.82 694.73 743.87 708.87 C 723.03 716.07 703.66 708.45 686.44 714.44 C 678.37 717.24 665.90 731.92 663.60 733.60 C 645.48 746.87 622.48 754.65 599.99 754.99 C 574.36 755.38 555.41 746.43 530.97 740.04 C 523.74 738.16 505.29 749.91 498.81 751.81 C 472.53 759.54 441.83 758.97 416.69 747.31 C 400.70 739.89 387.06 731.01 375.82 717.18 C 370.55 710.69 368.28 701.21 361.14 696.86 C 352.57 691.63 327.95 695.95 316.40 692.60 C 264.26 677.47 233.88 621.57 247.40 569.40 C 255.36 538.67 280.47 514.44 312.10 510.10 C 317.58 509.35 338.24 513.42 344.69 504.69 C 364.34 478.14 361.47 416.34 396.03 400.03 C 425.29 386.21 440.65 413.49 449.60 437.40 C 452.19 444.31 460.16 476.90 475.72 463.72 C 506.85 437.36 494.62 319.11 558.00 316.02 Z" />
+    </g>
+    <g id="face" inkscape:groupmode="layer" inkscape:label="Face">
+      <g id="eye-left" inkscape:groupmode="layer" inkscape:label="Left eye">
+        <path id="eye-left-white" fill="#FFFAEF" d="M 585 527 C 611 526 634 553 635 587 C 636 620 619 646 595 650 C 565 656 543 628 542 590 C 541 556 559 528 585 527 Z" />
+        <g id="pupil-left">
+          <path fill="#0249DC" d="M 615 559 C 631 558 641 573 641 591 C 641 609 630 622 615 621 C 601 620 593 606 593 589 C 593 573 602 560 615 559 Z" />
+        </g>
+      </g>
+      <g id="eye-right" inkscape:groupmode="layer" inkscape:label="Right eye">
+        <path id="eye-right-white" fill="#FFFAEF" d="M 715 509 C 740 508 757 533 759 565 C 761 597 745 623 719 624 C 695 625 676 600 675 568 C 674 536 690 510 715 509 Z" />
+        <g id="pupil-right">
+          <path fill="#0249DC" d="M 741 538 C 756 538 765 551 765 568 C 765 585 754 598 741 597 C 727 596 720 582 720 567 C 720 551 728 539 741 538 Z" />
+        </g>
+      </g>
+      <path id="mouth" fill="#FFFAEF" d="M 651.01 635.01 C 627.87 635.01 650.89 672.11 677.90 667.90 C 688.37 666.27 713.32 652.29 698.30 639.70 C 689.96 632.72 681.84 647.15 673.07 646.86 C 662.56 646.52 660.94 635.01 651.01 635.01 Z" />
+    </g>
+  </g>
+</svg>
