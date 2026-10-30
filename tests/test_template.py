@@ -125,6 +125,28 @@ def test_a_chunk_is_rendered_again_after_the_computer_slept(tmp_path):
     assert len(every_frame(str(next(tmp_path.glob("*.mp4"))))) == 90
 
 
+def test_a_chunk_is_rendered_again_after_chromes_browser_process_died(tmp_path):
+    # Remotion then waits forever for the frames the dead browser had, repeating its last count every 0.5 s
+    p = subprocess.Popen(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--from", "0", "--to", "3",
+                          "--out", str(tmp_path)], cwd=BUNDLED, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
+                         env={**os.environ, "SONG2MV_STALL": "10"})
+    for line in p.stderr:
+        if re.match(r"Rendered 3\d/90", line):
+            break
+    rows = [r.split(None, 1) for r in subprocess.run(["ps", "-A", "-o", "pid=,args="], capture_output=True, text=True).stdout.splitlines()]
+    args = {int(r[0]): r[1] for r in rows if len(r) == 2}
+    # the browser process opens Chrome's start page; its tabs, GPU and utility processes have --type= instead
+    [browser] = [pid for pid in family(p.pid) if "chrome-headless-shell about:blank" in args.get(pid, "")]
+    os.kill(browser, signal.SIGKILL)
+    try:
+        err = p.communicate(timeout=120)[1]
+    except subprocess.TimeoutExpired:
+        subprocess.run(["kill", "-KILL", *map(str, family(p.pid))], capture_output=True)
+        raise
+    assert p.returncode == 0, err
+    assert len(every_frame(str(next(tmp_path.glob("*.mp4"))))) == 90
+
+
 def test_a_chunk_that_shows_no_frame_is_rendered_again_then_given_up(tmp_path):
     r = subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--from", "0", "--to", "1",
                         "--out", str(tmp_path)], cwd=BUNDLED, capture_output=True, text=True, timeout=300,
