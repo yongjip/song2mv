@@ -133,11 +133,14 @@ def test_a_chunk_is_rendered_again_after_chromes_browser_process_died(tmp_path):
     for line in p.stderr:
         if re.match(r"Rendered 3\d/90", line):
             break
-    rows = [r.split(None, 1) for r in subprocess.run(["ps", "-A", "-o", "pid=,args="], capture_output=True, text=True).stdout.splitlines()]
+    # -ww: pytest imports readline, which exports COLUMNS=80, and Linux's ps cuts its lines to that
+    rows = [r.split(None, 1) for r in subprocess.run(["ps", "-ww", "-A", "-o", "pid=,args="], capture_output=True, text=True).stdout.splitlines()]
     args = {int(r[0]): r[1] for r in rows if len(r) == 2}
+    mine = {pid: args.get(pid, "") for pid in family(p.pid)}
     # the browser process opens Chrome's start page; its tabs, GPU and utility processes have --type= instead
-    [browser] = [pid for pid in family(p.pid) if "chrome-headless-shell about:blank" in args.get(pid, "")]
-    os.kill(browser, signal.SIGKILL)
+    browsers = [pid for pid, command in mine.items() if "chrome-headless-shell about:blank" in command]
+    assert len(browsers) == 1, f"not one Chrome browser process among the render's processes: {mine}"
+    os.kill(browsers[0], signal.SIGKILL)
     try:
         err = p.communicate(timeout=120)[1]
     except subprocess.TimeoutExpired:
