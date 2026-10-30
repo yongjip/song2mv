@@ -14,6 +14,8 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   target is on, and reports how far it reaches and how sharply it bends.
 
 ### Changed
+- The guide runs full-size renders one at a time, two template copies included: two final videos rendered at once
+  both stopped about ten minutes in. Drafts may still render side by side.
 - The README says how its two demo videos were made, and its example asks for a music video, not a lyric video.
 - The guide says `theme.bg` also shades the picture behind the captions: a light `bg` under the default white text
   washed the captions out.

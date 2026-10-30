@@ -294,8 +294,8 @@ review a stretch at a time) and expect less drawing.
 A copy is `<work>/video` copied to `<work>/video-<name>/` without `node_modules` and `out`. Its first
 `song2mv render <work>/mv.json --template <work>/video-<name>` links it to the shared Remotion install (where its
 `package-lock.json` differs from this song2mv's, it installs its own, about 500 MB). Each agent renders only in its own
-copy, since one half-edited file breaks every render that bundles it. Copies may render at the same time while memory
-lasts: one render takes about 2.3 GB.
+copy, since one half-edited file breaks every render that bundles it. Their drafts may render at the same time while
+memory lasts (one render takes about 2.3 GB); a full-size render runs alone (step 5).
 
 **Plan the cuts with the kit; don't write cut logic.** In five trial videos every agent wrote 750–1200 lines of scene
 code and rebuilt the same cut machinery, and one lost half an hour iterating cut plans against `check`. The kit has it:
@@ -608,7 +608,8 @@ measured 9.20 at full size). When the stretch passes, render it once without `--
 only ever sees full renders, since a draft looks choppy and soft.
 Before that full render, look at a few frames at full size (`--still T` renders one): a contact sheet's small tiles
 hid a scene drawn twice, a band across the picture that cost one trial its final render.
-Run one render, still or sync at a time: each uses every core, and two renders in one template copy have hung.
+Run one full-size render, still or sync at a time: each uses every core, and two at once have hung, in one template
+copy and in two (two songs' final videos both stopped about ten minutes in, their pages closed).
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
 work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
 contact sheets outside `src/scenes/`. Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`
