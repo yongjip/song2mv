@@ -15,8 +15,9 @@ did not make it, so look at it fresh. Fix nothing. Other reviewers have the othe
 - **Read first:** `<work>/lyrics-map.md` (what each line shows, on which word), `<work>/map.md` (the concept and the
   continuity table: who wears and carries what, where, at what time of day). Line times are in `<work>/mv.json`.
 - **Meant to look like that:** TODO: what is odd on purpose, or "nothing".
-- **The render's arm warnings:** TODO: the `arm:` lines `song2mv render --json` listed under `warnings`, or "none".
-  Each is the first time that arm showed the fault: look from there on.
+- **The render's warnings:** TODO: the `arm:`, `face:` and `text:` lines `song2mv render --json` listed under
+  `warnings`, or "none". Each is the first time that arm, face or text showed the fault, within a second of its
+  start: look from there on. A bubble or prop nobody marked over a face is not among them.
 
 ## What a viewer finds wrong, by lens
 

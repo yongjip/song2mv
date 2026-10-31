@@ -27,6 +27,7 @@ export const Slam: React.FC<{
   const tx = align === "left" ? "0%" : align === "right" ? "-100%" : "-50%";
   return (
     <div
+      data-over={s === 1 ? "slammed text" : undefined}
       style={{
         position: "absolute", left: x, top: y, whiteSpace: "nowrap",
         transform: `translate(${tx}, -50%) scale(${s})`,
@@ -51,7 +52,7 @@ export const Quiet: React.FC<{ T: number; t: number; text: string; x: number; y:
   if (o <= 0) return null;
   const tx = align === "left" ? "0%" : align === "right" ? "-100%" : "-50%";
   return (
-    <div style={{ position: "absolute", left: x, top: y, transform: `translate(${tx}, -50%)`, whiteSpace: "nowrap", fontSize: size, fontWeight: 600, letterSpacing: "0.02em", color, opacity: o, textShadow: "0 2px 30px rgba(0,0,0,0.8)" }}>
+    <div data-over="quiet text" style={{ position: "absolute", left: x, top: y, transform: `translate(${tx}, -50%)`, whiteSpace: "nowrap", fontSize: size, fontWeight: 600, letterSpacing: "0.02em", color, opacity: o, textShadow: "0 2px 30px rgba(0,0,0,0.8)" }}>
       {text}
     </div>
   );
@@ -148,6 +149,7 @@ export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?:
   const s = 1 + 0.3 * (1 - outCubic((T - t0) / 0.16));
   return (
     <div
+      data-over={s === 1 ? "big type" : undefined}
       style={{
         position: "absolute", left: x, top: y, width: maxW, transform: `translate(-50%, -50%) scale(${s})`,
         textAlign: "center", wordBreak: "keep-all", fontSize: size, fontWeight: 900, letterSpacing: "-0.035em", lineHeight: 1.1,
@@ -209,6 +211,7 @@ const CaptionText: React.FC<{ T: number; line: Line; words: Word[]; size: number
   const whisper = (song.captions?.whisper ?? []).includes(line.id);
   return (
     <div
+      data-over="caption"
       style={{
         position: "absolute", left: padX, right: padX, bottom, textAlign: "center", wordBreak: "keep-all",
         fontSize: whisper ? Math.round(size * 0.7) : size, fontWeight: whisper ? 500 : 800,

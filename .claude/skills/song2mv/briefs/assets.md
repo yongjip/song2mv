@@ -73,6 +73,12 @@ Section builders then film your pieces all through the song, so a weak piece sho
     `import { toon, line } from "../../kit"`.
 13. **Look at your renders** at full size and in 1:1 crops (`ffmpeg -i in.png -vf crop=W:H:X:Y out.png`), and fix
     rough edges, gaps, wrong overlaps and floating parts before you report. Compare each piece with the real thing.
+14. **Mark what a render checks.** Put each head you draw in a `<g data-face="WHO">` (the skull and hair, the face
+    inside it; the kit's `Person` does), and every bubble, sticky note or prop that can come in front of a figure (it
+    pops in, floats, is held up) in a `<g data-over="WHAT">`. A video render then prints when a face is covered by
+    one of those or cut by the frame's edge, and when text is cut by it (`face: …`, `text: …`); a still prints
+    nothing the page logs. Only the group's solid shapes cover (half opaque or more, by their boxes), so a glow or a
+    shadow inside it is no harm.
 
 ## Render, in your workspace only
 

@@ -64,8 +64,9 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    labelled with its song time and line; `--lines` with the lyric map's ids shows whether each joke made it on screen.
    Passing is necessary, not proof of fun — send a clip and ask what is
    boring. The user's answer outranks the numbers.
-7. **Review before you deliver.** `check` does not see an arm folded into a V or a face cut at the eyes (arms drawn
-   with the kit's `arm()` print their faults when rendered: clear those first). Give the
+7. **Review before you deliver.** `check` does not see an arm folded into a V or a face cut at the eyes or covered (arms
+   drawn with the kit's `arm()`, and heads and bubbles marked `data-face` and `data-over`, print their faults when
+   rendered: clear those first). Give the
    finished render to fresh agents with the skill's `briefs/review.md`, a stretch or a lens each, as many as the
    quality level says, or review it yourself with that brief, crop by crop, when you cannot start agents. Fix every
    high- and medium-severity finding and have the fixed stretches looked at again, for as many rounds as the level

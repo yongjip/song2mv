@@ -29,6 +29,11 @@ file is merged into `<work>/video/` at the end. Read first, in this order:
   apart. Draw any arm of your own with the kit's `arm()`. Draft renders print the first time each arm shows a fault
   (`arm: WHO: FAULT at T s`): fix it and render again until no `arm:` line is left, or say in your report why it looks
   right.
+- Mark what you draw in front of a figure: a bubble, sticky note or prop that pops in, floats or is held up goes in
+  a `<g data-over="WHAT">`, and every head of your own in a `<g data-face="WHO">` (the kit's `Person` and text mark
+  themselves). Draft renders print the first time each face is covered or cut by the frame and text is cut by it
+  (`face: …`, `text: …`): move the thing, the figure or the framing, and render again until none is left, or say in
+  your report why it looks right (a figure walking in is cut for a moment).
 - No logos, wordmarks or brand symbols, and no real person's face.
 
 ## Boards

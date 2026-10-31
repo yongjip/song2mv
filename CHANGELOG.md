@@ -31,6 +31,18 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   of the whole video from before and after a fix in a piece, in place of two contact sheets compared by eye: on the
   drafts that taught this it showed, in about 3 s, the hand-hold fix and the three shots where it had moved the teacher
   out of her doorway.
+- A video render looks at every frame for a face (an element with `data-face="WHO"`: the kit's `Person` has it, a
+  piece of your own wraps its head in one) and prints, once for each line sung, the first time an element with
+  `data-over="WHAT"` drawn after it (the kit's text, or a bubble, sticky note or prop you mark; its solid shapes count)
+  covers over 30 % of what shows of it (`face: WHO: covered by WHAT (LINE) at T s`), the first time the frame's edge
+  cuts it (30 to 98 % of it out: `face: WHO: cut by the frame (LINE) at T s`) and the first time it cuts text (over
+  15 % out: `text: WHAT: cut by the frame (LINE) at T s`). `render --json` lists them under `warnings`. The painters',
+  builders' and reviewers' briefs ask for the marks and to clear the lines. Of the high-severity findings blind
+  reviewers made in three Sonnet videos, about 21 of 33 were a face covered or cut and 4 more text cut. On the
+  medium-level video's 16:9 render the check prints 11 lines, which include 5 of the 6 faces the reviewers called
+  high (the sixth, a bowl over a mouth, is a prop nobody had marked); on a published paper-cut video, rendered at 1
+  frame a second, it prints 1 line for the 16:9 frame and 1 for the 9:16. A figure that walks in is cut for a moment
+  and prints too.
 
 ### Changed
 - The painters' brief asks for `arm()` on every arm that reaches for something, `toward` down for a hand at the face,

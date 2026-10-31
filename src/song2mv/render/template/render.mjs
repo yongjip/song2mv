@@ -23,8 +23,8 @@
  *          and the JSON object in FILE, such as {"T": 33.1} for Concepts or {"times": [12, 33.1]} for Contact;
  *          --frame N takes frame N, written as BASE-ID-N.png)
  *          --manifest FILE (append the path of every file written, one per line; else they are printed)
- *          --warnings FILE (append each warning the kit printed in a video render, its `arm:` and `storyboard:`
- *          lines, once, as first seen; Remotion's stills print nothing from the page)
+ *          --warnings FILE (append each warning the kit printed in a video render, its `arm:`, `face:`, `text:`
+ *          and `storyboard:` lines, once, as first seen; Remotion's stills print nothing from the page)
  *
  * The audio is never copied into this folder: a temporary public folder outside it holds a link to it.
  * Remotion mixes the audio to WAV and its ffmpeg writes the AAC: Remotion's own AAC starts 2048 samples late.
@@ -232,7 +232,7 @@ function family(pid) {
 }
 
 const warned = new Map();
-const KIT_LINE = /\b((?:arm|storyboard): .+?)(?: at \d+(?:\.\d+)? s)?$/;
+const KIT_LINE = /\b((?:arm|storyboard): .+?|(?:face|text): .+?: (?:covered by|cut by the frame).*?)(?: at \d+(?:\.\d+)? s)?$/;
 const kitLine = (line) => KIT_LINE.exec(line.replace(/\x1b\[[0-9;]*m/g, ""));
 const warnOnce = (kit) => warned.has(kit[1]) || (warned.set(kit[1], kit[0]), console.warn(kit[0]));
 

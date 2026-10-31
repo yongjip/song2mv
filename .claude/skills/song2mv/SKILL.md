@@ -278,6 +278,11 @@ and any kit changes into it.
    - `arm()` for every arm that reaches for something, and `toStage` and `toLocal` for hand targets (`briefs/assets.md`, rule 6).
      A copy made by an older song2mv lacks them: copy `src/kit/math.ts` from a new `--template` folder (it imports
      nothing);
+   - `data-face="WHO"` on the `<g>` of every head you draw and `data-over="WHAT"` on every bubble, sticky note or prop
+     that comes in front of a figure (`briefs/assets.md`, rule 14), so that a video render can list a face covered or
+     cut by the frame. The kit's `Person` and text carry the marks; a copy made by an older song2mv lacks
+     `src/kit/facecheck.tsx` (it imports `./song` only), its `FaceCheck` in `LyricVideo.tsx` and `LyricShort.tsx`,
+     and the marks;
    - the helpers that take their colours and shapes as props: `Hit`, `Flames`, `Lightning` and `Storm`, `Tears`,
      `Cash`;
    - how `effects.tsx` times its particles.
@@ -656,7 +661,15 @@ crashed, or when no frame has come for `SONG2MV_STALL` seconds (180); it says wh
 fails with an error naming the frame, instead of waiting.
 A video render prints the first time each arm drawn with the kit's `arm()` shows a fault a viewer would see
 (`arm: WHO: FAULT at T s`), and `render --json` lists them, with the storyboard's warnings, under `warnings`; a
-still prints neither. Fix each and render again until none is left, or tell the reviewers why it looks right.
+still prints neither. A video render also looks at every frame and prints, once for each line sung, the first time
+a face (`data-face`) is covered by a `data-over` element drawn after it (`face: WHO: covered by WHAT (LINE) at T s`),
+a face is cut by the frame's edge (`face: WHO: cut by the frame (LINE) at T s`) or text is
+(`text: WHAT: cut by the frame (LINE) at T s`). `(LINE, 9:16)` is the short, whose band shows the stage's middle
+74 % (x 250 to 1670): a head near the stage's side is cut there, and only a `VerticalScene` or `tall` framings clear it. A figure
+wholly off the frame says nothing. The time is the first frame the render met, within a second of the start. About
+21 of the 33 high-severity findings blind reviewers made in three Sonnet videos were a face covered or cut, and 4
+more text cut; the check misses what nobody marked, such as a prop over a mouth. Fix each and render again until
+none is left, or tell the reviewers why it looks right (a figure walking in is cut for a moment).
 Take the video's path from `outputs` in `render --json` instead of building it (the file name starts with the
 work folder's name, or `--name`). `--src` should cover the video's scene files only: keep review helpers such as
 contact sheets outside `src/scenes/`. Fix every FAIL, re-measure, and say which numbers moved. Checks under `skipped`

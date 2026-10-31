@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Audio, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { BeatGlow, Captions, FPS, Flash, MvProps, Sky, SongContext, VerticalCtx, Vignette, flashesOf, makeSongCtx, outCubic, sectionLook, span, useFonts } from "./kit";
+import { BeatGlow, Captions, FaceCheck, FPS, Flash, MvProps, Sky, SongContext, VerticalCtx, Vignette, flashesOf, makeSongCtx, outCubic, sectionLook, span, useFonts } from "./kit";
 import { Scene, VerticalScene, linesDrawnByScene } from "./scenes";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -73,6 +73,7 @@ export const LyricShort: React.FC<MvProps> = ({ song, from, to, hold }) => {
           )}
           {/* lyrics the scenes don't draw, under the band, inside the safe box: up to two rows end at y 1240 */}
           <Captions T={T} hide={hide} size={66} bottom={680} padX={150} band={VerticalScene !== null && "around"} />
+          <FaceCheck T={T} />
           <Flash T={T} flashes={flashes} />
           <AbsoluteFill style={{ background: "#000", opacity: 1 - fade(frame) }} />
         </AbsoluteFill>

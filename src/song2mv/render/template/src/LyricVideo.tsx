@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Audio, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { BeatGlow, Captions, FPS, Flash, MvProps, Sky, SongContext, Vignette, flashesOf, makeSongCtx, sectionLook, span, useFonts } from "./kit";
+import { BeatGlow, Captions, FaceCheck, FPS, Flash, MvProps, Sky, SongContext, Vignette, flashesOf, makeSongCtx, sectionLook, span, useFonts } from "./kit";
 import { Scene, linesDrawnByScene } from "./scenes";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -37,6 +37,7 @@ export const LyricVideo: React.FC<MvProps> = ({ song, from, to, hold }) => {
         <Scene T={T} />
         {song.vignette !== false && <Vignette />}
         <Captions T={T} hide={hide} />
+        <FaceCheck T={T} />
         <Flash T={T} flashes={flashes} />
         {!toEnd && <AbsoluteFill style={{ background: "#000", opacity: 1 - fade(frame) }} />}
       </AbsoluteFill>

@@ -279,12 +279,12 @@ export const linesDrawnByScene = (_song: Song) => new Set<string>();
 """
 
 
-def _arm_template(tmp_path):
+def _arm_template(tmp_path, scenes=ARM_SCENES):
     template = tmp_path / "video"
     shutil.copytree(BUNDLED, template, ignore=shutil.ignore_patterns("node_modules", "out"))
     os.symlink(os.path.join(BUNDLED, "node_modules"), template / "node_modules")
     (template / "src" / "scenes" / "index.ts").unlink()
-    (template / "src" / "scenes" / "index.tsx").write_text(ARM_SCENES, encoding="utf-8")
+    (template / "src" / "scenes" / "index.tsx").write_text(scenes, encoding="utf-8")
     return template
 
 
@@ -300,6 +300,55 @@ def test_each_kit_warning_is_listed_once_from_every_tab_and_chunk(tmp_path):
     assert "storyboard: the probe's board never cuts" in seen.read_text(encoding="utf-8").splitlines()
     for said in ("probe left", "probe right", "probe's board"):
         assert r.stderr.count(said) == 1, r.stderr
+
+
+FACE_SCENES = """
+import React from "react";
+import { Person, Slam, Song, Svg } from "../kit";
+
+const Head: React.FC<{ who: string; x: number; y: number; opacity?: number }> = ({ who, x, y, opacity = 1 }) => (
+  <g data-face={who} opacity={opacity}><circle cx={x} cy={y} r={80} fill="#e8b890" /></g>
+);
+export const Scene: React.FC<{ T: number }> = ({ T }) => (
+  <>
+    <Svg>
+      <rect width={1920} height={1080} fill="#203040" />
+      <Head who="covered" x={300} y={200} />
+      <g data-over="sign"><rect x={250} y={150} width={100} height={100} fill="#fff" /></g>
+      <g data-over="sign behind"><rect x={650} y={150} width={100} height={100} fill="#fff" /></g>
+      <Head who="in front" x={700} y={200} />
+      <Head who="cut" x={T > 1 ? 1900 : 1500} y={200} />
+      <Head who="gone" x={2300} y={200} />
+      <Head who="faded" x={1000} y={200} opacity={0.3} />
+      <g data-over="sign faded" opacity={0.3}><rect x={950} y={150} width={100} height={100} fill="#fff" /></g>
+      <Head who="slammed" x={300} y={700} />
+      <Person x={1500} y={900} id="kit" />
+      <g data-over="sign kit"><rect x={1350} y={560} width={300} height={160} fill="#fff" /></g>
+      <text x={1700} y={800} fontSize={90} fill="#fff">cut word</text>
+      <text x={200} y={900} fontSize={90} fill="#fff">whole word</text>
+    </Svg>
+    <Slam T={T} t={0} text="WORD" x={300} y={700} size={160} color="#fff" glow="#fff" />
+  </>
+);
+export const VerticalScene = null;
+export const linesDrawnByScene = (_song: Song) => new Set<string>();
+"""
+
+
+def test_a_face_the_frame_cuts_or_a_thing_in_front_covers_is_listed_once(tmp_path):
+    seen = tmp_path / "warnings.txt"
+    subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--from", "0", "--to", "2", "--draft",
+                    "--out", str(tmp_path), "--warnings", str(seen)],
+                   cwd=_arm_template(tmp_path, FACE_SCENES), env={**os.environ, "SONG2MV_CHUNK": "10"}, check=True,
+                   capture_output=True, text=True)
+    said = [re.fullmatch(r"((?:face|text): .+?) \((\S+)\) at \d\.\d0 s", line)
+            for line in seen.read_text(encoding="utf-8").splitlines() if line.startswith(("face:", "text:"))]
+    assert all(said), seen.read_text(encoding="utf-8")
+    assert sorted({m.group(1) for m in said}) == [
+        "face: covered: covered by sign", "face: cut: cut by the frame", "face: kit: covered by sign kit",
+        "face: slammed: covered by slammed text",
+        'text: "cut word": cut by the frame']
+    assert len({m.group(1, 2) for m in said}) == len(said), "each is listed once for each line"
 
 
 WIDE_SCENES = """

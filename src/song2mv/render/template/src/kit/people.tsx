@@ -471,7 +471,7 @@ function Limb({ p, w, fill, band, rim, bows }: { p: [V, V, V]; w: W3; fill: stri
 /**
  * A person. `look` sets outfit (hoodie, suit, dress), hair (short, long, ponytail), skin and colours; anything left
  * out comes from the outfit's defaults. `prop` is drawn in the person's own coordinates, after everything else
- * (personHand gives the front hand's position). `id` prefixes the clip paths (one is made up when left out).
+ * (personHand gives the front hand's position). `id` prefixes the clip paths (one is made up when left out) and names the head in `face:` warnings.
  */
 export const Person: React.FC<{
   x: number; y: number; s?: number; pose?: Pose; phase?: number; flip?: boolean; opacity?: number; T?: number;
@@ -717,7 +717,7 @@ export const Person: React.FC<{
         {hairBack}
         {pony}
         {/* head */}
-        <g transform={`translate(${pt(r.hc)}) rotate(${num(r.headAng)})`}>
+        <g transform={`translate(${pt(r.hc)}) rotate(${num(r.headAng)})`} data-face={id ?? "person"}>
           <path d={smooth(lying ? HEAD_LIE : HEAD)} fill={skin} />
           <path d={smooth(CHEEK)} fill={mix(skin, "#ff6f7d", lying ? 0.16 : 0.24)} />
           {lying && <path d={EYE_SHUT} stroke={mix(skin, "#2a1418", 0.78)} strokeWidth={1.3} strokeLinecap="round" fill="none" />}
