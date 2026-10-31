@@ -15,6 +15,14 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   glued on it, still use filters.
 
 ### Added
+- An `anime` style pack: `anime.AnimeHead` and `anime.AnimeBust` draw a cel-shaded cyberpunk-anime head (and
+  shoulders in a high-collar jacket) in a front or a three-quarter view, facing either way. Eyes, brows and mouth
+  are set by `expression` (`anime.faces` has six), the mouth moves with `talk` (`anime.mouthAt` for sung lines), the
+  eyes look where `look` says and blink by themselves, and the rim lights flicker. The fringe is one swept shape that
+  casts its shadow on the forehead, each clump has a shaded underside, the near side has a tucked ear and a cyan rim
+  light, the far side a magenta one. `anime.Neon` lights a frame from two corners, and `eyeShot`, `SpeedLines` and
+  `Split` make an eye close-up with a flash cut; the recipe `NeonCloseup` combines them. Gallery tiles 33 and 34.
+  Heads only: no hands and no bodies below the jacket.
 - A layered SVG brand kit with color, single-ink and reversed logos, icons, transparent raster exports, and a rebuild script. The README shows the logo in light and dark themes.
 - Quality levels in the skill: medium, high (the default) and max set, phase by phase, how many agents draw, how
   many review and for how many rounds (one at medium, two at high, and at max a third when the second still found a
