@@ -82,11 +82,3 @@ Findings, the worst first, each with:
 - the path of a crop that shows it, and the scene or piece that draws it if you can tell.
 
 Then what you checked and found fine, and what you did not cover.
-
-## Verifying a finding
-
-At the max quality level a verifier checks one report's high-severity findings before anyone fixes them. If that is
-your task, for each finding (its time, place in the frame and crop) cut its frames again yourself at full size, from
-the video, not from the reviewer's files, and step through one second around it. Then report three lines per
-finding: **real**, **not real** or **something else** (what is there instead); the piece or board that draws it; its
-severity (high, med or low). When the frames don't show it, it is not real.
