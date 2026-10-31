@@ -798,12 +798,79 @@ console.log(JSON.stringify({
     assert out["stage"] == [652, 640] and [round(v, 6) for v in out["back"]] == [30, -100]
 
 
+def test_paper_pieces_cost_no_filter_of_their_own_unless_lifted_high(tmp_path):
+    # Every filter is a pass of its own for the GPU in every frame: 60 plain pieces drew 120 turbulence passes and as many
+    # blurs, and a 2:34 video took 25 minutes to render
+    node = os.path.join(BUNDLED, "node_modules")
+    out = _probe(tmp_path, """
+import * as React from "NODE/react";
+import { renderToStaticMarkup } from "NODE/react-dom/server";
+import * as paper from "KIT/styles/paper";
+const h = React.createElement;
+const html = (...c: any[]) => renderToStaticMarkup(h("svg", null, h(paper.Stack, { id: "t" }, ...c)));
+const count = (s: string, re: RegExp) => (s.match(re) ?? []).length;
+const row = (n: number, lift: number) =>
+  Array.from({ length: n }, (_, i) => h(paper.Cut, { key: i, d: paper.rect(i * 20, 0, 16, 16, i + 1), fill: "#c99e6e", lift }));
+const stats = (s: string) => ({ filters: count(s, /<filter /g), noise: count(s, /<feTurbulence/g), blurs: count(s, /<feGaussianBlur/g) });
+const glued = html(h(paper.Cut, { d: paper.rect(0, 0, 60, 60, 1), fill: "#fff", lift: 1 },
+  h(paper.Cut, { d: paper.rect(10, 10, 20, 20, 2), fill: "#000", lift: 1 })));
+const bare = renderToStaticMarkup(h("svg", null, h(paper.Cut, { d: paper.rect(0, 0, 60, 60, 1), fill: "#fff", lift: 2 })));
+const wrapped = html(h(paper.Cut, { d: "", fill: "none", lift: 6 }, h("circle", { r: 30, fill: "#f80" })));
+const grainless = renderToStaticMarkup(h("svg", null, h(paper.Stack, { id: "t", grain: 0 }, ...row(4, 2))));
+console.log(JSON.stringify({ plain: stats(html(...row(60, 1.5))), low: stats(html(...row(60, 0.25))), high: stats(html(...row(3, 16))),
+  glued: stats(glued), wrapped: stats(wrapped), bare: stats(bare), flat: stats(html(...row(5, 0))), grainless: stats(grainless) }));
+""".replace("NODE", node), {})
+    assert out["plain"] == {"filters": 1, "noise": 0, "blurs": 0}  # the stack's lit edge for the pieces that cannot be read, whatever it holds
+    assert out["low"] == out["flat"] == out["plain"]
+    assert out["high"] == {"filters": 4, "noise": 0, "blurs": 6}  # a blurred cast shadow and contact shadow per piece lifted past 12 px
+    assert out["glued"] == out["plain"]  # a piece with a piece glued on casts its own outline's shadow, and the one glued on its own
+    assert out["wrapped"] == {"filters": 2, "noise": 0, "blurs": 2}  # an empty outline with a drawing glued on shades the drawing: its shadow is a filter
+    assert out["bare"] == {"filters": 0, "noise": 0, "blurs": 0}  # outside a stack: soft shadows only
+    assert out["grainless"] == {"filters": 0, "noise": 0, "blurs": 0}
+
+
+def test_the_lit_edge_of_a_piece_stays_on_the_piece_and_on_the_sides_that_face_the_light(tmp_path):
+    node = os.path.join(BUNDLED, "node_modules")
+    out = _probe(tmp_path, """
+import * as React from "NODE/react";
+import { renderToStaticMarkup } from "NODE/react-dom/server";
+import * as paper from "KIT/styles/paper";
+const h = React.createElement;
+const marks = (d: string, at: number[][]) => {
+  const s = renderToStaticMarkup(h("svg", null, h(paper.Stack, { id: "t" }, h(paper.Cut, { d, fill: "#eee", lift: 1 }))));
+  const edge = /d="([^"]*)" fill="#ffffff"/.exec(s);
+  const quads = (edge ? edge[1] : "").split("Z").filter((q) => q.trim()).map((q) => (q.match(/-?\\d+\\.?\\d*/g) ?? []).map(Number));
+  const inQuad = (q: number[], x: number, y: number) => {
+    let c = false;
+    for (let i = 0, j = q.length / 2 - 1; i < q.length / 2; j = i++) {
+      const [xi, yi, xj, yj] = [q[2 * i], q[2 * i + 1], q[2 * j], q[2 * j + 1]];
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  const all = quads.flat();
+  return { n: quads.length, lit: at.map(([x, y]) => quads.some((q) => inQuad(q, x, y))),
+    within: Math.min(...all) >= -1e-6 && Math.max(...all.filter((_, i) => i % 2 === 0)) <= 100 + 1e-6
+      && Math.max(...all.filter((_, i) => i % 2 === 1)) <= 80 + 1e-6 };
+};
+const sides = [[50, 0.9], [0.9, 40], [50, 79], [99, 40], [50, 40]];
+const cut = `${paper.rect(0, 0, 100, 80, 1, 0)} ${paper.rect(30, 30, 40, 20, 2, 0)}`;
+console.log(JSON.stringify({ plain: marks(paper.rect(0, 0, 100, 80, 1, 0), sides),
+  hole: marks(cut, [...sides, [50, 50.9], [70.9, 40], [50, 29.1], [29.1, 40]]) }));
+""".replace("NODE", node), {})
+    assert out["plain"]["lit"] == [True, True, False, False, False]  # up and left only
+    assert out["plain"]["within"]  # no strip pokes out past a corner
+    assert out["hole"]["lit"] == [True, True, False, False, False, True, True, False, False]  # a hole's lower and right edges face up and left
+    assert out["hole"]["within"]
+
+
 def _probe(tmp_path, code: str, song: dict) -> object:
     probe = tmp_path / "probe.tsx"
     probe.write_text(code.replace("KIT", os.path.join(BUNDLED, "src", "kit")).replace("SCENES", os.path.join(BUNDLED, "src", "scenes"))
                      .replace("SONG", json.dumps(song)), encoding="utf-8")
     subprocess.run([os.path.join(BUNDLED, "node_modules", ".bin", "esbuild"), str(probe), "--bundle", "--platform=node",
-                    "--format=esm", "--log-level=error", f"--outfile={tmp_path / 'probe.mjs'}"], check=True)
+                    "--format=esm", "--log-level=error", f"--outfile={tmp_path / 'probe.mjs'}",
+                    "--banner:js=import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);"], check=True)
     return json.loads(subprocess.run(["node", str(tmp_path / "probe.mjs")], check=True, capture_output=True, text=True).stdout)
 
 
@@ -1013,6 +1080,19 @@ def _gallery_tile(tmp_path, tile: int, gl: str) -> np.ndarray:
 
 def test_the_kit_gallery_renders_through_render_mjs(tmp_path):
     assert _gallery_tile(tmp_path, 4, "off").std() > 10
+
+
+def _grain(rgb: np.ndarray, x: int, y: int, w: int, h: int) -> float:
+    """The spread of the speckle in a flat patch: its grey levels less their 9×9 local mean"""
+    g = rgb[y:y + h, x:x + w].mean(axis=2)
+    pad = np.pad(g, 4, mode="reflect")
+    mean = sum(pad[i:i + h, j:j + w] for i in range(9) for j in range(9)) / 81
+    return float((g - mean).std())
+
+
+def test_the_paper_tile_has_its_grain_at_the_strength_it_always_had(tmp_path):
+    # the teal wall of tile 13: the filters drew a spread of 5.9 grey levels, and tiles of noise drawn once must match
+    assert 4.5 < _grain(_gallery_tile(tmp_path, 13, "off"), 1500, 80, 300, 200) < 7.5
 
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="render.mjs draws on the GPU on a Mac only")

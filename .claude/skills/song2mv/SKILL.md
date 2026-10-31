@@ -435,7 +435,9 @@ down on the GPU, where a line-pack draft (half size, so a shift of half a pixel)
 - outlines cut by hand, each with its own seed: `paper.rect`, `paper.ellipse`, `paper.poly`, `paper.strip` (stems,
   cords, steam); join outlines to cut holes;
 - `paper.Cut`: one piece, placed with `x`, `y`, `rotate`, `s`; `lift` raises it off the paper under it and its
-  shadow grows; a Cut inside a Cut is glued onto it;
+  shadow grows; a Cut inside a Cut is glued onto it. A piece lifted 12 px or less is drawn as plain paths; one lifted
+  higher, or an empty outline with drawings glued on to give them a shadow, costs filters in every frame, several
+  times what a plain piece does, so keep those to the few that need them;
 - `paper.Stack id`: the grain and the light for every piece inside it, one per scene;
 - `paper.colors` and `paper.matte(c)` for paper colours, `paper.step(T)` for the held steps of cut-out motion.
 
