@@ -6,6 +6,13 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 
 ### Changed
 - The README identifies the model and effort setting next to the video examples and notes that results can vary.
+- The paper style renders about four times faster. A paper piece drew five filters in every frame (two noise passes, two
+  blurs and its lit edge), and each is a pass of its own for the GPU, which Chrome runs on one thread: a 2:34 video took
+  25 min to render at 1080p and 6 min as a draft. Shadows and lit edges are now paths, and the grain is two tiles of
+  noise that Chrome draws once and the pack lays over each piece, so the same video takes 6 min and 1 min. Stills differ
+  from the old ones no more than the old ones differ from themselves drawn with other noise seeds, `check` gives the
+  same numbers and the files are about the same size. A piece lifted past 12 px, and an empty outline that shades drawings
+  glued on it, still use filters.
 
 ### Added
 - A layered SVG brand kit with color, single-ink and reversed logos, icons, transparent raster exports, and a rebuild script. The README shows the logo in light and dark themes.
