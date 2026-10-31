@@ -64,7 +64,9 @@ Section builders then film your pieces all through the song, so a weak piece sho
    person from one pose to another inside a shot (sits down, reaches up), give the change a 0–1 prop or a hand
    target, so it can take 0.2–0.6 s instead of snapping in one frame. A turn from facing us to side-on needs a
    three-quarter pose between them, or it snaps however smoothly the arms move.
-9. **Sizes at s = 1**, in each doc comment. People match the kit's `Person`, about 300 px tall at s = 1.
+9. **Sizes at s = 1**, in each doc comment. People match the kit's `Person`, about 300 px tall at s = 1. An anime head
+   (`anime.AnimeHead`) is about 380 px tall at s = 1 with its origin at the middle of its face; draw a character the
+   concept needs as one of these, not as a second figure of your own.
 10. **Past the stage's bottom edge.** Ground, floors, walls and sky run on down to about y 3000: the 9:16 frame shows
     below y 1080, the further the wider its shot.
 11. **Colours** from the palette by default, and props where a scene may want another.

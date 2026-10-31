@@ -3,7 +3,7 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
   Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Line, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, comic, makeSongCtx, mix, paper, personHand, pixel, rng, shade, SKINS, STRIDE,
-  PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster, toon, line, paint, finish,
+  PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster, toon, line, paint, finish, anime, NeonCloseup,
 } from "./kit";
 import sample from "./sample-song.json";
 
@@ -1556,6 +1556,26 @@ const Finishes: React.FC<{ T: number }> = ({ T }) => (
 
 
 
+/** The anime pack (kit/styles/anime.tsx): a bust talking and blinking, and heads in both views facing both ways */
+const AnimeHeads: React.FC<{ T: number }> = ({ T }) => (
+  <Svg>
+    <rect width={1920} height={1080} fill="#071a24" />
+    <anime.AnimeBust T={T} x={560} y={430} s={1.5} id="g34-a" expression={anime.faces.happy} talk={anime.mouthAt(T, [[0, 99]])} tilt={-4} />
+    {(
+      [
+        ["front", "left", anime.faces.calm, 0],
+        ["front", "right", anime.faces.angry, 0.4],
+        ["three-quarter", "left", anime.faces.shock, 0],
+        ["three-quarter", "right", anime.faces.sad, 0],
+      ] as const
+    ).map(([angle, facing, expression, talk], i) => (
+      <anime.AnimeHead key={i} T={T} id={`g34-${i}`} angle={angle} facing={facing} expression={expression} talk={talk} seed={i + 2}
+        x={1290 + (i % 2) * 360} y={270 + Math.floor(i / 2) * 400} s={0.78} />
+    ))}
+    <anime.Neon id="g34" T={T} />
+  </Svg>
+);
+
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -1837,6 +1857,14 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Finishes: as drawn, old film, VHS and print",
     draw: (T) => <Finishes T={T} />,
+  },
+  {
+    name: "Style pack: cel-shaded anime heads and a bust",
+    draw: (T) => <AnimeHeads T={T} />,
+  },
+  {
+    name: "Recipe: neon close-up (an eye cut, 9 parts)",
+    draw: (T) => <NeonCloseup T={T} cut={9.1} talks={[[0, 99]]} />,
   },
 ];
 

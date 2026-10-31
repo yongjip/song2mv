@@ -192,6 +192,8 @@ different central image. For each, write:
   - pixel art (the kit has a style pack for it too);
   - toon: an ink outline round each character and prop, shading from a lit side and a shine on round forms (the kit
     has a style pack for it, which outlines kit pieces as they are);
+  - cel-shaded anime: a character's head or bust with a swept fringe, rim lights and big eyes under neon (the kit has
+    a style pack for it, `anime`, with a front and a three-quarter view);
   - watercolour washes over a pencil drawing (the kit has a style pack for it, which paints kit pieces as they are),
     or collage;
   - an isometric miniature;
@@ -541,6 +543,32 @@ hand.
   as the stage `[-60, -60, 2040, 1200]`, or the filter covers all of it;
 - on a 12-core Mac's GPU a still of the painted street takes 2.3 s against 2.0 s unpainted; in software 8.0 s.
 
+`anime`, a cel-shaded cyberpunk-anime head and bust (gallery tile 33; tile 34 is the recipe `NeonCloseup`):
+- `<anime.AnimeHead T x y s id>` is a head and neck, `<anime.AnimeBust>` the same with shoulders and a high-collar
+  jacket (it runs 300 px below the face at `s` = 1). The origin is the middle of the face and a head at `s` = 1 is about
+  380 px tall, so a bust fills a 1080 stage at `s` 1.5–1.7; the torso runs on past the frame's bottom edge. Two heads
+  in a scene need two `id`s;
+- `angle` `front` or `three-quarter` (each drawn for itself, not one squashed into the other), `facing` `left` or
+  `right` (a mirror, rim lights and all: the near side keeps the near colour), `tilt` in degrees;
+- `expression` is `{ eyes, brows, mouth }`: eyes `open`, `closed`, `smile` or `wide`; brows `neutral`, `angry`, `sad` or
+  `raised`; mouth `closed`, `smile`, `open` or `shout`. `anime.faces` has ready ones (`calm`, `happy`, `angry`, `sad`,
+  `shock`, `shout`). a `closed` mouth turns down under `sad` brows;
+- `talk` 0–1 opens the mouth; `anime.mouthAt(T, spans)` gives it for the times a line is sung (`[line.start,
+  line.end]` pairs). A `closed` or `smile` mouth opens with it, an `open` one is always open and moves, a `shout` one is
+  wide. `look` `[x, y]` (−1…1) moves the irises. The eyes blink on their own (`blink={false}` stops it, `seed` moves
+  the blinks); the rim lights flicker (`flicker` 0–1) and the far lock sways, all from `T`;
+- `palette` overrides any of `anime.palettes.neon` (the default: navy hair, magenta streak, cyan and magenta rims) or
+  `anime.palettes.ember`; `cyber={false}` leaves out the cheek implant and the earpiece;
+- `<anime.Neon id T>` lights a whole frame from two corners in two colours, over everything drawn before it
+  (`from`, `colors`, `beat` to kick on the song's beat); put it inside the Svg after the character and the scenery;
+- an eye close-up cut: `<anime.AnimeHead {...eyeShot([960, 540], 6)} …/>` puts the near eye at that point 6 times
+  larger (`anime.animeEye()` gives the eye's place at `s` = 1), `<anime.SpeedLines>` goes behind it, `<anime.Split id T
+  at>` slides red and cyan copies apart for a sixth of a second after `at`, and the kit's `Flash` at the same time
+  gives the white frame. `NeonCloseup` in `kit/recipes.tsx` combines them;
+- what it cannot do: hands, a body below the jacket, a full figure, a second hair style (it is a bob), and a tween
+  between the two views (cut or dissolve). Strokes grow with `s`: an `eyeShot` at `s` 6 has thick lines, which suits a
+  close-up, and a head under `s` 0.5 loses its fine ones.
+
 `finish`, a whole frame as an old film, a VHS tape or a halftone print, over any style (gallery tile 32). Wrap the
 frame, camera and all, in `<finish.Film id T>` (`tone` `sepia` or `bw`; grain, scratches, dust, flicker, gate weave,
 a vignette), `<finish.Vhs id T>` (colour fringing, scanlines, a rolling band, a `label` and a counter) or
@@ -579,8 +607,8 @@ Putting a scene together:
   shaded or soft; draw a sprite for anything seen up close.
 - **Recipes:** parts fit together by the same scale `s` (1 = a Person 300 px tall), the line things stand on and
   anchors (`personHand()`, `personEye()`, a strike's `to`, `FlamesAlong`), so a new asset can be a recipe of a few
-  lines that combines them, like `SleeplessStorm` in `src/kit/recipes.tsx` (scene 21); recipes are welcome as pull
-  requests too.
+  lines that combines them, like `SleeplessStorm` in `src/kit/recipes.tsx` (scene 21) and `NeonCloseup`, an anime bust in a
+  rainy city that cuts to her eye (gallery tile 34); recipes are welcome as pull requests too.
 - **One light:** choose the scene's key light and pass it everywhere it is asked for: the same `time` for sky,
   clouds, city and vehicles; `light` on `Clouds` and `Sea`.
 - **Motion from data:**
