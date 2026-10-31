@@ -46,8 +46,9 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    into `WORK/lyrics-map.md`: every line that does something (a pun, a sound-alike, a metaphor, a parody, a list)
    gets an event on its key word and, for a sound-alike, both words as text ("knead → need"); a picture of the line's
    noun misses the joke. Show the user your reading and carry on. The skill's quality level (medium, high, max) sets
-   how many agents draw and review: high unless the user asks for another (with a weaker model, max); say which with
-   the concepts and don't wait. Then start from a concept: propose two or three, in
+   how many agents draw and review: high unless the user asks for another (with only a weaker model, max); say which
+   with the concepts and don't wait, and run every agent on the strongest model you have. Then start from a concept:
+   propose two or three, in
    different art styles, as stills side by side, and pick one; the skill's step 3 lists what the user judged fun
    (reactions, faces in view, a frame that makes the everyday an event). The scene kit in `DIR/src/kit/` (people,
    places, sky, objects, effects; style packs such as `paper` that put any object in another art style) is optional:

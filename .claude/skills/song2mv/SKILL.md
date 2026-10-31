@@ -35,13 +35,17 @@ in several. A second round, after the fixes and a redesign of one character, fou
 | Pieces (step 4) | you draw them | one painter per group, then a fresh reviewer on the galleries and fit tiles | as high |
 | Sections (step 4) | you, a section at a time | three or four builders, each a stretch of sections | as high |
 | Review (step 5) | one reviewer per two minutes of video | one per minute or two, one for the characters, one per short | as high, and in the first round one per lens over the whole video |
-| Rounds | one | two: a new reviewer on every changed stretch | up to four, until a round finds no high-severity finding and at most three medium-severity ones |
-| High-severity findings | fixed without a second check | fixed without a second check | confirmed from the frames by a verifier, one per report, before anyone fixes them |
+| Rounds | one | two: a new reviewer on every changed stretch | as high, and a third when the second round found a high-severity finding |
 
 The six lenses (`briefs/review.md`) are **bodies**, **framing**, **continuity**, **motion**, **story**, and **text and
-9:16**; whether a reviewer with one lens finds more than one with all six is not measured yet. If you can choose
-models, give painters, reviewers and verifiers the strongest one: the painters' pieces cause most pose faults, and a
-weak reviewer catches less. With a weaker model, pick max.
+9:16**. In one video the lens reviewers cost 5 % of the run, and half of their 26 high- and medium-severity findings
+were in no other report; whether a lens finds more than a reviewer with every lens is not measured.
+
+**The model matters more than the level.** On one song judged blind, Sonnet 5.5 left 7.6 high- and medium-severity
+findings per minute at medium and 5.3 at max; Opus 5.5 at high, with a third pass for high-severity findings, left
+1.3, and its reviewers rated most of what they found low. Run every agent on the strongest model you have; with only a
+weaker one, pick max. If you must mix, give painters and reviewers the strongest: the painters' pieces cause most pose
+faults, and a weak reviewer catches less.
 
 **Checkpoints don't block.** At each one, show the user what you have, with your pick and the reason in one line,
 and keep going; they can redirect you at any time. Decide timing by measurement, send the ear-check clips anyway and
@@ -712,11 +716,10 @@ defects after every check had passed, such as arms folded into a V and faces cut
   or two, one for the characters (every pose and prop the scenes use, at 1:1) and one per short; at max, in the first
   round, also one per lens over the whole video. Each crops every figure at 1:1, edits nothing and reports with
   severities. Give whatever a reviewer did not cover to a new reviewer before you fix.
-- At max, give each report's high-severity findings to a verifier (`briefs/review.md`, "Verifying a finding") before
-  anyone fixes them.
-- Fix every high- and medium-severity finding and render again. At high, give the changed stretches to a new reviewer
-  once; at max, again each round, up to four. List what is left when you deliver. A pose a reviewer flags is usually
-  its piece's fault: fix it in the piece, and every board that uses it is fixed, and changed, since a piece's anchors
+- Fix every high- and medium-severity finding and render again. At high and max, give the changed stretches to a new
+  reviewer once; at max, once more if that reviewer found a high-severity finding. List what is left when you
+  deliver. A pose a reviewer flags is usually its piece's fault: fix it in the piece, and every board that uses it is
+  fixed, and changed, since a piece's anchors
   place other figures too. In one video, a fix that moved a toddler's hand-hold out to her side moved her teacher out
   of the doorway in three other shots. So render a draft of the whole video before you fix
   (`song2mv render <work>/mv.json --template <work>/video --draft --name before`) and again after (`--name after`),
