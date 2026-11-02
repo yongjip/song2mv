@@ -2,7 +2,7 @@
 
 All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.md for what changes may break.
 
-## Unreleased
+## 0.3.0 — 2026-11-02
 
 ### Changed
 - `arm()` calls an arm folded into a V with the elbow up at a joint under 75°, not 70°. A standing figure's arm held out to a
