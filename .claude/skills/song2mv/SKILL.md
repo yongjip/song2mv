@@ -45,7 +45,8 @@ were in no other report; whether a lens finds more than a reviewer with every le
 findings per minute at medium and 5.3 at max; Opus 5.5 at high, with a third pass for high-severity findings, left
 1.3, and its reviewers rated most of what they found low. Run every agent on the strongest model you have; with only a
 weaker one, pick max. If you must mix, give painters and reviewers the strongest: the painters' pieces cause most pose
-faults, and a weak reviewer catches less.
+faults, and a weak reviewer catches less. Mixed that way at max (Sonnet builders, Opus painters and reviewers), the
+same song left 2.8 and cost more than either model alone.
 
 **Checkpoints don't block.** At each one, show the user what you have, with your pick and the reason in one line,
 and keep going; they can redirect you at any time. Decide timing by measurement, send the ear-check clips anyway and

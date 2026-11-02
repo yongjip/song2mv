@@ -35,8 +35,9 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   round about 60 more; of 117 recorded, 54 % were framing, 46 % continuity, 44 % bodies. At high and max a fresh
   reviewer looks at the painters' pieces before the build. `briefs/review.md` groups what a viewer finds wrong by
   lens. On one song judged blind, the model mattered more than the level: Sonnet 5.5 left 7.6 high- and
-  medium-severity findings per minute at medium and 5.3 at max, Opus 5.5 1.3 at high. The skill says to run every
-  agent on the strongest model you have.
+  medium-severity findings per minute at medium and 5.3 at max, Opus 5.5 1.3 at high, and Sonnet builders with
+  Opus painters and reviewers 2.8 at max, at a higher cost than either alone. The skill says to run every agent on
+  the strongest model you have.
 - The kit's `arm()` draws an arm exactly as `limb()` does and says what a viewer would see wrong: a hand that holds
   something out of reach, an arm folded into a V with the elbow up, squashed short, a hand on its own head. Each
   prints the first time an arm shows it, as `arm: WHO: FAULT at T s`, and a video's `render --json` lists them under
