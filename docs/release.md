@@ -18,6 +18,22 @@ user to upgrade.
 - At most one feature (minor) release per week.
 - While 0.x, an incompatible change to a JSON format bumps `SCHEMA_VERSION` and the minor version.
 
+## Leaving alpha
+
+song2mv is alpha while it is 0.x, and says so in the `Development Status :: 3 - Alpha` classifier, the README's banner
+and status column, `docs/contract.md` and `CONTRIBUTING.md`. It moves to beta, still 0.x, when all three hold:
+
+1. Four weeks of releases with no `SCHEMA_VERSION` bump and no command or flag removed.
+2. Two or three people outside the project have made a whole video from the README alone, and what they ran into is
+   fixed or listed as known.
+3. Those four weeks kept to the release cadence above, with no exception.
+
+A command can go beta before the project does: `sync`, `beats`, `click` and `check` once their formats and flags meet
+point 1, then `render`, the kit and the skill. Mark it in the README's status column.
+
+1.0 promises no incompatible change without a major version. It waits until song2mv has been beta for about two months
+and the kit and the skill no longer change from week to week.
+
 ## Release preparation (one change)
 
 1. Turn `## Unreleased` into `## X.Y.Z — YYYY-MM-DD`.
