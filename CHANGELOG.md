@@ -2,6 +2,31 @@
 
 All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.md for what changes may break.
 
+## Unreleased
+
+### Changed
+- The template runs Remotion 4.0.540 (was 4.0.537), with Chrome 158.0.8127.2; its bundler is now rspack 2.3.0. A
+  `--template` copy keeps its own `render.mjs` and Remotion: copy the new `render.mjs` over it only together with the
+  new `package.json` and `package-lock.json`.
+- A Mac renders with Remotion's own Chrome again, and the download of Google's Chrome 157 into
+  `node_modules/.song2mv-chrome` (104 MB) is gone. The 157 builds had a V8 bug: Remotion's Mac build kept V8's debug
+  checks and crashed long renders ("Page crashed!"), and Google's build computed wrong values without a word (a shared
+  number box gave 99.5 for 2.25). Chrome 158 has V8's fix and Remotion builds it without the checks, 116 MB smaller than
+  before. A whole song that crashed before (8,856 frames at 1080p) renders in 3:14 and 3:00 with no crash, against 5:08
+  and 4:39 with Google's 157 on the same busy Mac, in a file 7 % smaller. Google's 157 had also drawn a light beam
+  that had already left the frame back into one frame of one of its two renders.
+- Finals no longer pass `--jpeg-quality=100`, which Google's Chrome needed. With Remotion's Chrome it changed neither
+  the size (145.3 and 145.5 MB at the default, 145.6 MB at 100), the time, nor how near the frames come to lossless
+  ones (42.0 dB both ways; a paper-style video, 40.3 dB both ways).
+- `render` no longer picks a free port for Remotion. With 4.0.537, an IPv6-only Studio on the default port still
+  supplied the pages (three requests); 4.0.540 asks it for none, and six renders at once start without clashing.
+- Text set in weight 900 comes out a step heavier in the default font stack on a Mac that has Pretendard or Apple SD
+  Gothic Neo: Chrome 157 drew their ExtraBold for 900, Chrome 158 draws Black and Heavy as the CSS asks. The default
+  sample's lyrics and the kit's heavy text change; fonts loaded with `loadFont` are not affected. Glyph edges are
+  anti-aliased a little differently: across three real videos at 10 frames a second, `diff` finds nothing in one and
+  no more than 0.4 % of a frame in a stretch in the others, and of the 34 gallery tiles two (the weight) and
+  11 more by 1 to 79 pixels.
+
 ## 0.3.0 — 2026-11-02
 
 ### Changed

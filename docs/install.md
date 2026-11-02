@@ -49,12 +49,9 @@ of its own, and joins them without encoding them again. A chunk is rendered agai
 kills Chrome's tabs mid-render, and Remotion can then wait for them forever), after Chrome crashed, or when no frame
 has come for `SONG2MV_STALL` seconds (180; 0 never). On a Mac, `render` keeps the computer awake while it runs, and
 awake with the lid closed while it is on power; on battery, closing the lid still puts it to sleep.
-On a Mac, `render` uses Google's build of the Chrome version Remotion pins (`node_modules/.song2mv-chrome`) instead of
-Remotion's own, which keeps V8's debug checks (its Linux builds turn them off): one of them stopped long renders of
-some scenes with "Page crashed!". Final videos take its JPEG frames at quality 100 (at 80 they came out 36 % larger).
 
 ## Network access
 
 `sync` downloads the whisper model from Hugging Face on first use. The first `render` runs `npm ci` (npm registry) and
-downloads a headless Chrome from Google's Chrome for Testing storage (on Linux, usually Remotion's own build from
-remotion.media). Nothing else contacts the network.
+downloads Remotion's headless Chrome (from remotion.media on Apple silicon, Windows and most Linux; from Google's
+Chrome for Testing storage elsewhere, such as an Intel Mac). Nothing else contacts the network.

@@ -1100,29 +1100,20 @@ def test_a_font_from_load_font_is_on_every_frame_of_a_render_longer_than_the_tim
     assert np.abs(face - face[-1]).max() < 40 and np.abs(face[0] - mono[0]).mean() > 5
 
 
-def _opened_with(tmp_path, **env) -> tuple[str, str]:
-    """The --gl backend ("null": Chrome's own choice) and the Chrome Remotion opened for a still through render.mjs"""
+def _gl_backend(tmp_path, **env) -> str:
+    """The --gl backend ("null": Chrome's own choice) Remotion opened for a still through render.mjs"""
     base = {k: v for k, v in os.environ.items() if k != "SONG2MV_GL"}
     r = subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--still", "1", "--out", str(tmp_path),
                         "--manifest", str(tmp_path / "wrote.txt")],
                        cwd=BUNDLED, capture_output=True, text=True, env={**base, "SONG2MV_REMOTION_LOG": "verbose", **env})
-    opened = re.search(r"Opening browser: gl = ([\w-]+), executable = ([^,]+),", r.stdout + r.stderr)
+    opened = re.search(r"Opening browser: gl = ([\w-]+),", r.stdout + r.stderr)
     assert r.returncode == 0 and opened, r.stdout[-2000:] + r.stderr[-2000:]
-    return opened.group(1), opened.group(2)
+    return opened.group(1)
 
 
 def test_a_render_draws_on_the_gpu_on_a_mac_unless_turned_off(tmp_path):
-    assert _opened_with(tmp_path)[0] == ("angle" if sys.platform == "darwin" else "null")
-    assert _opened_with(tmp_path, SONG2MV_GL="off")[0] == "null"
-
-
-def test_a_render_opens_googles_build_of_the_chrome_remotion_pins(tmp_path):
-    # Remotion's own Mac build keeps V8's debug checks, one of which stopped whole-song renders ("Page crashed!")
-    pins = open(os.path.join(BUNDLED, "node_modules", "@remotion", "renderer", "dist", "browser", "get-chrome-download-url.js"),
-                encoding="utf-8").read()
-    tested = re.search(r"TESTED_VERSION = '([\d.]+)'", pins)
-    assert tested and f'const CHROME = "{tested.group(1)}"' in open(os.path.join(BUNDLED, "render.mjs"), encoding="utf-8").read()
-    assert (os.sep + ".song2mv-chrome" + os.sep in _opened_with(tmp_path)[1]) == (sys.platform == "darwin")
+    assert _gl_backend(tmp_path) == ("angle" if sys.platform == "darwin" else "null")
+    assert _gl_backend(tmp_path, SONG2MV_GL="off") == "null"
 
 
 def _gallery_tile(tmp_path, tile: int, gl: str) -> np.ndarray:

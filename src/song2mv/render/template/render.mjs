@@ -27,12 +27,11 @@
  *          and `storyboard:` lines, once, as first seen; Remotion's stills print nothing from the page)
  *
  * The audio is never copied into this folder: a temporary public folder outside it holds a link to it.
- * Remotion mixes the audio to WAV and its ffmpeg writes the AAC: Remotion's own AAC starts 2048 samples late.
+ * Remotion mixes each chunk's audio to WAV and its ffmpeg writes the AAC once over the joined WAVs: AAC joined as
+ * Remotion writes it keeps every chunk's 2048 start-up samples (the second chunk's sound came 100 ms late).
  * A finished video is capped at 8 Mbit/s (YouTube's figure for 1080p30): grain-heavy styles otherwise run near 14.
  * On a Mac, Chrome draws on the GPU (Remotion's --gl=angle, Metal): the style packs' filters render many times faster
  * and look the same. SONG2MV_GL=off draws in software, as on Linux and Windows; another value is passed to --gl.
- * On a Mac, Remotion's own Chrome keeps V8's debug checks, which stop some renders ("Page crashed!"): renders there use
- * Google's build of the same version, downloaded once into node_modules/.song2mv-chrome (docs/install.md).
  * A laptop that slept half an hour into a song stopped Chrome, and Remotion's recovery then waited forever. So a Mac
  * is kept awake while this renders, and a video renders in chunks of SONG2MV_CHUNK frames (900; 0: one piece), each a
  * Remotion run with a Chrome of its own, from one bundle: a chunk is rendered again after the computer slept, after
@@ -40,10 +39,8 @@
  * and their audio are joined without encoding them again.
  */
 import { spawn, spawnSync } from "node:child_process";
-import { once } from "node:events";
 import fs from "node:fs";
 import { createRequire } from "node:module";
-import { createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,8 +51,6 @@ const DRAFT_FPS = 10;
 // check measures at 320×180; below half size the paper pack's grain reads as motion
 const DRAFT_VIDEO = ["--scale=0.5", "--crf=23", "--x264-preset=veryfast"];
 const FINAL_VIDEO = ["--max-rate=8M", "--buffer-size=16M"];
-// Google's Chrome hands over JPEG frames (Remotion's own, raw pixels): at the default 80 a final is 36 % larger
-const CAPTURE = ["--jpeg-quality=100"];
 const argv = process.argv.slice(2);
 if (!argv.length || argv[0].startsWith("-")) {
   console.error(fs.readFileSync(fileURLToPath(import.meta.url), "utf8").split("*/")[0]);
@@ -133,44 +128,11 @@ const run = (args) => {
     process.exit(r.status ?? 1);
   }
 };
-async function unusedRenderPort() {
-  const server = createServer();
-  const listening = once(server, "listening");
-  server.listen(0);
-  await listening;
-  const port = server.address().port;
-  const closed = once(server, "close");
-  server.close();
-  await closed;
-  return port;
-}
-// Remotion serves IPv4 but opens localhost; an IPv6-only Studio can own the same default port.
-const rendererPort = flag("studio") ? [] : [`--port=${await unusedRenderPort()}`];
 const gl = process.env.SONG2MV_GL || (process.platform === "darwin" ? "angle" : "off");
 const glFlag = gl === "off" ? [] : [`--gl=${gl}`];
 
-const CHROME = "157.0.8080.0"; // the version @remotion/renderer pins (TESTED_VERSION)
-async function googleChrome() {
-  if (process.platform !== "darwin") return null; // Remotion's Linux builds leave the checks out; Windows gets Google's
-  const { ensureBrowser } = createRequire(cliPkg)("@remotion/renderer");
-  // Remotion keeps a browser under the nearest package.json: this one keeps Google's apart from Remotion's own
-  const home = path.join(HERE, "node_modules", ".song2mv-chrome");
-  fs.mkdirSync(home, { recursive: true });
-  fs.writeFileSync(path.join(home, "package.json"), "{}\n");
-  const cwd = process.cwd();
-  process.chdir(home);
-  let said = false;
-  const onProgress = () => said || (said = true, console.warn(`Downloading Chrome ${CHROME} (about 105 MB, once)`));
-  try {
-    return (await ensureBrowser({ logLevel: "error", onBrowserDownload: () => ({ version: CHROME, onProgress }) })).path;
-  } finally {
-    process.chdir(cwd);
-  }
-}
-const browser = flag("studio") ? null : await googleChrome();
-const browserFlag = browser ? [`--browser-executable=${browser}`] : [];
 const remotion = (args) =>
-  run([...args, ...rendererPort, ...glFlag, ...browserFlag, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`]);
+  run([...args, ...glFlag, `--props=${propsFile}`, `--public-dir=${publicDir}`, `--log=${logLevel}`]);
 const probe = (file, entries) =>
   spawnSync(process.execPath, [cli, "ffprobe", "-v", "error", ...entries, "-of", "csv=p=0", file], { cwd: HERE, encoding: "utf8" })
     .stdout.trim();
@@ -324,8 +286,8 @@ async function renderInChunks(bundle, id, made, wav, video) {
     const what = n > 1 ? `chunk ${k + 1}/${n} (frames ${a}–${b === "" ? total - 1 : b})` : "the render";
     for (let tries = 1; ; tries++) {
       const { how, slept } = await remotionRun(["render", bundle, id, part, ...(n > 1 ? [`--frames=${a}-${b}`] : []),
-        ...video, ...(song.audio ? [`--separate-audio-to=${partWav}`] : ["--muted"]), ...rendererPort, ...glFlag,
-        ...browserFlag, `--props=${propsFile}`, `--log=${logLevel}`], a, total);
+        ...video, ...(song.audio ? [`--separate-audio-to=${partWav}`] : ["--muted"]), ...glFlag,
+        `--props=${propsFile}`, `--log=${logLevel}`], a, total);
       if (how === "ok" && fs.existsSync(part)) break;
       if (how === "slept") { // not the chunk's fault: as many of these as it takes
         console.warn(`the computer slept for ${slept} s during ${what} (a closed lid?): rendering it again`);
@@ -377,7 +339,7 @@ if (flag("studio")) {
   for (const id of aspects) {
     const made = path.join(tmp, "video.mp4");
     const wav = path.join(tmp, "audio.wav");
-    await renderInChunks(bundle, id, made, wav, [...(draft ? DRAFT_VIDEO : FINAL_VIDEO), ...(browser && !draft ? CAPTURE : [])]);
+    await renderInChunks(bundle, id, made, wav, draft ? DRAFT_VIDEO : FINAL_VIDEO);
     if (fs.existsSync(made) && fs.existsSync(wav)) {
       const muxed = path.join(tmp, "muxed.mp4");
       run(["ffmpeg", "-y", "-v", "error", "-i", made, "-i", wav, "-map", "0:v", "-map", "1:a", "-c:v", "copy",
