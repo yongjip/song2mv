@@ -38,7 +38,9 @@ Section builders then film your pieces all through the song, so a weak piece sho
    face) with the kit's `arm(shoulder, target, upper, lower, toward, { holds, head, who, T })` (`../../kit`), never
    with a solver of your own, and every knee with `limb(hip, foot, upper, lower, toward)`, `toward` the way the figure
    faces. For an arm, `toward` is where the elbow goes: down and out from the body's side (`[-1, 1]` on the picture's
-   left, `[1, 1]` on its right), or straight down (`[0, 1]`) for a hand in front of the mouth or face. With the hand
+   left, `[1, 1]` on its right), or straight down (`[0, 1]`) for a hand in front of the mouth or face, never up: a
+   `toward` that points up and out, such as an elbow side picked "out first" for a hand down and out of the shoulder,
+   lifts the elbow above the shoulder and folds the arm into a V. With the hand
    almost along `toward` or against it (a phone at the ear and `[0, 1]`), the elbow has no side to go to and the arm
    is drawn squashed short: point `toward` elsewhere. Draw the hand, and whatever it holds, at the `end` `arm()`
    returns: a target beyond the arm's length leaves it short, the arm straight. Pass `holds: true` when the hand meets

@@ -67,7 +67,7 @@ const armSaid = new Set<string>();
  * An arm from `shoulder` to the hand's `target` in a figure's own drawing, drawn as `limb` draws it (the same
  * `toward`) and checked. `faults` lists what a viewer would see wrong: with `holds` (the hand meets something at the
  * target: another hand, a prop), a target beyond the arm's length, out of reach (the hand stops short, the arm
- * straight like a strap; a hanging or outstretched arm is straight anyway); a joint under 70° with the elbow the arm's
+ * straight like a strap; a hanging or outstretched arm is straight anyway); a joint under 75° with the elbow the arm's
  * highest point, above the shoulder (a hand at the mouth with the elbow up); a bone drawn under 90 % of its length,
  * where `limb` slides the elbow onto the line to a hand almost along `toward` or against it; with `head` (the skull's
  * centre and radius, hair above the ears included, for an arm drawn in front of it), the hand within 1.1 radii of its
@@ -81,7 +81,7 @@ export function arm(shoulder: [number, number], target: [number, number], upper:
   const bone = (a: [number, number], b: [number, number]) => Math.hypot(b[0] - a[0], b[1] - a[1]);
   const faults: ArmFault[] = [];
   if (o.holds && l.reach > 1) faults.push("out of reach");
-  if (l.bend < 70 && l.joint[1] < Math.min(shoulder[1] - 0.15 * upper, l.end[1])) faults.push("folded into a V, elbow up");
+  if (l.bend < 75 && l.joint[1] < Math.min(shoulder[1] - 0.15 * upper, l.end[1])) faults.push("folded into a V, elbow up");
   if (bone(shoulder, l.joint) < 0.9 * upper || bone(l.joint, l.end) < 0.9 * lower) faults.push("squashed short");
   if (o.head && bone(l.end, o.head.c) < 1.1 * o.head.r) faults.push("hand on its own head");
   const who = o.who ?? "unnamed";

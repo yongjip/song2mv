@@ -5,6 +5,10 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 ## Unreleased
 
 ### Changed
+- `arm()` calls an arm folded into a V with the elbow up at a joint under 75°, not 70°. A standing figure's arm held out to a
+  screen, the elbow half an upper arm above the shoulder and the forearm hanging (72.5°), passed the check and was a high
+  finding for two blind reviewers. Replaying every arm of five videos at 10 frames a second (50 000 solves), 75° adds that
+  one warning and no other; a sleeper's bent arm (79.5°) and a hand down on a lamp's table (78°) still pass.
 - The README identifies the model and effort setting next to the video examples and notes that results can vary.
 - The paper style renders about four times faster. A paper piece drew five filters in every frame (two noise passes, two
   blurs and its lit edge), and each is a pass of its own for the GPU, which Chrome runs on one thread: a 2:34 video took

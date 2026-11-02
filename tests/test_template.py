@@ -826,6 +826,8 @@ const head = { c: [-5, -45] as [number, number], r: 25 };
 const f = (t: number[], toward?: number[], o = {}) => arm([0, 0], t as [number, number], 50, 50, toward as [number, number], o).faults;
 const far = arm([0, 0], [150, 0], 50, 50, undefined, { holds: true, who: "kid right", T: 1.5 });
 arm([0, 0], [160, 0], 50, 50, undefined, { holds: true, who: "kid right", T: 2 });
+const real = (sh: number[], t: number[], upper: number, lower: number, toward: number[]) =>
+  arm(sh as [number, number], t as [number, number], upper, lower, toward as [number, number], { holds: true }).faults;
 const near = arm([0, 0], [96, 0], 50, 50);
 arm([0, 0], [101, 0], 50, 50, undefined, { holds: true, T: 3 });
 const at = { x: 700, y: 800, s: 1.6, flip: true };
@@ -835,6 +837,8 @@ console.log(JSON.stringify({
   edge: f([100, 0], undefined, { holds: true }), past: f([101, 0], undefined, { holds: true }), hanging: f([0, 150]),
   v: f([10, -20], [0, -1]), chin: f([10, -20]), squashed: f([0, 30]), tummy: f([0, 30], [1, 1]),
   head: f([-5, -50], [1, 1], { head }), cheek: f([12, -45], [1, 1], { head }), beside: f([30, -45], [1, 1], { head }),
+  reach: real([29.2, -211.6], [88, -172], 47, 69.1, [0.6, -0.8]), sleeper: real([-72.5, -73.8], [-141.1, -52.9], 53, 59, [-0.8, -1.1]),
+  lamp: real([-27.6, -187.5], [-78, -138], 53, 59, [-0.7, -0.7]), drawing: real([-12.5, -75], [-22, -58], 17, 18.5, [-17, -9.5]),
   said, stage: toStage([30, -100], at), back: toLocal(toStage([30, -100], at), at) }));
 """, {})
     assert out["natural"] == [] and out["near"] == {"faults": [], "end": 96}
@@ -843,6 +847,12 @@ console.log(JSON.stringify({
     assert out["v"] == ["folded into a V, elbow up"] and out["chin"] == []  # a hand at the chin folds the arm, elbow down
     assert out["squashed"] == ["squashed short"] and out["tummy"] == []  # straight below, toward [0, 1] slides the elbow onto the line
     assert out["head"] == out["cheek"] == ["hand on its own head"] and out["beside"] == []
+    # shapes measured in drawn videos: a standing figure's arm out to a screen, the elbow half an upper arm above the shoulder
+    # and the forearm hanging (72.5°, a V that no check caught), against arms a viewer accepts: a sleeper's bent arm (79.5°),
+    # a hand down on a lamp's table (78°, the elbow just above the shoulder) and a child holding up a drawing (66°, the
+    # elbow level with the shoulder)
+    assert out["reach"] == ["folded into a V, elbow up"]
+    assert out["sleeper"] == out["lamp"] == out["drawing"] == []
     assert out["said"] == ["arm: kid right: out of reach at 1.50 s", "arm: unnamed: out of reach at 3.00 s"]  # silent without who and T
     assert out["stage"] == [652, 640] and [round(v, 6) for v in out["back"]] == [30, -100]
 
