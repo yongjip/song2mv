@@ -83,3 +83,18 @@ Findings, the worst first, each with:
 - the path of a crop that shows it, and the scene or piece that draws it if you can tell.
 
 Then what you checked and found fine, and what you did not cover.
+
+
+## Temporal and character coverage
+
+Follow the skill's production quality contract. If normal-speed playback is unavailable, mark temporal quality
+unverified. A frame-review pass does not establish production readiness. Name the exact export and intervals.
+
+Inspect consecutive frames around contact, release, storage changes, turns and caption transitions. For a head
+turn, inspect front-view crossings and intermediate angles. Keep asymmetric landmarks on their anatomical side
+and check that the same near eye survives while far features disappear at the silhouette. Accurate coordinates
+do not prove a grasp: inspect the palm, thumb, fingers and prop overlap.
+
+For a story, cover explanatory text and report the visible goal, failed attempt, response, choice and consequence.
+Do not infer success from a written outline, fewer performance shots or a numeric score. User rejection updates
+readiness and opens findings; keep earlier checks as historical evidence of their stated coverage.

@@ -335,6 +335,9 @@ its own copy of the template: write the scenes in `DIR/src/scenes/`, reuse and c
 kit in `DIR/src/kit/`, and draw the rest. Besides `useSong()`, beat-grid helpers, `Slam`, `BigLine` and karaoke
 `Captions`, the kit holds:
 
+- **experimental characters:** replaceable 2D artwork, walk/phone/bass actions and simple dance studies.
+  Start with [PUPPETS.md](src/song2mv/render/template/PUPPETS.md) or compare the proportions in
+  [FIGURES.md](src/song2mv/render/template/FIGURES.md). APIs and presets may change or be removed.
 - **people:** a posable person (standing, walking, running, lying), a crowd;
 - **places:** a city, a street, a room, a bed, hills, the sea;
 - **sky:** sky by time of day, sun, moon and clouds;
@@ -364,6 +367,14 @@ box. In 16:9 a storyboard films through `wideView`, which keeps each shot's subj
 
 Remotion is **not MIT**: it is free for individuals and companies with up to 3 employees; larger companies need a
 company license ([remotion.dev/license](https://www.remotion.dev/license)). Only `render` uses it.
+
+### Experimental 3D-driven 2D figure
+
+The [standalone hybrid study](experiments/hybrid-figure/README.md) keeps 3D joints, foot support and depth while
+drawing the final character in SVG. It includes an original ant example with five authored head views and
+silent walk, phone, bass, heel/toe, turn, reach and dance exercises. It has its own npm install and does not add
+Three.js to the normal template. This prototype is available for testing and focused PRs; it may change or be
+removed. Geometry checks do not certify finished animation quality. See its README for commands and limits.
 
 ## How it compares
 

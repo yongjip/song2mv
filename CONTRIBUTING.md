@@ -86,3 +86,13 @@ A song's own characters and scenes stay in that song's copy of the template; con
   `node render.mjs src/sample-song.json --composition Kit-Gallery --frame N` and attach the PNG it writes
   (`out/src-Kit-Gallery-N.png`) to the pull request (`out/` is never committed). CI renders every tile too: they are
   in the run's `kit-gallery` artifact.
+
+## Experimental character studies
+
+`PUPPETS.md` and `FIGURES.md` in the render template describe the experimental 2D starters.
+`experiments/hybrid-figure/` is a separate 3D-driven 2D study. Try the documented examples before expanding them.
+These APIs and presets may change or be removed. Small corrections, simpler alternatives and removal PRs are welcome.
+
+For a character PR, include its action, camera, elapsed seconds, reproduction command and before/after evidence.
+State what the tests prove and what still needs visual review. Keep songs, private timing, generated previews
+and machine-specific paths out of Git. Run the experiment's own checks when changing it. CI attaches preview PNGs.

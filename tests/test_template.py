@@ -1152,3 +1152,37 @@ def test_the_line_and_paint_packs_look_the_same_on_the_gpu(tmp_path, tile):
     # and took line's inner lines (mean difference 2.27) and paint's pencil (2.09). Anti-aliasing alone stays under 1.
     gap = np.abs(_gallery_tile(tmp_path, tile, "off") - _gallery_tile(tmp_path, tile, "angle")).mean()
     assert gap < 1.5, gap
+
+
+def test_public_character_artwork_survives_temporary_render_staging(tmp_path):
+    template = tmp_path / "video"
+    shutil.copytree(BUNDLED, template, ignore=shutil.ignore_patterns("node_modules", "out"))
+    os.symlink(os.path.join(BUNDLED, "node_modules"), template / "node_modules")
+    public = template / "public"
+    public.mkdir(exist_ok=True)
+    artwork = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#ee1122"/></svg>'
+    (public / "character.svg").write_text(artwork, encoding="utf-8")
+    scenes = template / "src" / "scenes"
+    (scenes / "index.ts").unlink()
+    (scenes / "index.tsx").write_text('''
+import React from "react";
+import {staticFile} from "remotion";
+import {Svg, AtlasSprite} from "../kit";
+export const Scene: React.FC<{T: number}> = () => <Svg><g transform="translate(960 540)">
+  <AtlasSprite atlas={{src: staticFile("character.svg"), width: 64, height: 64}}
+    piece={{cell: {x: 0, y: 0, width: 64, height: 64}, pivot: [32, 32]}} width={400} height={400}/>
+</g></Svg>;
+export const linesDrawnByScene = () => new Set<string>();
+''', encoding="utf-8")
+    song = json.loads((template / "src" / "sample-song.json").read_text(encoding="utf-8"))
+    song.update(vignette=False, flashes=[])
+    config = tmp_path / "sample.json"
+    config.write_text(json.dumps(song), encoding="utf-8")
+    manifest = tmp_path / "rendered.txt"
+    subprocess.run(["node", "render.mjs", str(config), "--still", "0", "--out", str(tmp_path), "--manifest", str(manifest)],
+                   cwd=template, check=True, capture_output=True)
+    png = manifest.read_text(encoding="utf-8").strip()
+    pixel = subprocess.run(["ffmpeg", "-v", "error", "-i", png, "-vf", "crop=1:1:960:540", "-f", "rawvideo",
+                            "-pix_fmt", "rgb24", "-"], check=True, capture_output=True).stdout
+    assert len(pixel) == 3 and pixel[0] > 180 and pixel[1] < 60 and pixel[2] < 80
+    assert (public / "character.svg").read_text(encoding="utf-8") == artwork

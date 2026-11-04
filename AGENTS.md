@@ -12,6 +12,11 @@ memory or in notes outside the repository, where it helps nobody else.
 
 ## Using song2mv for a user
 
+Experimental character starters are documented in the template's `PUPPETS.md` and `FIGURES.md`. The separate
+`experiments/hybrid-figure/` study has its own installation and checks. These are testable starting points,
+not stable APIs or a claim of finished animation quality. Improve, simplify or remove them through focused PRs.
+Follow the skill's Production quality contract and report frame-only or unheard review limits.
+
 The checkpoints below don't block: show what you have with your pick and the reason in one line, and carry on; the
 user can redirect. Decide timing by measurement, make the ear-check files anyway and list the unheard spots when you
 deliver. Wait only for the song's rights or a lyric only the user knows.

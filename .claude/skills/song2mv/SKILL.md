@@ -53,6 +53,73 @@ and keep going; they can redirect you at any time. Decide timing by measurement,
 list the spots nobody has heard when you deliver. Wait only for what you can neither measure nor recommend: the
 song's rights, or a lyric only the user knows.
 
+### Production quality contract
+
+**The agent owns defect discovery.** Ask the user about taste, meaning and important choices; first find and repair
+production defects yourself. The aim is a strong first delivery through internal iterations, not a promise that
+one generation or render will be perfect. Preserve accepted design choices while fixing faults.
+
+Before scene work, add the following rows to the existing `<work>/map.md`; link asset definitions in
+`<work>/ASSETS.md`. This is production planning, not a new CLI schema. For each applicable row record the rule,
+the hardest song interval that exercises it, its builder, and later the rendered evidence and review result.
+Mark an inapplicable row with a reason, not a silent pass. Copy relevant rows into each worker's brief.
+
+| Area | Establish before building | Verify in the rendered video |
+|---|---|---|
+| Identity | Stable cast IDs, reference version, silhouette, proportions, limb types/counts, palette and defining accessories; list allowed variants. | The same actor remains recognisable across angles, poses and cuts. Light may change appearance; unexplained redesigns or cast substitutions may not. |
+| Object state | For each important prop: identity, count, owner, location and whether worn, held, stored or released. Specify before, transition and after. | Exchanges and changes have readable causes. No duplicate ownership, in-place recolouring or unexplained disappearance. A deliberate transformation or time jump needs a visible cue and consistent resulting state. |
+| Contact and depth | Grip/support anchors, ground plane, and front/interior/back layers where objects overlap; intended limb anatomy. | Hands or other grasping parts meet the prop; bodies remain outside containers unless entry is intended. Straps attach, feet plant, and overlaps stay plausible throughout the movement. |
+| Motion and space | Intended travel direction/distance, body action, response and settling; which landmarks and background layers reveal travel. | A walk or journey progresses through space; in-place motion is intentional. Camera drift, particles or animated texture alone do not prove locomotion or acting. Quiet holds remain allowed. |
+| Composition and text | Actual output aspect ratios, face/action safe areas, caption treatment and a screen-space overlay separate from world transforms. | Faces, actions and text remain legible at viewing size. Caption changes do not move the scene or reflow its framing. Any plate or gradient belongs to the art direction and stays stable, without pumping or seams. |
+| Finish | Material boundaries, clipping rules, lighting, texture behaviour and shared accent colours. | Highlights stay on their surfaces; outlines, masks and intersections are clean at 1:1. No unexplained flicker, texture swimming or colour jumps. |
+
+**Build one moving proof before multiplying scenes.** On a new video, not only after complaints, choose a
+representative 10–20 s interval that exercises the hardest applicable rows: a contact or exchange, a state change,
+travel, a cut or a caption change. Add a separate short test only when an important risk is absent from that
+interval. Use the actual shared assets, camera and caption treatment. Review the continuous motion at normal
+speed and the before/contact/release/after frames at full size. Stills alone cannot pass a temporal check.
+Fix shared defects before section builders reuse the assets. This is an internal quality gate, not a new user
+approval gate; continue within the requested scope.
+
+**Isolate head turns before reusing a character.** Hold the camera, body and expression still. Turn the head
+through the front view in both directions. Track asymmetric landmarks such as a hair part or an accessory.
+They must keep their anatomical side and follow the same head volume. Mirroring the whole head when yaw changes
+sign creates a discontinuity, even when each still looks plausible. Inspect consecutive frames across the front
+view, then watch the turn at normal speed. A repaired discontinuity does not establish acceptable facial acting.
+Keep each anatomical eye consistent across the authored views. The near eye must remain the near eye as the
+far eye passes behind the silhouette. Fading an eye or spectacle ring over a cheek can create a ghost image.
+Check intermediate angles as well as the front, quarter and profile drawings.
+
+**Make consistency structural.** Use one shared asset definition for each identity and one time-derived state
+function for each important interaction, rather than independent per-shot switches. Represent mutually exclusive
+states explicitly, derive the visible prop and its attachment from that state, and share the boundary state with
+adjacent sections. Keep contact anchors and occlusion layers in the shared piece. For example, an invented scarf
+exchange can progress from worn, to held, to stored; changing its colour on the wearer's neck is not an exchange.
+These are states computed from `T`, not mutable playback state. Add a narrow assertion or reproducible test where
+the scene exposes a concrete invariant, such as one owner or the same state in a segment render and full render.
+Accurate grip coordinates do not prove a grasp. Inspect the palm, thumb, fingers and object overlap in the export.
+Do not build a new generic validator merely to turn aesthetic judgement into a number.
+
+**Review the artifact, then repair the cause.** Give a fresh reviewer the render path/version, reference, quality
+rows and time range. The reviewer reports observations with song times and crops, not just a score or approval.
+Inspect every shot and section seam; separately watch travel, exchanges and caption transitions in motion. A
+coarse contact sheet can miss a one-frame swap. Trace repeated defects to the shared state, anchor, mask or layer
+that first caused them, fix it there, and inspect all affected occurrences plus neighbouring cuts. Keep one
+findings list in the existing work review folder: time, observation, severity, evidence, fix owner, fix and
+recheck evidence. Uninspected footage is **unverified**, not passed. If a render changes, identify what the earlier
+review no longer covers. Before delivery, review the complete final export; recheck changed intervals at full
+size and regenerate whole-export sheets/checks. Only add findings after inspecting actual frames or motion.
+If normal-speed viewing is unavailable, keep temporal quality unverified and deliver the artifact as a draft.
+Do not promote a frame-review pass, custom numerical checks or a preferred still into production readiness.
+When the user rejects an export, update its readiness and open findings in the existing work records.
+Keep earlier checks as historical evidence, not a current approval.
+
+This contract generalises user-reported defects from an animated character journey: weak travel, abrupt prop
+and cast changes, inconsistent appendages, incorrect container overlap, protruding detail and distracting caption
+backgrounds. The treatment above is a proposed prevention workflow, not evidence that those defects are already
+fixed in a new video. It follows the principles of encoding repeatable lessons in structure, checking the real
+artifact and fixing the first cause; it requires no external skill installation.
+
 ## 0. Before anything
 
 - **Rights.** Ask whose song it is and whether the user may publish a video of it (AI music services' plan terms
@@ -849,3 +916,14 @@ tile and a still. Open it only if the user agrees, and leave the song, its lyric
 what the video taught as well: what the user found fun or dull and what fixed it, with the numbers that moved, as a
 change to this skill, so the next agent starts where you finished. Describe the song in general terms and make up
 the examples.
+
+
+## Experimental character starters
+
+The copied template includes `PUPPETS.md` and `FIGURES.md`. Use their galleries before adapting the original
+2D artwork slots and walk, phone, bass or dance examples. These are experimental APIs and may change or be removed.
+
+For 3D support and depth with a 2D drawing, the repository's `experiments/hybrid-figure/README.md` describes a
+standalone study. It is not part of a copied template or a dependency of normal lyric rendering. It contains no
+song. Keep new character artwork and song timing in the work folder. Treat the study as an example to inspect,
+not proof that a new proportion, costume, camera or action will work. Small improvement and removal PRs are welcome.

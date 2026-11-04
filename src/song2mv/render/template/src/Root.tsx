@@ -1,3 +1,7 @@
+import { PuppetMotionLab } from "./PuppetMotionLab";
+import { PuppetDemo } from "./PuppetDemo";
+import { FigureComparison } from "./FigureComparison";
+import { FigureDemo } from "./FigureDemo";
 import React from "react";
 import { CalculateMetadataFunction, Composition } from "remotion";
 import { FPS, MvProps, Song } from "./kit";
@@ -29,6 +33,14 @@ const duration: CalculateMetadataFunction<MvProps> = ({ props }) => {
 
 export const RemotionRoot: React.FC = () => (
   <>
+    <Composition id="Puppet-Motion-Lab" component={PuppetMotionLab} fps={FPS} width={1920} height={1080} durationInFrames={20*FPS} defaultProps={{gallery:false}} />
+    <Composition id="Puppet-Motion-Gallery" component={PuppetMotionLab} fps={FPS} width={1920} height={1080} durationInFrames={1} defaultProps={{gallery:true}} />
+    <Composition id="Puppet-Actions" component={PuppetDemo} fps={FPS} width={1920} height={1080} durationInFrames={18*FPS} defaultProps={{overview:false}} />
+    <Composition id="Puppet-Gallery" component={PuppetDemo} fps={FPS} width={1920} height={1080} durationInFrames={1} defaultProps={{overview:true}} />
+    <Composition id="Figure-Compare" component={FigureComparison} fps={FPS} width={1920} height={1080} durationInFrames={18 * FPS} defaultProps={{overview:false}} />
+    <Composition id="Figure-Compare-Overview" component={FigureComparison} fps={FPS} width={1920} height={1080} durationInFrames={1} defaultProps={{overview:true}} />
+    <Composition id="Figure-Actions" component={FigureDemo} fps={FPS} width={1920} height={1080} durationInFrames={18 * FPS} defaultProps={{overview: false}} />
+    <Composition id="Figure-Overview" component={FigureDemo} fps={FPS} width={1920} height={1080} durationInFrames={1} defaultProps={{overview: true}} />
     <Composition id="Portrait-Actions" component={PortraitDemo} fps={FPS} width={1920} height={1080} durationInFrames={8 * FPS} />
     <Composition id="Lyric-16x9" component={LyricVideo} fps={FPS} width={1920} height={1080} durationInFrames={300}
       defaultProps={defaults} calculateMetadata={duration} />

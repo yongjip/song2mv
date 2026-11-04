@@ -33,6 +33,41 @@ const body = await import(bodyURL);
 const poster = await import(compile("src/kit/styles/poster.tsx", [["../portrait-body", bodyURL]]));
 const { portraitMotion } = await import(compile("src/kit/portrait-motion.ts"));
 const { PortraitCutout, portraitHeadTransform } = await import(compile("src/kit/portrait-cutout.tsx"));
+const { ReactionFace, reactionAt } = await import(compile("src/kit/acting.tsx", [["./math", plain("src/kit/math.ts")]]));
+
+const faceMarkup = (props) => renderToStaticMarkup(React.createElement(ReactionFace, props)).replace(/ data-expression="[^"]*"/g, "");
+const expressions = ["curious", "startled", "angry", "delighted", "deadpan"];
+const faces = expressions.map((expression) => faceMarkup({ expression, amount: 1 }));
+assert.equal(new Set(faces).size, expressions.length, "Expressions must change rendered facial geometry, not only a label");
+for (const expression of expressions) {
+  assert.equal(faceMarkup({ expression, amount: -2 }), faceMarkup({ expression, amount: 0 }));
+  assert.equal(faceMarkup({ expression, amount: 2 }), faceMarkup({ expression, amount: 1 }));
+  assert.equal(faceMarkup({ expression, amount: 0 }), faceMarkup({ expression: "curious", amount: 0 }));
+  for (const amount of [0, 0.25, 0.5, 1]) {
+    const markup = faceMarkup({ expression, amount, look: -1 });
+    assert.ok(!/NaN|Infinity/.test(markup), "Every intermediate expression must render finite SVG coordinates");
+    assert.match(markup, /stroke="none"/, "A face must isolate its eyes and mouth from the head's inherited outline");
+  }
+}
+assert.notEqual(faceMarkup({ look: -1 }), faceMarkup({ look: 1 }), "A witness must be able to look toward the event");
+const response = { delay: 0.12, rise: 0.18, hold: 0.65, release: 0.25 };
+assert.equal(reactionAt(10, 10, response), 0, "The witness must not react before the event");
+assert.equal(reactionAt(10.1, 10, response), 0, "The witness's response follows the configured delay");
+assert.ok(reactionAt(10.2, 10, response) > 0 && reactionAt(10.2, 10, response) < 1);
+assert.equal(reactionAt(10.5, 10, response), 1);
+assert.equal(reactionAt(12, 10, response), 0, "A finite reaction must settle instead of looping");
+for (const timing of [{ delay: -1 }, { rise: -1 }, { hold: Infinity }, { release: NaN }]) {
+  assert.throws(() => reactionAt(10, 10, timing), RangeError);
+}
+for (const T of [9, 10, 10.1, 11]) {
+  assert.ok(Number.isFinite(reactionAt(T, 10, { delay: 0, rise: 0, hold: 0, release: 0 })));
+}
+const drawReaction = (T) => faceMarkup({ expression: "startled", amount: reactionAt(T, 10, response), look: 1 });
+const sought = new Map([9.9, 10.2, 10.5, 11.1].map((T) => [T, drawReaction(T)]));
+for (const T of [10.5, 9.9, 11.1, 10.2, 10.5]) {
+  assert.equal(drawReaction(T), sought.get(T), "Seeking or rendering a short stretch must preserve the witness's pose");
+}
+console.log("Acting checks passed: distinct expressions, outline isolation, delayed finite response and seek stability");
 
 let armCases = 0,
   anchorCases = 0,

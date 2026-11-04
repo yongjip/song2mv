@@ -100,8 +100,10 @@ const candidates = [
 const audio = candidates.map((p) => path.resolve(p)).find((p) => fs.existsSync(p));
 const publicDir = path.join(tmp, "public");
 fs.mkdirSync(publicDir);
+const artworkDir = path.join(HERE, "public");
+if (fs.existsSync(artworkDir)) fs.cpSync(artworkDir, publicDir, { recursive: true, dereference: true });
 if (audio) {
-  const name = "song" + path.extname(audio);
+  const name = "__song2mv_audio_" + path.basename(tmp) + path.extname(audio);
   // the bundler does not follow symlinks; a hard link costs nothing, a copy is the fallback across volumes
   try {
     fs.linkSync(audio, path.join(publicDir, name));
