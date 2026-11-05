@@ -48,7 +48,10 @@ const SHOW: Record<string, Show> = {
 // ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 type Show = { worlds: string[]; big?: boolean; pattern?: number[]; drift?: number };
-/** A world: what it draws, and its framings in 16:9 and 9:16 */
+/**
+ * A world: what it draws, and its framings in 16:9 and 9:16. `b` is the board's span: its lines and copy, the frame,
+ * and the shot on screen (`b.framing`, cut in at `b.shotFrom`, away at `b.shotTo`), for text placed by framing
+ */
 type World = { draw: (T: number, b: BoardSpan) => React.ReactNode; framings: Framing[]; tall?: Framing[] };
 
 /**

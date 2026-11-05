@@ -25,12 +25,14 @@ import { VERTICAL, verticalView, wideView } from "./vertical";
  * edges shows when a shot rolls or drifts there. A framing's point is its subject's middle: both frames put it in the
  * middle of their picture, above the captions and big type (`wideView`, and `verticalView` with the board's `tall`
  * framings), so a subject that fits the picture is never under them. Under the picture both frames run on past the
- * stage's bottom edge (the 16:9 one by 120 px at zoom 1): draw the ground on below y 1080. The first board also covers
- * the song before it. A board keyed to a line opens on its first framing; one keyed to a section opens on framing
- * n − 1 in the section's copy n (ch2 on framings[1]), so the copies differ, and so does a board keyed to the same
- * line of each copy with the same framings (ch1-04, ch2-04). A framing too alike to the one before it for a cut
- * (under 1.35× apart in zoom, near it, under 4° apart in roll) is skipped, in either frame; one that never shows is
- * named in a video render's log.
+ * stage's bottom edge (the 16:9 one by 120 px at zoom 1): draw the ground on below y 1080. A world and its overlay
+ * learn from their `span` which framing the shot on screen took and when that shot starts and ends, so they can draw
+ * for it: lettering placed for a close-up, a page that moves its panel into a close framing (comic.follow). The first
+ * board also covers the song before it. A board keyed to a line opens on its first framing; one keyed to a section
+ * opens on framing n − 1 in the section's copy n (ch2 on framings[1]), so the copies differ, and so does a board keyed
+ * to the same line of each copy with the same framings (ch1-04, ch2-04). A framing too alike to the one before it for
+ * a cut (under 1.35× apart in zoom, near it, under 4° apart in roll) is skipped, in either frame; one that never shows
+ * is named in a video render's log.
  */
 
 export type BoardSpan = {
@@ -42,6 +44,13 @@ export type BoardSpan = {
   lines: Line[];
   /** true when drawn for the 9:16 frame */
   vertical: boolean;
+  /**
+   * the framing the shot on screen took: an index into `framings`, or into `tall` in the 9:16 frame (with one framing,
+   * 1 is the closer one the planner adds)
+   */
+  framing: number;
+  /** when the shot on screen started (its cut) and when the next one starts (or the board ends), in song time */
+  shotFrom: number; shotTo: number;
 };
 
 export type Board = {
@@ -75,7 +84,7 @@ export type Board = {
   big?: boolean | number;
 };
 
-type Placed = Omit<BoardSpan, "vertical"> & { board: Board; plan: Plan; tall: Plan; hits: number[] };
+type Placed = Omit<BoardSpan, "vertical" | "framing" | "shotFrom" | "shotTo"> & { board: Board; plan: Plan; tall: Plan; hits: number[] };
 
 /** Song time of `at` and the time its lines start from: a line's lead-in and first word, a section's start, a time */
 function anchor(ctx: SongCtxValue | null, song: Song, at: string | number): [number, number] {
@@ -176,10 +185,15 @@ export const Storyboard: React.FC<{
   const p = placed[i];
   if (!p) return null;
   const { big, overlay } = p.board;
-  const span: BoardSpan = { from: p.from, to: p.to, section: p.section, repeat: p.repeat, lines: p.lines, vertical };
+  const { shots } = vertical ? p.tall : p.plan;
+  const on = cameraAt(T, shots, { hits: p.hits });
+  const span: BoardSpan = {
+    from: p.from, to: p.to, section: p.section, repeat: p.repeat, lines: p.lines, vertical,
+    framing: shots[on.shot]?.framing ?? 0, shotFrom: shots[on.shot]?.t ?? p.from, shotTo: Math.min(shots[on.shot + 1]?.t ?? p.to, p.to),
+  };
   const big16 = typeof big === "number" ? { y: big } : { y: 955, maxSize: 125 };
   if (!vertical) {
-    const cam = wideView(cameraAt(T, p.plan.shots, { hits: p.hits }), { world });
+    const cam = wideView(on, { world });
     return (
       <>
         <Svg>{wrap(<g transform={cam.svg}>{p.board.world(T, span)}</g>, span)}</Svg>
@@ -188,7 +202,7 @@ export const Storyboard: React.FC<{
       </>
     );
   }
-  const cam = verticalView(cameraAt(T, p.tall.shots, { hits: p.hits }), { world });
+  const cam = verticalView(on, { world });
   const { safe, captions } = VERTICAL;
   return (
     <>

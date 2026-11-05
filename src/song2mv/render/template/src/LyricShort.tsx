@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Audio, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { BeatGlow, Captions, FaceCheck, FPS, Flash, MvProps, Sky, SongContext, VerticalCtx, Vignette, flashesOf, makeSongCtx, outCubic, sectionLook, span, useFonts } from "./kit";
+import { BeatGlow, Captions, FADE_OUT, FaceCheck, FPS, Flash, MvProps, Sky, SongContext, VerticalCtx, Vignette, flashesOf, makeSongCtx, outCubic, sectionLook, span, useFonts } from "./kit";
 import { Scene, VerticalScene, linesDrawnByScene } from "./scenes";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -30,7 +30,7 @@ export const LyricShort: React.FC<MvProps> = ({ song, from, to, hold }) => {
   const T = Math.max(from + frame / fps, from + hold);
   const { tint, glow, strength } = sectionLook(ctx, T);
   const frames = Math.round(((to ?? song.duration) - from) * FPS); // as in LyricVideo
-  const fade = (f: number) => interpolate((f * FPS) / fps, [frames - 0.8 * FPS, frames - 1], [1, 0], clamp);
+  const fade = (f: number) => interpolate((f * FPS) / fps, [frames - FADE_OUT * FPS, frames - 1], [1, 0], clamp);
   const titleIn = hold > 0 ? 1 : outCubic(span(T, from + 0.2, from + 0.7));
   const flashes = useMemo(() => flashesOf(song).filter(([t]) => hold <= 0 || t < from - 1 || t > from + hold), [song, from, hold]);
   const { theme } = ctx;

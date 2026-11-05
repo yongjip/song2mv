@@ -794,6 +794,39 @@ console.log(JSON.stringify(planStoryboard(makeSongCtx(SONG), [])));
     assert placed == []
 
 
+def test_a_boards_world_knows_the_framing_and_the_cuts_of_the_shot_on_screen_in_both_frames(tmp_path):
+    out = _probe(tmp_path, """
+import * as React from "NODE/react";
+import { renderToStaticMarkup } from "NODE/react-dom/server";
+import { SongContext, makeSongCtx } from "KIT/song";
+import { Storyboard, planStoryboard } from "KIT/storyboard";
+const ctx = makeSongCtx(SONG);
+const h = React.createElement;
+let seen: any = null;
+const world = (T: number, span: any) => { seen = span; return null; };
+const F = [{ x: 960, y: 540 }, { x: 700, y: 640, zoom: 2.2 }, { x: 1300, y: 420, zoom: 1.5, rotate: -4 }];
+const TALL = [{ x: 960, y: 700 }, { x: 640, y: 760, zoom: 2.4 }, { x: 1300, y: 600, zoom: 1.6, rotate: -4 }];
+const boards = [{ at: "v1", world, framings: F, tall: TALL }, { at: "ch1", world, framings: F }, { at: "v2-03", world, framings: F.slice(0, 1) }];
+const wrong: string[] = [];
+let n = 0;
+for (const vertical of [false, true]) {
+  for (const p of planStoryboard(ctx, boards)) {
+    const shots = (vertical ? p.tall : p.plan).shots;
+    shots.slice(0, -1).forEach((s, i) => {
+      const T = (s.t + shots[i + 1].t) / 2;
+      renderToStaticMarkup(h(SongContext.Provider, { value: ctx }, h(Storyboard, { T, boards, vertical })));
+      n++;
+      if (seen.framing !== s.framing || seen.shotFrom !== s.t || seen.shotTo !== shots[i + 1].t || seen.vertical !== vertical) {
+        wrong.push(`${p.board.at} ${vertical} ${T}: ${JSON.stringify([seen.framing, seen.shotFrom, seen.shotTo])} for ${s.framing} ${s.t} ${shots[i + 1].t}`);
+      }
+    });
+  }
+}
+console.log(JSON.stringify({ n, wrong }));
+""".replace("NODE", os.path.join(BUNDLED, "node_modules")), _verse_song([4, 4, 5, 4, 6, 4, 4]))
+    assert out["n"] > 20 and out["wrong"] == [], out
+
+
 def test_a_limb_bends_toward_the_side_asked_on_either_side_of_the_body(tmp_path):
     out = _probe(tmp_path, """
 import { limb } from "KIT/math";
@@ -921,6 +954,69 @@ console.log(JSON.stringify({ plain: marks(paper.rect(0, 0, 100, 80, 1, 0), sides
     assert out["plain"]["within"]  # no strip pokes out past a corner
     assert out["hole"]["lit"] == [True, True, False, False, False, True, True, False, False]  # a hole's lower and right edges face up and left
     assert out["hole"]["within"]
+
+
+FOLLOW_PROBE = """
+import * as React from "NODE/react";
+import { renderToStaticMarkup } from "NODE/react-dom/server";
+import * as comic from "KIT/styles/comic";
+import { wideView } from "KIT/vertical";
+const apply = (tf: string, [x, y]: number[]) => {
+  for (const [, op, args] of [...tf.matchAll(/(\\w+)\\(([^)]*)\\)/g)].reverse()) {
+    const v = args.split(/[\\s,]+/).filter(Boolean).map(Number);
+    if (op === "translate") [x, y] = [x + v[0], y + (v[1] ?? 0)];
+    if (op === "scale") [x, y] = [x * v[0], y * (v[1] ?? v[0])];
+    if (op === "rotate") {
+      const a = (v[0] * Math.PI) / 180;
+      [x, y] = [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+    }
+  }
+  return [x, y];
+};
+const CLOSE = { x: 960, y: 465, zoom: 1.6 }, ROLL = { ...CLOSE, rotate: -4 };
+const A = { x: 34, y: 34, w: 915, h: 495 }, B = { x: 971, y: 34, w: 915, h: 495 }, PAGE = { x: 0, y: 0, w: 1920, h: 1080 };
+const onScreen = (framing: any, tf: string | undefined, b: any) => {
+  const pts = [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]].map((p) => apply(wideView(framing).svg, apply(tf ?? "", p)));
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  return { inside: x0 >= -0.5 && y0 >= -0.5 && x1 <= 1920.5 && y1 <= 1080.5, fill: Math.max((x1 - x0) / 1920, (y1 - y0) / 1080),
+    mid: [(x0 + x1) / 2, (y0 + y1) / 2], box: [x0, y0, x1, y1] };
+};
+const at = (T: number, steps: any[], o: any = {}) => comic.follow(T, steps, CLOSE, o);
+const scale = (tf: string | undefined) => Number(/scale\\(([^)]*)\\)/.exec(tf ?? "")?.[1]);
+const sfx = (spacing?: number) => /dx="([^"]*)"/.exec(renderToStaticMarkup(React.createElement("svg", null,
+  React.createElement(comic.Sfx, { T: 1, t: 0, text: "THWACK", x: 0, y: 0, size: 100, spacing }))))?.[1];
+const TALL = { x: 971, y: 34, w: 915, h: 1012 }, glide = [{ t: 0, box: A }, { t: 2, box: TALL, glide: 1 }];
+const mid = (a: any, b: any) => ({ x: (2 * a.x + a.w + 2 * b.x + b.w) / 4, y: (2 * a.y + a.h + 2 * b.y + b.h) / 4, w: 0, h: 0 });
+console.log(JSON.stringify({
+  close: onScreen(CLOSE, at(1, [{ t: 0, box: A }]), A),
+  roll: onScreen(ROLL, comic.follow(1, [{ t: 0, box: A }], ROLL), A),
+  page: onScreen(CLOSE, at(1, [{ t: 0, box: PAGE, fill: 1 }]), PAGE),
+  snapped: at(10.1, [{ t: 0, box: A }, { t: 10.3, box: B }], { shotFrom: 10, shotTo: 14 }) === at(1, [{ t: 0, box: B }]),
+  waits: at(10.35, [{ t: 0, box: A }, { t: 10.3, box: B }], { shotFrom: 9, shotTo: 10.4 }) === at(1, [{ t: 0, box: A }]),
+  far: [11.9, 12].map((T) => at(T, [{ t: 0, box: A }, { t: 12, box: B }], { shotFrom: 10, shotTo: 14 }) === at(1, [{ t: 0, box: B }])),
+  glideHolds: at(10.1, [{ t: 0, box: A }, { t: 10.3, box: B, glide: 0.5 }], { shotFrom: 10, shotTo: 14 }) === at(1, [{ t: 0, box: A }]),
+  half: [scale(at(2.5, glide)), Math.sqrt(scale(at(1, [glide[0]])) * scale(at(1, [{ t: 0, box: TALL }]))), onScreen(CLOSE, at(2.5, glide), mid(A, TALL)).mid],
+  vertical: at(1, [{ t: 0, box: A }], { vertical: true }) === undefined,
+  sfx: [sfx(), sfx(0)],
+}));
+"""
+
+
+def test_the_comic_page_camera_fills_a_close_framing_with_the_panel_and_cuts_on_the_planners_cuts(tmp_path):
+    out = _probe(tmp_path, FOLLOW_PROBE.replace("NODE", os.path.join(BUNDLED, "node_modules")), {})
+    close, roll, page = out["close"], out["roll"], out["page"]
+    assert close["inside"] and close["fill"] == pytest.approx(0.94, abs=1e-3) and close["mid"] == pytest.approx([960, 540], abs=0.5)
+    assert roll["inside"] and roll["fill"] == pytest.approx(0.94, abs=1e-3)  # a rolled framing keeps the panel's corners in
+    assert page["box"] == pytest.approx([0, 0, 1920, 1080], abs=0.5)  # the page at fill 1 is the wide framing's picture
+    assert out["snapped"] and out["waits"] and out["far"] == [False, True] and out["glideHolds"] and out["vertical"]
+    k, mean, mid = out["half"]  # halfway through a glide: the zoom halfway in ratio, the panels' middles halfway apart
+    assert k == pytest.approx(mean, rel=1e-3) and mid == pytest.approx([960, 540], abs=0.5)
+
+
+def test_a_sound_words_letters_are_set_apart_so_a_turned_one_keeps_its_outline(tmp_path):
+    out = _probe(tmp_path, FOLLOW_PROBE.replace("NODE", os.path.join(BUNDLED, "node_modules")), {})
+    assert out["sfx"] == ["0 6.00 6.00 6.00 6.00 6.00", "0 0.00 0.00 0.00 0.00 0.00"]
 
 
 def _probe(tmp_path, code: str, song: dict) -> object:

@@ -61,6 +61,8 @@ export type Song = {
 export type MvProps = { song: Song; from: number; to: number | null; hold: number; fps?: number };
 
 export const FPS = 30;
+/** Seconds a stretch that stops before the song's end fades picture and sound out over: 0.8 hid a short's last gag */
+export const FADE_OUT = 0.5;
 
 export const DEFAULT_THEME: Theme = {
   bg: "#04050b",

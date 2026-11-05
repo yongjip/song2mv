@@ -42,6 +42,10 @@ file is merged into `<work>/video/` at the end. Read first, in this order:
   time before it, so in your copy a later start hides a gap.
 - Give every board `tall` framings for the 9:16 frame. They default to the 16:9 ones, and builders who left them out
   put the subject under the captions or an overlay in the short.
+- **The 9:16 frame of your stretch is yours,** and so is each short cut from it (`map.md` gives its `--from`, `--hold`
+  and `--to`): render it as it goes out, with `--aspect 9x16` and those times, and keep its text inside the safe box,
+  x 120–960, y 269–1248, and its subject above the captions. Place text for each frame and framing (`span.vertical`,
+  `span.framing`): a sound word drawn at one place in both frames sat on the heroine's head in one short.
 - **No frame edge crosses a face.** Cut a person at the chest, waist or knees, or show the whole head; a face cut at
   the eyes looks like a mistake. Check every framing with people in it, the tall ones too.
 - **Nothing snaps.** A figure changes pose over 0.2–0.6 s (move its targets) or across a cut, never in one frame; a

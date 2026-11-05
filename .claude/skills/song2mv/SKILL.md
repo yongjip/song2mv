@@ -329,6 +329,8 @@ and any kit changes into it.
   same place look alike to it even over another sky: move or restyle chorus 2's big type and boxes too. Verses cut on
   an uneven rhythm (2 bars, 1 bar, 3 bars …), not every bar.
 - **Text**: which lines become big type in the scene (`Slam`, `BigLine`), which stay as bottom captions.
+- **Shorts**: each short's stretch as `--from`, `--hold` and `--to` (step 6), so the builder of that stretch frames it
+  for 9:16 and its reviewer can start in the first round.
 
 **Then get the pieces, in this order:**
 
@@ -406,7 +408,8 @@ section at a time, a review a stretch at a time) and expect less drawing.
 3. **The builders' frame.** In `<work>/video`: a section file per builder exporting an empty `Board[]`, a
    `boards.tsx` that joins them in song order, `index.ts` exporting `Scene`, `VerticalScene` and `linesDrawnByScene`
    from it, and the files every board shares (the look, an overlay). Typecheck it.
-4. **Builders,** three or four per song, each in its own copy made now, each owning one section file.
+4. **Builders,** three or four per song, each in its own copy made now, each owning one section file and its 9:16
+   frame, the shorts cut from its stretch included.
 5. **Merge** by copying each builder's section file into `<work>/video`; nothing else in its copy should have changed.
    Then check the whole song, not stretch by stretch (a line that passed in a stretch starting mid-line failed in the
    whole song), and look at a 9:16 sheet of every board (builders left out `tall` framings), a sheet every 3 s, a
@@ -443,8 +446,11 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   Take a board's lines from `span.lines`, not from the song by time: a board keyed to a line opens only a 16th
   before its first word (0.1 s at 150 BPM). One song's overlay tags started 0.12 s before each first word and were
   dropped when that fell before the board's start, so the tag of the line each of 11 boards was keyed to never
-  showed. A board at a line opens on its first framing in every copy of the section; a board at a section opens on
-  framing n − 1 in copy n (`v2` on `framings[1]`), so put that copy's opening there.
+  showed. `span.framing` is the framing the shot on screen took (an index into `framings`, or `tall` in 9:16), and
+  `span.shotFrom` and `span.shotTo` its cut and the next one, so a world can draw for the shot: in one video balloons
+  and a title took other places in the close-ups, and comic pages moved the panel being drawn into a close framing
+  (`comic.follow`, below). A board at a line opens on its first framing in every copy of the section; a board at a
+  section opens on framing n − 1 in copy n (`v2` on `framings[1]`), so put that copy's opening there.
   So does a board at the same line of every copy with the same framings (`ch1-04`, `ch2-04`): a board repeated in
   each chorus needs as many framings as there are copies, each composing the subject differently (off-centre,
   rolled, close). Another background alone measured alike in one chorus (0.81 → 0.73); another composition passed
@@ -580,6 +586,14 @@ inside only the lines you place: `comic.Brush` (tapered: features, folds, an arm
 (a forearm over the body) goes in a later contour Ink; check the joints at 2×. The contour fills narrow gaps and sharp
 notches: give a small form (an ear) a lighter `line`, draw a hole (a mug handle's) as a filled shape in an `Edge`,
 round the dips between tufts of fur, and keep balloons, tails and trailing bubbles clear of the figure.
+A Storyboard that films a page shows it half filled while its panels draw in, one per line. `comic.follow` is a
+page camera for that: under a board's close framing it moves the page until the panel being drawn fills the frame,
+and in the other framings the page stays whole. Its doc comment has what passed `check` in one video: glide only in
+the rests between lines (over halftone dots, glides on sung lines measured 11–17, where a verse wants 9.0 at most),
+switch panels on the planner's cuts (it moves a switch due within 0.5 s of one onto it; switching on every line evened
+a verse's cuts out to `cuts.rhythm` 0.18), and step to the whole page for a panel as wide as the page, which fills only
+a strip of the frame. `comic.Sfx` sets its letters 0.06 em apart (`spacing`): closer, a turned letter's fill ran into
+the next one's in a tight display face, and THWACK read 1HWACK.
 
 `poster`, office and street props drawn flat as on a poster, in `poster.colors`: `poster.Phone` (its `children` on
 the screen, such as `poster.Bubble`s with a `tail`), `poster.Notebook` (`write` 0–1), `poster.CoffeeCup`,
@@ -590,7 +604,12 @@ the screen, such as `poster.Bubble`s with a `tail`), `poster.Notebook` (`write` 
 `toon`, an ink outline and shading for any drawing (gallery tile 29: kit pieces as drawn, then in the pack):
 - `toon.Defs id` once in the scene's `<Svg>`, then `<toon.Ink id>` round each character or prop: one outline round
   its silhouette, kit pieces included (a `Person`, a `Car`); their soft ground shadows and glows stay without a line.
-  One Ink per character or prop: an Ink round a whole group outlines only the group's outer edge;
+  One Ink per character or prop: an Ink round a whole group outlines only the group's outer edge. A piece whose parts
+  draw ink lines of their own takes a thin joining outline at most (`toon.Defs` `width` 1–1.5): one video's ants drew
+  2.2 px lines round each part inside a 4 px Ink, which doubled their outer line to about 40 % of an arm's width and
+  10–14 px on screen in close-ups, beside props with one outline. The user asked why the ants' lines were so thick,
+  and the video went out with a 1.2 px one. Judge line weight in the closest shot the video has, at 1:1, beside the
+  props;
 - `toon.Shade id color` (`round` for a ball lit from the top left) with `fill={toon.fill(id)}` shades a form from its
   lit side, and `toon.Shine` puts a highlight there;
 - `toon.Line` draws a limb, cord or handle with an outline of its own, outside an Ink.
@@ -834,8 +853,12 @@ defects after every check had passed, such as arms folded into a V and faces cut
 - Start fresh agents with `briefs/review.md` (copy it into the work folder and fill in its `TODO`s), as many as the
   quality level says (the table at the top). At medium, one per two minutes of video. At high and max, one per minute
   or two, one for the characters (every pose and prop the scenes use, at 1:1) and one per short; at max, in the first
-  round, also one per lens over the whole video. Each crops every figure at 1:1, edits nothing and reports with
-  severities. Give whatever a reviewer did not cover to a new reviewer before you fix.
+  round, also one per lens over the whole video. Give each short its own reviewer from the first round, against the
+  safe box: in one video the shorts were first reviewed in the second round, and their two reviewers found three high-
+  and eleven medium-severity faults the 16:9 reviewers had not looked for (a close-up under the apps' text, a hook frame
+  half empty floor, the heroine out of the short for 4 s of the climax, the end fade over the last gag). Each crops
+  every figure at 1:1, edits nothing and reports with severities. Give whatever a reviewer did not cover to a new
+  reviewer before you fix.
 - Fix every high- and medium-severity finding and render again. At high and max, give the changed stretches to a new
   reviewer once; at max, once more if that reviewer found a high-severity finding. List what is left when you
   deliver. A pose a reviewer flags is usually its piece's fault: fix it in the piece, and every board that uses it is
@@ -854,15 +877,21 @@ what is boring. Their answer outranks the check.
 
 ## 6. Shorts (9:16)
 
-Pick 10–35 s around the hook (usually the first chorus). The first two seconds decide whether people stay: start
-on the hit and use `--hold` so the first frame shows the payoff fully drawn; check it with `--still` at from + hold.
+Pick 10–35 s around the hook (usually the first chorus), in the song map before the build (step 3), so the builder
+of that stretch frames it. The first two seconds decide whether people stay: start on the hit and use `--hold` so the
+first frame shows the payoff fully drawn; check it with `--still` at from + hold.
 
 ```bash
 song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --aspect 9x16 --hold <s>
 ```
 
-While you fix the short, render and check it as a draft (`--draft`), as in step 5. Review the finished short with
-`briefs/review.md` as in step 5, too.
+A short fades picture and sound out over its last 0.5 s (`FADE_OUT`): end it with `--to` at least that long after
+its last action is over. Over the 0.8 s it used to take, one short's exit gag went dark before it finished.
+
+While you fix the short, render and check it as a draft (`--draft`), as in step 5. Review it with `briefs/review.md`
+as in step 5, from the first round, and send its faults to the builder of its stretch: they are in that builder's
+`tall` framings and in text placed for 16:9, such as a sound word drawn at one place in both frames, which sat on the
+heroine's head in one short.
 
 By default the short shows `Scene` shrunk into a band, with the template's sky above and below it and the title on
 top. That frame puts the template's look around every concept, and a scene that draws its own lyrics leaves the

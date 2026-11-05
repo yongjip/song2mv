@@ -31,7 +31,7 @@ did not make it, so look at it fresh. Fix nothing. Other reviewers have the othe
    - A character who doesn't look their age: a toddler drawn like a school child.
 2. **Framing.** A face cut by the frame's edge (at the eyes is the worst) or behind a prop; a face or the line's
    prop under the captions; an empty or dull frame (half of it floor or sky), a subject too small to read, an awkward
-   crop; seams and odd colour patches.
+   crop; seams and odd colour patches; a character's lines much heavier than the props' beside it in a close-up.
 3. **Continuity.**
    - A prop that appears or vanishes inside a shot (a toy, a bag, shoes).
    - Clothes, props or the time of day against the continuity table or the shot before.
@@ -41,7 +41,8 @@ did not make it, so look at it fresh. Fix nothing. Other reviewers have the othe
 5. **Story.** The picture `lyrics-map.md` promises, on its key word: missing, late, small or off screen; an
    expression against the line; a joke that is only in the sound, nowhere in the picture.
 6. **Text and 9:16.** Captions hard to read, text cut off or outside a short's safe box, a short's subject under the
-   captions or the apps' buttons.
+   captions or the apps' buttons; a short whose first frame doesn't hold you, or whose last action is lost in the end
+   fade.
 
 ## How
 
