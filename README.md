@@ -44,6 +44,10 @@ a weaker model, pick max. The model matters more than the level: run every agent
 | `song2mv diff` | what changed between two renders of the same video: every stretch that differs, shown before and after | alpha |
 | `song2mv render` | renders `mv.json` as a 16:9 and/or 9:16 lyric video with a [Remotion](https://www.remotion.dev) template | experimental |
 
+For reusable face attachments, controlled comparisons, native frame inspection, and command timing, see
+[animation review](docs/animation-review.md). The [raster arm fitting pilot](experiments/raster-arm-fit/README.md)
+is a failed experiment kept separately from the scene kit.
+
 ## Install
 
 Install it with [uv](https://docs.astral.sh/uv/):

@@ -64,6 +64,10 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    labelled with its song time and line; `--lines` with the lyric map's ids shows whether each joke made it on screen.
    Passing is necessary, not proof of fun — send a clip and ask what is
    boring. The user's answer outranks the numbers.
+   For head turns, keep each facial mark attached to the same anatomical landmark across front and profile views.
+   Prove the front crossing in both directions with a fixed camera and expression. Use the kit's `AnchoredCheeks`
+   and `Comparison`, and [native frame review tools](docs/animation-review.md). Normal-speed viewing remains a separate
+   check; frame sheets and hashes do not prove natural motion.
 7. **Review before you deliver.** `check` does not see an arm folded into a V or a face cut at the eyes or covered (arms
    drawn with the kit's `arm()`, and heads and bubbles marked `data-face` and `data-over`, print their faults when
    rendered: clear those first). Give the

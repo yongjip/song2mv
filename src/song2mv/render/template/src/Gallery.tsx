@@ -6,6 +6,7 @@ import {
   PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster, toon, line, paint, finish, anime, NeonCloseup,
 } from "./kit";
 import sample from "./sample-song.json";
+import { FaceAnchorComparison } from "./FaceAnchorDemo";
 
 /**
  * The kit's people, places and objects in use, to see what there is before designing scenes:
@@ -1865,6 +1866,10 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Recipe: neon close-up (an eye cut, 9 parts)",
     draw: (T) => <NeonCloseup T={T} cut={9.1} talks={[[0, 99]]} />,
+  },
+  {
+    name: "Face anchors: a turn with attached cheeks",
+    draw: (T) => <FaceAnchorComparison T={T % 3} id="gallery-face-anchors" />,
   },
 ];
 

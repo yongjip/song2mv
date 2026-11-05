@@ -7,6 +7,7 @@ import { GALLERY_TILES, KitGallery } from "./Gallery";
 import { LyricShort } from "./LyricShort";
 import { LyricVideo } from "./LyricVideo";
 import sample from "./sample-song.json";
+import { FaceAnchorDemo } from "./FaceAnchorDemo";
 import { PortraitDemo } from "./PortraitDemo";
 
 /**
@@ -29,6 +30,7 @@ const duration: CalculateMetadataFunction<MvProps> = ({ props }) => {
 
 export const RemotionRoot: React.FC = () => (
   <>
+    <Composition id="Face-Anchors" component={FaceAnchorDemo} fps={24} width={1920} height={1080} durationInFrames={72} />
     <Composition id="Portrait-Actions" component={PortraitDemo} fps={FPS} width={1920} height={1080} durationInFrames={8 * FPS} />
     <Composition id="Lyric-16x9" component={LyricVideo} fps={FPS} width={1920} height={1080} durationInFrames={300}
       defaultProps={defaults} calculateMetadata={duration} />

@@ -4,6 +4,14 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 
 ## Unreleased
 
+### Added
+- `AnchoredCheeks` attaches separate cheek marks to stable eye landmarks through a head turn. `Comparison` gives
+  control and candidate drawings the same time and crop. The synthetic `Face-Anchors` composition demonstrates both.
+- Developer scripts extract selected encoded frames at native size with source hashes and record command timings
+  without overwriting earlier runs. See `docs/animation-review.md` for review steps and limits.
+- The failed reference-raster arm fitting pilot is archived under `experiments/raster-arm-fit`, outside the scene kit
+  and standard dependencies. It includes a synthetic smoke input generator and records its detached-hand failure.
+
 ### Changed
 - The template runs Remotion 4.0.540 (was 4.0.537), with Chrome 158.0.8127.2; its bundler is now rspack 2.3.0. A
   `--template` copy keeps its own `render.mjs` and Remotion: copy the new `render.mjs` over it only together with the

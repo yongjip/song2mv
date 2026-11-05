@@ -276,6 +276,15 @@ and any kit changes into it.
 4. **Draw what is new** in the concept's style. With a pack, draw it from the pack's pieces. Without one, build the
    style first (an ink line, a watercolour wash) and draw the song's objects on top. The kit's timing and
    motion code works in any style:
+   - `AnchoredCheeks` for separate cheek marks attached to stable anatomical eye anchors, and `Comparison` for
+     equal-time control and candidate views. Keep the eye identities through front and profile views. Derive cheek
+     visibility from head orientation, not eyelid closure. Clip in the head's local coordinates and inspect the nose
+     and mouth clearance in both turn directions. In a three-second driving trial, one interpolated cheek swept
+     across the face. Two stable marks removed that side switch in reviewed frames; moving them lower also cleared
+     the nose. Normal-speed motion and full-scene integration were still unverified. See
+     [animation review](https://github.com/yongjip/song2mv/blob/main/docs/animation-review.md) for native frame and
+     hash evidence. A raster-fitted arm in the same trial detached from its hand despite numerical checks. That
+     solver stays experimental, outside the kit;
    - `useSong()` and `grid`;
    - `Camera` and `cameraAt()`, `Drift`, `liveLine`, and the easing and `rng` helpers in `math`;
    - `arm()` for every arm that reaches for something, and `toStage` and `toLocal` for hand targets (`briefs/assets.md`, rule 6).
