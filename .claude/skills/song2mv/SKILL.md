@@ -192,10 +192,9 @@ an event of its own (a break, step 3). Read the progress log and the JSON:
   "heard N times" names the other times a re-heard line was heard: make the click track cover them all.
 - **Copies of a repeated line** (a chorus line, the hook) are sung alike, so the gaps between their words in
   `lyrics.json` match. A copy whose gaps differ from the others' by a second or more is likely wrong, also when
-  `check_by_ear` does not list it. In one song a chorus line's last word came 2.1 s after the word before it, against
-  0.5–0.6 s in its three other copies, and was 1.7 s late: two whisper runs heard a near-rhyme of it on time, and the
-  third timed it with a 10-second span. Look such a copy up in `<work>/asr/run*.json` (every word with its start `s`
-  and end `e`) and pin it with `manual`.
+  `check_by_ear` does not list it. Look such a copy up in `<work>/asr/run*.json` (every word with its start `s` and end
+  `e`) and pin it with `manual`. A whisper word longer than 4 s gives `sync` no time: whisper runs a word on over the
+  pause after it, and one such word once put a chorus line's last word 1.7 s late.
 
 Then make the ear check cheap for the user:
 

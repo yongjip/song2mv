@@ -247,6 +247,7 @@ GAP_EXTEND = 0.05
 MISMATCH = 1.0  # a letter aligned with a different one
 BLOCK = 3  # where the two alignments disagree, the one with more letters in runs of at least BLOCK letters wins
 LINE_GAP = 10.0  # matched letters of one lyric line further apart than this (seconds) are in two different places
+LONG_WORD = 4.0  # a whisper word longer than this (seconds) runs on over a pause: it gives the lyric words it holds no time
 MAX_CELLS = 40_000_000  # one byte of memory per cell; a longer sheet × run is matched by difflib alone
 
 
@@ -351,7 +352,7 @@ def align(lines: list[dict], asr_words: list[dict], only: set[int] | None = None
           word_index: bool = False, heard: set[int] | None = None,
           spans: dict[int, list[int]] | None = None) -> tuple[dict, dict]:
     """Match lyric characters to recognised characters, in order, and return
-    ({(line, word): time of the word's first matched character}, {line: fraction of its characters matched}).
+    ({(line, word): time of the word's first matched character, or None}, {line: fraction of its characters matched}).
     With word_index the first dict holds the index in asr_words of that character's word instead of its time.
     `heard` gets the index in asr_words of every recognised word with a matched character, and `spans`, per line,
     the indices of the first and the last of them.
@@ -359,8 +360,11 @@ def align(lines: list[dict], asr_words: list[dict], only: set[int] | None = None
     Two alignments are made, difflib's and a global one (_global_blocks). Where they disagree, the one that matched more
     of that stretch is kept, difflib's on a tie: the global one takes over where difflib put a repeated chorus on its
     other copy and lost the lines in between, and nothing changes where difflib was fine. Recognised words are spread
-    evenly over their characters. Single-character matches are dropped — with a whole song of text they are mostly
-    coincidence. Numbers in digits, on either side, are spelled out in the sheet's language first (numbers.spoken).
+    evenly over their characters. A lyric word whose first matched character is in a recognised word longer than
+    LONG_WORD s gets None: whisper leaves no gap between words, so such a word runs on over a pause, and its characters
+    are spread over the pause (a line's last word before a break once came 1.7 s late). On the JamendoLyrics benchmark,
+    13 of 14 such words were more than 1 s off. Single-character matches are dropped — with a whole song of text they
+    are mostly coincidence. Numbers in digits, on either side, are spelled out in the sheet's language first (numbers.spoken).
     `only` restricts the lyric side to some lines (used when re-listening to one gap)."""
     language = sheet_language([norm(w) for ln in lines for w in ln["words"]])
     L, idx = [], []
@@ -388,7 +392,8 @@ def align(lines: list[dict], asr_words: list[dict], only: set[int] | None = None
     for a, b in _one_place(pairs, idx, Rt):
         key = idx[a]
         hits[key[0]] += 1
-        first.setdefault(key, Rw[b] if word_index else Rt[b])
+        long = asr_words[Rw[b]]["e"] - asr_words[Rw[b]]["s"] > LONG_WORD
+        first.setdefault(key, Rw[b] if word_index else None if long else Rt[b])
         if heard is not None:
             heard.add(Rw[b])
         if spans is not None:

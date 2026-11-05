@@ -34,6 +34,14 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 
 ### Fixed
 - Render staging preserves a copied template's public artwork and uses a separate name for the input audio.
+- `sync` no longer puts a word late when whisper ran it on over the pause after it. Whisper leaves no gap between
+  words, so a line's last word before an instrumental break can last until the next word is sung, and `sync` spread
+  the word's letters over that span: in one song a chorus line's last word, a 10.3 s whisper word of three letters,
+  came 1.7 s late, and `check_by_ear` did not list it. A whisper word longer than 4 s now gives no time, and the word
+  is placed from the other runs or next to its timed neighbours; in that song, where the user pinned it by ear. On the
+  JamendoLyrics benchmark (rerun from the align step), 10 words in 7 songs move (summed error 31.4 → 30.5 s), words
+  within 0.1 / 0.3 / 1 s stay 55.5 / 88.9 / 96.6 %, lines starting more than 0.3 s off stay 529 of 3,383, those more
+  than 1 s off go from 175 to 174, and `check_by_ear` lists 450 lines instead of 449.
 
 ### Changed
 - A short, and a 16:9 stretch that stops before the song's end, fade out over their last 0.5 s (`FADE_OUT`), not 0.8 s:

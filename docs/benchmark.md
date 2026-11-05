@@ -461,6 +461,40 @@ On the Suno rap song's first sync the list now holds the first hook's last line 
 lines in one, where the runs put a line's third word before its second and another copy of the line has the two
 2.17 s apart.
 
+### Words whisper ran on over a pause
+
+Besides the pause before a line ([section 2](#2-the-first-word-of-a-line)), whisper sometimes hears the pause after
+a word as part of the word: a line's last word before an instrumental break lasts until the next word is sung.
+`sync` spreads a whisper word's letters evenly over its span, and a lyric word's time is its first matched letter's,
+so that word's time landed in the pause. In a Korean children's song, a chorus line's last word was a whisper word of
+10.3 s with three letters (Hangul syllables): it came 1.7 s late, the other two runs heard another word there, and
+`check_by_ear` did not list the line. Now a lyric word whose first matched letter is in a whisper word longer than
+4 s gets no time from that run. It is placed from the other runs, or next to the line's timed words (0.45 s after the
+word before it, for a last word); in that song, where the user had pinned it by ear.
+
+Here such words are rare and nearly always wrong. Per whisper run, 14 of the 57,286 words the runs placed came from
+whisper words longer than 4 s, and 13 of them were more than 1 s off. From 3 s it would be 45 words, 28 of them more
+than 1 s off, but also held notes placed right (one sung for 4.4 s, a 3.8 s whisper word). That the spread rarely
+mattered here is the letters: one letter's share of the span is small in a long word written in Latin letters, and
+large in a word of a few Hangul syllables. Measured with `bench/jamendolyrics.py --rerun` (from the align step, with
+the cached whisper runs) at `1a311e8` and with the change:
+
+| | before | after |
+|---|---:|---:|
+| words within 0.1 / 0.3 / 1 s | 55.49 / 88.95 / 96.55 % | 55.49 / 88.95 / 96.55 % |
+| lines starting > 0.3 s off (early / late) | 529 (281 / 248) | 529 (280 / 249) |
+| lines starting > 1 s off | 175 | 174 |
+| `check_by_ear` lines | 449 | 450 |
+| recall: lines > 0.3 s / > 1 s off that are listed | 40.5 / 78.3 % | 40.6 / 78.2 % |
+| precision: listed lines that start > 0.3 s / > 1 s off | 47.7 / 30.5 % | 47.8 / 30.2 % |
+
+10 words in 7 songs move, 5 of them closer to the annotation and 5 further, and their summed error goes from 31.4 to
+30.5 s. A re-heard last line of Fantasma that started 3.8 s early now starts 0.39 s late, which is why the list's
+recall at 1 s dips: it listed that line. A re-heard line of Diosa de la noche, 5 s off and listed before and after,
+has its last two words further off. A line of CHRISTMAS AVEC TOI whose start is 0.42 s off is now listed. Of the other
+songs synced on this machine (the Korean trial songs and users' songs), one more line changed: its merged word times
+moved by 5 ms at most.
+
 ## What the numbers point to
 
 In order of how many wrong lines each one concerns (they overlap):

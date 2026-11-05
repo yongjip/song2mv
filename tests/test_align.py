@@ -1,6 +1,9 @@
-"""The first word of a lyric line: whisper leaves no gap between words, so it hears the pause before a line as part
-of the line's first word, and merge_runs cuts that word to the run's median word duration."""
+"""Whisper leaves no gap between words. It hears the pause before a lyric line as part of the line's first word, and
+merge_runs cuts that word to the run's median word duration. It can also run a word on over the pause after it, and
+such a word gives no time."""
+from song2mv.timing import lib
 from song2mv.timing.align import merge_runs, trim_first_words
+from song2mv.timing.build_lyrics import finish
 
 
 def line(lid, text):
@@ -52,3 +55,31 @@ def test_a_first_word_timed_at_zero_length_leaves_the_word_before_it_alone():
     run = heard(("hold", 10.05, 10.3), ("me", 10.3, 10.6), ("now", 10.6, 12.0),
                 ("never", 12.0, 12.0), ("let", 12.0, 12.3), ("go", 12.3, 12.6))
     assert trim_first_words(LINES, run) == run
+
+
+
+# A line's last word before an instrumental break: whisper leaves no gap between words, so it can time that word until
+# the next one is sung, 10 s later. The word's letters are spread evenly over its span, so its first letter came at
+# 28.4 + 10.32 × 0.5 / 3 = 30.12 s, 1.7 s after it is sung. Two runs heard another word there, so that run's time was
+# the line's.
+BREAK = [line("ch1-04", "time to eat"), line("v2-01", "wait for me")]
+STRETCHED = heard(("time", 27.0, 27.9), ("to", 27.9, 28.4), ("eat", 28.4, 38.72),
+                  ("wait", 38.72, 40.3), ("for", 40.3, 40.9), ("me", 40.9, 42.0))
+MISHEARD = heard(("time", 27.02, 27.9), ("to", 27.9, 28.44), ("yum", 28.44, 29.62),
+                 ("wait", 38.74, 40.3), ("for", 40.3, 40.9), ("me", 40.9, 42.0))
+RUNS = [{"words": MISHEARD}, {"words": STRETCHED}, {"words": MISHEARD}]
+
+
+def test_a_word_stretched_over_a_break_gives_no_time(monkeypatch):
+    merged = merge_runs(BREAK, RUNS)
+    assert merged[0]["wt"] == [27.287, 28.035, None]
+    out = finish(merged, {"beat": 0.5, "phi": 0.0}, 0, 60.0)
+    assert out[0]["words"][2]["t"] == 28.485  # after the word before it, as a word no run timed
+    monkeypatch.setattr(lib, "LONG_WORD", float("inf"))
+    assert merge_runs(BREAK, RUNS)[0]["wt"] == [27.287, 28.035, 30.12]  # what it was
+
+
+def test_a_held_word_keeps_its_time():
+    held = heard(("time", 27.0, 27.9), ("to", 27.9, 28.4), ("eat", 28.4, 28.4 + lib.LONG_WORD),
+                 ("wait", 38.72, 40.3), ("for", 40.3, 40.9), ("me", 40.9, 42.0))
+    assert merge_runs(BREAK, [{"words": held}])[0]["wt"][2] == round(28.4 + lib.LONG_WORD / 6, 3)
