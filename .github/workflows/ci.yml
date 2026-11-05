@@ -165,6 +165,16 @@ jobs:
           name: kit-gallery
           path: src/song2mv/render/template/out/gallery/
           retention-days: 14
+      - name: experimental character previews
+        run: |
+          node render.mjs src/sample-song.json --composition Figure-Compare-Overview --out out/characters --name figure
+          node render.mjs src/sample-song.json --composition Puppet-Gallery --out out/characters --name puppet
+          node render.mjs src/sample-song.json --composition Puppet-Motion-Gallery --out out/characters --name motion
+      - uses: actions/upload-artifact@v7
+        with:
+          name: experimental-2d-previews
+          path: src/song2mv/render/template/out/characters/*.png
+          retention-days: 14
       # renders through render.mjs: a draft and its full render must give check as many frames
       - uses: astral-sh/setup-uv@v7
       - name: ffmpeg
@@ -199,3 +209,26 @@ jobs:
       # the first render installs the template (npm ci) and Remotion's Chrome, then renders through render.mjs
       - run: uv run --no-sync song2mv render src/song2mv/render/template/src/sample-song.json --still 5 --out out --name sample --json
       - run: uv run --no-sync python -c "import os; n = os.path.getsize('out/sample-16x9-5s.png'); print(n, 'bytes'); assert n > 100000"
+
+  experimental-hybrid:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: experiments/hybrid-figure
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: experiments/hybrid-figure/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: node render.mjs Hybrid-Gallery out/gallery.png
+      - run: node render.mjs Head-Turn out/head-turn.png --frame=27
+      - uses: actions/upload-artifact@v7
+        with:
+          name: experimental-hybrid-previews
+          path: experiments/hybrid-figure/out/*.png
+          retention-days: 14

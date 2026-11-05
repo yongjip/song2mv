@@ -44,5 +44,20 @@ export * as paint from "./styles/paint";
 export * as finish from "./styles/finish";
 export * as anime from "./styles/anime";
 
+export * from "./acting";
+export * from "./figure-motion";
+export * from "./figure";
+
+export * from "./profile-motion";
+export * from "./profile-figure";
+
+export * from "./puppet";
+export * from "./puppet-performance";
+export * from "./sprite-parts";
+
+export * from "./puppet-clean-art";
+
+export * from "./puppet-motion";
+
 export * from "./face-anchors";
 export * from "./comparison";

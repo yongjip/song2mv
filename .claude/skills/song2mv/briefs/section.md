@@ -78,3 +78,14 @@ you started; never `pkill`.
 
 What you built (boards and worlds), the check result, the sheet paths, the continuity state your stretch starts and
 ends in (who wears and carries what), and anything you could not do.
+
+
+## Shared character states
+
+Copy the applicable production quality rows from the existing work map into the section plan. Use the same
+identity and object-state functions as neighbouring sections. Derive a prop's artwork, owner and attachment
+from one time-derived state. Do not replace an exchange with in-place recolouring or a cast substitution.
+
+Preserve accepted anatomy and drawing choices. Prove travel, contact, storage changes and captions in a short
+moving sample before expanding scenes. Keep caption layers outside world and camera transforms. For the
+experimental puppets, follow PUPPETS.md and inspect the actual artwork adapter at its final camera size.

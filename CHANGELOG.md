@@ -11,6 +11,15 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   without overwriting earlier runs. See `docs/animation-review.md` for review steps and limits.
 - The failed reference-raster arm fitting pilot is archived under `experiments/raster-arm-fit`, outside the scene kit
   and standard dependencies. It includes a synthetic smoke input generator and records its detached-hand failure.
+- Experimental 2D character starters with replaceable artwork, three proportions, walk/phone/bass actions,
+  joint exercises, simple dances, preview compositions and geometry/contact checks.
+- A standalone experimental 3D-driven 2D figure study with authored directional heads and silent examples.
+  It uses a separate npm install; CI checks it and attaches preview PNGs. These studies may change or be removed.
+- A production quality contract and asset/review briefs for identity, contact, moving proofs and honest
+  review coverage. Attractive stills and passing geometry checks do not establish finished motion quality.
+
+### Fixed
+- Render staging preserves a copied template's public artwork and uses a separate name for the input audio.
 
 ### Changed
 - The template runs Remotion 4.0.540 (was 4.0.537), with Chrome 158.0.8127.2; its bundler is now rspack 2.3.0. A

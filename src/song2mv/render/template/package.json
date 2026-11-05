@@ -9,7 +9,7 @@
     "studio": "remotion studio",
     "render": "node render.mjs",
     "typecheck": "tsc --noEmit",
-    "test:assets": "node test-assets.mjs && node test-interactions.mjs && node test-face-anchors.mjs"
+    "test:assets": "node test-assets.mjs && node test-interactions.mjs && node test-figures.mjs && node test-profiles.mjs && node test-puppets.mjs && node test-puppet-motion.mjs && node test-face-anchors.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.540",

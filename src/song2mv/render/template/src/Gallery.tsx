@@ -3,7 +3,7 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import {
   Camera, Car, Cash, City, Flames, FlamesAlong, SleeplessStorm, Flash, Hit, HitKind, Tears, Clock, Clouds, Confetti, Crowd, Fireworks, Ground, Heart, Lantern, Lanterns, Line, Moon, Person, Phone, Plane, Rain,
   Rays, Room, Sea, Shot, SkyGradient, Storm, Strike, strikeFlashes, Song, SongContext, Street, Sun, Svg, comic, makeSongCtx, mix, paper, personHand, pixel, rng, shade, SKINS, STRIDE,
-  PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster, toon, line, paint, finish, anime, NeonCloseup,
+  PortraitBody, PortraitInteraction, portraitMotion, portraitHeadTransform, poster, toon, line, paint, finish, anime, NeonCloseup, ReactionFace, reactionAt,
 } from "./kit";
 import sample from "./sample-song.json";
 import { FaceAnchorComparison } from "./FaceAnchorDemo";
@@ -1577,6 +1577,37 @@ const AnimeHeads: React.FC<{ T: number }> = ({ T }) => (
   </Svg>
 );
 
+const ActingExample: React.FC = () => (
+  <Svg>
+    <rect width={1920} height={1080} fill="#f0e7cf" />
+    {[0.9, 1.04, 1.5].map((T, i) => {
+      const x = 85 + i * 620, event = 1, response = reactionAt(T, event, { hold: 2 });
+      return (
+        <g key={i} transform={`translate(${x} 180)`}>
+          <rect width={555} height={720} rx={20} fill={["#d5d8c7", "#efd29c", "#d2c4cb"][i]} />
+          <text x={278} y={80} textAnchor="middle" fontSize={42} fontWeight={800} fill="#24252b">
+            {["1. Expectation", "2. Word-time event", "3. Delayed reaction"][i]}
+          </text>
+          <path d="M76 624Q69 442 210 435Q358 442 350 624Z" fill="#466e62" />
+          <path d="M286 465Q323 451 347 418L371 442Q339 500 306 515Z" fill="#466e62" />
+          <path d="M344 420Q340 393 351 394L360 413Q377 396 385 406L369 441Q355 452 344 420Z" fill="#e8b28a" />
+          <ellipse cx={210 + response * 12} cy={337 - response * 13} rx={106} ry={126} fill="#e8b28a" />
+          <ReactionFace x={210 + response * 12} y={298 - response * 13} s={1.45}
+            expression="startled" amount={response} look={1} />
+          <g transform={`translate(${389 + (T >= event ? 56 : 0)} ${448 + (T >= event ? 110 : 0)}) scale(0.85) rotate(${T >= event ? 35 : 0})`}>
+            <path d="M-56 -70H55L44 60Q0 82 -46 60Z" fill="#c16b53" />
+            <path d="M53 -52Q118 -54 107 -1Q99 31 50 24" fill="none" stroke="#c16b53" strokeWidth={20} />
+            <ReactionFace y={-28} s={0.55} expression="startled" amount={T >= event ? 1 : 0} />
+          </g>
+          <rect x={20} y={500} width={380} height={16} fill="#24252b" />
+        </g>
+      );
+    })}
+    <text x={960} y={1014} textAnchor="middle" fontSize={40} fontWeight={700} fill="#24252b">
+      One event. A visible witness. Face and body respond after the event.
+    </text>
+  </Svg>
+);
 const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
   {
     name: "Person: poses, outfits, hair, skin",
@@ -1867,6 +1898,8 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
     name: "Recipe: neon close-up (an eye cut, 9 parts)",
     draw: (T) => <NeonCloseup T={T} cut={9.1} talks={[[0, 99]]} />,
   },
+  { name: "Acting: expectation, word-time event, delayed reaction", draw: () => <ActingExample /> },
+
   {
     name: "Face anchors: a turn with attached cheeks",
     draw: (T) => <FaceAnchorComparison T={T % 3} id="gallery-face-anchors" />,

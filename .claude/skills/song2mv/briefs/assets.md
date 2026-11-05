@@ -107,3 +107,15 @@ download nothing, and leave the other workspaces and every git repository alone.
 - A note: each piece's props, size at s = 1 and origin, and what is still weak.
 - Anchors as exported functions of the pose: where a hand grips, where a child sits on a hip, the face's centre, the
   top of the head. Scenes place people against each other with them, never with typed coordinates.
+
+
+## Experimental character adapters
+
+Follow the production quality contract in the skill. Record the accepted identity, anatomy, allowed variants
+and contact/depth anchors before drawing. Nonhuman grasping parts follow the approved anatomy. Highlights stay
+inside their surfaces, and containers need distinct interior and front layers.
+
+For replaceable character artwork, read the template's PUPPETS.md. Keep drawings in PuppetParts slots and
+timing, contacts and depth in PuppetFigure. Supply closed cloth caps, joint overlap, calibrated pivots and
+separate hand/expression variants. A flattened face does not blink because the rig sends a numeric prop.
+Review a moving interaction and before/contact/release/after frames before sharing the piece with builders.

@@ -1,0 +1,15 @@
+import type React from 'react';
+export type Point={x:number;y:number;depth:number};
+export type Frame={o:Point;x:Point;y:Point};
+export type EyePose={kind:'open';openness:number}|{kind:'closed';smile:number};
+export type Acting={eyes:EyePose;joy:number;look:number;lookY:number;mouthOpen:number;accent:number};
+export type Appearance='lead'|'guitarist'|'drummer';
+export type HeadProps=Acting&{yaw:number;time:number;appearance?:Appearance};
+export type BodyProps={yaw:number;appearance?:Appearance};
+type PlayingInstrument={kind:'bass'|'guitar';bounds:{left:number;right:number;top:number;bottom:number};parts:{name:string;paint:string;path:string}[];lines:{name:string;paint:string;points:Point[]}[];fingers:{role:string;radius:number;points:Point[];front:Point[]}[];palms:{frame:Frame;rx:number;ry:number;wrist:Point}[];strapFront:Point[];strapBack:Point[]};
+export type Instrument=PlayingInstrument;
+export type ViewPose={arms:{points:Point[];hand:Frame;layerFront:boolean;frontTorso:Point[];frontBass:Point[];handFront:boolean}[];legs:{points:Point[];shoe:number[][];weave:Point[][]}[];body:{frame:Frame;yaw:number};head:{frame:Frame;yaw:number};pelvis:Frame;abdomen:Frame;shadow:Point;instrument:Instrument|{kind:'none'}};
+export type HybridAction='walk'|'phone'|'bass'|'dance'|'turn'|'reach'|'heel-toe';
+export type HybridOptions={action:HybridAction;time:number;bpm?:number;view?:'front'|'quarter'};
+export type HybridFrame={view:ViewPose;acting:Acting;headScale:number;phone:Point[]|null};
+export type HybridArt={Head?:React.ComponentType<HeadProps>;Body?:React.ComponentType<BodyProps>};
