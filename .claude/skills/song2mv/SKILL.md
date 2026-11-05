@@ -190,6 +190,12 @@ an event of its own (a break, step 3). Read the progress log and the JSON:
   is what every such warning on the JamendoLyrics benchmark was; put the line into the user's ear check with both
   versions, as written and as heard, and change the sheet only after the user confirms). Most likely wrong. A warning
   "heard N times" names the other times a re-heard line was heard: make the click track cover them all.
+- **Copies of a repeated line** (a chorus line, the hook) are sung alike, so the gaps between their words in
+  `lyrics.json` match. A copy whose gaps differ from the others' by a second or more is likely wrong, also when
+  `check_by_ear` does not list it. In one song a chorus line's last word came 2.1 s after the word before it, against
+  0.5–0.6 s in its three other copies, and was 1.7 s late: two whisper runs heard a near-rhyme of it on time, and the
+  third timed it with a 10-second span. Look such a copy up in `<work>/asr/run*.json` (every word with its start `s`
+  and end `e`) and pin it with `manual`.
 
 Then make the ear check cheap for the user:
 
@@ -320,6 +326,12 @@ and any kit changes into it.
   lists them: a toddler is about half an adult's height, with about 2 heads fewer). Then a table, section by section:
   what each one wears and carries (a bag, a toy, shoes on or off), where they are, the time of day. Builders and
   reviewers check every board against it.
+- **A video to copy along with** (an action song for children, a dance to learn): the actions are mimes with empty
+  hands, as the viewer does them. A prop that appears for an action (a toy steering wheel in the paws) is one the
+  viewer does not have, and the user asked where it came from. The main character does every action the inset or the
+  chorus shows, in every shot, seated in a vehicle too: in one video only the inset did them while the driver kept his
+  paws on the sill, and reviewers flagged it in two rounds. Ask the painter for each action in each posture the map
+  needs (standing, seated, at a wheel).
 - **Hit points**: the first beat of each chorus, drops, the last word. These get the biggest moment (cut, flash,
   slam). Use `grid.bar(k)` and line/word times — never hand-typed seconds.
 - **Breaks**: list every stretch of 4 s or more without a sung line in `mv.json` (an intro, an instrumental, an
@@ -460,7 +472,11 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   next to each other in the list need 1.35× apart in zoom, another part of the world or 4° of roll: the planner skips
   a framing too alike to the one before it (a close-up at 2.4 after one at 1.8 never showed), and a draft's render
   log names one it skipped that never shows (`storyboard: the board at v2-08 never shows framing 2 …`). The 9:16
-  frame skips a `tall` framing too alike to the one before it the same way.
+  frame skips a `tall` framing too alike to the one before it the same way. Across a board's start nothing is
+  skipped: a board that films the world of the board before it (the same `world`, or one written the same) and opens
+  on a framing too alike to the one on screen reads as a skipped frame, and a video render's log names it
+  (`storyboard: the cut to the board at ch1-04 goes from framing …`). Reviewers flagged four such cuts in one video,
+  after its builders had been told to avoid them.
 - **Point a framing at its subject's middle**: the character or the thing the line is about; for a person in a close
   shot, the face, with room above it. Both frames put the point in the middle of their picture, above the captions
   and big type: y 0–840 of the 16:9 frame (`WIDE` in the kit), y 269–1080 of the 9:16 one (`VERTICAL`). Zoom so the
@@ -730,7 +746,9 @@ Rules that held up:
 
 1. **Pure function of song time `T`.** Never the frame number or state; any `--from` must render identically.
 2. **Text pops once, then holds still** while it is read. No wobble, bob or beat-shake on letters. The beat moves
-   lights, particles, shapes, the camera (`Camera`, `Drift`) — not text.
+   lights, particles, shapes, the camera (`Camera`, `Drift`) — not text. It sits beside the action, never on it (the
+   line's prop, a hand, a face): one sound word sat on the prop that dropped on that word, so the drop happened under
+   it. Text still on screen at a cut ends there; redrawn in another place in the next shot, it jumps.
 3. **Every line a scene draws itself** goes into `linesDrawnByScene`, so the bottom captions don't double it.
 4. **Lay out on the 1920×1080 stage.** In 9:16 the stage is a band; read `VerticalCtx` to stack side-by-side
    layouts, or export a `VerticalScene` that draws the whole 9:16 frame (step 6). Keep text ≥ 36 px on screen:
@@ -919,7 +937,12 @@ Where things go (`VERTICAL` in the kit has the numbers):
   Point a board's `tall` framings at the subject's middle too (step 4), with the starter's `tall()`, not `at()`, which
   keeps a framing on the 16:9 stage and so moves a tall frame's subject off its middle.
   A close-up shows more below its point than in 16:9, and that part sits under the captions: if it is the subject's
-  body, zoom out until the subject fits above y 1080.
+  body, zoom out until the subject fits above y 1080. Zoom a wide shot in until the cast fills the safe box: kept at
+  their 16:9 zoom, one video's wides put the cast in the top half of both its shorts, over 40–50 % empty grass.
+- **An overlay** (an inset doing the actions, a scoreboard, a logo bug) never covers a face or the action, in either
+  frame. Move it to the side clear of the action, shot by shot, or move the framing, rather than hide it, and keep it
+  on or off for 2 s or more, fading over 0.4 s or more: an inset back for 0.8 s between two exits read as blinking.
+  Mark it `data-over`, so a render names a face under it; only a sheet shows a body or a prop under it.
 - **Below y 1248** the apps cover the frame: picture only. The view keeps the frame on the stage's sides and top but
   runs on past its bottom (the kit's places end at y 1080), so draw the ground on down there, or a foreground such
   as a crowd. How far it runs on depends on the zoom: the frame ends 1245 / zoom stage px below the view's point, so

@@ -272,7 +272,7 @@ function drifted(f: Framing, d: number, rule: Rule, move: (typeof MOVES)[number]
 }
 
 /** Two framings too alike for a cut between them to show: under 1.35× apart in zoom, and not far apart */
-function alike(a: Framing, b: Framing) {
+export function alike(a: Framing, b: Framing) {
   const za = a.zoom ?? 1, zb = b.zoom ?? 1;
   return Math.max(za, zb) / Math.min(za, zb) < 1.35 && Math.hypot(a.x - b.x, a.y - b.y) < 400 / Math.min(za, zb)
     && Math.abs((a.rotate ?? 0) - (b.rotate ?? 0)) < 4;

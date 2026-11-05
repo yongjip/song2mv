@@ -785,6 +785,33 @@ def test_the_storyboard_names_an_idle_pattern_and_copies_that_open_alike(tmp_pat
     assert len(alike) == 1 and "the boards at ch1-03 and ch2-03" in alike[0], warned
 
 
+SEAM_PROBE = """
+import { makeSongCtx } from "KIT/song";
+import { planStoryboard } from "KIT/storyboard";
+const meadow = () => null, street = () => 1;
+const WIDE = { x: 960, y: 540 }, NEAR = { x: 1000, y: 560, zoom: 1.2 }, CLOSE = { x: 700, y: 640, zoom: 2.2 };
+const warned: string[] = [];
+console.warn = (m: string) => { warned.push(m); };
+planStoryboard(makeSongCtx(SONG), [
+  { at: "in", world: street, framings: [WIDE, CLOSE] },
+  { at: "v1-02", world: meadow, framings: [WIDE, CLOSE] },
+  { at: "v1-03", world: meadow, framings: [NEAR, CLOSE] },
+  { at: "v1-04", world: street, framings: [NEAR, CLOSE] },
+  { at: "v1-05", world: () => 1, framings: [WIDE, CLOSE], tall: [CLOSE, WIDE] },
+  { at: "ch1", world: meadow, framings: [WIDE, CLOSE] },
+]);
+console.log(JSON.stringify(warned.filter((w) => w.includes("of the same world"))));
+"""
+
+
+def test_the_storyboard_names_a_cut_between_boards_onto_a_framing_of_the_same_world_too_alike(tmp_path):
+    # v1-02 to v1-03 and v1-04 to v1-05 (a world written the same) cut from the wide to one 1.2x closer: a skipped
+    # frame. v1-04 films another world, and v1-05's tall frame opens on a close-up.
+    warned = _probe(tmp_path, SEAM_PROBE, _verse_song([4, 4, 5, 4, 6, 4, 4]))
+    assert [w.split(" goes ")[0] for w in warned] == [
+        "storyboard: the cut to the board at v1-03", "storyboard: the cut to the board at v1-05"], warned
+
+
 def test_a_storyboard_without_boards_draws_nothing(tmp_path):
     placed = _probe(tmp_path, """
 import { makeSongCtx } from "KIT/song";

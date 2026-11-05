@@ -48,8 +48,12 @@ file is merged into `<work>/video/` at the end. Read first, in this order:
   `span.framing`): a sound word drawn at one place in both frames sat on the heroine's head in one short.
 - **No frame edge crosses a face.** Cut a person at the chest, waist or knees, or show the whole head; a face cut at
   the eyes looks like a mistake. Check every framing with people in it, the tall ones too.
-- **Nothing snaps.** A figure changes pose over 0.2–0.6 s (move its targets) or across a cut, never in one frame; a
-  prop changes hands on screen; nothing appears or vanishes inside a shot.
+- **Nothing snaps.** A figure changes pose over 0.6 s or more with an even ease (move its targets), a beat for a
+  dance move, or across a cut, never in one frame: in one video arm changes over 0.3 s with an in-out ease showed in
+  3–5 frames, and over 0.4 s still whipped; reviewers flagged them in two rounds. Arms going up or down pass in front
+  of the body, elbows bent; through a straight-armed T to the sides they read as a flap. A prop moved more than about
+  100 px takes 0.6 s or more, food goes into a mouth over 0.3 s or more, and a prop changes hands on screen; nothing
+  appears or vanishes inside a shot.
 - **Continuity.** Every board follows the continuity table in `map.md`: what each character wears and carries, where
   they are, the time of day. A cap on a head in one shot and in a hand the next, with nothing between, is the first
   thing a viewer catches.

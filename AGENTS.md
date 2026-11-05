@@ -31,7 +31,9 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    the lines most likely to be wrong, and `warnings` says what to tell the user.
    If the audio has a lyrics tag (Suno writes one), `--lyrics` is optional; where a lyric sheet and the tag differ,
    `warnings` says where and which one the whisper runs support, and `off_sheet` lists words the runs hear that no
-   line has: sync again with a sheet that matches what they heard. Always set `--language`.
+   line has: sync again with a sheet that matches what they heard. Always set `--language`. Compare the copies of a
+   repeated line in `lyrics.json`: one whose word gaps differ from the others' by a second or more is likely wrong,
+   also when `check_by_ear` misses it.
 3. **You cannot hear the song.** Turn every judgement that needs ears into a ten-second check for the user:
    `song2mv click WORK --from A --to B --words --json` mixes clicks and word ticks over a stretch into a wav; send
    it with the question in `ask_the_listener`. Fix with `bpm`, `downbeat_mod4` and `manual` in `WORK/song.json`,

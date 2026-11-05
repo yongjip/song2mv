@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Svg } from "./backgrounds";
 import { cameraAt } from "./camera";
-import { Framing, Plan, planBoards, refilm } from "./plan";
+import { Framing, Plan, PlannedShot, alike, planBoards, refilm, twoAtLeast } from "./plan";
 import { Line, Section, Song, SongCtxValue, useSong } from "./song";
 import { BigLine } from "./text";
 import { VERTICAL, verticalView, wideView } from "./vertical";
@@ -32,7 +32,8 @@ import { VERTICAL, verticalView, wideView } from "./vertical";
  * opens on framing n − 1 in the section's copy n (ch2 on framings[1]), so the copies differ, and so does a board keyed
  * to the same line of each copy with the same framings (ch1-04, ch2-04). A framing too alike to the one before it for
  * a cut (under 1.35× apart in zoom, near it, under 4° apart in roll) is skipped, in either frame; one that never shows
- * is named in a video render's log.
+ * is named in a video render's log, and so is a board that opens on a framing too alike to the one before it in the
+ * same world (the same `world`, or one written the same), which reads as a skipped frame.
  */
 
 export type BoardSpan = {
@@ -157,13 +158,29 @@ export function planStoryboard(ctx: SongCtxValue, boards: Board[]): Placed[] {
     && opens(i) === opens(j) && warnOnce(
       `storyboard: the boards at ${where(p.board)} and ${where(q.board)} open on the same framing ${opens(i)}: `
       + "copies of a section that open alike measure alike (variation.repeats); open each on a framing of its own")));
-  return spans.map((p, i) => {
+  const placed = spans.map((p, i) => {
     const section = ctx.section(p.from + 1e-3);
     const plan = plans[i];
     const tall = p.board.tall ? refilm(plan, p.board.tall) : plan;
     const hits = [...plan.hits, ...(p.board.hits ?? [])];
     return { ...p, section, repeat: Number(/(\d+)$/.exec(section.id)?.[1] ?? 1), plan, tall, hits };
   });
+  const sameWorld = (a: Board, b: Board) => a.world === b.world || String(a.world) === String(b.world);
+  const framing = (p: Placed, tall: boolean, shot?: PlannedShot) =>
+    shot && twoAtLeast((tall && p.board.tall) || p.board.framings)[shot.framing];
+  placed.forEach((q, i) => {
+    const p = placed[i - 1];
+    if (!p || !sameWorld(p.board, q.board)) return;
+    (p.board.tall || q.board.tall ? [false, true] : [false]).forEach((tall) => {
+      const out = framing(p, tall, (tall ? p.tall : p.plan).shots.at(-1));
+      const into = framing(q, tall, (tall ? q.tall : q.plan).shots[0]);
+      if (out && into && alike(out, into)) warnOnce(
+        `storyboard: the cut to the board at ${where(q.board)}${tall ? " in 9:16" : ""} goes from framing `
+        + `${JSON.stringify(out)} to ${JSON.stringify(into)} of the same world, too alike for a cut: it reads as a `
+        + "skipped frame (a cut needs 1.35× in zoom, another part of the world or 4° of roll), or make them one board");
+    });
+  });
+  return placed;
 }
 
 /**

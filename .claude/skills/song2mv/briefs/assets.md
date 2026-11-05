@@ -21,6 +21,8 @@ Section builders then film your pieces all through the song, so a weak piece sho
    Count heads against the style's adult (the kit's is about 6 heads tall): a toddler about 2 fewer, with short,
    chubby limbs, arms that reach just over the head and a round belly; a child of four or five 1 to 1.5 fewer. Size
    alone does not make a child younger: drawn with a 5-year-old's long legs, a small child still reads as five. A
+   chubby, cute character of any age, an animal or a mascot too, has short arms: its hands reach just over its head.
+   The user asked why one video's chubby tiger had such long arms. A
    piece that pictures a character (a photo, a drawing, a face on a screen) draws it from that character's face, so
    a redesign reaches it too: one desk photo kept the old child after she was redrawn.
 3. **No logos, wordmarks, letters or brand symbols** on anything, and no real person's face. Shapes and colours
@@ -64,8 +66,8 @@ Section builders then film your pieces all through the song, so a weak piece sho
 8. **Motion through props** (`legs` 0–1, `flame` 0–1, `distance` for wheels, `pose` and `phase` for a character),
    plus small idle motion from `T` where it helps (a blinking light, a flickering flame). Where a scene moves a
    person from one pose to another inside a shot (sits down, reaches up), give the change a 0–1 prop or a hand
-   target, so it can take 0.2–0.6 s instead of snapping in one frame. A turn from facing us to side-on needs a
-   three-quarter pose between them, or it snaps however smoothly the arms move.
+   target, so it can take 0.6 s or more with an even ease instead of snapping in one frame. A turn from facing us
+   to side-on needs a three-quarter pose between them, or it snaps however smoothly the arms move.
 9. **Sizes at s = 1**, in each doc comment. People match the kit's `Person`, about 300 px tall at s = 1. An anime head
    (`anime.AnimeHead`) is about 380 px tall at s = 1 with its origin at the middle of its face; draw a character the
    concept needs as one of these, not as a second figure of your own.
@@ -86,6 +88,11 @@ Section builders then film your pieces all through the song, so a weak piece sho
     one of those or cut by the frame's edge, and when text is cut by it (`face: …`, `text: …`); a still prints
     nothing the page logs. Only the group's solid shapes cover (half opaque or more, by their boxes), so a glow or a
     shadow inside it is no harm.
+15. **Eating touches the mouth.** A character who eats gets a jaw that opens and closes (a 0–1 prop), an anchor
+    where food meets the corner of its mouth, and its muzzle as a part of its own: a scene draws the eater, then the
+    food at the anchor, then the muzzle again over it, so the food tucks behind the lips. The scene opens the mouth on
+    each syllable of the eating word and takes a bite as it closes. In one video the food was parked under the chin
+    with the mouth shut and bites appeared on it: every reviewer read it as food shrinking by itself.
 
 ## Render, in your workspace only
 

@@ -25,6 +25,12 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
   It uses a separate npm install; CI checks it and attaches preview PNGs. These studies may change or be removed.
 - A production quality contract and asset/review briefs for identity, contact, moving proofs and honest
   review coverage. Attractive stills and passing geometry checks do not establish finished motion quality.
+- A video render's log names a board that opens on a framing too alike to the one before it in the same world
+  (`storyboard: the cut to the board at … goes from framing …`): such a cut reads as a skipped frame.
+- The skill and its briefs, from a children's copy-along video and three review rounds: empty-handed mimes and the
+  main character doing every action, short arms on chubby characters, eating that touches the mouth, pose changes of
+  0.6 s or more, text beside the action and ended at a cut, a short's overlay beside the action and its wides zoomed
+  in, and comparing the copies of a repeated line's timing.
 
 ### Fixed
 - Render staging preserves a copied template's public artwork and uses a separate name for the input audio.
