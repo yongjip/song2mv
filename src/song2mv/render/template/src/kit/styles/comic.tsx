@@ -323,7 +323,9 @@ export type FollowStep = { t: number; box: Box; fill?: number; glide?: number };
  * A page camera for a comic page that a Storyboard films, so a close shot shows the panel being drawn, not a page half
  * filled: under a board's close framing the page moves until each step's panel fills `fill` of the 16:9 frame (default
  * 0.94), its corners inside a rolled framing too. From a step's `t` it cuts there, or glides over `glide` seconds from
- * where the step before ends. Use the transform while that framing is on screen, and the page as it is in the others:
+ * where the step before ends. Use the transform while that framing is on screen, and the page as it is in the others.
+ * The fill is the framing's own: the shot's drift then pushes in by up to 15 % × the board's `drift` and a hot
+ * section's punch by 5 %, so keep the drift low. It films as a Storyboard with its default `world` does:
  *
  *   const CLOSE: Framing = { x: 960, y: 465, zoom: 1.6 };
  *   const [A, B, C] = comic.layout([[1, 1], [1]]);
@@ -348,28 +350,29 @@ export type FollowStep = { t: number; box: Box; fill?: number; glide?: number };
  *   0.5 s before the next cut waits for it (`shotFrom`, `shotTo`);
  * - a panel as wide as the page fills only a strip of the frame: step to the page instead, at `fill` 1, which shows it
  *   as a framing of the whole page at zoom 1 does (`{ x: 960, y: 420 }`), so a cut between the two changes nothing.
- * Keep the board's drift low (0.3–0.5), since halftone dots measure as motion. In the 9:16 frame (`vertical`, as in a
- * span) it moves nothing: draw the tall frame's page with a panel per screen, its lettering inside the safe box.
+ * Halftone dots measure as motion under drift too: the board's drift was 0.35–0.4 there. In the 9:16 frame
+ * (`vertical`, as in a span) it moves nothing: draw the tall frame's page with a panel per screen, its lettering inside
+ * the safe box.
  */
 export function follow(
-  T: number, steps: FollowStep[], framing: Framing,
-  o: { shotFrom?: number; shotTo?: number; vertical?: boolean; fill?: number; glide?: number } = {},
+  T: number, steps: FollowStep[], framing: Framing, o: { shotFrom?: number; shotTo?: number; vertical?: boolean } = {},
 ): string | undefined {
-  const { shotFrom, shotTo, fill = 0.94, glide = 0 } = o;
+  const { shotFrom, shotTo } = o;
   if (o.vertical || !steps.length) return undefined;
   const view = wideView(framing);
   const a = (view.rotate * Math.PI) / 180, c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a));
   const snap = (t: number) => (shotFrom !== undefined && t > shotFrom && t - shotFrom < 0.5 ? shotFrom
     : shotTo !== undefined && t < shotTo && shotTo - t < 0.5 ? shotTo : t);
-  const list = steps.map((p) => ((p.glide ?? glide) > 0 ? p : { ...p, t: snap(p.t) })).sort((p, q) => p.t - q.t);
-  const fit = ({ box: b, fill: f = fill }: FollowStep) => ({
-    k: (f / view.zoom) * Math.min(WIDE.w / (b.w * c + b.h * s), WIDE.h / (b.w * s + b.h * c)),
+  let last = -Infinity;
+  const list = [...steps].sort((p, q) => p.t - q.t).map((p) => ({ ...p, t: (last = Math.max(last, p.glide ? p.t : snap(p.t))) }));
+  const fit = ({ box: b, fill = 0.94 }: FollowStep) => ({
+    k: (fill / view.zoom) * Math.min(WIDE.w / (b.w * c + b.h * s), WIDE.h / (b.w * s + b.h * c)),
     x: b.x + b.w / 2, y: b.y + b.h / 2,
   });
   let i = 0;
   while (i + 1 < list.length && T >= list[i + 1].t) i++;
   let at = fit(list[i]);
-  const g = list[i].glide ?? glide;
+  const g = list[i].glide ?? 0;
   if (i > 0 && g > 0 && T < list[i].t + g) {
     const u = clamp01((T - list[i].t) / g), e = u * u * (3 - 2 * u), from = fit(list[i - 1]);
     at = { k: from.k * Math.pow(at.k / from.k, e), x: lerp(from.x, at.x, e), y: lerp(from.y, at.y, e) };

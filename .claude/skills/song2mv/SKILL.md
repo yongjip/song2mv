@@ -586,12 +586,13 @@ inside only the lines you place: `comic.Brush` (tapered: features, folds, an arm
 (a forearm over the body) goes in a later contour Ink; check the joints at 2×. The contour fills narrow gaps and sharp
 notches: give a small form (an ear) a lighter `line`, draw a hole (a mug handle's) as a filled shape in an `Edge`,
 round the dips between tufts of fur, and keep balloons, tails and trailing bubbles clear of the figure.
+
 A Storyboard that films a page shows it half filled while its panels draw in, one per line. `comic.follow` is a
-page camera for that: under a board's close framing it moves the page until the panel being drawn fills the frame,
-and in the other framings the page stays whole. Its doc comment has what passed `check` in one video: glide only in
-the rests between lines (over halftone dots, glides on sung lines measured 11–17, where a verse wants 9.0 at most),
-switch panels on the planner's cuts (it moves a switch due within 0.5 s of one onto it; switching on every line evened
-a verse's cuts out to `cuts.rhythm` 0.18), and step to the whole page for a panel as wide as the page, which fills only
+page camera for that: under a board's close framing it moves the page until the panel being drawn fills the frame;
+use its transform only while that framing is on screen. What passed `check` in one video's pages: glide only in the
+rests between lines (over halftone dots, glides on sung lines measured 11–17, where a verse wants 9.0 at most), switch
+panels on the planner's cuts (it moves a switch due within 0.5 s of one onto it; switching on every line evened a
+verse's cuts out to `cuts.rhythm` 0.18), and step to the whole page for a panel as wide as the page, which fills only
 a strip of the frame. `comic.Sfx` sets its letters 0.06 em apart (`spacing`): closer, a turned letter's fill ran into
 the next one's in a tight display face, and THWACK read 1HWACK.
 
@@ -853,12 +854,12 @@ defects after every check had passed, such as arms folded into a V and faces cut
 - Start fresh agents with `briefs/review.md` (copy it into the work folder and fill in its `TODO`s), as many as the
   quality level says (the table at the top). At medium, one per two minutes of video. At high and max, one per minute
   or two, one for the characters (every pose and prop the scenes use, at 1:1) and one per short; at max, in the first
-  round, also one per lens over the whole video. Give each short its own reviewer from the first round, against the
-  safe box: in one video the shorts were first reviewed in the second round, and their two reviewers found three high-
-  and eleven medium-severity faults the 16:9 reviewers had not looked for (a close-up under the apps' text, a hook frame
-  half empty floor, the heroine out of the short for 4 s of the climax, the end fade over the last gag). Each crops
-  every figure at 1:1, edits nothing and reports with severities. Give whatever a reviewer did not cover to a new
-  reviewer before you fix.
+  round, also one per lens over the whole video. At high and max, give each short its reviewer from the first round,
+  against the safe box: in one video the shorts were first reviewed in the second round, and their two reviewers found
+  three high- and eleven medium-severity faults the 16:9 reviewers had not looked for (a close-up under the apps' text,
+  a hook frame half empty floor, the heroine out of the short for 4 s of the climax, the end fade over the last gag).
+  Each crops every figure at 1:1, edits nothing and reports with severities. Give whatever a reviewer did not cover to a
+  new reviewer before you fix.
 - Fix every high- and medium-severity finding and render again. At high and max, give the changed stretches to a new
   reviewer once; at max, once more if that reviewer found a high-severity finding. List what is left when you
   deliver. A pose a reviewer flags is usually its piece's fault: fix it in the piece, and every board that uses it is
@@ -888,10 +889,10 @@ song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --
 A short fades picture and sound out over its last 0.5 s (`FADE_OUT`): end it with `--to` at least that long after
 its last action is over. Over the 0.8 s it used to take, one short's exit gag went dark before it finished.
 
-While you fix the short, render and check it as a draft (`--draft`), as in step 5. Review it with `briefs/review.md`
-as in step 5, from the first round, and send its faults to the builder of its stretch: they are in that builder's
-`tall` framings and in text placed for 16:9, such as a sound word drawn at one place in both frames, which sat on the
-heroine's head in one short.
+While you fix the short, render and check it as a draft (`--draft`), as in step 5. Review it with `briefs/review.md` as
+in step 5 (at high and max from the first round), and send its faults to the builder of its stretch: they are in that
+builder's `tall` framings and in text placed for 16:9, such as a sound word drawn at one place in both frames, which sat
+on the heroine's head in one short.
 
 By default the short shows `Scene` shrunk into a band, with the template's sky above and below it and the title on
 top. That frame puts the template's look around every concept, and a scene that draws its own lyrics leaves the

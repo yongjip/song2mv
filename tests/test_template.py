@@ -805,26 +805,30 @@ const h = React.createElement;
 let seen: any = null;
 const world = (T: number, span: any) => { seen = span; return null; };
 const F = [{ x: 960, y: 540 }, { x: 700, y: 640, zoom: 2.2 }, { x: 1300, y: 420, zoom: 1.5, rotate: -4 }];
-const TALL = [{ x: 960, y: 700 }, { x: 640, y: 760, zoom: 2.4 }, { x: 1300, y: 600, zoom: 1.6, rotate: -4 }];
+const TALL = [{ x: 960, y: 700 }, { x: 980, y: 720, zoom: 1.1 }, { x: 1300, y: 600, zoom: 1.6, rotate: -4 }];
 const boards = [{ at: "v1", world, framings: F, tall: TALL }, { at: "ch1", world, framings: F }, { at: "v2-03", world, framings: F.slice(0, 1) }];
 const wrong: string[] = [];
-let n = 0;
+let n = 0, differ = 0;
 for (const vertical of [false, true]) {
   for (const p of planStoryboard(ctx, boards)) {
     const shots = (vertical ? p.tall : p.plan).shots;
     shots.slice(0, -1).forEach((s, i) => {
-      const T = (s.t + shots[i + 1].t) / 2;
-      renderToStaticMarkup(h(SongContext.Provider, { value: ctx }, h(Storyboard, { T, boards, vertical })));
-      n++;
-      if (seen.framing !== s.framing || seen.shotFrom !== s.t || seen.shotTo !== shots[i + 1].t || seen.vertical !== vertical) {
-        wrong.push(`${p.board.at} ${vertical} ${T}: ${JSON.stringify([seen.framing, seen.shotFrom, seen.shotTo])} for ${s.framing} ${s.t} ${shots[i + 1].t}`);
+      if (s.framing !== p.plan.shots[i].framing) differ++;
+      for (const T of [s.t, (s.t + shots[i + 1].t) / 2]) {
+        seen = null;
+        renderToStaticMarkup(h(SongContext.Provider, { value: ctx }, h(Storyboard, { T, boards, vertical })));
+        n++;
+        if (seen?.framing !== s.framing || seen.shotFrom !== s.t || seen.shotTo !== shots[i + 1].t || seen.vertical !== vertical) {
+          wrong.push(`${p.board.at} ${vertical} ${T}: ${JSON.stringify(seen)} for ${s.framing} ${s.t} ${shots[i + 1].t}`);
+        }
       }
     });
   }
 }
-console.log(JSON.stringify({ n, wrong }));
+console.log(JSON.stringify({ n, differ, wrong }));
 """.replace("NODE", os.path.join(BUNDLED, "node_modules")), _verse_song([4, 4, 5, 4, 6, 4, 4]))
-    assert out["n"] > 20 and out["wrong"] == [], out
+    # the tall framing 1 is too alike to 0 for a cut, so the 9:16 frame takes other framings than the 16:9 one at times
+    assert out["n"] > 40 and out["differ"] > 0 and out["wrong"] == [], out
 
 
 def test_a_limb_bends_toward_the_side_asked_on_either_side_of_the_body(tmp_path):
@@ -957,8 +961,6 @@ console.log(JSON.stringify({ plain: marks(paper.rect(0, 0, 100, 80, 1, 0), sides
 
 
 FOLLOW_PROBE = """
-import * as React from "NODE/react";
-import { renderToStaticMarkup } from "NODE/react-dom/server";
 import * as comic from "KIT/styles/comic";
 import { wideView } from "KIT/vertical";
 const apply = (tf: string, [x, y]: number[]) => {
@@ -984,8 +986,6 @@ const onScreen = (framing: any, tf: string | undefined, b: any) => {
 };
 const at = (T: number, steps: any[], o: any = {}) => comic.follow(T, steps, CLOSE, o);
 const scale = (tf: string | undefined) => Number(/scale\\(([^)]*)\\)/.exec(tf ?? "")?.[1]);
-const sfx = (spacing?: number) => /dx="([^"]*)"/.exec(renderToStaticMarkup(React.createElement("svg", null,
-  React.createElement(comic.Sfx, { T: 1, t: 0, text: "THWACK", x: 0, y: 0, size: 100, spacing }))))?.[1];
 const TALL = { x: 971, y: 34, w: 915, h: 1012 }, glide = [{ t: 0, box: A }, { t: 2, box: TALL, glide: 1 }];
 const mid = (a: any, b: any) => ({ x: (2 * a.x + a.w + 2 * b.x + b.w) / 4, y: (2 * a.y + a.h + 2 * b.y + b.h) / 4, w: 0, h: 0 });
 console.log(JSON.stringify({
@@ -998,25 +998,34 @@ console.log(JSON.stringify({
   glideHolds: at(10.1, [{ t: 0, box: A }, { t: 10.3, box: B, glide: 0.5 }], { shotFrom: 10, shotTo: 14 }) === at(1, [{ t: 0, box: A }]),
   half: [scale(at(2.5, glide)), Math.sqrt(scale(at(1, [glide[0]])) * scale(at(1, [{ t: 0, box: TALL }]))), onScreen(CLOSE, at(2.5, glide), mid(A, TALL)).mid],
   vertical: at(1, [{ t: 0, box: A }], { vertical: true }) === undefined,
-  sfx: [sfx(), sfx(0)],
+  order: [10.04, 10.1].map((T) => at(T, [{ t: 0, box: A }, { t: 10.05, box: B, glide: 0.5 }, { t: 10.3, box: TALL }], { shotFrom: 10, shotTo: 14 })
+    === at(1, [{ t: 0, box: T < 10.05 ? A : TALL }])),
 }));
 """
 
 
 def test_the_comic_page_camera_fills_a_close_framing_with_the_panel_and_cuts_on_the_planners_cuts(tmp_path):
-    out = _probe(tmp_path, FOLLOW_PROBE.replace("NODE", os.path.join(BUNDLED, "node_modules")), {})
+    out = _probe(tmp_path, FOLLOW_PROBE, {})
     close, roll, page = out["close"], out["roll"], out["page"]
     assert close["inside"] and close["fill"] == pytest.approx(0.94, abs=1e-3) and close["mid"] == pytest.approx([960, 540], abs=0.5)
     assert roll["inside"] and roll["fill"] == pytest.approx(0.94, abs=1e-3)  # a rolled framing keeps the panel's corners in
     assert page["box"] == pytest.approx([0, 0, 1920, 1080], abs=0.5)  # the page at fill 1 is the wide framing's picture
     assert out["snapped"] and out["waits"] and out["far"] == [False, True] and out["glideHolds"] and out["vertical"]
+    assert out["order"] == [True, True]  # a cut snapped back before a glide due after it still shows after it
     k, mean, mid = out["half"]  # halfway through a glide: the zoom halfway in ratio, the panels' middles halfway apart
     assert k == pytest.approx(mean, rel=1e-3) and mid == pytest.approx([960, 540], abs=0.5)
 
 
 def test_a_sound_words_letters_are_set_apart_so_a_turned_one_keeps_its_outline(tmp_path):
-    out = _probe(tmp_path, FOLLOW_PROBE.replace("NODE", os.path.join(BUNDLED, "node_modules")), {})
-    assert out["sfx"] == ["0 6.00 6.00 6.00 6.00 6.00", "0 0.00 0.00 0.00 0.00 0.00"]
+    gaps = _probe(tmp_path, """
+import * as React from "NODE/react";
+import { renderToStaticMarkup } from "NODE/react-dom/server";
+import * as comic from "KIT/styles/comic";
+const gaps = (spacing?: number) => /dx="([^"]*)"/.exec(renderToStaticMarkup(React.createElement("svg", null,
+  React.createElement(comic.Sfx, { T: 1, t: 0, text: "THWACK", x: 0, y: 0, size: 100, spacing }))))?.[1];
+console.log(JSON.stringify([gaps(), gaps(0)]));
+""".replace("NODE", os.path.join(BUNDLED, "node_modules")), {})
+    assert gaps == ["0 6.00 6.00 6.00 6.00 6.00", "0 0.00 0.00 0.00 0.00 0.00"]
 
 
 def _probe(tmp_path, code: str, song: dict) -> object:

@@ -8,11 +8,9 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 - A board's `span` says which framing the shot on screen took (`framing`, an index into `framings`, or `tall` in 9:16)
   and when that shot cuts in and away (`shotFrom`, `shotTo`), so a world can draw for the shot.
 - `comic.follow`, a page camera for a comic page that a Storyboard films: under a close framing, the page moves until
-  the panel being drawn fills the frame, by a cut or a glide, and a cut due within 0.5 s of the planner's own moves
-  onto it. Its doc comment carries what passed `check` in one video's pages: glide only in the rests between lines,
-  switch panels on the planner's cuts, and step to the whole page for a panel as wide as the page.
-- `comic.Sfx` takes `spacing`, the gap between its letters in em, 0.06 by default (it was 0): in a tight display face
-  a turned letter's fill ran into the next one's, and THWACK read 1HWACK.
+  the panel being drawn fills the frame, by a cut or a glide, and a panel switch within 0.5 s of one of the planner's
+  cuts moves onto that cut. Its doc comment carries what passed `check` in one video's pages.
+- `comic.Sfx` takes `spacing`, the gap between its letters in em.
 - The skill and its briefs: a piece whose parts draw their own ink takes only a thin joining outline; each short is
   framed by the builder of its stretch and reviewed from the first round, against the safe box.
 - `AnchoredCheeks` attaches separate cheek marks to stable eye landmarks through a head turn. `Comparison` gives
@@ -32,8 +30,10 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 - Render staging preserves a copied template's public artwork and uses a separate name for the input audio.
 
 ### Changed
-- A stretch that stops before the song's end fades out over its last 0.5 s (`FADE_OUT`), not 0.8 s: in one short the
-  longer fade swallowed the last gag. Choose `--to` at least 0.5 s after the last action.
+- A short, and a 16:9 stretch that stops before the song's end, fade out over their last 0.5 s (`FADE_OUT`), not 0.8 s:
+  in one short the longer fade swallowed the last gag. Choose `--to` at least 0.5 s after the last action.
+- `comic.Sfx` sets its letters 0.06 em apart by default (they touched before): in a tight display face a turned
+  letter's fill ran into the next one's, and THWACK read 1HWACK. `spacing={0}` sets them as before.
 - The template runs Remotion 4.0.540 (was 4.0.537), with Chrome 158.0.8127.2; its bundler is now rspack 2.3.0. A
   `--template` copy keeps its own `render.mjs` and Remotion: copy the new `render.mjs` over it only together with the
   new `package.json` and `package-lock.json`.

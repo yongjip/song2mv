@@ -75,8 +75,8 @@ Section builders then film your pieces all through the song, so a weak piece sho
 12. **Every look the video uses.** Each piece reads well in each of them. TODO: the looks, such as plain, toon
     (`<toon.Ink id>` round each piece, one `<toon.Defs id>` in the Svg) and neon (`<line.Lines id look="neon">`), with
     `import { toon, line } from "../../kit"`. A piece whose parts draw ink lines of their own takes a thin joining
-    outline at most (`toon.Defs` `width` 1–1.5), never the full one on top: 2.2 px part lines inside a 4 px outline
-    doubled one video's line weight to about 40 % of an arm's width, 10–14 px on screen in its close-ups.
+    outline at most (`toon.Defs` `width` 1–1.5), never the default 3 or more on top: 2.2 px part lines inside a 4 px
+    outline doubled one video's line weight to about 40 % of an arm's width, 10–14 px on screen in its close-ups.
 13. **Look at your renders** at full size and in 1:1 crops (`ffmpeg -i in.png -vf crop=W:H:X:Y out.png`), and fix
     rough edges, gaps, wrong overlaps and floating parts before you report. Compare each piece with the real thing,
     and each character's line weight with the props' beside it, drawn as large as the closest shot will show them.

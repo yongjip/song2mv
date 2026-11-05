@@ -189,7 +189,7 @@ export const Storyboard: React.FC<{
   const on = cameraAt(T, shots, { hits: p.hits });
   const span: BoardSpan = {
     from: p.from, to: p.to, section: p.section, repeat: p.repeat, lines: p.lines, vertical,
-    framing: shots[on.shot]?.framing ?? 0, shotFrom: shots[on.shot]?.t ?? p.from, shotTo: Math.min(shots[on.shot + 1]?.t ?? p.to, p.to),
+    framing: shots[on.shot]?.framing ?? 0, shotFrom: shots[on.shot]?.t ?? p.from, shotTo: shots[on.shot + 1]?.t ?? p.to,
   };
   const big16 = typeof big === "number" ? { y: big } : { y: 955, maxSize: 125 };
   if (!vertical) {

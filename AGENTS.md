@@ -76,11 +76,11 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
 7. **Review before you deliver.** `check` does not see an arm folded into a V or a face cut at the eyes or covered (arms
    drawn with the kit's `arm()`, and heads and bubbles marked `data-face` and `data-over`, print their faults when
    rendered: clear those first). Give the
-   finished render to fresh agents with the skill's `briefs/review.md`, a stretch, a lens or a short each (every short
-   from the first round), as many as the quality level says, or review it yourself with that brief, crop by crop,
-   when you cannot start agents. Fix every high- and medium-severity finding and have the fixed stretches looked at
-   again, for as many rounds as the level says. In two videos this found about 120 defects after every check had
-   passed. A fix in a character piece moves every shot that uses it: render a draft of the whole video before and
+   finished render to fresh agents with the skill's `briefs/review.md`, a stretch, a lens or a short each (at high and
+   max every short from the first round), as many as the quality level says, or review it yourself with that brief, crop
+   by crop, when you cannot start agents. Fix every high- and medium-severity finding and have the fixed stretches
+   looked at again, for as many rounds as the level says. In two videos this found about 120 defects after every check
+   had passed. A fix in a character piece moves every shot that uses it: render a draft of the whole video before and
    after each round of fixes and look at every stretch `song2mv diff BEFORE AFTER` lists.
 8. **Every command takes `--json`.** Progress goes to stderr, stdout carries one object with `schema_version` and
    `ok`. Exit code 2 is an error: read `error.message` and do what `error.hint` says. Exit code 1 only means `check`
