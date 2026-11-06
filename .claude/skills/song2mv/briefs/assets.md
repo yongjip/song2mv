@@ -32,7 +32,9 @@ Section builders then film your pieces all through the song, so a weak piece sho
    left, panel lines in a darker tone of the material, and no outline baked in, so that a style pack can add one.
 5. **Component shape.** `export const Name: React.FC<{ T: number; x: number; y: number; s?: number; id?: string; … }>`,
    SVG for the kit's `<Svg>` (the 1920×1080 stage). The origin is the bottom middle, where the piece meets the ground,
-   unless its doc comment says otherwise (a planet: its centre); `s` scales about it and a figure's `flip` mirrors it. A
+   unless its doc comment says otherwise (a planet: its centre); `s` scales about it and a figure's `flip` mirrors it,
+   all but its lettering: flip a name band or a sign back so it never reads backwards (one piece's band read
+   backwards for 6 s in a shot that faced it left, and five reviewers called it high). A
    pure function of `T` and its props, with `rng` from `../../kit/math` for randomness. `id` names every gradient, clip
    path and filter, so two copies don't clash. No prop is called `key` or `ref`: React keeps those, and the piece never
    gets them.
@@ -51,7 +53,11 @@ Section builders then film your pieces all through the song, so a weak piece sho
    with the hair above the ears) on an arm drawn in front of the head, except in a pose that puts the hand at the face
    on purpose (a phone, a microphone, a hand on a cheek). A video render then prints what a viewer would see wrong,
    the first time each arm shows it (`arm: WHO: FAULT at T s`): out of reach, folded into a V with the elbow up,
-   squashed short, a hand on its own head. A still prints nothing the page logs, so in your test tiles write each
+   squashed short, a hand on its own head. It does not see an elbow folded down across the chest or a forearm laid
+   over the belly: in one video reviewers found that in about ten poses over three rounds (a mic grip, a rope, a phone,
+   a hand on the hip) with no `arm:` line. For a character whose hands work in front of its body, add a check of your
+   own to the arm's faults: the elbow bent under 100° with the hand on the body, or more than 40 px of the near arm
+   over the torso's front half. A still prints nothing the page logs, so in your test tiles write each
    arm's `faults` (what `arm()` returns) beside the figure. A hand target a scene passes in (a `hand` prop) is a stage
    point: turn it into the piece's own drawing with `toLocal(hand, { x, y, s, flip })`, and export each hand's spot at
    s = 1 (a function of the pose) for scenes to place with `toStage`. Hand in hand with a child, an adult's anchor
@@ -67,7 +73,11 @@ Section builders then film your pieces all through the song, so a weak piece sho
    plus small idle motion from `T` where it helps (a blinking light, a flickering flame). Where a scene moves a
    person from one pose to another inside a shot (sits down, reaches up), give the change a 0–1 prop or a hand
    target, so it can take 0.6 s or more with an even ease instead of snapping in one frame. A turn from facing us
-   to side-on needs a three-quarter pose between them, or it snaps however smoothly the arms move.
+   to side-on needs a three-quarter pose between them, or it snaps however smoothly the arms move. A hand shape or
+   prop that switches at a threshold of that prop (an open hand to a fist at 0.5) snaps in one frame mid-ease:
+   cross-fade the two or switch where the motion rests, and keep the hand on a prop until the swap is done. One
+   video kept such a snap to the end, and its tie put on by hand drew findings in all four review rounds (a snap,
+   then a tie hanging with no hand on it, then a ghost frame).
 9. **Sizes at s = 1**, in each doc comment. People match the kit's `Person`, about 300 px tall at s = 1. An anime head
    (`anime.AnimeHead`) is about 380 px tall at s = 1 with its origin at the middle of its face; draw a character the
    concept needs as one of these, not as a second figure of your own.

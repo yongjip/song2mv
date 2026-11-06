@@ -146,6 +146,7 @@ song2mv sync <audio> --lyrics <lyrics.txt> --language <code> --title "<title>" -
 A Suno download also carries timed lines, a subtitle track (`ffmpeg -i song.m4a -map 0:s:0 suno.srt`): on two songs
 they agreed with `sync`'s line starts to a median 0.07 s and 0.32 s and were 1.3–2.8 s apart on three lines, where
 the whisper runs sided with `sync` twice. Read them as a second opinion on `check_by_ear`, not as the timing.
+Sync and render from Suno's WAV download: its default M4A (Opus audio) failed at the beat-grid step in one run.
 
 `--lyrics` is optional when the audio has a lyrics tag (Suno writes one). If you also have a lyric sheet, pass it:
 where it and the tag differ, `warnings` names the lines and says which of the two the whisper runs support there (for
@@ -482,7 +483,10 @@ code and rebuilt the same cut machinery, and one lost half an hour iterating cut
   subject fits the picture, also when the shot's drift pushes in by up to 15 %: a `Person` 300·s px tall fits up to
   zoom 2.3 / s, and no frame edge may cross a face. A closer shot runs on behind the captions; let that be the
   ground, never a face or the line's prop. Both frames show the world past the stage's bottom edge (16:9 by 120 px at
-  zoom 1): draw the ground on below y 1080. A contact sheet draws the captions' top as a dashed line.
+  zoom 1): draw the ground on below y 1080. Draw the sky and the ground as wide as the widest framing shows: a
+  framing at zoom z shows 1920 / z stage px across its point, more while a drift pulls out. One video's pull-back to
+  its last gag showed the backdrop as dark strips at both edges for a second, a high finding in the final review that
+  three earlier rounds had not seen. A contact sheet draws the captions' top as a dashed line.
 
 **The starter** (`src/scenes/Starter.tsx`) is a whole video built that way from kit worlds (a street, a room, a stage,
 fireworks, a beach, hills) that passes `check` on any song as it is. To start from it, put the line given in
@@ -500,7 +504,9 @@ and `theme` (`bg`, `stars`, the text colours, `font`) in `song.json` to fit the 
 picture behind the captions, so keep it dark under the default white text; a light `bg` takes dark text colours
 and `unsungShadow: "none"`, or the captions fade into the band. `"vignette": false` keeps the scene's corners as
 drawn, and `"flashes": [[song time, strength 0–1], …]` puts the flashes on the song's real hits (`[]` when the
-scenes flash themselves). Then run `song2mv sync <work>/song.json --from build`.
+scenes flash themselves). Under a whole-frame finish (`finish.Film`, `finish.Vhs`) the template's white flash lies
+outside it and reads as a grey wash: one video set `[]` and flashed inside the finish. Then run
+`song2mv sync <work>/song.json --from build`.
 
 ### The scene kit
 
@@ -887,6 +893,9 @@ defects after every check had passed, such as arms folded into a V and faces cut
   and run `song2mv diff <work>/renders/before-16x9-draft.mp4 <work>/renders/after-16x9-draft.mp4 --song <work>/mv.json`:
   it lists every stretch that changed, a shot at a time, and draws each before and after on a sheet, the change
   outlined. Look at every stretch the fix was not meant to touch; these are the changed stretches to give the reviewer.
+  A piece fix that needs the scenes to pass something new (a prop, a hand target, a held prop moved into the piece)
+  shows only once they do: have the painter list those scene changes as a patch, and apply it to every section file
+  before the render. In one video 4 of a character's 6 fixes in a round, and 2 of another's, waited on such a pass.
 - Without agents of your own, review it yourself with the same brief once the build is done, a stretch at a time,
   every crop as if someone else had drawn it, or ask the user to give the brief to a second session.
 
@@ -950,6 +959,8 @@ Where things go (`VERTICAL` in the kit has the numbers):
   lands above (540, 675); a scene whose background reaches above the stage passes the area it fills as `world`
   (`verticalView(cam, { world: [0, -900, 1920, Infinity] })`, or with boards
   `<Storyboard T={T} boards={BOARDS} vertical world={[0, -900, 1920, Infinity]} />`).
+  Reviewers flagged a short's plain floor in its bottom third in three review rounds of one video, mostly below y 1248:
+  give the ground something to look at just under y 1080, and tell the reviewers the band below y 1248 is the apps'.
 
 A contact sheet draws the captions' top as a dashed line, and with `"vertical": true` the safe box too (a crop sheet
 leaves them out): check them there before rendering the short. `check` measures the top 56 % of a short, above the

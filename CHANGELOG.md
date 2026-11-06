@@ -13,6 +13,10 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 - `comic.Sfx` takes `spacing`, the gap between its letters in em.
 - The skill and its briefs: a piece whose parts draw their own ink takes only a thin joining outline; each short is
   framed by the builder of its stretch and reviewed from the first round, against the safe box.
+- The skill and its briefs, from a max-quality run's four review rounds: an elbow folded across the chest that
+  `arm()` misses, hand shapes that switch mid-ease, lettering on a mirrored figure, a backdrop narrower than a
+  pull-back, the template's flash under a film finish, a short's plain bottom band, and the scene patch a piece fix
+  may need.
 - `AnchoredCheeks` attaches separate cheek marks to stable eye landmarks through a head turn. `Comparison` gives
   control and candidate drawings the same time and crop. The synthetic `Face-Anchors` composition demonstrates both.
 - Developer scripts extract selected encoded frames at native size with source hashes and record command timings
