@@ -5,6 +5,11 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 ## Unreleased
 
 ### Added
+- `arm()` takes `body`, the torso as an ellipse (`c`, `rx`, `ry`, and `front` for a figure seen from the side), and
+  reports two more faults with it: folded across the chest (a joint under 100° with the hand on the body and the elbow
+  inside it or near shoulder height) and laid across the body (more than 36 % of the arm's length over the torso's front
+  half, the hand on it). Reviewers of one video found these in about ten poses over three rounds that printed no
+  `arm:` line.
 - A board's `span` says which framing the shot on screen took (`framing`, an index into `framings`, or `tall` in 9:16)
   and when that shot cuts in and away (`shotFrom`, `shotTo`), so a world can draw for the shot.
 - `comic.follow`, a page camera for a comic page that a Storyboard films: under a close framing, the page moves until

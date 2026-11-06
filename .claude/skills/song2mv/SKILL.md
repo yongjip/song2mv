@@ -368,7 +368,7 @@ and any kit changes into it.
      solver stays experimental, outside the kit;
    - `useSong()` and `grid`;
    - `Camera` and `cameraAt()`, `Drift`, `liveLine`, and the easing and `rng` helpers in `math`;
-   - `arm()` for every arm that reaches for something, and `toStage` and `toLocal` for hand targets (`briefs/assets.md`, rule 6).
+   - `arm()` for every arm that reaches for something (with `head` and `body` for an arm drawn over them), and `toStage` and `toLocal` for hand targets (`briefs/assets.md`, rule 6).
      A copy made by an older song2mv lacks them: copy `src/kit/math.ts` from a new `--template` folder (it imports
      nothing);
    - `data-face="WHO"` on the `<g>` of every head you draw and `data-over="WHAT"` on every bubble, sticky note or prop

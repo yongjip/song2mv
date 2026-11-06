@@ -51,14 +51,16 @@ Section builders then film your pieces all through the song, so a weak piece sho
    something there (another hand, a prop), so that a target out of reach is reported; a hanging or outstretched arm is
    straight anyway. Pass `who` (the `id` and which arm) and `T` on every arm, and `head: { c: [x, y], r }` (the skull,
    with the hair above the ears) on an arm drawn in front of the head, except in a pose that puts the hand at the face
-   on purpose (a phone, a microphone, a hand on a cheek). A video render then prints what a viewer would see wrong,
-   the first time each arm shows it (`arm: WHO: FAULT at T s`): out of reach, folded into a V with the elbow up,
-   squashed short, a hand on its own head. It does not see an elbow folded down across the chest or a forearm laid
-   over the belly: in one video reviewers found that in about ten poses over three rounds (a mic grip, a rope, a phone,
-   a hand on the hip) with no `arm:` line. For a character whose hands work in front of its body, add a check of your
-   own to the arm's faults: the elbow bent under 100° with the hand on the body, or more than 40 px of the near arm
-   over the torso's front half. A still prints nothing the page logs, so in your test tiles write each
-   arm's `faults` (what `arm()` returns) beside the figure. A hand target a scene passes in (a `hand` prop) is a stage
+   on purpose (a phone, a microphone, a hand on a cheek). Pass `body: { c: [x, y], rx, ry, front }` (the torso as an
+   ellipse; `front` 1 or -1, the way a figure seen from the side faces, left out for one facing the viewer) on an arm
+   drawn in front of the torso: in one video reviewers found an elbow folded down across the chest or a forearm laid
+   over the belly in about ten poses over three rounds (a mic grip, a rope, a phone, a hand on the hip) that nothing
+   printed. A video render then prints what a viewer would see wrong, the first time each arm shows it
+   (`arm: WHO: FAULT at T s`): out of reach, folded into a V with the elbow up, squashed short, a hand on its own head,
+   folded across the chest (a joint under 100° with the hand on the body and the elbow inside it or near shoulder
+   height) and laid across the body (more than 36 % of the arm's length over the torso's front half, the hand on it).
+   A still prints nothing the page logs, so in your test tiles write each arm's `faults` (what `arm()` returns) beside
+   the figure. A hand target a scene passes in (a `hand` prop) is a stage
    point: turn it into the piece's own drawing with `toLocal(hand, { x, y, s, flip })`, and export each hand's spot at
    s = 1 (a function of the pose) for scenes to place with `toStage`. Hand in hand with a child, an adult's anchor
    puts the child where the joined hands sit out to her side, clear of her head and within her reach. A standing

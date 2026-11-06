@@ -921,6 +921,35 @@ console.log(JSON.stringify({
     assert out["stage"] == [652, 640] and [round(v, 6) for v in out["back"]] == [30, -100]
 
 
+
+def test_arm_with_a_body_reports_an_arm_folded_or_laid_across_it(tmp_path):
+    # in one video reviewers found an arm folded across the chest or laid over the belly in about ten poses (a mic grip,
+    # a rope, a phone, a hand on the hip) that printed no arm: line; the torso here is 80 by 120, the arm 50 and 50
+    out = _probe(tmp_path, """
+import { arm } from "KIT/math";
+const said: string[] = [];
+console.warn = (m: string) => said.push(m);
+const front = { c: [0, -100] as [number, number], rx: 40, ry: 60 };
+const side = { ...front, front: 1 as const };
+const f = (s: number[], t: number[], toward: number[], body: object = front, o = {}) =>
+  arm(s as [number, number], t as [number, number], 50, 50, toward as [number, number], { body, ...o }).faults;
+const L = [-30, -140], N = [-5, -140];
+console.log(JSON.stringify({
+  mic: f(L, [5, -120], [-1, 1]), rope: f(N, [32, -90], [-1, 1], side), belly: f(N, [35, -70], [0, 1], side),
+  phone: f(N, [38, -95], [0, 1], side, { who: "kid near", T: 2 }), bare: arm([-5, -140], [38, -95], 50, 50, [0, 1]).faults,
+  hanging: f(L, [-45, -50], [-1, 1]), heart: f(L, [-10, -120], [-1, 1]), wave: f(L, [-70, -200], [-1, 1]),
+  reach: f(N, [70, -80], [-1, 1], side), point: f(N, [85, -150], [0, 1], side), behind: f(N, [-45, -60], [1, 1], side),
+  said }));
+""", {})
+    assert out["mic"] == ["folded across the chest"]  # the elbow inside the chest under a hand at its middle
+    assert out["rope"] == ["folded across the chest"] and out["belly"] == ["laid across the body"]
+    assert out["phone"] == ["folded across the chest", "laid across the body"] and out["bare"] == []  # no body, no check
+    assert out["said"] == ["arm: kid near: folded across the chest at 2.00 s", "arm: kid near: laid across the body at 2.00 s"]
+    # a hanging arm, a hand on the heart with the elbow out, a wave; in profile an arm reaching forward over the chest
+    # to something in front, pointing at shoulder height, a hand back behind the body
+    assert out["hanging"] == out["heart"] == out["wave"] == []
+    assert out["reach"] == out["point"] == out["behind"] == []
+
 def test_paper_pieces_cost_no_filter_of_their_own_unless_lifted_high(tmp_path):
     # Every filter is a pass of its own for the GPU in every frame: 60 plain pieces drew 120 turbulence passes and as many
     # blurs, and a 2:34 video took 25 minutes to render

@@ -60,7 +60,14 @@ export const toStage = (p: [number, number], at: Place): [number, number] => [at
 /** A stage point in a figure's own drawing: what a piece does with a hand target a scene passes in */
 export const toLocal = (p: [number, number], at: Place): [number, number] => [(at.flip ? at.x - p[0] : p[0] - at.x) / at.s, (p[1] - at.y) / at.s];
 
-export type ArmFault = "out of reach" | "folded into a V, elbow up" | "squashed short" | "hand on its own head";
+export type ArmFault = "out of reach" | "folded into a V, elbow up" | "squashed short" | "hand on its own head"
+  | "folded across the chest" | "laid across the body";
+/**
+ * A figure's torso for `arm()`, as an ellipse in its own drawing: centre `c`, half-width `rx`, half-height `ry`.
+ * `front` is the way a figure seen from the side or three-quarter faces in its drawing (1 right, -1 left); without it,
+ * a figure facing the viewer, the front half is the side of the centre line away from the arm's shoulder.
+ */
+export type ArmBody = { c: [number, number]; rx: number; ry: number; front?: 1 | -1 };
 const armSaid = new Set<string>();
 
 /**
@@ -71,12 +78,15 @@ const armSaid = new Set<string>();
  * highest point, above the shoulder (a hand at the mouth with the elbow up); a bone drawn under 90 % of its length,
  * where `limb` slides the elbow onto the line to a hand almost along `toward` or against it; with `head` (the skull's
  * centre and radius, hair above the ears included, for an arm drawn in front of it), the hand within 1.1 radii of its
- * centre. With `who` (the piece's id and which arm) or `T` (the song time), each fault is logged the first time an arm
+ * centre; with `body` (the torso, for an arm drawn in front of it), folded across the chest, a joint under 100° with the
+ * hand on the body and the elbow inside it or less than half an upper arm under the shoulder (a mic grip, a phone or a
+ * rope held against the chest), and laid across the body, more than 36 % of the arm's length over the torso's front
+ * half (40 px of a 111 px arm: a forearm over the belly). With `who` (the piece's id and which arm) or `T` (the song time), each fault is logged the first time an arm
  * shows it, as `arm: WHO: FAULT at T s`, and `song2mv render --json` lists a video's under `warnings`; without either,
  * as when a piece works out where a hand is for a scene, nothing is logged.
  */
 export function arm(shoulder: [number, number], target: [number, number], upper: number, lower: number,
-  toward: [number, number] = [0, 1], o: { holds?: boolean; head?: { c: [number, number]; r: number }; who?: string; T?: number } = {}) {
+  toward: [number, number] = [0, 1], o: { holds?: boolean; head?: { c: [number, number]; r: number }; body?: ArmBody; who?: string; T?: number } = {}) {
   const l = limb(shoulder, target, upper, lower, toward);
   const bone = (a: [number, number], b: [number, number]) => Math.hypot(b[0] - a[0], b[1] - a[1]);
   const faults: ArmFault[] = [];
@@ -84,6 +94,7 @@ export function arm(shoulder: [number, number], target: [number, number], upper:
   if (l.bend < 75 && l.joint[1] < Math.min(shoulder[1] - 0.15 * upper, l.end[1])) faults.push("folded into a V, elbow up");
   if (bone(shoulder, l.joint) < 0.9 * upper || bone(l.joint, l.end) < 0.9 * lower) faults.push("squashed short");
   if (o.head && bone(l.end, o.head.c) < 1.1 * o.head.r) faults.push("hand on its own head");
+  if (o.body) faults.push(...bodyFaults(shoulder, l, upper, lower, o.body));
   const who = o.who ?? "unnamed";
   for (const f of o.who === undefined && o.T === undefined ? [] : faults) {
     if (armSaid.has(`${who}: ${f}`)) continue;
@@ -91,4 +102,23 @@ export function arm(shoulder: [number, number], target: [number, number], upper:
     console.warn(`arm: ${who}: ${f}${o.T === undefined ? "" : ` at ${o.T.toFixed(2)} s`}`);
   }
   return { ...l, faults };
+}
+
+function bodyFaults(shoulder: [number, number], l: ReturnType<typeof limb>, upper: number, lower: number, b: ArmBody): ArmFault[] {
+  const depth = (p: [number, number]) => Math.hypot((p[0] - b.c[0]) / b.rx, (p[1] - b.c[1]) / b.ry);
+  const faults: ArmFault[] = [];
+  if (l.bend < 100 && depth(l.end) < 1 && (depth(l.joint) < 1 || l.joint[1] - shoulder[1] < 0.5 * upper)) {
+    faults.push("folded across the chest");
+  }
+  const front = b.front ?? (shoulder[0] < b.c[0] ? 1 : -1);
+  let over = 0;
+  for (const [a, e] of [[shoulder, l.joint], [l.joint, l.end]]) {
+    const n = Math.max(1, Math.ceil(Math.hypot(e[0] - a[0], e[1] - a[1]) / 2));
+    for (let i = 0; i < n; i++) {
+      const p: [number, number] = [lerp(a[0], e[0], (i + 0.5) / n), lerp(a[1], e[1], (i + 0.5) / n)];
+      if ((p[0] - b.c[0]) * front > 0 && depth(p) < 1) over += Math.hypot(e[0] - a[0], e[1] - a[1]) / n;
+    }
+  }
+  if (depth(l.end) < 1.1 && over > 0.36 * (upper + lower)) faults.push("laid across the body");
+  return faults;
 }
