@@ -386,6 +386,12 @@ and any kit changes into it.
   screen: where the story's rule says what brings the morning, the sky never brightens by itself. In one remake a
   station grew to full day by itself while the hero packed, one cut before a farm at full night, and a sunrise on a
   phone call spent the final chorus's payoff early: reviewers flagged both as breaking the story's rule.
+- **A name that goes on screen.** Before a character's or the song's name is drawn into the picture (a title card,
+  a name tag, a sign), confirm its spelling with the user in every language the audience reads. A romanized name can
+  read as another name to native readers (a Korean name spelled like a common English one) and sink in search under
+  a famous brand that shares it. In one video the user renamed the hero after it was online: the song never sang the
+  name, but two title cards did, so it took a new render, a new upload with a new link, and relinking both shorts and
+  the playlist; YouTube cannot swap a published video's file.
 - **A video to copy along with** (an action song for children, a dance to learn): the actions are mimes with empty
   hands, as the viewer does them. A prop that appears for an action (a toy steering wheel in the paws) is one the
   viewer does not have, and the user asked where it came from. The main character does every action the inset or the
@@ -1086,6 +1092,16 @@ For uploading, ask where the user will post it:
 
 A finished render is already capped at 8 Mbit/s, about 60 MB a minute at most; pass `--max-mb` when the limit is
 lower than that.
+
+For YouTube, three things the upload kit should say:
+- **Everything printed in the picture is final.** A typo, a name or a title in a title card can only change by a new
+  upload: check them with the user before the final render (step 3).
+- **The end screen.** Its default covers the last 20 seconds. Where a punchline or the closing title falls in them,
+  start it after: in one video the default would have covered the payoff, and starting it 9 seconds before the end
+  kept it and the closing title clear. Prefer a template whose boxes sit at the frame's edges, and look at the frames
+  under them.
+- **Shorts link the full video** through "Related video", which viewers can tap. A short set as made for kids cannot
+  have one, and links in a short's description cannot be tapped: put the full video's URL there anyway.
 
 **Give back what other songs can use.** Look over what you drew for the video. Some pieces are generic, not tied to
 this song: an object, a pose, a place, a style pack. Offer those to the user as a pull request to song2mv, following

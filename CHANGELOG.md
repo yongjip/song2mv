@@ -5,6 +5,9 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 ## Unreleased
 
 ### Added
+- The skill, from a video's first week online: confirm every name drawn into the picture with the user before the
+  final render (a romanized name can read as another name, and YouTube cannot swap a published file), start the end
+  screen after a closing punchline, and link each short to the full video through "Related video".
 - `"captionBand": false` in the song config's `theme` drops the shading behind the bottom captions (and the strip
   behind a short's) and outlines each caption letter in `theme.bg` instead, for a bright picture the dark band dulls.
 - The skill and its review brief, from a cartoon video rejected after passing every check and its remake: plan a
