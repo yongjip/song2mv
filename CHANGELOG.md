@@ -5,6 +5,10 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 ## Unreleased
 
 ### Added
+- The skill, from a remake its user called creative: where a story's rule comes from (a metaphor in the lyrics about
+  what the hero does, taken literally, which the first video had drawn once as a gag), asking of each scene what the
+  rule makes happen there, a payoff that echoes its setup, and the break and the outro carrying the low point and the
+  epilogue the lyrics skip.
 - The skill: what to keep on the strongest model when a weaker one takes part. A video made end to end with a cheaper
   model was judged dull, with poor characters; keep the concept, the song's rule, the storyboard and the character
   pieces on the strongest model (or reuse finished characters) and give the weaker one only the assembly.

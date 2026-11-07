@@ -337,11 +337,14 @@ passed `check` 10/10 after four review rounds and about 150 fixes, and the user 
 the lead found: few scenes played out with a cause and a reaction; the line the song is named after had no moment of
 its own; the rival never did anything; one chorus was a party over lines of despair; each chorus kept one set at one
 distance; 7–10 gags needed small text read in two seconds; about 60 % of the frames were night or interiors under a
-brown film tone; and the payoff came small and early. Its remake was planned as a story before anything was drawn:
+brown film tone; and the payoff came small and early. Its remake was planned as a story before anything was drawn,
+and once it was online the user called it well made and creative:
 
-- **One rule the whole story hangs on,** set up early, paid off late, and leaned on by every other beat. A made-up
-  example: a lamplighter's lamps call the stars out. A cheap rival bulb lights the street but not the sky, the job far
-  away needs exactly that gift, and the town she left stays starless without her.
+- **One rule the whole story hangs on,** set up early, paid off late, and leaned on by every other beat. Find it in
+  the lyric map: a metaphor about what the hero does, taken literally, ideally one whose image the song returns to.
+  The first video had drawn the remake's rule once, as a gag on its line; the remake made the whole world obey it. A
+  made-up example: a lamplighter's lamps call the stars out. A cheap rival bulb lights the street but not the sky, the
+  job far away needs exactly that gift, and the town she left stays starless without her.
 - **Scenes that play out.** One place per scene, several shots in it (wide for the place and spectacle, medium for
   action, close for faces), and the lyric map's events happen inside the scene on their words, each with someone
   reacting. The remake had nine places in 2:40. A shot held more than about 2 s needs a beat inside it: a hero
@@ -356,11 +359,20 @@ brown film tone; and the payoff came small and early. Its remake was planned as 
 - **A bright picture where the story allows:** about two-thirds of the remake was day, dawn or lit interiors, and its
   night a soft blue, never brown.
 
+**Then let the rule write the beats.** The first video had already drawn the jokes in the lyrics; what the remake
+added came from asking of each scene what the rule makes happen there. The hero won a job interview by lighting the
+interviewers' dark room with his gift, a sun leapt up on his call over the new world as one had over the old, and his
+old home stayed dark once the rival's battery died. Let the payoff echo its setup, changed: the new world's sunrise
+answered the first, and the perch the hero climbed there answered the one he lost. Ask it of the stretches without
+singing too: the remake's break walked the hero away in the rain, the story's low point, and its outro closed every
+thread, the rival's comeuppance and the old home seeing him succeed, where the first video had spent its last 23 s on
+reprises and silhouettes.
+
 Write it as a beat sheet, `<work>/story.md`: a logline, the rule, the cast, and per scene its lines, each with its
-shot and what happens. Then draw a rough storyboard, a frame per beat, and show both to the user with the hero's
-design sheet (below). The lyric map still holds: its events land on their key words, inside the scenes. A song with
-wordplay in every other line still wants a frame that takes a new picture per line (above); a song that tells a
-story wants scenes.
+shot and what happens; end it with the list above, each point with the beats that meet it. Then draw a rough
+storyboard, a frame per beat, and show both to the user with the hero's design sheet (below). The lyric map still
+holds: its events land on their key words, inside the scenes. A song with wordplay in every other line still wants a
+frame that takes a new picture per line (above); a song that tells a story wants scenes.
 
 Make each concept concrete enough to picture: one rough still each, shown side by side with your pick and the reason
 in one line. Copy the template now (step 4's first command), draw each concept as a component of `T` in
