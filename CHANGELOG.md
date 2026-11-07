@@ -5,6 +5,9 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 ## Unreleased
 
 ### Added
+- The skill: what to keep on the strongest model when a weaker one takes part. A video made end to end with a cheaper
+  model was judged dull, with poor characters; keep the concept, the song's rule, the storyboard and the character
+  pieces on the strongest model (or reuse finished characters) and give the weaker one only the assembly.
 - The skill, from a video's first week online: confirm every name drawn into the picture with the user before the
   final render (a romanized name can read as another name, and YouTube cannot swap a published file), start the end
   screen after a closing punchline, and link each short to the full video through "Related video".

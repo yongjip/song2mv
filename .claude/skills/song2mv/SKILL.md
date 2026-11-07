@@ -55,6 +55,12 @@ findings per minute at medium and 5.3 at max; Opus 5.5 at high, with a third pas
 weaker one, pick max. If you must mix, give painters and reviewers the strongest: the painters' pieces cause most pose
 faults, and a weak reviewer catches less. Mixed that way at max (Sonnet builders, Opus painters and reviewers), the
 same song left 2.8 and cost more than either model alone.
+Story and characters are where a weaker model fails first: a video another user made end to end with a cheaper model,
+concept and characters included, came back as "the story is dull and the characters look horrible". It illustrated
+the lyrics line by line instead of planning a story, and drew the cast itself. If a weaker model must take part, keep
+the concept, the song's rule and the storyboard (step 3) and every character piece with the strongest model, or reuse
+finished characters from an earlier video, and give the weaker one only the assembly of boards the user approved. The
+cheapest saving that keeps quality is to draw fewer new characters and scenes, not to switch models.
 
 **Tokens.** Every agent is a fresh context that reads its brief, the map and the pieces, so the agent count drives
 the cost. One user switched a remake from max to high, with Opus for every agent, partway through to save tokens. That
