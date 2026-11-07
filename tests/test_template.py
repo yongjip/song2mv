@@ -706,6 +706,29 @@ console.log(JSON.stringify([1.5, 2.3, 3.7, 4.05, 5.6, 7.25, 9.0].map((T) => capt
     assert 0.3 < band["late"] < 0.9  # a line shown from its second word fades in for that word, not the first
 
 
+def test_a_theme_without_the_caption_band_outlines_the_caption_letters_in_bg_instead(tmp_path):
+    song = {**_verse_song([4]), "theme": {"bg": "#2b3a6b"}}
+    t = song["lines"][0]["words"][3]["t"] + 0.05  # four words sung, three to come
+    out = _probe(tmp_path, """
+import * as React from "NODE/react";
+import { renderToStaticMarkup } from "NODE/react-dom/server";
+import { SongContext, makeSongCtx } from "KIT/song";
+import { Captions } from "KIT/text";
+const song = SONG;
+const html = (theme: object, band: boolean | "around") => renderToStaticMarkup(React.createElement(SongContext.Provider,
+  { value: makeSongCtx({ ...song, theme: { ...song.theme, ...theme } }) }, React.createElement(Captions, { T: TIME, band })));
+console.log(JSON.stringify({
+  banded: [html({}, true), html({}, "around")],
+  outlined: [html({ captionBand: false }, true), html({ captionBand: false }, "around")],
+}));
+""".replace("NODE", os.path.join(BUNDLED, "node_modules")).replace("TIME", str(t)), song)
+    for h in out["banded"]:
+        assert "linear-gradient" in h and "#2b3a6b" not in h, h
+    for h in out["outlined"]:
+        assert "linear-gradient" not in h, h
+        assert h.count("text-shadow") == 7 and h.count("#2b3a6b") == 7 * 16, h  # sung and unsung words, 16 rings each
+
+
 OPENING_PROBE = """
 import { makeSongCtx } from "KIT/song";
 import { planBoards } from "KIT/plan";

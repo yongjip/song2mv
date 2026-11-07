@@ -30,6 +30,11 @@ export type Theme = {
   sung: string; unsung: string; sungGlow: string;
   /** CSS text-shadow of words not sung yet, so they read over rays and glows; "none" on a light background */
   unsungShadow: string;
+  /**
+   * true: the bottom captions shade the picture under them in `bg` (see <Captions>). false: no shading; each caption
+   * letter gets an outline in `bg` instead, for a bright picture that the dark band dulls.
+   */
+  captionBand: boolean;
   bigText: string; bigGlow: string;
   title: string; titleGlow: string; subtitle: string;
   font: string;
@@ -75,6 +80,7 @@ export const DEFAULT_THEME: Theme = {
   // unsung at 50 % white is 5.3:1 against bg, above WCAG's 4.5:1 (32 % was 2.7:1, below even the 3:1 for large text)
   sung: "#ffffff", unsung: "rgba(255,255,255,0.5)", sungGlow: "rgba(255,51,85,0.6)",
   unsungShadow: "0 0.04em 0.12em rgba(0,0,0,0.85)",
+  captionBand: true,
   bigText: "#ffffff", bigGlow: "#ff3355",
   title: "#ffffff", titleGlow: "rgba(255,51,85,0.75)", subtitle: "#ffd36b",
   font: '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Noto Sans CJK KR", "Noto Sans", system-ui, sans-serif',

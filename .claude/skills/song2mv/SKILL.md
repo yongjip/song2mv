@@ -16,11 +16,14 @@ every judgement that needs ears goes to the user as a short clip or click track 
 1. Ear-check clips for the lines `sync` flags, sent to the user (step 1).
 2. A lyric map with something happening on the key word of each line (step 3).
 3. Two or three concept stills, one chosen (step 3).
-4. Characters with an age and its proportions, and a continuity table (step 3).
-5. Every piece in a gallery at 1:1, and every touch between characters in a fit tile, fixed before the scenes
+4. A beat sheet with a rough storyboard, and the hero's design sheet with its head turns drawn as views of their own,
+   shown to the user before the build (step 3).
+5. Characters with an age and its proportions, and a continuity table (step 3).
+6. Every piece in a gallery at 1:1, and every touch between characters in a fit tile, fixed before the scenes
    (step 4).
-6. `check` passing on the whole song (step 5).
-7. A review by fresh eyes at the quality level below, with no high- or medium-severity finding left (steps 5 and 6).
+7. `check` passing on the whole song (step 5).
+8. A review by fresh eyes at the quality level below, appeal included, with no high- or medium-severity finding left
+   (steps 5 and 6).
 
 **The quality level sets how many agents draw and how many review: high, unless the user asks for another** (step
 0). Every level runs the steps above. Of 117 findings that reviewers recorded in two videos after every check had
@@ -37,9 +40,14 @@ in several. A second round, after the fixes and a redesign of one character, fou
 | Review (step 5) | one reviewer per two minutes of video | one per minute or two, one for the characters, one per short | as high, and in the first round one per lens over the whole video |
 | Rounds | one | two: a new reviewer on every changed stretch | as high, and a third when the second round found a high-severity finding |
 
-The six lenses (`briefs/review.md`) are **bodies**, **framing**, **continuity**, **motion**, **story**, and **text and
-9:16**. In one video the lens reviewers cost 5 % of the run, and half of their 26 high- and medium-severity findings
-were in no other report; whether a lens finds more than a reviewer with every lens is not measured.
+The seven lenses (`briefs/review.md`) are **bodies**, **framing**, **continuity**, **motion**, **story**, **appeal**
+and **text and 9:16**. In one video the lens reviewers cost 5 % of the run, and half of their 26 high- and
+medium-severity findings were in no other report; whether a lens finds more than a reviewer with every lens is not
+measured. Appeal came later, from a cartoon video that passed `check` 10/10 after four review rounds and about 150
+fixes and that the user rejected on first viewing: its hero was not cute, its head turns looked broken and its story
+was dull, and no lens had asked whether a viewer would be bored. In its remake's first round, with appeal in every
+reviewer's brief, the verdict was that the key moments landed small, and 5 of the 11 high-severity findings were such
+moments (step 3).
 
 **The model matters more than the level.** On one song judged blind, Sonnet 5.5 left 7.6 high- and medium-severity
 findings per minute at medium and 5.3 at max; Opus 5.5 at high, with a third pass for high-severity findings, left
@@ -48,10 +56,18 @@ weaker one, pick max. If you must mix, give painters and reviewers the strongest
 faults, and a weak reviewer catches less. Mixed that way at max (Sonnet builders, Opus painters and reviewers), the
 same song left 2.8 and cost more than either model alone.
 
+**Tokens.** Every agent is a fresh context that reads its brief, the map and the pieces, so the agent count drives
+the cost. One user switched a remake from max to high, with Opus for every agent, partway through to save tokens. That
+run had 5 painters, one fresh reviewer of their galleries and fit tiles, 4 builders, 6 reviewers in round one (three
+stretches, the characters, two shorts) and 4 in round two, each checking the fixes and looking anew; round two still
+found 7 high-severity findings, all fixed before delivery.
+
 **Checkpoints don't block.** At each one, show the user what you have, with your pick and the reason in one line,
 and keep going; they can redirect you at any time. Decide timing by measurement, send the ear-check clips anyway and
 list the spots nobody has heard when you deliver. Wait only for what you can neither measure nor recommend: the
-song's rights, or a lyric only the user knows.
+song's rights, or a lyric only the user knows. One more is worth an answer when the user is there to give it: the
+hero's design sheet and the storyboard, before builders start (step 3). A "no" there costs a sheet; after the build it
+cost one video everything but its timing. On a run the user left alone, carry on and lead the delivery with them.
 
 ### Production quality contract
 
@@ -89,6 +105,16 @@ view, then watch the turn at normal speed. A repaired discontinuity does not est
 Keep each anatomical eye consistent across the authored views. The near eye must remain the near eye as the
 far eye passes behind the silhouette. Fading an eye or spectacle ring over a cheek can create a ghost image.
 Check intermediate angles as well as the front, quarter and profile drawings.
+
+**A cartoon head turns through drawn views, not by sliding its face.** One hero's face was a decal slid across a
+fixed ball as the head turned: at a quarter turn the far eye was a black sliver with a brow on the outline, at half
+a turn the beak lay flat on the cheek, at a full turn the back of the head was an empty ball and the comb grew two
+more points, and at the front a front face sat on a three-quarter body. Four review rounds passed it; the user named
+it among the three reasons they rejected the video. The remake drew five views, front and three-quarter and profile
+each way, each whole for itself on one body outline, and the turn snaps through every view in between, 2–3 frames
+each, 0.2–0.3 s in all: no sliver, no flattened feature. Never skip a view: a snap from three-quarter left to
+three-quarter right in one frame flipped the screen direction, and the hero read as walking back the way he came.
+Tell reviewers the snap is the design, and to report a slide, a sliver or a skipped view.
 
 **Make consistency structural.** Use one shared asset definition for each identity and one time-derived state
 function for each important interaction, rather than independent per-shot switches. Represent mutually exclusive
@@ -292,12 +318,43 @@ replay, a press conference, a thermal camera), though only its cat's face was in
 1. **Something happens on the key word of each line,** not a picture of the line's noun: a paw pushes the mug off the
    desk on "three", a telestrator draws the play as it is rapped. The lyric map says which word and what.
 2. **Reactions.** Cut from the act to someone reacting: a crowd, an old man yelling, a mug sweating. Props with faces
-   are cheap extra reactors.
+   are cheap extra reactors. Make the take big: eyes wide, mouth dropped open, a squash-and-stretch jolt over three
+   frames, looking at the cause. A hero's open-mouthed stare at the news was flagged as too mild in two rounds.
 3. **A viewpoint that shows faces.** Top-down or far wide shots hide the acting: the dull run's toy-town view turned
    its people into dots.
 4. **A frame that turns the everyday into an event:** a sports broadcast, a heist, a nature film, a period cartoon, a
    TV show. It brings its own overlays, sound words and title cards.
 5. **Change the kind of shot, not just its zoom:** a diagram, a side view, a close-up, a new world for a punchline.
+
+**A picture per line is not a story.** One cartoon video drew each line as its own picture, 66 shots of about 2.4 s,
+passed `check` 10/10 after four review rounds and about 150 fixes, and the user rejected it as dull. What they and
+the lead found: few scenes played out with a cause and a reaction; the line the song is named after had no moment of
+its own; the rival never did anything; one chorus was a party over lines of despair; each chorus kept one set at one
+distance; 7–10 gags needed small text read in two seconds; about 60 % of the frames were night or interiors under a
+brown film tone; and the payoff came small and early. Its remake was planned as a story before anything was drawn:
+
+- **One rule the whole story hangs on,** set up early, paid off late, and leaned on by every other beat. A made-up
+  example: a lamplighter's lamps call the stars out. A cheap rival bulb lights the street but not the sky, the job far
+  away needs exactly that gift, and the town she left stays starless without her.
+- **Scenes that play out.** One place per scene, several shots in it (wide for the place and spectacle, medium for
+  action, close for faces), and the lyric map's events happen inside the scene on their words, each with someone
+  reacting. The remake had nine places in 2:40. A shot held more than about 2 s needs a beat inside it: a hero
+  sitting still at a bus stop for 4.3 s was a high finding, fixed with a drip he flinches at and a bus splashing past.
+- **The title line gets its moment:** a beat of its own, close on the faces, its words big across the frame in both
+  aspects, held until the next beat lands beside them.
+- **The rival acts** in every scene it is in (it dances, takes the hero's place, wins a round) and gets its
+  comeuppance.
+- **Each chorus a different event** that matches its lines: a contest lost, a launch, the triumph.
+- **Spectacle where the music peaks, the payoff last** and bigger than anything before it.
+- **One big word or a short line of text at a time;** nothing to read in two seconds.
+- **A bright picture where the story allows:** about two-thirds of the remake was day, dawn or lit interiors, and its
+  night a soft blue, never brown.
+
+Write it as a beat sheet, `<work>/story.md`: a logline, the rule, the cast, and per scene its lines, each with its
+shot and what happens. Then draw a rough storyboard, a frame per beat, and show both to the user with the hero's
+design sheet (below). The lyric map still holds: its events land on their key words, inside the scenes. A song with
+wordplay in every other line still wants a frame that takes a new picture per line (above); a song that tells a
+story wants scenes.
 
 Make each concept concrete enough to picture: one rough still each, shown side by side with your pick and the reason
 in one line. Copy the template now (step 4's first command), draw each concept as a component of `T` in
@@ -325,7 +382,10 @@ and any kit changes into it.
 - **Characters and continuity.** Give each character an age, and draw its proportions from it (`briefs/assets.md`
   lists them: a toddler is about half an adult's height, with about 2 heads fewer). Then a table, section by section:
   what each one wears and carries (a bag, a toy, shoes on or off), where they are, the time of day. Builders and
-  reviewers check every board against it.
+  reviewers check every board against it. Give the light a row of its own, like a prop, with what changes it on
+  screen: where the story's rule says what brings the morning, the sky never brightens by itself. In one remake a
+  station grew to full day by itself while the hero packed, one cut before a farm at full night, and a sunrise on a
+  phone call spent the final chorus's payoff early: reviewers flagged both as breaking the story's rule.
 - **A video to copy along with** (an action song for children, a dance to learn): the actions are mimes with empty
   hands, as the viewer does them. A prop that appears for an action (a toy steering wheel in the paws) is one the
   viewer does not have, and the user asked where it came from. The main character does every action the inset or the
@@ -334,6 +394,11 @@ and any kit changes into it.
   needs (standing, seated, at a wheel).
 - **Hit points**: the first beat of each chorus, drops, the last word. These get the biggest moment (cut, flash,
   slam). Use `grid.bar(k)` and line/word times — never hand-typed seconds.
+- **Key moments**: the title line, the confrontation, the payoff, each short's hook and ending. Give each the closest
+  framing and the biggest type the story has, in both aspects, and look at each on a sheet at its word before the
+  review. In one remake's first round, 5 of the 11 high-severity findings were these landing small: the title shot
+  a 9:16 wide with the hero about 230 px tall and the price joke on a 60 px tag, a duel whose two sound waves never
+  met and whose loser tumbled in an extreme wide at about 140 px, a payoff sunrise of about 200 px that rose in 0.2 s.
 - **Breaks**: list every stretch of 4 s or more without a sung line in `mv.json` (an intro, an instrumental, an
   "oh-oh" that `off_sheet` names) and give each an event of its own: everything dances, someone joins in, a new
   world. One world held through a break is the dullest part of a chorus clip.
@@ -343,6 +408,25 @@ and any kit changes into it.
 - **Text**: which lines become big type in the scene (`Slam`, `BigLine`), which stay as bottom captions.
 - **Shorts**: each short's stretch as `--from`, `--hold` and `--to` (step 6), so the builder of that stretch frames it
   for 9:16 and its reviewer can start in the first round.
+
+**Then the hero's design sheet, before any building.** Ask the user what look they want the hero in, and for a
+reference if they have one: one user, rejecting a hero as not cute, showed a character of their own as the measure,
+and the remake drew its hero in that style. Draw the sheet in `<work>/design/`: the views a head turn snaps between
+(the Production quality contract above), the expressions the story needs, the signature action (a shout, a jump, a
+crow) at its biggest, and the hero beside a prop and another character at the scenes' scale. Draw that action bigger
+than feels right: the remake's hero had his crow enlarged between review rounds (a far wider beak, the head thrown
+back at the peak), since reviewers found every crow read as a hiccup. What made the first hero not cute, against
+the user's reference:
+
+- two masses, a ball head on a thick neck over a pear body, instead of one round one;
+- big wide-set eyes with brows, a big beak and a dangling part that read as a tongue, instead of small features set
+  low and close together;
+- thick black ink, gradients and shine instead of a thin outline in a darker shade of each fill over flat colour;
+- spikes, fingers, muscles and jewellery; and a colour off the one the user had asked for;
+- half-lidded proud and determined faces, which read as smug.
+
+Show the sheet with the beat sheet and the storyboard. When the user is there, let them answer before the builders
+start (above, "Checkpoints don't block"); then build on what they approved.
 
 **Then get the pieces, in this order:**
 
@@ -502,10 +586,13 @@ scenes it lays a dark vignette, and a white flash at the start of each hot secti
 Left at the defaults, they put the kit's neon night around every concept, and the title is the file name. Set `title`
 and `theme` (`bg`, `stars`, the text colours, `font`) in `song.json` to fit the concept. `bg` also shades the
 picture behind the captions, so keep it dark under the default white text; a light `bg` takes dark text colours
-and `unsungShadow: "none"`, or the captions fade into the band. `"vignette": false` keeps the scene's corners as
-drawn, and `"flashes": [[song time, strength 0–1], …]` puts the flashes on the song's real hits (`[]` when the
-scenes flash themselves). Under a whole-frame finish (`finish.Film`, `finish.Vhs`) the template's white flash lies
-outside it and reads as a grey wash: one video set `[]` and flashed inside the finish. Then run
+and `unsungShadow: "none"`, or the captions fade into the band. Over a bright picture, `"captionBand": false` in
+`theme` drops that band, and the strip behind a short's captions, and rings each caption letter in `bg` instead: a
+mid-dark `bg`, such as a navy under white text, reads over any pastel. In one remake's first review round the dark
+band dulled its bright pastel picture; the outline replaced it in both aspects. `"vignette": false` keeps the
+scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` puts the flashes on the song's real hits
+(`[]` when the scenes flash themselves). Under a whole-frame finish (`finish.Film`, `finish.Vhs`) the template's
+white flash lies outside it and reads as a grey wash: one video set `[]` and flashed inside the finish. Then run
 `song2mv sync <work>/song.json --from build`.
 
 ### The scene kit
@@ -759,6 +846,21 @@ Rules that held up:
    layouts, or export a `VerticalScene` that draws the whole 9:16 frame (step 6). Keep text ≥ 36 px on screen:
    `check` reads only the size literals in the source, not what a camera or a `scale()` makes of them.
 5. Pull timing from data: `useSong().lineById["ch1-01"].words[0].t`, `grid.bar(k)`, `grid.pulse(T)`.
+6. **A peak plays out inside one shot.** Cut to the shot that shows it before it starts, and give it 0.5–0.7 s with
+   an overshoot. In one video a sunrise leap ran in the shot before a cut and was 98 % done when the wide came in, so
+   it was never seen moving: a high finding in two rounds. `span.shotFrom` and `span.shotTo` say whether the event
+   lies inside the shot on screen. Start it on its word: a reveal that lit 0.6–0.9 s after its word read as late.
+7. **Nothing moves by itself.** A prop that moves has a hand, wing or paw carrying it the whole way, the prop drawn at
+   the hand (`arm()` to the prop): a stamp that flew to a window while the stamper's hands stayed at her chest, a tie
+   that leapt out of a box over the hero's head and a string that tied itself with twinkles drew high and medium
+   findings in both review rounds of one video. Lids, flaps and doors are opened and shut by someone, on screen.
+8. **No framing twice in a row, in 9:16 too.** Boards in a row that film alike places (the same tower against the
+   same hills) each need a composition of their own in the tall frame as well: in one short three boards' `tall`
+   framings were nearly one framing, about 5 s with no new picture, and the cut between two of them jumped like a
+   skipped frame. The render's log names such a cut only between boards that film one world.
+9. **A wash over the frame keeps the hero's colour.** A memory tint turned one red hero into a brown turkey, a dim
+   grey scrim made him brown and a gold sunrise wash made him salmon; reviewers flagged each. Keep washes light, or
+   draw the hero over them.
 
 Typecheck (`npx tsc --noEmit` in `<work>/video`), then look at stills of the new section before rendering video. A
 contact sheet draws the scene at many song times in one render, each frame labelled with its time: write its props
@@ -900,7 +1002,11 @@ defects after every check had passed, such as arms folded into a V and faces cut
   every crop as if someone else had drawn it, or ask the user to give the brief to a second session.
 
 **Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip of the full render and ask
-what is boring. Their answer outranks the check.
+what is boring. Their answer outranks the check. One video passed 10/10 after four review rounds and about 150 fixes
+and was rejected on first viewing, for three things no defect lens looks for: a hero who was not cute, a head turn
+that slid, a dull story. Its remake started over from a design sheet and a storyboard the user approved (step 3),
+kept the timing and restyled some sets and props, redrew every character, and was reviewed for appeal as well as
+defects.
 
 ## 6. Shorts (9:16)
 
@@ -924,8 +1030,8 @@ By default the short shows `Scene` shrunk into a band, with the template's sky a
 top. That frame puts the template's look around every concept, and a scene that draws its own lyrics leaves the
 bottom of the screen empty. To fill the phone screen instead, export a `VerticalScene` from `src/scenes/index.ts`:
 a component of `T` that draws the whole 1080×1920 frame. The template then adds only the captions of lines the
-scenes don't draw (on a strip of `theme.bg`), the flashes and the fade-out; the background and any title are the
-scene's. It is usually the
+scenes don't draw (on a strip of `theme.bg`, or outlined with `captionBand: false`), the flashes and the fade-out;
+the background and any title are the scene's. It is usually the
 same world and timing filmed for a tall frame, which `verticalView` in the kit does:
 
 ```tsx

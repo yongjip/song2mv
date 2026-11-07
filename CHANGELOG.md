@@ -5,6 +5,13 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 ## Unreleased
 
 ### Added
+- `"captionBand": false` in the song config's `theme` drops the shading behind the bottom captions (and the strip
+  behind a short's) and outlines each caption letter in `theme.bg` instead, for a bright picture the dark band dulls.
+- The skill and its review brief, from a cartoon video rejected after passing every check and its remake: plan a
+  story before drawing (a beat sheet on one rule, scenes that play out with reactions, the title line's own moment)
+  and the hero's design sheet with head turns as drawn views, and show both before the build; an appeal lens for
+  reviewers; key moments framed big, a peak inside one shot, props moved by a hand, no framing repeated in 9:16, the
+  light following the story's rule, washes that keep the hero's colour; and how that run split its agents.
 - `arm()` takes `body`, the torso as an ellipse (`c`, `rx`, `ry`, and `front` for a figure seen from the side), and
   reports two more faults with it: folded across the chest (a joint under 100° with the hand on the body and the elbow
   inside it or near shoulder height) and laid across the body (more than 36 % of the arm's length over the torso's front

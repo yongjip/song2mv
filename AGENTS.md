@@ -19,7 +19,8 @@ Follow the skill's Production quality contract and report frame-only or unheard 
 
 The checkpoints below don't block: show what you have with your pick and the reason in one line, and carry on; the
 user can redirect. Decide timing by measurement, make the ear-check files anyway and list the unheard spots when you
-deliver. Wait only for the song's rights or a lyric only the user knows.
+deliver. Wait only for the song's rights or a lyric only the user knows, and, when the user is there to answer, for
+their verdict on the hero's design sheet and the storyboard before builders start (step 5).
 
 1. **Rights first.** Ask whose song it is and whether the user may publish a video of it (an AI music service's
    plan terms count). Never copy the song, its lyrics or renders into a repository; keep them in the work folder.
@@ -57,7 +58,12 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    with the concepts and don't wait, and run every agent on the strongest model you have. Then start from a concept:
    propose two or three, in
    different art styles, as stills side by side, and pick one; the skill's step 3 lists what the user judged fun
-   (reactions, faces in view, a frame that makes the everyday an event). The scene kit in `DIR/src/kit/` (people,
+   (reactions, faces in view, a frame that makes the everyday an event). Before the build, plan a story, not a
+   picture per line: a beat sheet on one rule the story hangs on, scenes that play out with reactions, the title
+   line's own moment, a rival that acts. Draw the hero's design sheet in the look the user asks for, its head turns as
+   drawn views a turn snaps between, never a face sliding over the head; show it with a rough storyboard. One video
+   passed every check and four review rounds and was rejected for a hero that wasn't cute, a sliding head turn and a
+   dull story, none of which the user had seen before the build. The scene kit in `DIR/src/kit/` (people,
    places, sky, objects, effects; style packs such as `paper` that put any object in another art style) is optional:
    reuse what fits the concept, change it in DIR, draw the rest. See it with
    `node render.mjs src/sample-song.json --composition Kit-Gallery` in DIR. When the video is done, offer the user
@@ -79,7 +85,8 @@ deliver. Wait only for the song's rights or a lyric only the user knows.
    drawn with the kit's `arm()`, and heads and bubbles marked `data-face` and `data-over`, print their faults when
    rendered: clear those first). Give the
    finished render to fresh agents with the skill's `briefs/review.md`, a stretch, a lens or a short each (at high and
-   max every short from the first round), as many as the quality level says, or review it yourself with that brief, crop
+   max every short from the first round), defects and appeal (where a viewer gets bored, whether the key moments
+   land big) alike, as many as the quality level says, or review it yourself with that brief, crop
    by crop, when you cannot start agents. Fix every high- and medium-severity finding and have the fixed stretches
    looked at again, for as many rounds as the level says. In two videos this found about 120 defects after every check
    had passed. A fix in a character piece moves every shot that uses it: render a draft of the whole video before and

@@ -17,6 +17,16 @@ const withAlpha = (c: string, a: number) => {
   return m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},${a})` : `rgba(0,0,0,${a})`;
 };
 
+/** A CSS text-shadow that rings letters `px` tall in `color`, 6.5 % of their size wide, with a soft drop under them */
+function letterOutline(color: string, px: number): string {
+  const r = Math.max(3, Math.round(px * 0.065));
+  const ring = Array.from({ length: 16 }, (_, i) => {
+    const a = (i / 16) * Math.PI * 2;
+    return `${(r * Math.cos(a)).toFixed(1)}px ${(r * Math.sin(a)).toFixed(1)}px 0 ${color}`;
+  });
+  return [...ring, `0 ${r}px ${2 * r}px ${withAlpha(color, 0.35)}`].join(", ");
+}
+
 /** Big word slammed in once at t (scale 1.3 → 1 in 0.16 s), then still until `until` */
 export const Slam: React.FC<{
   T: number; t: number; text: string; x: number; y: number; size: number;
@@ -178,22 +188,23 @@ export const BigLine: React.FC<{ T: number; lines: Line[]; y?: number; maxSize?:
  * Karaoke captions at the bottom: the current line, sung words bright. Fixed position. Lines in `hide`
  * (and in the song's captions.hide) are skipped — a scene draws them itself. `band` shades the picture under them in
  * `theme.bg` as `captionBand` says: true from the bottom edge up, "around" in a strip behind their two rows (over a
- * 9:16 scene).
+ * 9:16 scene). With the theme's `captionBand` false there is no band and each letter is outlined in `theme.bg`.
  */
 export const Captions: React.FC<{ T: number; hide?: Set<string>; size?: number; bottom?: number; padX?: number; band?: boolean | "around" }> = ({
   T, hide, size = 62, bottom = 86, padX = 100, band = true,
 }) => {
   const { song, theme } = useSong();
   const skip = new Set([...(song.captions?.hide ?? []), ...(hide ?? [])]);
-  const on = band ? captionBand(song, T, skip) : 0;
+  const shade = theme.captionBand ? band : false;
+  const on = shade ? captionBand(song, T, skip) : 0;
   const shown = captionWords(song, T, skip);
   if (!shown && on <= 0) return null;
   return (
     <>
-      {band === true && on > 0 && (
+      {shade === true && on > 0 && (
         <AbsoluteFill style={{ opacity: on, background: `linear-gradient(to top, ${withAlpha(theme.bg, 0.82)} 0%, ${withAlpha(theme.bg, 0)} 27%)` }} />
       )}
-      {band === "around" && on > 0 && (
+      {shade === "around" && on > 0 && (
         <div style={{
           position: "absolute", left: 0, right: 0, bottom: bottom - 150, height: 2.4 * size + 300, opacity: on,
           background: `linear-gradient(to top, ${withAlpha(theme.bg, 0)}, ${withAlpha(theme.bg, 0.8)} 33%, ${withAlpha(theme.bg, 0.8)} 67%, ${withAlpha(theme.bg, 0)})`,
@@ -209,12 +220,14 @@ const CaptionText: React.FC<{ T: number; line: Line; words: Word[]; size: number
 }) => {
   const { song, theme } = useSong();
   const whisper = (song.captions?.whisper ?? []).includes(line.id);
+  const px = whisper ? Math.round(size * 0.7) : size;
+  const outline = theme.captionBand ? null : letterOutline(theme.bg, px);
   return (
     <div
       data-over="caption"
       style={{
         position: "absolute", left: padX, right: padX, bottom, textAlign: "center", wordBreak: "keep-all",
-        fontSize: whisper ? Math.round(size * 0.7) : size, fontWeight: whisper ? 500 : 800,
+        fontSize: px, fontWeight: whisper ? 500 : 800,
         letterSpacing: whisper ? "0.3em" : "-0.01em", lineHeight: 1.2,
         opacity: clamp01((T - (words[0].t - 0.12)) / 0.08),
       }}
@@ -226,7 +239,9 @@ const CaptionText: React.FC<{ T: number; line: Line; words: Word[]; size: number
             {i > 0 && " " /* a real space: the only place a long line may wrap */}
             <span style={{
               color: sung ? theme.sung : theme.unsung,
-              textShadow: sung ? `0 0 18px ${theme.sungGlow}` : theme.unsungShadow,
+              textShadow: outline
+                ? (sung ? `${outline}, 0 0 18px ${theme.sungGlow}` : outline)
+                : (sung ? `0 0 18px ${theme.sungGlow}` : theme.unsungShadow),
             }}>
               {w.w}
             </span>
