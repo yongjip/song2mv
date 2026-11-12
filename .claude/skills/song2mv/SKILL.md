@@ -132,6 +132,25 @@ the scene exposes a concrete invariant, such as one owner or the same state in a
 Accurate grip coordinates do not prove a grasp. Inspect the palm, thumb, fingers and object overlap in the export.
 Do not build a new generic validator merely to turn aesthetic judgement into a number.
 
+**Pose contact by where the hands must be, and let the render measure it.** A hug, a carry or a child lifted is two
+figures touching, and `check` sees none of its faults. In one family video the user rejected the hugs three times,
+each time for a fault the previous fix brought: a gap between the two bodies; then a child's arms drawn longer than
+her rig (its arm scale raised to 1.7–1.9 so her hands could meet behind a neck); then a close-up drawn apart from the
+standing rig at other proportions. Its painters spent 100 to 180 render-and-look calls each setting joints by hand.
+Pose every hand that touches another figure with `arm(shoulder, target, upper, lower, toward, { holds: true, who, T })`,
+the target a point of the other figure brought into this one's drawing with `toLocal(toStage(point, other), me)`,
+and the rig's own bone lengths: never raise an arm scale or a bone length until the hand arrives. Out of reach, the
+hand stops short and `arm()` says by how much (`out of reach by N px`): move the bodies instead (the adult kneels or
+sits lower, the child comes closer or is lifted) or aim the hand where it reaches (a shoulder, the upper back), as
+the kit gallery's two hug tiles show. Mark the figures so a video render measures what was drawn: `data-figure` on
+each figure's layers, `data-part` on its parts, `limbMarks()` on each limb, `data-touch="WHO: PART"` on each hand or
+torso that must touch (the part touched may be an unpainted circle at an anchor) and `data-view="close-up"` on a
+close-up drawn apart from the standing rig. The render then prints `limb:` (a bone longer than its rig), `contact:`
+(drawn apart, by how many px) and `proportions:` (a close-up's part off the standing rig's for its head) lines beside
+the `arm:` and `face:` ones, and a test tile wrapped in `<ShowFaults>` writes them on a still. The proportions check
+compares drawings on one page: draw the close-up beside the standing rig in a test tile. Clear these faults before
+scenes are built on the piece (`briefs/assets.md`, rule 6).
+
 **Review the artifact, then repair the cause.** Give a fresh reviewer the render path/version, reference, quality
 rows and time range. The reviewer reports observations with song times and crops, not just a score or approval.
 Inspect every shot and section seam; separately watch travel, exchanges and caption transitions in motion. A
@@ -476,14 +495,16 @@ start (above, "Checkpoints don't block"); then build on what they approved.
      solver stays experimental, outside the kit;
    - `useSong()` and `grid`;
    - `Camera` and `cameraAt()`, `Drift`, `liveLine`, and the easing and `rng` helpers in `math`;
-   - `arm()` for every arm that reaches for something (with `head` and `body` for an arm drawn over them), and `toStage` and `toLocal` for hand targets (`briefs/assets.md`, rule 6).
+   - `arm()` for every arm that reaches for something (with `head` and `body` for an arm drawn over them), and `toStage` and `toLocal` for hand targets (`briefs/assets.md`, rule 6);
+     for figures that touch, the marks of `src/kit/bodycheck.tsx` (`data-figure`, `data-part`, `limbMarks()`,
+     `data-touch`, `data-view`) and `ShowFaults` for test tiles.
      A copy made by an older song2mv lacks them: copy `src/kit/math.ts` from a new `--template` folder (it imports
      nothing);
    - `data-face="WHO"` on the `<g>` of every head you draw and `data-over="WHAT"` on every bubble, sticky note or prop
      that comes in front of a figure (`briefs/assets.md`, rule 14), so that a video render can list a face covered or
      cut by the frame. The kit's `Person` and text carry the marks; a copy made by an older song2mv lacks
-     `src/kit/facecheck.tsx` (it imports `./song` only), its `FaceCheck` in `LyricVideo.tsx` and `LyricShort.tsx`,
-     and the marks;
+     `src/kit/facecheck.tsx` and `src/kit/bodycheck.tsx` (they import `./song` and each other only), the `FaceCheck`
+     in `LyricVideo.tsx` and `LyricShort.tsx`, and the marks;
    - the helpers that take their colours and shapes as props: `Hit`, `Flames`, `Lightning` and `Storm`, `Tears`,
      `Cash`;
    - how `effects.tsx` times its particles.
@@ -940,7 +961,9 @@ A video render prints the first time each arm drawn with the kit's `arm()` shows
 still prints neither. A video render also looks at every frame and prints, once for each line sung, the first time
 a face (`data-face`) is covered by a `data-over` element drawn after it (`face: WHO: covered by WHAT (LINE) at T s`),
 a face is cut by the frame's edge (`face: WHO: cut by the frame (LINE) at T s`) or text is
-(`text: WHAT: cut by the frame (LINE) at T s`). `(LINE, 9:16)` is the short, whose band shows the stage's middle
+(`text: WHAT: cut by the frame (LINE) at T s`), and, for figures marked as `src/kit/bodycheck.tsx` says, a bone
+longer than its rig, two parts that must touch drawn apart or a close-up off its standing rig's proportions
+(`limb: …`, `contact: … by N px`, `proportions: …`, each with `(LINE) at T s`). `(LINE, 9:16)` is the short, whose band shows the stage's middle
 74 % (x 250 to 1670): a head near the stage's side is cut there, and only a `VerticalScene` or `tall` framings clear it. A figure
 wholly off the frame says nothing. The time is the first frame the render met, within a second of the start. About
 21 of the 33 high-severity findings blind reviewers made in three Sonnet videos were a face covered or cut, and 4

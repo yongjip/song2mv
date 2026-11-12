@@ -5,6 +5,15 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 ## Unreleased
 
 ### Added
+- Contact between figures, measured as drawn. `arm()` and `limb()` return `short`, how far the hand stops short of a
+  target out of reach (the bones never stretch), and the `out of reach` line says it (`arm: WHO: out of reach by N px
+  at T s`). The kit's `bodycheck` reads new marks, `data-figure`, `data-part`, `data-touch="WHO: PART"`,
+  `data-view` and `limbMarks()`, and a video render prints three faults beside the `arm:` and `face:` ones: `limb:` (a
+  bone drawn over 10 % longer than its rig), `contact:` (two parts that must touch drawn apart, with the gap) and
+  `proportions:` (a close-up's part off the standing rig's, for its head, by over 10 %). `<ShowFaults>` writes them on
+  a still, and two kit gallery tiles show a hug posed by target and one out of reach. A family video's hugs were
+  rejected three times for exactly these (a gap between the bodies, a child's arms scaled up so her hands met, a
+  close-up at other proportions) after painters spent 100 to 180 render-and-look calls each setting joints by hand.
 - The skill, from a remake its user called creative: where a story's rule comes from (a metaphor in the lyrics about
   what the hero does, taken literally, which the first video had drawn once as a gag), asking of each scene what the
   rule makes happen there, a payoff that echoes its setup, and the break and the outro carrying the low point and the

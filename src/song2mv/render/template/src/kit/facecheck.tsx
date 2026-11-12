@@ -1,4 +1,5 @@
 import { useLayoutEffect } from "react";
+import { bodyFaults, faultKey } from "./bodycheck";
 import { Line, useSong } from "./song";
 
 type Box = { x0: number; y0: number; x1: number; y1: number };
@@ -31,7 +32,9 @@ const said = new Set<string>();
  * face (`data-face="WHO"`) under over 30 % of what shows of it from a `data-over="WHAT"` element after it (by its
  * half opaque shapes: a glow inside is no cover), `face: WHO: covered by WHAT (LINE) at T s`; a face the frame cuts,
  * 2 % to 70 % of it in view, `face: WHO: cut by the frame (LINE) at T s`; text the frame cuts, under 85 % in view,
- * `text: WHAT: cut by the frame (LINE) at T s`.
+ * `text: WHAT: cut by the frame (LINE) at T s`; and the faults of bodies marked for `bodyFaults` (a limb longer than its
+ * rig, a contact drawn apart, a close-up off the standing rig's proportions), `limb: …`, `contact: …` and
+ * `proportions: …`, each with `(LINE) at T s`. A fault's number (`by 34 px`) is not part of what is said once.
  */
 export function checkFrame(T: number, lines: Line[]) {
   const frame: Box = { x0: 0, y0: 0, x1: window.innerWidth, y1: window.innerHeight };
@@ -39,10 +42,10 @@ export function checkFrame(T: number, lines: Line[]) {
   for (const l of lines) if (l.words.length && l.words[0].t <= T) line = l.id;
   const where = `${line}${frame.y1 > frame.x1 ? ", 9:16" : ""}`;
   const say = (message: string) => {
-    const key = `${message} (${where})`;
+    const key = `${faultKey(message)} (${where})`;
     if (said.has(key)) return;
     said.add(key);
-    console.warn(`${key} at ${T.toFixed(2)} s`);
+    console.warn(`${message} (${where}) at ${T.toFixed(2)} s`);
   };
   const fronts = [...document.querySelectorAll("[data-over]")];
   for (const f of document.querySelectorAll("[data-face]")) {
@@ -64,6 +67,7 @@ export function checkFrame(T: number, lines: Line[]) {
     if (inside > 0 && inside < 1 - TEXT_CUT && e.textContent?.trim() && opaque(e))
       say(`text: ${e.getAttribute("data-over") || `"${e.textContent.trim().slice(0, 18)}"`}: cut by the frame`);
   }
+  for (const f of bodyFaults(document)) say(f);
 }
 
 /** Mount once inside the song's context: checks every frame the render draws */

@@ -83,7 +83,8 @@ their verdict on the hero's design sheet and the storyboard before builders star
    check; frame sheets and hashes do not prove natural motion.
 7. **Review before you deliver.** `check` does not see an arm folded into a V or a face cut at the eyes or covered (arms
    drawn with the kit's `arm()`, and heads and bubbles marked `data-face` and `data-over`, print their faults when
-   rendered: clear those first). Give the
+   rendered, and so do figures that touch, each hand posed by `arm()` to a point of the other figure, never by
+   scaling the arm, and marked as `src/kit/bodycheck.tsx` says: clear those first). Give the
    finished render to fresh agents with the skill's `briefs/review.md`, a stretch, a lens or a short each (at high and
    max every short from the first round), defects and appeal (where a viewer gets bored, whether the key moments
    land big) alike, as many as the quality level says, or review it yourself with that brief, crop

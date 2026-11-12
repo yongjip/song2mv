@@ -7,6 +7,7 @@ import {
 } from "./kit";
 import sample from "./sample-song.json";
 import { FaceAnchorComparison } from "./FaceAnchorDemo";
+import { HugInReach, HugOutOfReach } from "./HugDemo";
 
 /**
  * The kit's people, places and objects in use, to see what there is before designing scenes:
@@ -1904,6 +1905,8 @@ const TILES: { name: string; draw: (T: number) => React.ReactNode }[] = [
     name: "Face anchors: a turn with attached cheeks",
     draw: (T) => <FaceAnchorComparison T={T % 3} id="gallery-face-anchors" />,
   },
+  { name: "Reach by target: a hug, the hands where they reach", draw: () => <HugInReach /> },
+  { name: "Reach by target: out of reach, and a stretched arm caught", draw: () => <HugOutOfReach /> },
 ];
 
 const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNode }> = ({ x, y, k, children }) => (
@@ -1912,8 +1915,8 @@ const Tile: React.FC<{ x: number; y: number; k: number; children: React.ReactNod
   </div>
 );
 
-/** The overview's grid: 4 × 4 tiles, 5 across once there are more than 16 and 6 past 25, the rows centred on the frame */
-const COLS = TILES.length > 25 ? 6 : TILES.length > 16 ? 5 : 4;
+/** The overview's grid: 4 × 4 tiles, 5 across once there are more than 16, 6 past 25 and 7 past 36, the rows centred on the frame */
+const COLS = TILES.length > 36 ? 7 : TILES.length > 25 ? 6 : TILES.length > 16 ? 5 : 4;
 const TOP = (1080 - Math.ceil(TILES.length / COLS) * (1080 / COLS)) / 2;
 
 export const KitGallery: React.FC<{ T: number }> = ({ T }) => {

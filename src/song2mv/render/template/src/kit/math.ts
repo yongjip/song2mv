@@ -34,9 +34,11 @@ export function rng(seed: number) {
  * hanging arm's elbow goes; down and out from the body's side for an arm that also reaches up (`[-1, 1]` on the
  * picture's left); the way a figure faces for a knee. Where the target lies almost along `toward` from the root, the
  * joint slides through the straight line instead of jumping to the other side. A target out of reach stops `end` on
- * the way to it, the limb straight; one nearer than `upper − lower` leaves `end` past it, the limb folded. `reach`
- * is the target's distance over the limb's length (over 1: out of reach, an arm locked straight like a strap) and
- * `bend` the angle at the joint in degrees (180 straight; under about 80 the limb folds into a V).
+ * the way to it, the limb straight: the bones keep their lengths, never stretch. One nearer than `upper − lower`
+ * leaves `end` past it, the limb folded. `reach` is the target's distance over the limb's length (over 1: out of
+ * reach, an arm locked straight like a strap), `short` how far `end` stops short of the target, in the drawing's
+ * units (0 within reach), and `bend` the angle at the joint in degrees (180 straight; under about 80 the limb folds
+ * into a V).
  */
 export function limb(root: [number, number], target: [number, number], upper: number, lower: number, toward: [number, number] = [0, 1]) {
   const dx = target[0] - root[0], dy = target[1] - root[1];
@@ -50,7 +52,8 @@ export function limb(root: [number, number], target: [number, number], upper: nu
   const joint: [number, number] = [root[0] + ux * a - side * uy * h, root[1] + uy * a + side * ux * h];
   const end: [number, number] = [root[0] + ux * r, root[1] + uy * r];
   const cos = (upper * upper + lower * lower - r * r) / (2 * upper * lower);
-  return { joint, end, reach: d / (upper + lower), bend: (Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI };
+  return { joint, end, reach: d / (upper + lower), short: Math.max(0, d - upper - lower),
+    bend: (Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI };
 }
 
 /** Where a figure stands on the stage: its origin at x, y, drawn at scale s, mirrored when flip */
@@ -72,9 +75,12 @@ const armSaid = new Set<string>();
 
 /**
  * An arm from `shoulder` to the hand's `target` in a figure's own drawing, drawn as `limb` draws it (the same
- * `toward`) and checked. `faults` lists what a viewer would see wrong: with `holds` (the hand meets something at the
- * target: another hand, a prop), a target beyond the arm's length, out of reach (the hand stops short, the arm
- * straight like a strap; a hanging or outstretched arm is straight anyway); a joint under 75° with the elbow the arm's
+ * `toward`) and checked. This is how to pose a hand by where it must be: the target can be a point of another
+ * figure (its shoulder, its back, a hand to hold), brought into this one's drawing with `toLocal(toStage(p, other),
+ * me)`, and the bones keep the lengths given, so pass the rig's own lengths, never lengths scaled up until the hand
+ * arrives. `faults` lists what a viewer would see wrong: with `holds` (the hand meets something at the target:
+ * another hand, a prop, a back it hugs), a target beyond the arm's length, out of reach (the hand stops `short` of it,
+ * the arm straight like a strap; a hanging or outstretched arm is straight anyway); a joint under 75° with the elbow the arm's
  * highest point, above the shoulder (a hand at the mouth with the elbow up); a bone drawn under 90 % of its length,
  * where `limb` slides the elbow onto the line to a hand almost along `toward` or against it; with `head` (the skull's
  * centre and radius, hair above the ears included, for an arm drawn in front of it), the hand within 1.1 radii of its
@@ -82,7 +88,7 @@ const armSaid = new Set<string>();
  * hand on the body and the elbow inside it or less than half an upper arm under the shoulder (a mic grip, a phone or a
  * rope held against the chest), and laid across the body, more than 36 % of the arm's length over the torso's front
  * half (40 px of a 111 px arm: a forearm over the belly). With `who` (the piece's id and which arm) or `T` (the song time), each fault is logged the first time an arm
- * shows it, as `arm: WHO: FAULT at T s`, and `song2mv render --json` lists a video's under `warnings`; without either,
+ * shows it, as `arm: WHO: FAULT at T s` (`arm: WHO: out of reach by N px at T s`, N in the drawing's units), and `song2mv render --json` lists a video's under `warnings`; without either,
  * as when a piece works out where a hand is for a scene, nothing is logged.
  */
 export function arm(shoulder: [number, number], target: [number, number], upper: number, lower: number,
@@ -99,7 +105,8 @@ export function arm(shoulder: [number, number], target: [number, number], upper:
   for (const f of o.who === undefined && o.T === undefined ? [] : faults) {
     if (armSaid.has(`${who}: ${f}`)) continue;
     armSaid.add(`${who}: ${f}`);
-    console.warn(`arm: ${who}: ${f}${o.T === undefined ? "" : ` at ${o.T.toFixed(2)} s`}`);
+    const by = f === "out of reach" ? ` by ${Math.round(l.short)} px` : "";
+    console.warn(`arm: ${who}: ${f}${by}${o.T === undefined ? "" : ` at ${o.T.toFixed(2)} s`}`);
   }
   return { ...l, faults };
 }

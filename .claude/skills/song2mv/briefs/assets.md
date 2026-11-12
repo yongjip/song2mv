@@ -67,7 +67,15 @@ Section builders then film your pieces all through the song, so a weak piece sho
    adult's hanging hand is level with a toddler's head and bigger than hers, so the joined hands touch her hair unless
    the adult bends to bring them down to her shoulder: in one video they sat on the toddler's temple in every scene.
    Reaching round someone, the hands go to their back or under them, never to their shoulders or head, and a hug or
-   carry splits the figure into back and front layers so the far arm passes behind the other figure.
+   carry splits the figure into back and front layers so the far arm passes behind the other figure. Pose such a hand
+   by target, a point of the other figure (`toLocal(toStage(p, other), me)`), with your rig's own bone lengths: never
+   scale an arm up until the hands meet. Where `arm()` says out of reach, move the bodies (kneel the adult lower,
+   bring the child closer) or aim where the hand reaches. Mark both figures for `src/kit/bodycheck.tsx`:
+   `data-figure` on each layer, `data-part` on the parts, `limbMarks()` on each limb, `data-touch="WHO: PART"` on
+   each hand or torso that must touch, `data-view="close-up"` on a close-up drawn apart from the standing rig. A
+   family video's hugs were rejected three times for a gap between the bodies, a child's arms stretched to reach and
+   a close-up at other proportions; the render now prints each (`contact:`, `limb:`, `proportions:`). Wrap your test
+   tiles in `<ShowFaults>` and clear what it writes, with the close-up drawn beside the standing rig.
 7. **Hands read as hands:** a mitten with a thumb at least, never a plain disc or a cuff over a blob, and a hand that
    holds something closes on it. A hand drawn on a front layer takes its forearm with it, never a hand alone, and a
    forearm seen edge-on keeps at least half its width.

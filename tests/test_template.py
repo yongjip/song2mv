@@ -1,5 +1,6 @@
 """The bundled template rendered through render.mjs: needs Node, ffmpeg and `npm ci` in the template (CI's template job)."""
 import json
+import math
 import os
 import re
 import shutil
@@ -269,7 +270,7 @@ import React from "react";
 import { arm, Song } from "../kit";
 
 export const Scene: React.FC<{ T: number }> = ({ T }) => {
-  arm([0, 0], [T > 1.25 ? 150 : 60, 40], 50, 50, undefined, { holds: true, who: "probe right", T });
+  arm([0, 0], [T > 1.25 ? 150 + 20 * T : 60, 40], 50, 50, undefined, { holds: true, who: "probe right", T });
   arm([0, 0], [10, -20], 50, 50, [0, -1], { who: "probe left", T });
   console.warn("storyboard: the probe's board never cuts");
   return <rect width={1920} height={1080} fill="#203040" />;
@@ -296,7 +297,8 @@ def test_each_kit_warning_is_listed_once_from_every_tab_and_chunk(tmp_path):
     arms = [line for line in seen.read_text(encoding="utf-8").splitlines() if line.startswith("arm:")]
     left, right = sorted(arms)
     assert re.fullmatch(r"arm: probe left: folded into a V, elbow up at 0\.\d0 s", left), left
-    assert re.fullmatch(r"arm: probe right: out of reach at 1\.[3-9]0 s", right), right
+    # the shortfall grows every frame, and the fault is still said once
+    assert re.fullmatch(r"arm: probe right: out of reach by \d+ px at 1\.[3-9]0 s", right), right
     assert "storyboard: the probe's board never cuts" in seen.read_text(encoding="utf-8").splitlines()
     for said in ("probe left", "probe right", "probe's board"):
         assert r.stderr.count(said) == 1, r.stderr
@@ -940,9 +942,101 @@ console.log(JSON.stringify({
     # elbow level with the shoulder)
     assert out["reach"] == ["folded into a V, elbow up"]
     assert out["sleeper"] == out["lamp"] == out["drawing"] == []
-    assert out["said"] == ["arm: kid right: out of reach at 1.50 s", "arm: unnamed: out of reach at 3.00 s"]  # silent without who and T
+    assert out["said"] == ["arm: kid right: out of reach by 50 px at 1.50 s", "arm: unnamed: out of reach by 1 px at 3.00 s"]  # silent without who and T
     assert out["stage"] == [652, 640] and [round(v, 6) for v in out["back"]] == [30, -100]
 
+
+
+def test_arm_poses_a_hand_by_its_target_on_another_figure_and_never_stretches_the_bones(tmp_path):
+    # a family video raised its rig's arm scale to 1.7-1.9 so a child's hands could meet behind a neck: with the rig's
+    # own lengths the hand stops short and the fault says by how much
+    out = _probe(tmp_path, """
+import { arm, toLocal, toStage } from "KIT/math";
+const len = (a: number[], b: number[]) => Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) * 1000) / 1000;
+const r = (v: number[]) => v.map((x) => Math.round(x * 1000) / 1000 + 0);
+const adult = { x: 700, y: 800, s: 2 }, child = { x: 860, y: 800, s: 2, flip: true };
+const back = toLocal(toStage([-20, -120], adult), child);
+const shoulder: [number, number] = [5, -104];
+const f = (t: [number, number]) => {
+  const a = arm(shoulder, t, 27, 25, [0, 1], { holds: true });
+  return { end: r(a.end), upper: len(shoulder, a.joint), lower: len(a.joint, a.end), short: Math.round(a.short * 1000) / 1000, faults: a.faults };
+};
+console.log(JSON.stringify({ back: r(back), inReach: f([back[0] - 60, back[1] + 30]), outOfReach: f(back) }));
+""", {})
+    assert out["back"] == [100, -120]  # the adult's back in the child's own drawing, the child facing the other way
+    assert out["inReach"] == {"end": [40, -90], "upper": 27, "lower": 25, "short": 0, "faults": []}
+    far = out["outOfReach"]
+    assert far["upper"] == 27 and far["lower"] == 25 and far["faults"] == ["out of reach"]
+    assert abs(far["short"] - (math.hypot(95, 16) - 52)) < 1e-3  # stopped 44.3 short of the back, the arm straight
+
+
+BODY_SCENES = """
+import React from "react";
+import { Song, limbMarks } from "../kit";
+
+export const Scene: React.FC<{ T: number }> = ({ T }) => (
+  <svg width={1920} height={1080}>
+    <rect width={1920} height={1080} fill="#203040" />
+    {/* a standing rig: head 40, torso 80, arm 50 + 50 */}
+    <g data-figure="kid" transform="translate(200 300)">
+      <g data-face="kid"><circle r={20} fill="#e8b890" /></g>
+      <rect data-part="torso" x={-20} y={30} width={40} height={80} fill="#c55" />
+      <polyline {...limbMarks("right-arm", [[20, 40], [60, 70], [100, 40]], [50, 50])} points="20,40 60,70 100,40" fill="none" stroke="#c55" strokeWidth={8} />
+    </g>
+    {/* its close-up at 3 times the size: the torso 5 % longer for its head, the arm 40 % */}
+    <g data-figure="kid" data-view="close-up" transform="translate(600 300) scale(3)">
+      <g data-part="head"><circle r={20} fill="#e8b890" /></g>
+      <rect data-part="torso" x={-20} y={30} width={40} height={84} fill="#c55" />
+      <polyline data-part="right-arm" data-joints="20 40 62 96 104 40" points="20,40 62,96 104,40" fill="none" stroke="#c55" strokeWidth={8} />
+    </g>
+    {/* a close-up with no standing rig to compare */}
+    <g data-figure="ghost" data-view="close-up">
+      <circle data-part="head" cx={1800} cy={100} r={20} /><rect data-part="torso" x={1780} y={130} width={40} height={300} />
+    </g>
+    {/* limbs against their rig: a lower arm 20 % longer, one 8 % */}
+    <g data-figure="dad" transform="translate(1000 300)">
+      <polyline {...limbMarks("left-arm", [[0, 0], [30, 40], [90, 40]], [50, 50])} points="0,0 30,40 90,40" fill="none" stroke="#fff" strokeWidth={6} />
+      <polyline {...limbMarks("right-arm", [[0, 100], [30, 140], [84, 140]], [50, 50])} points="0,100 30,140 84,140" fill="none" stroke="#fff" />
+    </g>
+    <g data-figure="mum"><rect data-part="torso" x={1400} y={600} width={100} height={200} fill="#5c8" /></g>
+    <g data-figure="baby">
+      {/* a hand 2 px off the torso, then 30 px and more, further every frame */}
+      <circle data-part="hand" data-touch="mum: torso" cx={1512 + (T > 1 ? 28 + 10 * T : 0)} cy={650} r={10} fill="#fc9" />
+      {/* a torso pressed into hers, an arm whose round end overlaps it, a hand faded out, a hand on a part nobody drew */}
+      <rect data-part="torso" data-touch="mum: torso" x={1490} y={700} width={60} height={90} fill="#c55" />
+      <polyline data-part="arm" data-touch="mum: torso" points="1600,760 1508,760" fill="none" stroke="#fc9" strokeWidth={20} strokeLinecap="round" />
+      <circle data-part="far-hand" data-touch="mum: torso" cx={1600} cy={620} r={10} opacity={0.3} />
+      <circle data-part="grab" data-touch="mum: hand" cx={1300} cy={900} r={10} fill="#fc9" />
+    </g>
+  </svg>
+);
+export const VerticalScene = null;
+export const linesDrawnByScene = (_song: Song) => new Set<string>();
+"""
+
+
+def test_a_limb_longer_than_its_rig_a_contact_drawn_apart_and_a_close_up_off_its_rig_are_listed_once(tmp_path):
+    # a family video was rejected three times for these: a child's arms drawn longer than her rig, a hug with a gap
+    # between the bodies, a close-up drawn apart from the standing rig at other proportions
+    seen = tmp_path / "warnings.txt"
+    subprocess.run(["node", "render.mjs", os.path.join("src", "sample-song.json"), "--from", "0", "--to", "2", "--draft",
+                    "--out", str(tmp_path), "--warnings", str(seen)],
+                   cwd=_arm_template(tmp_path, BODY_SCENES), env={**os.environ, "SONG2MV_CHUNK": "10"}, check=True,
+                   capture_output=True, text=True)
+    lines = [line for line in seen.read_text(encoding="utf-8").splitlines() if line.startswith(("limb:", "contact:", "proportions:"))]
+    said = [re.fullmatch(r"(.+?) \((\S+)\) at \d\.\d0 s", line) for line in lines]
+    assert all(said), lines
+    keys = [(re.sub(r" by \d+ px", "", m.group(1)), m.group(2)) for m in said]
+    assert len(set(keys)) == len(keys), "each is listed once for each line, however far apart the hand moves"
+    faults = sorted({m.group(1) for m in said})
+    apart = [f for f in faults if f.startswith("contact: baby: hand:")]
+    assert len(apart) == 1 and re.fullmatch(r"contact: baby: hand: apart from mum: torso by (\d+) px", apart[0]), faults
+    assert int(re.search(r"by (\d+) px", apart[0]).group(1)) >= 30
+    assert [f for f in faults if f not in apart] == [
+        "contact: baby: grab: no mum: hand drawn",
+        "limb: dad: left-arm: lower bone longer than its rig by 20 %",
+        "proportions: kid: close-up right-arm longer than the standing rig's by 40 %",
+    ]
 
 
 def test_arm_with_a_body_reports_an_arm_folded_or_laid_across_it(tmp_path):
