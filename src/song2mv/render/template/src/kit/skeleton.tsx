@@ -65,6 +65,8 @@ export type Pose3 = {
   at: V3; yaw?: number; lift?: number; crouch?: number; lean?: number; twist?: number; bend?: number;
   headYaw?: number; headPitch?: number; headRoll?: number;
   hands: { l: V3; r: V3 }; elbows?: { l?: V3; r?: V3 }; palms?: { l?: V3; r?: V3 };
+  /** the way the fingers point when the wrist bends (a hand that grips turns at the wrist); unset, they carry on the forearm's line */
+  fingers?: { l?: V3; r?: V3 };
   feet: { l: Foot3; r: Foot3 }; knees?: { l?: V3; r?: V3 };
 };
 
@@ -131,8 +133,10 @@ export function handFrame(joint: V3, end: V3, palm: V3, fallback: V3, handLength
 export function handViewOf(h: Frame3, c: Camera): HandView {
   const toCam = toCamera(h.o, c);
   const palm = dot(h.f, toCam), tips = dot(mul(h.u, -1), toCam);
-  if (tips > 0.75) return "tips";
-  if (tips < -0.75) return "wrist";
+  // end-on only within about 25 degrees of the line of sight: further off, a palm or back drawing shortened along the
+  // fingers stays the same hand; at 41 degrees the swap to an end-on drawing shrank an open hand 40 % in one frame
+  if (tips > 0.9) return "tips";
+  if (tips < -0.9) return "wrist";
   return palm > 0.45 ? "palm" : palm < -0.45 ? "back" : "edge";
 }
 /** How long a bone a-z of length l looks on the stage, over its length seen side-on at its middle's depth */
@@ -185,7 +189,8 @@ export function pose3(b: Build, p: Pose3, c: Camera) {
     const sh = shoulder(s);
     const pole = p.elbows?.[s] ?? add(add(add(sh, mul(chest.r, sideOf(s) * 0.5)), mul(chest.u, -0.6)), mul(chest.f, -0.4));
     const ik = twoBone(sh, p.hands[s], pole, b.upperArm, b.forearm);
-    const hand = handFrame(ik.joint, ik.end, p.palms?.[s] ?? mul(chest.r, -sideOf(s)), chest.f, b.hand);
+    const bent = p.fingers?.[s];
+    const hand = handFrame(bent ? sub(ik.end, norm(bent)) : ik.joint, ik.end, p.palms?.[s] ?? mul(chest.r, -sideOf(s)), chest.f, b.hand);
     return { shoulder: sh, elbow: ik.joint, wrist: ik.end, short: ik.short, hand, fingers: mul(hand.u, -1) };
   };
   const foot = (s: Side) => {

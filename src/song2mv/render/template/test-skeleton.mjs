@@ -63,6 +63,19 @@ const reach = S.pose3(B, stand(0, { l: [0.1, 0.55, 0.3], r: [-0.1, 0.55, 0.3] })
 assert.ok(reach.arm("l").foreRatio < 0.45, `reaching forearm ratio ${reach.arm("l").foreRatio}`);
 assert.ok(S.pose3(B, stand(), cam).arm("l").foreRatio > 0.85);
 
+// a bent wrist points the fingers where asked, whatever the forearm does
+const bent = S.pose3(B, { ...stand(), fingers: { l: [0, 1, 0] } }, cam).world.arms.l.hand;
+assert.ok(S.dot(S.mul(bent.u, -1), [0, 1, 0]) > 0.999, "fingers follow the wrist bend");
+// a hand turns end-on ("tips") only within about 25 degrees of the line of sight: 35 degrees off it keeps its drawing
+const pointing = (deg) => {
+  const r = (deg * Math.PI) / 180, sh = S.pose3(B, stand(), cam).world.arms.l.shoulder;
+  const toCam = S.norm(S.sub(cam.eye, sh)), side = S.norm(S.cross(toCam, [0, 1, 0]));
+  const dir = S.norm(S.add(S.mul(toCam, Math.cos(r)), S.mul(side, Math.sin(r))));
+  return S.pose3(B, { ...stand(), hands: { l: S.add(sh, S.mul(dir, 0.215)), r: [-0.12, 0.33, 0] } }, cam).arm("l").handView;
+};
+assert.equal(pointing(10), "tips");
+assert.notEqual(pointing(35), "tips");
+
 // a foot flat on the floor never shows its sole to a camera above the floor; tipped heel-up toward the camera it does
 assert.notEqual(S.pose3(B, stand(), cam).leg("l").footView, "sole");
 const kick = stand(Math.PI);

@@ -472,19 +472,20 @@ Show the sheet with the beat sheet and the storyboard. When the user is there, l
 start (above, "Checkpoints don't block"); then build on what they approved.
 
 **Decide per shot how a character is built, and draw the sheet for it.** A test built three shots both ways from one
-brief and had them reviewed blind (`experiments/hybrid-figure/PARTS-AND-VIEWS.md` in the repository). Where a
-character moves toward or away from the camera, is lifted, or the camera looks down or up at it, pose it on the kit's
-3D `skeleton` (`VIEWS.md` in the template): on a flat rig with whole-body pose drawings, a toddler running at the
-camera had legs like tubes and her hands grew 30 % in one frame where the run drawings handed over to the stop, both
-high severity; on the skeleton only low faults remained and hand position jumps fell from 18 to 0. Where a character
-walks side-on or in three-quarter view at a steady distance, keep a flat rig with a torso drawn for that view: there
-the skeleton's torso drawn as rings read as facing front, each arm's round end a cap on the chest. Either way, draw
-per part and per view on one grid: heads in each view the shots need (up and down too under a high or low camera);
-hands open, fist, holding and pointing, palm, back and edge, at one palm width (a grip drawn smaller than the open hand
-shrank 40 % in one frame although the skeleton held its size); shoes top, toe, side and heel; a structured torso per
-view with the sleeve tops flowing from the shoulders and the straps over them; limbs with shape, since plain tapered
-limbs raised toward a high camera read as sticks. A figure crossing the frame in perspective turns by itself (one
-head snapped to profile mid-walk): hold its view for the shot or put the swap on a beat.
+brief, had them reviewed blind, fixed each once and measured again (`experiments/hybrid-figure/PARTS-AND-VIEWS.md` in
+the repository). Never swap whole-body pose drawings inside a shot: a toddler running at the camera had legs like
+tubes and her hands grew 30 % in one frame where the run drawings handed over to the stop, both high severity, and one
+continuous rig across the hand-over removed both, in 2D as in 3D (hand pops in the run fell from 27 to 0). Where the
+shot has depth (a camera above or below, a character coming toward or going away from it, a lift), make that rig the
+kit's 3D `skeleton` (`VIEWS.md` in the template): only it showed the crown of a head under a high camera, a knee
+coming at the camera and a hold under the arms, at about 1.4 times the tokens. Side-on or in three-quarter view at a
+steady distance, a 2D rig is as good and cheaper. Either way, draw per part and per view on one grid: heads in each
+view the shots need (up and down too under a high or low camera); hands open, fist, holding and pointing, palm, back
+and edge, at one palm width (an open hand drawn bigger than the grip shrank 40 % in one frame); shoes top, toe, side
+and heel; a structured torso per view with the shoulders in its outline and the straps over them (an arm's round end
+on a torso without them read as a cap on the chest, the arm stuck on); limbs with shape, since plain tapered limbs
+raised toward a high camera read as sticks. A figure crossing the frame in perspective turns by itself (one head
+snapped to profile mid-walk): hold its view for the shot or put the swap on a beat.
 
 **Then get the pieces, in this order:**
 
