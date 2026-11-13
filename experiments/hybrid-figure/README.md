@@ -59,6 +59,12 @@ Walking stops at the end of its short authored path. Dance is a finite study, no
 
 The tests check fixed bone lengths, foot support, deterministic seeking, BPM input and the front-view drawing boundary. They do not certify attractive or natural motion. Inspect the rendered head turns, grips, complete actions and cuts before using this study in a finished video.
 
+## A test against whole-body pose drawings
+
+`PARTS-AND-VIEWS.md` reports a blind A/B test of three shots: a flat rig with whole-body pose drawings against a 3D
+skeleton with heads, hands and feet drawn per view. Its dependency-free skeleton is now in the video template's kit
+(`skeleton`, `VIEWS.md`).
+
 ## Contribute or simplify
 
 Open a PR with one small change and its reproduction command. Include before/after frames or a short clip as a PR attachment, not as a repository media file. State the action, camera, time and expected behavior. Run the checks above. Improvements to depth, artwork, support, contacts and packaging are welcome. Removing an unsuccessful preset or reducing this experiment is welcome too.

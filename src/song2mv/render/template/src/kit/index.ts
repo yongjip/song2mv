@@ -58,6 +58,9 @@ export * from "./sprite-parts";
 
 export * from "./puppet-clean-art";
 
+// A 3D skeleton whose parts are drawn per view (experimental, VIEWS.md): skeleton.pose3, skeleton.OneOutline …
+export * as skeleton from "./skeleton";
+
 export * from "./puppet-motion";
 
 export * from "./face-anchors";

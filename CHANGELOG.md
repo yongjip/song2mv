@@ -5,6 +5,14 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 ## Unreleased
 
 ### Added
+- A 3D skeleton for characters, drawn per part and per view: the kit's `skeleton` (`pose3`, `freeArm`, `gait`,
+  `strides`, `steady`, `OneOutline`, `hullOf`), documented in the template's `VIEWS.md`, with `test-skeleton.mjs` in
+  `npm run test:assets`. Joints are posed by hand and foot targets with fixed bones, seen through a camera; heads,
+  hands and feet take the drawing for their view at the size their depth gives. In a blind test of three shots built
+  both ways (`experiments/hybrid-figure/PARTS-AND-VIEWS.md`), a toddler running toward the camera lost the flat
+  build's two high-severity faults (tube legs, a 30 % hand pop at the run-to-stop hand-over) and hand position jumps
+  fell from 18 to 0; a three-quarter adult walk was better on the flat rig with a torso drawn for the view. The skill
+  says which way to build each shot and what to draw per view.
 - Contact between figures, measured as drawn. `arm()` and `limb()` return `short`, how far the hand stops short of a
   target out of reach (the bones never stretch), and the `out of reach` line says it (`arm: WHO: out of reach by N px
   at T s`). The kit's `bodycheck` reads new marks, `data-figure`, `data-part`, `data-touch="WHO: PART"`,
