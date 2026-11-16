@@ -184,7 +184,11 @@ artifact and fixing the first cause; it requires no external skill installation.
   is about real people (a family, a couple), ask whether they would share a photo or a short clip: one user's family
   photo and a clip of their toddler running gave the characters their hair and clothes and the run into the reunion,
   and made the video theirs. Take the look and the movement in the video's own style, not a portrait, and leave the
-  files where the user put them: never in a repository or anything published.
+  files where the user put them: never in a repository or anything published. Show only what the lyrics name or the
+  user says really happens, and ask for more when a scene sits still: in one family video the hugs held still under
+  that rule until the user called them static and, asked what they really do, named rocking and back pats both ways,
+  then added a spin and a lift they had not ticked, and later corrected a grip (two fingers, not one). A
+  multiple-choice answer is not the full list: keep asking as the scenes come up.
 - **The quality level** (the table at the top): high, unless the user asks for another. Say which with the concepts;
   don't wait for an answer.
 
@@ -417,7 +421,10 @@ and any kit changes into it.
 - **One main character or motif** that carries through the whole song and changes with it. A video with a
   protagonist is more watchable than a slideshow of effects.
 - **Characters and continuity.** Give each character an age, and draw its proportions from it (`briefs/assets.md`
-  lists them: a toddler is about half an adult's height, with about 2 heads fewer). Then a table, section by section:
+  lists them: a toddler is about half an adult's height, with about 2 heads fewer). Put the cast side by side on the
+  sheet at the scale the scenes use and check one against another: in one family video no review named the toddler's
+  size against her father's until the user found her too big after many rounds; at 85 % her head came to about 0.75
+  of his. Then a table, section by section:
   what each one wears and carries (a bag, a toy, shoes on or off), where they are, the time of day. Builders and
   reviewers check every board against it. Give the light a row of its own, like a prop, with what changes it on
   screen: where the story's rule says what brings the morning, the sky never brightens by itself. In one remake a
@@ -486,6 +493,16 @@ and heel; a structured torso per view with the shoulders in its outline and the 
 on a torso without them read as a cap on the chest, the arm stuck on); limbs with shape, since plain tapered limbs
 raised toward a high camera read as sticks. A figure crossing the frame in perspective turns by itself (one head
 snapped to profile mid-walk): hold its view for the shot or put the swap on a beat.
+
+**Pose the body in the world before you draw a part of it.** A drawing made for one view carries that view's pose
+into another. One video's last shot looked down into a cot and reused the side view's sleeper: her face looked up at
+the camera (on her back), while her curled body and an arm dropping from a raised shoulder said she lay on her side,
+and the hand, its thumb hidden, read as the other hand. The user asked whether she was on her side and said no child
+could sleep like that. It took six sample renders of one ten-second shot: a 2D rig's arm, whose bones lie in the
+picture's plane, laid flat from above as a long tube, then a bend, a hand alone, a one-off drawing from above, and
+last the fix. Decide first how the body lies or stands (ask the user when it is their child), then draw every part
+for it: on her back, the near arm lies flat out to the side, palm up, the thumb toward her head and in sight, so the
+hand reads as the right one.
 
 **Then get the pieces, in this order:**
 
@@ -1063,6 +1080,9 @@ defects after every check had passed, such as arms folded into a V and faces cut
   before the render. In one video 4 of a character's 6 fixes in a round, and 2 of another's, waited on such a pass.
 - Without agents of your own, review it yourself with the same brief once the build is done, a stretch at a time,
   every crop as if someone else had drawn it, or ask the user to give the brief to a second session.
+- Check every fix yourself in consecutive frames of the new render, beside the same frames of the old one, before
+  you report it fixed. A fixer's report is a claim: in one video two fixes reported done were not in the render (a
+  face sliding during a lift, its crops identical to the render before, and a far hand still a waving pad).
 
 **Passing is necessary, not proof of fun.** After the numbers pass, send the user a clip of the full render and ask
 what is boring. Their answer outranks the check. One video passed 10/10 after four review rounds and about 150 fixes
@@ -1073,13 +1093,25 @@ defects.
 
 ## 6. Shorts (9:16)
 
-Pick 10–35 s around the hook (usually the first chorus), in the song map before the build (step 3), so the builder
+Pick each short's stretch (the set and its lengths are below; the hook is usually the first chorus) in the song map
+before the build (step 3), so the builder
 of that stretch frames it. The first two seconds decide whether people stay: start on the hit and use `--hold` so the
 first frame shows the payoff fully drawn; check it with `--still` at from + hold.
 
 ```bash
 song2mv render <work>/mv.json --template <work>/video --from <hit> --to <+33> --aspect 9x16 --hold <s>
 ```
+
+**Several shorts per song, not one.** One channel's viewers watched its shorts and rarely opened the full video;
+that is the usual case, so treat the shorts as what most people see. For one song the user approved a set, all cut
+from the finished 9:16 render without a new render: a climax short of 45–60 s (from the end of a verse through a
+whole chorus), two or three of 15–40 s with one moment each, and the whole song as a vertical short, under YouTube's
+3-minute limit (a 4-minute song was cut to 2:52 by joining the audio on a downbeat and holding the picture for five
+frames up to its next cut; send the join to the user as an ear check). Each opens on a shot's first frame with no
+title card and ends where it can loop. Spread them over one to two weeks, scheduled for the audience's evening (for
+English-speaking viewers in the US, 09:00 in Korea is 19:00 on the US East Coast; 19:00 in Korea is 05:00 there).
+Which length keeps viewers is not measured yet: compare "viewed vs. swiped away" and the average percentage viewed in
+YouTube Studio.
 
 A short fades picture and sound out over its last 0.5 s (`FADE_OUT`): end it with `--to` at least that long after
 its last action is over. Over the 0.8 s it used to take, one short's exit gag went dark before it finished.

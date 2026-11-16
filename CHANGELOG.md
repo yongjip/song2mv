@@ -5,6 +5,11 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 ## Unreleased
 
 ### Added
+- The skill, from a family video taken to upload: ask the user what really happens when a scene sits still; set
+  the cast side by side at scale; pose the body in the world before drawing a part of it (a cot shot from above
+  that reused the side view's sleeper took six sample renders); check every reported fix in consecutive frames;
+  and a set of shorts per song (a climax short, moment shorts, the whole song as a vertical short under 3 minutes),
+  spread over one to two weeks and scheduled for the audience's evening.
 - A 3D skeleton for characters, drawn per part and per view: the kit's `skeleton` (`pose3`, `freeArm`, `gait`,
   `strides`, `steady`, `OneOutline`, `hullOf`), documented in the template's `VIEWS.md`, with `test-skeleton.mjs` in
   `npm run test:assets`. Joints are posed by hand and foot targets with fixed bones, seen through a camera; heads,
