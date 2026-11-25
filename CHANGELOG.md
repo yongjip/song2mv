@@ -5,6 +5,13 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 ## Unreleased
 
 ### Added
+- The skill: understated songs and energetic ones are made differently, a rule a user set after a 3D video's emotion
+  pass. Write the song's emotion in one line before the storyboard; an understated song holds shots 5–8 s on small
+  acting slow enough to read (a quick one looks like a hiccup), with few events and the face in view at each
+  reaction, and sets its sections to calm in `song.json`, which the planner, the flashes and `check` already follow
+  (no cut asked for every 6 s, a stillness floor of 0.25), so no new setting was needed. The review and section
+  briefs say so. A render lock that agents share should serve them in turn, with a lane for short checks: one that
+  waiters polled at random kept a six-still check waiting 2 h 20 min.
 - The kit's `Footage`: frames rendered elsewhere (Blender, another engine), encoded as one video, shown at song time
   `T` under the template's captions, frame round(T × 30) in every render, a draft (10 fps) and a short's `--from` and
   `--hold` included. Two 3D videos each wrote it by hand, rounded to whole render frames, which put a draft one song

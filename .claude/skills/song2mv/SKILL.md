@@ -381,8 +381,9 @@ and once it was online the user called it well made and creative:
   job far away needs exactly that gift, and the town she left stays starless without her.
 - **Scenes that play out.** One place per scene, several shots in it (wide for the place and spectacle, medium for
   action, close for faces), and the lyric map's events happen inside the scene on their words, each with someone
-  reacting. The remake had nine places in 2:40. A shot held more than about 2 s needs a beat inside it: a hero
-  sitting still at a bus stop for 4.3 s was a high finding, fixed with a drip he flinches at and a bus splashing past.
+  reacting. The remake had nine places in 2:40. In an energetic song a shot held more than about 2 s needs a beat
+  inside it: a hero sitting still at a bus stop for 4.3 s was a high finding, fixed with a drip he flinches at and a
+  bus splashing past. An understated song holds longer, on small acting (below).
 - **The title line gets its moment:** a beat of its own, close on the faces, its words big across the frame in both
   aspects, held until the next beat lands beside them.
 - **The rival acts** in every scene it is in (it dances, takes the hero's place, wins a round) and gets its
@@ -408,8 +409,23 @@ story's rule makes happen on those words. In the lamplighter example above, a ch
 and the dark, acted out, shows stars, a ladder and a dark sky on their words; driven by the rule, each lamp she lights
 on its word calls its star out, and the stars stop at the edge of the street the rival's bulb lights.
 
-Write it as a beat sheet, `<work>/story.md`: a logline, the rule, the cast, and per scene its lines, each with its
-shot and what happens; end it with the list above, each point with the beats that meet it. Then draw a rough
+**Understated or energetic: the song's emotion decides.** Write the song's emotion in one line before the
+storyboard, and decide from it. An energetic song keeps big moves on the beat, as above. An understated one
+(tiredness easing on the way home, a quiet fondness) holds its shots 5–8 s instead of cutting on the beat, acts
+small (a breath in the chest, shoulders dropping, half-lidded eyes, a slow blink), has few events and keeps the face
+in view at every reaction; what the face cannot do, the camera does, holding still, keeping its distance or pushing
+in slowly. Small acting reads only slow and held long enough: a quick one looks like a hiccup. One 3D video of a
+quiet song was first cut on the beat, 55 cuts 3.6 s apart on average, with many events, a hero who barely acted and
+his face cut by the frame as he reacted; asked whether it carried the song's subtle feeling, the lead judged that
+it half did. Its emotion pass merged the beat cuts into holds of 5–8 s, gave the hero those small moves, let a few
+seconds stand almost still at the song's quietest line and dropped inserts and decorations, and the user made it the
+rule for every understated song. Set such a song's sections to calm with `section_kinds` in `song.json`, then run
+`song2mv sync <work>/song.json --from build`: the planner holds slow shots there, no white flash opens them, and
+`check` stops asking for a cut every 6 s and lets a line be as still as 0.25.
+
+Write it as a beat sheet, `<work>/story.md`: the song's emotion in one line, a logline, the rule, the cast, and per
+scene its lines, each with its shot and what happens; end it with the list above, each point with the beats that
+meet it. Then draw a rough
 storyboard, a frame per beat, and show both to the user with the hero's design sheet (below). The lyric map still
 holds: its events land on their key words, inside the scenes. A song with wordplay in every other line still wants a
 frame that takes a new picture per line (above); a song that tells a story wants scenes.
@@ -632,7 +648,9 @@ A copy is `<work>/video` copied to `<work>/video-<name>/` without `node_modules`
 `package-lock.json` differs from this song2mv's, it installs its own, about 500 MB). Each agent renders only in its own
 copy, since one half-edited file breaks every render that bundles it. Their drafts may render at the same time while
 memory lasts (one render takes about 2.3 GB); a full-size render runs alone (step 5). Nine agents rendering at once
-on a 12-core, 24 GB Mac stretched one minute-long draft to 25 minutes: run that many in two waves.
+on a 12-core, 24 GB Mac stretched one minute-long draft to 25 minutes: run that many in two waves. If agents share
+renders through a lock, let it serve them in turn, with a lane for short checks: one video's lock, which waiters
+polled at random, kept a check of six stills waiting 2 h 20 min behind long renders.
 
 **Plan the cuts with the kit; don't write cut logic.** In five trial videos every agent wrote 750–1200 lines of scene
 code and rebuilt the same cut machinery, and one lost half an hour iterating cut plans against `check`. The kit has it:

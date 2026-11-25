@@ -61,7 +61,10 @@ their verdict on the hero's design sheet and the storyboard before builders star
    different art styles, as stills side by side, and pick one; the skill's step 3 lists what the user judged fun
    (reactions, faces in view, a frame that makes the everyday an event). Before the build, plan a story, not a
    picture per line: a beat sheet on one rule the story hangs on, scenes that play out with reactions, the title
-   line's own moment, a rival that acts. Draw the hero's design sheet in the look the user asks for, its head turns as
+   line's own moment, a rival that acts. Write the song's emotion in one line first: an understated song holds its
+   shots 5–8 s on small acting slow enough to read (a breath, shoulders dropping, a slow blink), with few events and
+   the face in view at each reaction, its sections set to calm in `song.json` so `check` does not ask for a cut every
+   6 s; an energetic one keeps big moves on the beat. Draw the hero's design sheet in the look the user asks for, its head turns as
    drawn views a turn snaps between, never a face sliding over the head; show it with a rough storyboard. One video
    passed every check and four review rounds and was rejected for a hero that wasn't cute, a sliding head turn and a
    dull story, none of which the user had seen before the build. Play the storyboard at the song's speed, and let

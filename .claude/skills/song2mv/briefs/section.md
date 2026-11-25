@@ -62,7 +62,8 @@ file is merged into `<work>/video/` at the end. Read first, in this order:
 - **Who is in front.** Where figures touch, the one in front is drawn later: in a hug or a carry, the smaller figure
   goes between the other's back and front layers, never under a whole figure, whose arm then lies across its face.
 - TODO: what is special about this song, such as "the tempo drifts: time motion by line and word times, not
-  `grid.pulse` or bars".
+  `grid.pulse` or bars", or "the song is understated: hold shots 5–8 s, act small and slowly enough to read (a
+  breath, shoulders dropping, a slow blink), few events, the face in view at each reaction".
 
 ## Render and check your stretch
 

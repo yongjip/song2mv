@@ -62,7 +62,9 @@ watching?
    character less cute than on its design sheet; a shot held more than about 2 s with nothing happening, or cut too
    fast to read; a beat with no reaction, or a mild one; a gag that doesn't land; a dark, grey or muddy picture, or a
    wash that changes the hero's colour; the same framing again, in 9:16 too. Name the moment and say what would fix
-   it.
+   it. In an understated song (`<work>/story.md` gives the song's emotion) a hold of 5–8 s on small acting is the
+   design, not a dull shot: report small acting too quick or too small to read, which looks like a hiccup, a face out
+   of view as someone reacts, and cuts or events that crowd the quiet.
 7. **Text and 9:16.** Captions hard to read, text cut off or outside a short's safe box, a short's subject under the
    captions or the apps' buttons; a short whose first frame doesn't hold you, or whose last action is lost in the end
    fade. Plain ground below y 1248 of a short is expected: the apps' buttons sit there.
