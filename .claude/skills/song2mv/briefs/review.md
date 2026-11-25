@@ -46,7 +46,10 @@ watching?
      no hand on it, a knot that ties itself, a lid that shuts while nobody touches it.
    - Clothes, props or the time of day against the continuity table or the shot before; a sky that brightens or
      darkens with nothing in the story to change it.
-   - A hand-over nobody sees; a prop in front of the wrong figure.
+   - A change nobody sees: a prop changes hands, a character turns up somewhere else or in other clothes, or what
+     clung to them is gone, and no shot shows it happen, or it happens behind a body or too small to read. In one
+     video the user found three in the first full draft: one between two shots, two inside shots, out of sight.
+   - A prop in front of the wrong figure.
 4. **Motion.** A pose that snaps in one frame; a turn from facing us to side-on with no in-between; a face that slides
    across a head as it turns, or an eye squashed to a sliver on its outline; a figure that jumps across the stage
    between two frames of one shot; a peak (a leap, a reveal) cut in half by a cut, so it is never seen moving;
@@ -88,7 +91,8 @@ Use your own folder for every file, `<work>/review/<your stretch>/` (called `DIR
 
 With one lens, take the whole video instead of a stretch, and spend the time where the lens needs it:
 - **bodies** and **framing:** step 2 in every shot, at its first and its tightest frame (a shot's drift pushes in);
-- **continuity:** a list of what each character wears and carries in every shot, against the table;
+- **continuity:** a list of what each character wears and carries in every shot and where, against the table, and
+  for each change between two shots the shot that shows it;
 - **motion:** step 3 at every cut, pose change, head turn and hand-over;
 - **story:** a `--lines` sheet of every line id (a frame in each line's last word), then `--times` at a key word's
   time from `<work>/mv.json` where the picture looks missing or late;

@@ -20,6 +20,8 @@ export * from "./vehicles";
 export * from "./effects";
 export * from "./camera";
 export * from "./font";
+// Frames rendered elsewhere (Blender, another engine), as one video played at song time
+export { Footage } from "./footage";
 export { FaceCheck } from "./facecheck";
 export { ShowFaults, bodyFaults, gapBetween, limbMarks } from "./bodycheck";
 // Cut planning and storyboards: shots and boards whose cuts pass `song2mv check`

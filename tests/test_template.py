@@ -353,6 +353,54 @@ def test_a_face_the_frame_cuts_or_a_thing_in_front_covers_is_listed_once(tmp_pat
     assert len({m.group(1, 2) for m in said}) == len(said), "each is listed once for each line"
 
 
+FOOTAGE_SCENES = """
+import React from "react";
+import { Footage, Song } from "../kit";
+import frames from "./frames.mp4";
+
+export const Scene: React.FC<{ T: number }> = ({ T }) => <Footage src={frames} T={T} first={31} last={90} />;
+export const VerticalScene = null;
+export const linesDrawnByScene = (_song: Song) => new Set<string>();
+"""
+
+
+def _bars(n: int) -> np.ndarray:
+    """A 320×180 frame that shows n in eight bars, the highest bit first: white for 1, black for 0"""
+    bits = np.array([(n >> (7 - b)) & 1 for b in range(8)], np.uint8) * 255
+    return np.repeat(bits, 40)[None, :].repeat(180, axis=0)
+
+
+def _read_bars(mp4: str) -> list[int]:
+    """The number every frame of a video shows in its bars, read in a band above the captions"""
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", mp4, "-fps_mode", "passthrough", "-vf", "scale=320:180,format=gray",
+                          "-f", "rawvideo", "-"], check=True, capture_output=True).stdout
+    band = np.frombuffer(raw, np.uint8).reshape(-1, 180, 320)[:, 70:110].astype(float)
+    bits = band.reshape(len(band), 40, 8, 40)[:, :, :, 10:30].mean(axis=(1, 3)) > 128
+    return [int("".join("1" if b else "0" for b in row), 2) for row in bits]
+
+
+def test_footage_shows_the_frame_of_its_song_time_in_a_render_and_a_draft(tmp_path):
+    # song frames 31–90 (1.03–3 s) as a 30 fps video without B-frames whose frame k shows k: from 0.5 s, a draft's
+    # 0.1 s grid falls between its frames
+    template = _arm_template(tmp_path, FOOTAGE_SCENES)
+    subprocess.run(["ffmpeg", "-v", "error", "-f", "rawvideo", "-pix_fmt", "gray", "-s", "320x180", "-r", "30", "-i", "-",
+                    "-c:v", "libx264", "-crf", "12", "-bf", "0", "-g", "30", "-pix_fmt", "yuv420p",
+                    str(template / "src" / "scenes" / "frames.mp4")],
+                   input=np.stack([_bars(k) for k in range(60)]).tobytes(), check=True, capture_output=True)
+    song = json.loads((template / "src" / "sample-song.json").read_text(encoding="utf-8"))
+    (template / "src" / "footage.json").write_text(json.dumps({**song, "flashes": [], "vignette": False}), encoding="utf-8")
+    manifest = tmp_path / "wrote.txt"
+    for extra in ([], ["--draft"]):
+        subprocess.run(["node", "render.mjs", os.path.join("src", "footage.json"), "--from", "0.5", "--to", "4",
+                        "--out", str(tmp_path), "--manifest", str(manifest), *extra],
+                       cwd=template, check=True, capture_output=True)
+    full, draft = (_read_bars(mp4) for mp4 in manifest.read_text(encoding="utf-8").split())
+    # song time 0.5 + i / 30 up to 3.5 s, where the fade-out starts: the first frame held before it, the last after it
+    assert full[:90] == [min(max(15 + i, 31), 90) - 31 for i in range(90)]
+    # a draft (10 fps) shows the full render's frame at the same song time
+    assert draft[:30] == full[:90:3]
+
+
 WIDE_SCENES = """
 import React from "react";
 import { Board, Song, Storyboard } from "../kit";

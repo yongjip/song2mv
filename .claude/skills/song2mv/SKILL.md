@@ -67,6 +67,15 @@ the cost. One user switched a remake from max to high, with Opus for every agent
 run had 5 painters, one fresh reviewer of their galleries and fit tiles, 4 builders, 6 reviewers in round one (three
 stretches, the characters, two shorts) and 4 in round two, each checking the fixes and looking anew; round two still
 found 7 high-severity findings, all fixed before delivery.
+An agent pays for its whole context on every call, since each tool call reads the conversation so far again. In one
+3D video the section builders ended at 280–370k tokens of context (scene scripts of 700–900 lines, a shared notes
+file of 760, review images, render logs), so the check, fix and render-again loop at the end of each run cost the
+most: one builder of 46–65 calls took an estimated 1–1.5 % of the user's weekly limit, five builders 6 %, three
+fixers 2 %, the storyboard's agent 1 %. The lead's own context, 260k tokens, was read again each time an agent's report woke it.
+Keep contexts small: a notes file per section rather than one for all, the part of a script an agent needs rather
+than all of it, crops rather than whole sheets, and a fresh agent with a narrow brief for a round of fixes rather
+than a builder resumed with everything it read. Waiting on a render costs no tokens, and where renders share one GPU,
+more agents only queue for it.
 
 **Checkpoints don't block.** At each one, show the user what you have, with your pick and the reason in one line,
 and keep going; they can redirect you at any time. Decide timing by measurement, send the ear-check clips anyway and
@@ -327,6 +336,8 @@ different central image. For each, write:
     or collage;
   - an isometric miniature;
   - kinetic typography only;
+  - 3D rendered by code outside the template (Blender's Python, another engine) and played under its captions
+    (step 4, "Frames rendered elsewhere"): light and depth no SVG gives, at hours of rendering for each draft;
   - over any of these, an old film, a VHS tape or a halftone print (the kit's `finish` pack).
 - **Palette, texture and typeface.** The typeface is part of the look: rather than a system font, use an OFL font
   file imported from `src/` (`song2mv render` ignores `public/`) and loaded with the kit's `loadFont` at the top of a
@@ -391,11 +402,37 @@ singing too: the remake's break walked the hero away in the rain, the story's lo
 thread, the rival's comeuppance and the old home seeing him succeed, where the first video had spent its last 23 s on
 reprises and silhouettes.
 
+**A word acted out is still a picture of the line.** One 3D video's first chorus acted out three of its nouns on
+their key words, as its lyric map said, and the user found the lyrics merely dragged along. The fix asked what the
+story's rule makes happen on those words. In the lamplighter example above, a chorus that names the stars, her ladder
+and the dark, acted out, shows stars, a ladder and a dark sky on their words; driven by the rule, each lamp she lights
+on its word calls its star out, and the stars stop at the edge of the street the rival's bulb lights.
+
 Write it as a beat sheet, `<work>/story.md`: a logline, the rule, the cast, and per scene its lines, each with its
 shot and what happens; end it with the list above, each point with the beats that meet it. Then draw a rough
 storyboard, a frame per beat, and show both to the user with the hero's design sheet (below). The lyric map still
 holds: its events land on their key words, inside the scenes. A song with wordplay in every other line still wants a
 frame that takes a new picture per line (above); a song that tells a story wants scenes.
+
+**Every change of state is seen.** Who holds what, where a character is, what they wear, what clings to them: each
+change plays inside a shot, framed to be seen, or the cut falls on the action that makes it (arms raised to hang a
+coat, then the same place with the coat on its hook), never between shots. List the changes in the continuity table
+(the song map, below), each with its beat and a storyboard frame, and give one that falls on the seam between two
+builders' stretches to one of them. In the same 3D video the user approved a 29-frame storyboard and, on first
+watching the full draft (about 7 GPU hours of rendering), found three jumps: leaves stuck to the hero's coat were gone
+a few shots later, he left the frame after coming in at his front door and was next seen in house clothes, and a leaf
+was suddenly in his paws. Only the change of clothes fell between shots, and the storyboard had no frame for it or
+for the leaves coming off. The other two happened inside shots, out of sight: the leaves flew off behind his head, and
+the leaf rose from his shoe to his paws behind his legs, about 25 px wide in a 960 px frame. The fixes showed each
+change: a low shot from the front as a gust tears the leaves off his coat, the hero in frame to the end with the cut
+on his hanging up the coat, and the catch as one take that follows the leaf up into his paws.
+
+**Play the storyboard at the song's speed.** A sheet of frames reads as a set of good pictures; in time, a jump
+between two frames shows. Hold each frame from its beat's time to the next under the song and its captions (a scene
+that draws, at `T`, the frame of the beat on screen; stills made elsewhere are imported from `src/` as PNGs), render
+it with `--draft` and send it with the beat sheet. Where frames are slow to make (3D, a heavy style), get the flow
+approved on a cheap preview of the whole song before any long render: in that video the storyboard's stills rendered
+in about 8 minutes, the first full draft took about 7 GPU hours, and the final render was planned at 20–25 more.
 
 Make each concept concrete enough to picture: one rough still each, shown side by side with your pick and the reason
 in one line. Copy the template now (step 4's first command), draw each concept as a component of `T` in
@@ -425,9 +462,9 @@ and any kit changes into it.
   sheet at the scale the scenes use and check one against another: in one family video no review named the toddler's
   size against her father's until the user found her too big after many rounds; at 85 % her head came to about 0.75
   of his. Then a table, section by section:
-  what each one wears and carries (a bag, a toy, shoes on or off), where they are, the time of day. Builders and
-  reviewers check every board against it. Give the light a row of its own, like a prop, with what changes it on
-  screen: where the story's rule says what brings the morning, the sky never brightens by itself. In one remake a
+  what each one wears and carries (a bag, a toy, shoes on or off), where they are, the time of day, and each change
+  between rows with the beat that shows it on screen (above). Builders and reviewers check every board against it.
+  Give the light a row of its own, like a prop, with what changes it on screen: where the story's rule says what brings the morning, the sky never brightens by itself. In one remake a
   station grew to full day by itself while the hero packed, one cut before a farm at full night, and a sunrise on a
   phone call spent the final chorus's payoff early: reviewers flagged both as breaking the story's rule.
 - **A name that goes on screen.** Before a character's or the song's name is drawn into the picture (a title card,
@@ -673,6 +710,26 @@ scene's corners as drawn, and `"flashes": [[song time, strength 0–1], …]` pu
 white flash lies outside it and reads as a grey wash: one video set `[]` and flashed inside the finish. Then run
 `song2mv sync <work>/song.json --from build`.
 
+**Frames rendered elsewhere** (3D from Blender's Python or another engine) come in as one video that a scene plays:
+the template adds the song, the captions and the flashes, and `render --draft`, `check`, `sheet`, `diff` and the
+shorts work as for any scene. Two 3D videos were made this way. Render frame n of the scene at song time n / 30,
+then encode the frames at a constant 30 fps without B-frames, tagged BT.709, and check the count:
+
+```bash
+ffmpeg -framerate 30 -start_number FIRST -i <frames>/frame_%05d.png -frames:v COUNT \
+  -vf "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv" \
+  -c:v libx264 -crf 16 -g 30 -bf 0 -movflags +faststart -an <work>/video/src/scenes/assets/frames.mp4
+ffprobe -v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 <that file>   # COUNT
+```
+
+A scene imports it, `import frames from "./assets/frames.mp4"` (the file stays under `src/`: `render` serves no
+`public/`), and the kit's `<Footage src={frames} T={T} first={FIRST} last={LAST} />` shows frame round(T × 30) in
+every render, a draft and a short's `--from` and `--hold` included, holding the first and last frames outside them.
+Lettering
+goes over it as in any scene, clear of the frames' cuts; a `linesDrawnByScene` that returns no line leaves every line
+to the captions, and a short shows the 16:9 picture in its band. The frames, the video and the scripts that render
+them stay in the work folder.
+
 ### The scene kit
 
 Look at it before you design anything (in `<work>/video`):
@@ -700,6 +757,7 @@ a call and writing (27), a hand at the temple (28). Scenes 29–32 are the toon,
 | objects | `Phone` (`messages`, `typing`, `call`), `Clock` (`spin`, `ticks` on the beat, alarm `ring`), `Heart` (`beat`, `crack`), `Car` (`distance` turns the wheels), `Plane` (`trail`), `Lantern`/`Lanterns` | what the lyrics are about |
 | effects | `Rain` (`strength`, splashes on `ground`), `Fireworks` (`bursts` at times), `Confetti`, `Hit` (`burst`, `sparkle` or `ring` at a point and time), `Flames` (a fire to a candle; `flat`, `wind`, `strength`) and `FlamesAlong` (an object's edge on fire), `Storm` (a storm deck of `Clouds` lit from inside by its `strikes`) and `Lightning` (`fork` or `zigzag` bolts; a strike's `to` aims it at a point), `strikeFlashes()` (for `Flash`), `Tears` (well up, run down a cheek, drip; `spot` dampens where they land), `Cash` (banknotes tumbling down) | weather, hits and the big moments |
 | text | `Slam`, `Quiet`, `BigLine`, `Captions` | lines in the scene |
+| footage | `Footage` (a video of frames rendered elsewhere, shown at the frame of `T`; step 4) | 3D or another engine's picture under the captions |
 
 **Style packs** (`src/kit/styles/`, one namespace each: `import { paper, pixel, comic, poster } from "../kit"`).
 Their filters cost little on a Mac, where `song2mv render` has Chrome draw on the GPU; in software (Linux, Windows,
@@ -1032,7 +1090,10 @@ word has landed: in one run the lines' middle frames showed the pictures of 26 o
   brownstone street the planner's drift alone measured 8–9 on most verse lines, and `check` says "the whole frame
   changes" when such a line is frantic without a cut. Draw that detail coarser or lower in contrast, or calm the
   drift: `drift: 0.5` on the street's boards (`planShots(…, { drift })`) took its verse lines from 5.4 to 3.6 on
-  average, none of them still.
+  average, none of them still. In one 3D video, low cameras moving with a walk past a hedge and over a path strewn
+  with leaves measured 13–26 on four verse lines, a still camera by the hero's shoe and one 3 m behind him 6.7; the
+  rain there, dashes that jump every frame, made only 10–19 % of that motion (measured by taking out what changes
+  every frame with a median of three frames).
 - **Shot variety.** `check` does not see a shot coming back: one video cut back to the same wide street shot about
   30 times. The `--cuts` sheet has a frame of every shot. A shot that continues across neighbouring tiles is one shot;
   reframe a framing that returns after other shots.

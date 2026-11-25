@@ -5,6 +5,20 @@ All notable changes are listed here. song2mv is alpha (0.x): see docs/contract.m
 ## Unreleased
 
 ### Added
+- The kit's `Footage`: frames rendered elsewhere (Blender, another engine), encoded as one video, shown at song time
+  `T` under the template's captions, frame round(T × 30) in every render, a draft (10 fps) and a short's `--from` and
+  `--hold` included. Two 3D videos each wrote it by hand, rounded to whole render frames, which put a draft one song
+  frame off unless its start lined up; a Sequence shifted by a fraction of a frame shows the exact one. The skill
+  gives the encode command (constant 30 fps, no B-frames, BT.709).
+- The skill, from a 3D video's first full draft (about 7 GPU hours): every change of who holds what, where a
+  character is and what they wear is seen, inside a shot framed to show it or on the cut that makes it, and listed in
+  the continuity table with its beat; the storyboard is played at the song's speed before the build, and the flow
+  approved on a cheap preview before long renders. The user had approved the storyboard as a sheet and found three
+  jumps in the draft: one between shots, two inside shots but hidden. Also: acting out a
+  chorus's nouns on their words still reads as a picture per line (the story's rule should drive those beats), what
+  an agent's tokens go to (each call reads its whole context again; builders ended at 280–370k tokens), and why that
+  video's verse lines measured frantic (low cameras moving over leaves; its rain was 10–19 % of the motion). The
+  review brief's continuity lens and the section brief ask for the same.
 - The skill, from a family video taken to upload: ask the user what really happens when a scene sits still; set
   the cast side by side at scale; pose the body in the world before drawing a part of it (a cot shot from above
   that reused the side view's sleeper took six sample renders); check every reported fix in consecutive frames;

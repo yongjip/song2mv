@@ -56,7 +56,9 @@ file is merged into `<work>/video/` at the end. Read first, in this order:
   appears or vanishes inside a shot.
 - **Continuity.** Every board follows the continuity table in `map.md`: what each character wears and carries, where
   they are, the time of day. A cap on a head in one shot and in a hand the next, with nothing between, is the first
-  thing a viewer catches.
+  thing a viewer catches. A change the table lists in your stretch (a catch, a coat taken off, a walk indoors)
+  happens inside a shot, framed to be seen, or on the cut that makes it, never between shots: in one video a leaf rose
+  to the hero's paws behind his legs, about 25 px wide, and the user saw it simply appear there.
 - **Who is in front.** Where figures touch, the one in front is drawn later: in a hug or a carry, the smaller figure
   goes between the other's back and front layers, never under a whole figure, whose arm then lies across its face.
 - TODO: what is special about this song, such as "the tempo drifts: time motion by line and word times, not

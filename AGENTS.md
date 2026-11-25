@@ -64,9 +64,12 @@ their verdict on the hero's design sheet and the storyboard before builders star
    line's own moment, a rival that acts. Draw the hero's design sheet in the look the user asks for, its head turns as
    drawn views a turn snaps between, never a face sliding over the head; show it with a rough storyboard. One video
    passed every check and four review rounds and was rejected for a hero that wasn't cute, a sliding head turn and a
-   dull story, none of which the user had seen before the build. The scene kit in `DIR/src/kit/` (people,
-   places, sky, objects, effects; style packs such as `paper` that put any object in another art style) is optional:
-   reuse what fits the concept, change it in DIR, draw the rest. See it with
+   dull story, none of which the user had seen before the build. Play the storyboard at the song's speed, and let
+   every change of who holds what, where they are and what they wear happen in sight: in a 3D video the user
+   approved the storyboard as a sheet and found three such jumps only in its draft, after about 7 GPU hours of
+   rendering. The scene kit in
+   `DIR/src/kit/` (people, places, sky, objects, effects; style packs such as `paper` that put any object in another
+   art style) is optional: reuse what fits the concept, change it in DIR, draw the rest. See it with
    `node render.mjs src/sample-song.json --composition Kit-Gallery` in DIR. When the video is done, offer the user
    anything generic you drew as a pull request (`CONTRIBUTING.md`), and what the video taught (what the user found
    dull, what fixed it) as a change to the skill. Remotion is not MIT — tell company users about its
